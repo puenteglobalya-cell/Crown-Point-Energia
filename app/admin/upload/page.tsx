@@ -71,7 +71,7 @@ export default function UploadPage() {
         titulo: datos?.mes ? `Ingresos ${datos.mes}` : file.name.replace(/\.\w+$/, ''),
         periodo: datos?.periodo ?? new Date().toISOString().slice(0, 7),
         storage_path: uploaded?.path ?? '',
-        datos: (datos as Record<string, unknown>) ?? {},
+       datos: (datos as unknown as Record<string, unknown>) ?? {},
         estado,
       })
 
