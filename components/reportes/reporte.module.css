@@ -1,0 +1,208 @@
+/* ── SECCIÓN LABEL ─────────────────── */
+.sec {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 14px;
+}
+.sec::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── KPIs ───────────────────────────── */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+@media (min-width: 600px) {
+  .kpiGrid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 900px) {
+  .kpiGrid { grid-template-columns: repeat(5, 1fr); }
+}
+
+.kpi {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 14px 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 3px;
+  background: var(--c, var(--naranja));
+  border-radius: 0 0 12px 12px;
+}
+
+.kpi_naranja { --c: var(--naranja); }
+.kpi_azul    { --c: var(--azul); }
+.kpi_verde   { --c: var(--verde); }
+.kpi_warm    { --c: var(--warm); }
+.kpi_muted   { --c: var(--muted); }
+
+.kpiLbl {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.kpiVal {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+}
+
+@media (min-width: 400px) { .kpiVal { font-size: 22px; } }
+
+.kpiUnit {
+  font-size: 10px;
+  color: var(--muted2);
+  font-weight: 400;
+  margin-left: 2px;
+  font-family: var(--font-sans);
+}
+
+.kpiSub {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 7px;
+  line-height: 1.4;
+}
+
+/* ── ÁREAS GRID ─────────────────────── */
+.areasGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 560px) {
+  .areasGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1000px) {
+  .areasGrid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.gasGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  max-width: 720px;
+}
+
+@media (min-width: 560px) {
+  .gasGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── AREA CARD ──────────────────────── */
+.acard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 16px 14px;
+}
+
+.aname {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.adot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot_naranja { background: var(--naranja); }
+.dot_azul    { background: var(--azul); }
+.dot_verde   { background: var(--verde); }
+.dot_violeta { background: var(--violeta); }
+.dot_warm    { background: var(--warm); }
+.dot_muted   { background: var(--muted); }
+
+.arow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--bg2);
+  gap: 8px;
+}
+
+.arow:last-of-type { border: none; }
+
+.albl {
+  font-size: 11px;
+  color: var(--muted);
+  flex: 1;
+  min-width: 0;
+}
+
+.aval {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.neg { color: var(--rojo) !important; }
+.dim { color: var(--muted2) !important; font-style: italic; }
+
+.hi         { color: var(--naranja) !important; }
+.hi_warm    { color: var(--warm) !important; }
+.hi_muted   { color: var(--muted) !important; }
+
+.pos_naranja { color: var(--naranja) !important; }
+.pos_azul    { color: var(--azul) !important; }
+.pos_verde   { color: var(--verde) !important; }
+.pos_violeta { color: var(--violeta) !important; }
+
+.anota {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.abr {
+  margin-top: 12px;
+  height: 3px;
+  background: var(--bg2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.abrF { height: 100%; border-radius: 2px; }
+.abrF_naranja { background: var(--naranja); }
+.abrF_azul    { background: var(--azul); }
+.abrF_verde   { background: var(--verde); }
+.abrF_violeta { background: var(--violeta); }
+.abrF_warm    { background: var(--warm); }
+.abrF_muted   { background: var(--muted); }
