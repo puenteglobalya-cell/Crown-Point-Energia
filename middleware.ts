@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const ADMIN_EMAILS = [
-  'tu@email.com',  // ← reemplazá con los emails admin reales
+  'mezquieta@crownpointenergy.com',
 ]
 
 export async function middleware(request: NextRequest) {

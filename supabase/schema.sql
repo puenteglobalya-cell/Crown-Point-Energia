@@ -50,7 +50,7 @@ create policy "Admins full access"
   to authenticated
   using (
     auth.jwt() ->> 'email' = any(
-      array['tu@email.com']  -- ← reemplazá con los emails admin
+      array['mezquieta@crownpointenergy.com']
     )
   );
 
