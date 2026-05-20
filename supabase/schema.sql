@@ -38,13 +38,14 @@ alter table report_types enable row level security;
 alter table reportes      enable row level security;
 
 -- Todos los usuarios autenticados pueden leer reportes publicados
+drop policy if exists "Leer reportes publicados" on reportes;
 create policy "Leer reportes publicados"
   on reportes for select
   to authenticated
   using (estado = 'publicado');
 
 -- Solo admins pueden insertar / actualizar / ver borradores
--- (definís admins por email en la función de abajo)
+drop policy if exists "Admins full access" on reportes;
 create policy "Admins full access"
   on reportes for all
   to authenticated
@@ -54,6 +55,7 @@ create policy "Admins full access"
     )
   );
 
+drop policy if exists "Leer tipos de reporte" on report_types;
 create policy "Leer tipos de reporte"
   on report_types for select
   to authenticated
