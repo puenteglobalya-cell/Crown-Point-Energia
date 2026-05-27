@@ -1,0 +1,92 @@
+import { createSupabaseServerAdminClient } from './supabase'
+
+export type CMSState = {
+  direction: 'corporativo' | 'editorial' | 'industrial'
+  theme: 'light' | 'dark'
+  lang: 'es' | 'en'
+  show: Record<string, boolean>
+  fields: Record<string, string>
+}
+
+const HARD_DEFAULTS: CMSState = {
+  direction: 'corporativo',
+  theme: 'light',
+  lang: 'es',
+  show: {},
+  fields: {},
+}
+
+export async function getCmsState(): Promise<CMSState> {
+  try {
+    const supabase = createSupabaseServerAdminClient()
+
+    const [settingsRes, sectionsRes, fieldsRes] = await Promise.all([
+      supabase.from('cms_settings').select('direction,theme,lang').eq('id', 1).single(),
+      supabase.from('cms_sections').select('key,visible'),
+      supabase.from('cms_fields').select('key,value_es,value_en'),
+    ])
+
+    const settings = settingsRes.data
+    const sections = sectionsRes.data ?? []
+    const fields = fieldsRes.data ?? []
+
+    const show: Record<string, boolean> = {}
+    for (const s of sections) show[s.key] = s.visible
+
+    const fieldMap: Record<string, string> = {}
+    for (const f of fields) {
+      fieldMap[f.key] = f.value_es ?? ''
+    }
+
+    return {
+      direction: (settings?.direction as CMSState['direction']) ?? HARD_DEFAULTS.direction,
+      theme: (settings?.theme as CMSState['theme']) ?? HARD_DEFAULTS.theme,
+      lang: (settings?.lang as CMSState['lang']) ?? HARD_DEFAULTS.lang,
+      show,
+      fields: fieldMap,
+    }
+  } catch {
+    return HARD_DEFAULTS
+  }
+}
+
+export async function patchCmsState(patch: Partial<CMSState>): Promise<void> {
+  const supabase = createSupabaseServerAdminClient()
+
+  const ops: PromiseLike<unknown>[] = []
+
+  if (patch.direction || patch.theme || patch.lang) {
+    ops.push(
+      supabase.from('cms_settings').update({
+        ...(patch.direction && { direction: patch.direction }),
+        ...(patch.theme && { theme: patch.theme }),
+        ...(patch.lang && { lang: patch.lang }),
+        updated_at: new Date().toISOString(),
+      }).eq('id', 1).then(r => r)
+    )
+  }
+
+  if (patch.show) {
+    const upserts = Object.entries(patch.show).map(([key, visible]) => ({
+      key,
+      visible,
+      updated_at: new Date().toISOString(),
+    }))
+    if (upserts.length > 0) {
+      ops.push(supabase.from('cms_sections').upsert(upserts, { onConflict: 'key' }).then(r => r))
+    }
+  }
+
+  if (patch.fields) {
+    const upserts = Object.entries(patch.fields).map(([key, value_es]) => ({
+      key,
+      value_es,
+      updated_at: new Date().toISOString(),
+    }))
+    if (upserts.length > 0) {
+      ops.push(supabase.from('cms_fields').upsert(upserts, { onConflict: 'key' }).then(r => r))
+    }
+  }
+
+  await Promise.all(ops)
+}

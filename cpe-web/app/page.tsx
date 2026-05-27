@@ -1,0 +1,468 @@
+import Link from 'next/link'
+import Image from 'next/image'
+import { getCmsState } from '@/lib/cms'
+import ArgentinaMap from '@/components/ArgentinaMap'
+
+export const revalidate = 60
+
+export default async function HomePage() {
+  const s = await getCmsState()
+  const f = s.fields
+  const show = s.show
+
+  const price  = f['stock.price']  || 'CA $0.205'
+  const delta  = f['stock.delta']  || '+0.00%'
+  const beta   = f['stock.beta']   || '0.93'
+  const vol30  = f['stock.vol30']  || '14,210'
+  const cap    = f['stock.cap']    || 'CA $19.8M'
+
+  const kpiProdVal   = f['kpi.production.value'] || '3,090'
+  const kpiProdUnit  = f['kpi.production.unit']  || 'boe/d'
+  const kpiProdDelta = f['kpi.production.delta'] || '+68% QoQ'
+  const kpiResVal    = f['kpi.reserves.value']   || '18.6'
+  const kpiResUnit   = f['kpi.reserves.unit']    || 'MMboe'
+  const kpiResDelta  = f['kpi.reserves.delta']   || 'RLI 16.5y'
+  const kpiEbVal     = f['kpi.ebitda.value']     || '18.4'
+  const kpiEbUnit    = f['kpi.ebitda.unit']      || 'USD M'
+  const kpiEbDelta   = f['kpi.ebitda.delta']     || '+54% YoY'
+  const kpiBlkVal    = f['kpi.blocks.value']     || '6'
+  const kpiBlkUnit   = f['kpi.blocks.unit']      || 'en 4 cuencas'
+  const kpiBlkDelta  = f['kpi.blocks.delta']     || '372k ha'
+
+  const stockHigh52  = f['stock.high52']  || 'CA $0.31'
+  const stockLow52   = f['stock.low52']   || 'CA $0.16'
+  const stockShares  = f['stock.shares']  || '96.6M'
+
+  return (
+    <>
+      {/* HERO */}
+      {show['hero'] !== false && (
+        <section className="hero" data-cpe-section="hero">
+          <div className="hero-media">
+            <Image
+              src="https://crownpointenergy.com/wp-content/uploads/2014/12/slider-image1.jpg"
+              alt=""
+              fill
+              loading="eager"
+              style={{ objectFit: 'cover', filter: 'brightness(0.85) saturate(0.92)' }}
+            />
+            <div className="hero-veil"></div>
+          </div>
+          <div className="container hero-content">
+            <div className="hero-eyebrow">
+              <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
+                <span className="lang-es">TSXV: CWV · Petróleo y gas · Argentina</span>
+                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Argentina</span>
+              </span>
+            </div>
+            <h1 className="hero-title">
+              <span className="lang-es">Energía que sostiene<br/>la matriz productiva<br/>argentina.</span>
+              <span className="lang-en">Energy that powers<br/>Argentina&apos;s productive<br/>backbone.</span>
+            </h1>
+            <p className="hero-lede">
+              <span className="lang-es">Operamos en cuatro de las cuencas más relevantes del país —<strong> Austral, Neuquina, Cuyana y Golfo San Jorge</strong>— con flujo de caja de producción propia, una cartera de proyectos de bajo riesgo y una estructura financiera prudente.</span>
+              <span className="lang-en">We operate across four of Argentina&apos;s most relevant basins — <strong>Austral, Neuquén, Cuyana and San Jorge Gulf</strong> — with cash flow from our own production, a low-risk project portfolio and a prudent financial structure.</span>
+            </p>
+            <div className="hero-cta">
+              <Link className="btn btn-primary" href="/inversores">
+                <span className="lang-es">Resumen del inversor</span>
+                <span className="lang-en">Investor overview</span>
+              </Link>
+              <Link className="btn btn-secondary" href="/operaciones">
+                <span className="lang-es">Ver operaciones</span>
+                <span className="lang-en">See operations</span>
+              </Link>
+            </div>
+            <div className="hero-quote">
+              <div className="hq-row">
+                <span className="hq-label">TSX.V: CWV</span>
+                <span className="hq-sep"></span>
+                <span className="hq-price" data-cpe-field="stock.price">{price}</span>
+                <span className="hq-delta pos" data-cpe-field="stock.delta">{delta}</span>
+              </div>
+              <div className="hq-row hq-sub">
+                <span><span className="lang-es">Beta</span><span className="lang-en">Beta</span> · <span data-cpe-field="stock.beta">{beta}</span></span>
+                <span><span className="lang-es">Vol.</span><span className="lang-en">Vol.</span> <span data-cpe-field="stock.vol30">{vol30}</span></span>
+                <span><span className="lang-es">Cap.</span><span className="lang-en">Mkt&nbsp;cap</span> <span data-cpe-field="stock.cap">{cap}</span></span>
+                <span className="hq-stale"><span className="lang-es">15&nbsp;min de demora</span><span className="lang-en">15&nbsp;min delayed</span></span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* BASINS STRIP */}
+      {show['basinsStrip'] !== false && (
+        <section className="basins-strip" aria-label="Cuencas de operación" data-cpe-section="basinsStrip">
+          <div className="container">
+            <div className="bs-row">
+              <span className="eyebrow"><span className="lang-es">Presencia operativa</span><span className="lang-en">Operating footprint</span></span>
+              <div className="bs-list">
+                {[
+                  { num: '01', name: 'Cuyana', es: 'Cuyo, Mendoza', en: 'Cuyo, Mendoza' },
+                  { num: '02', name: 'Neuquina', es: 'Mendoza Sur', en: 'Southern Mendoza' },
+                  { num: '03', name: 'Golfo San Jorge', es: 'Chubut · Santa Cruz', en: 'Chubut · Santa Cruz' },
+                  { num: '04', name: 'Austral', es: 'Tierra del Fuego', en: 'Tierra del Fuego' },
+                ].map(b => (
+                  <div className="bs-item" key={b.num}>
+                    <span className="bs-num num">{b.num}</span>
+                    <div>
+                      <strong>{b.name}</strong>
+                      <span className="lang-es">{b.es}</span>
+                      <span className="lang-en">{b.en}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* KPIs */}
+      {show['kpis'] !== false && (
+        <section className="section" data-cpe-section="kpis">
+          <div className="container">
+            <div className="section-head reveal">
+              <div>
+                <span className="eyebrow"><span className="lang-es">Q1 2026 · Cifras clave</span><span className="lang-en">Q1 2026 · Key figures</span></span>
+                <h2 className="section-title">
+                  <span className="lang-es">Una operación de escala<br/>con balance saneado.</span>
+                  <span className="lang-en">An at-scale operation<br/>on a clean balance sheet.</span>
+                </h2>
+              </div>
+              <p>
+                <span className="lang-es">Producción diaria, reservas certificadas y disciplina de capital. Datos al cierre del último trimestre, conforme a NI 51-101.</span>
+                <span className="lang-en">Daily production, certified reserves and disciplined capital allocation. Figures as of last reported quarter, per NI 51-101.</span>
+              </p>
+            </div>
+            <div className="kpi-grid reveal">
+              <div className="kpi">
+                <span className="kpi-label"><span className="lang-es">Producción diaria</span><span className="lang-en">Daily production</span></span>
+                <div>
+                  <span className="kpi-value num" data-cpe-field="kpi.production.value">{kpiProdVal}</span>
+                  <span className="kpi-unit" data-cpe-field="kpi.production.unit">{kpiProdUnit}</span>
+                </div>
+                <span className="kpi-meta">
+                  <span className="badge" data-cpe-field="kpi.production.delta">{kpiProdDelta}</span>
+                  <span className="lang-es">incluye El Tordillo</span>
+                  <span className="lang-en">incl. El Tordillo</span>
+                </span>
+              </div>
+              <div className="kpi">
+                <span className="kpi-label"><span className="lang-es">Reservas 2P</span><span className="lang-en">2P reserves</span></span>
+                <div>
+                  <span className="kpi-value num" data-cpe-field="kpi.reserves.value">{kpiResVal}</span>
+                  <span className="kpi-unit" data-cpe-field="kpi.reserves.unit">{kpiResUnit}</span>
+                </div>
+                <span className="kpi-meta">
+                  <span className="badge" data-cpe-field="kpi.reserves.delta">{kpiResDelta}</span>
+                  <span className="lang-es">vida útil estimada</span>
+                  <span className="lang-en">reserve life</span>
+                </span>
+              </div>
+              <div className="kpi">
+                <span className="kpi-label"><span className="lang-es">EBITDA ajustado</span><span className="lang-en">Adj. EBITDA</span></span>
+                <div>
+                  <span className="kpi-value num" data-cpe-field="kpi.ebitda.value">{kpiEbVal}</span>
+                  <span className="kpi-unit" data-cpe-field="kpi.ebitda.unit">{kpiEbUnit}</span>
+                </div>
+                <span className="kpi-meta">
+                  <span className="badge" data-cpe-field="kpi.ebitda.delta">{kpiEbDelta}</span>
+                  <span className="lang-es">últimos 12 meses</span>
+                  <span className="lang-en">LTM</span>
+                </span>
+              </div>
+              <div className="kpi">
+                <span className="kpi-label"><span className="lang-es">Bloques operados</span><span className="lang-en">Operated blocks</span></span>
+                <div>
+                  <span className="kpi-value num" data-cpe-field="kpi.blocks.value">{kpiBlkVal}</span>
+                  <span className="kpi-unit" data-cpe-field="kpi.blocks.unit">
+                    <span className="lang-es">{kpiBlkUnit}</span>
+                    <span className="lang-en">in 4 basins</span>
+                  </span>
+                </div>
+                <span className="kpi-meta">
+                  <span className="badge" data-cpe-field="kpi.blocks.delta">{kpiBlkDelta}</span>
+                  <span className="lang-es">superficie operada</span>
+                  <span className="lang-en">operated acreage</span>
+                </span>
+              </div>
+            </div>
+            <p className="kpi-foot">
+              <span className="lang-es">Cifras gerenciales no auditadas. Para detalle ver <Link href="/inversores#financieros">Estados financieros</Link>.</span>
+              <span className="lang-en">Unaudited management figures. See <Link href="/inversores#financieros">Financial statements</Link> for detail.</span>
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* OPERATIONS MAP */}
+      {show['ops'] !== false && (
+        <section className="section ops-section" data-cpe-section="ops">
+          <div className="container">
+            <div className="section-head reveal">
+              <div>
+                <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
+                <h2 className="section-title">
+                  <span className="lang-es">Seis bloques<br/>en cuatro cuencas.</span>
+                  <span className="lang-en">Six blocks<br/>across four basins.</span>
+                </h2>
+              </div>
+              <p>
+                <span className="lang-es">Cartera diversificada de áreas convencionales y no convencionales, con foco en gas natural y crudo liviano.</span>
+                <span className="lang-en">A diversified portfolio of conventional and unconventional blocks, focused on natural gas and light oil.</span>
+              </p>
+            </div>
+            <div className="ops-layout reveal">
+              <div className="ops-map"><ArgentinaMap /></div>
+              <ul className="ops-list">
+                {[
+                  { pin: 'tordillo', num: '04', wi: '95%', role: 'Operador', roleEn: 'Operator',
+                    title: 'El Tordillo · La Tapera · Puesto Quiroga',
+                    es: 'Tres concesiones contiguas en el flanco norte de la Cuenca del Golfo San Jorge, Chubut. 269 pozos productores y 83 inyectores en producción consolidada con waterflood.',
+                    en: 'Three contiguous concessions on the northern flank of the San Jorge Gulf Basin, Chubut. 269 producing wells and 83 waterflood injectors.', href: '/operaciones#tordillo' },
+                  { pin: 'piedra', num: '05', wi: '100%', role: 'Operador', roleEn: 'Operator',
+                    title: 'Piedra Clavada – Koluel Kaike',
+                    es: 'Bloque en Golfo San Jorge sur, Santa Cruz. Adquisición reciente con plan de desarrollo a mediano plazo y oportunidades de waterflood.',
+                    en: 'Block in southern San Jorge Gulf, Santa Cruz. Recent acquisition with mid-term development plan and waterflood opportunities.', href: '/operaciones#piedra' },
+                  { pin: 'chanares', num: '02', wi: '50%', role: 'Participación', roleEn: 'Working interest',
+                    title: 'Chañares Herrados',
+                    es: 'Concesión productiva en Cuenca Cuyana, provincia de Mendoza. Crudo liviano con infraestructura existente.',
+                    en: 'Producing concession in the Cuyana Basin, Mendoza. Light oil with existing infrastructure.', href: '/operaciones#chanares' },
+                  { pin: 'ppc', num: '01', wi: '50%', role: 'Participación', roleEn: 'Working interest',
+                    title: 'Puesto Pozo Cercado Oriental',
+                    es: 'Bloque exploratorio en el norte de la Cuenca Neuquina, Mendoza. Joint venture con foco en prospectos convencionales y no convencionales sobre Vaca Muerta.',
+                    en: 'Exploration block in the northern Neuquén Basin, Mendoza. JV targeting conventional and Vaca Muerta unconventional prospects.', href: '/operaciones#ppc' },
+                  { pin: 'tdf', num: '06', wi: '48,3275%', role: 'Participación', roleEn: 'Working interest',
+                    title: 'Río Cullen · Las Violetas · La Angostura',
+                    es: 'Tres concesiones en la Cuenca Austral, Tierra del Fuego. Operación de gas natural y condensado en producción estable desde 1986.',
+                    en: 'Three concessions in the Austral Basin, Tierra del Fuego. Stable natural gas and condensate production since 1986.', href: '/operaciones#tdf' },
+                  { pin: 'cerro', num: '03', wi: '100%', role: 'Operador', roleEn: 'Operator',
+                    title: 'Cerro de Los Leones',
+                    es: '101.208 hectáreas en la Cuenca Neuquina, provincia de Mendoza. Foco en exploración convencional y gas no convencional.',
+                    en: '101,208 hectares in the Neuquén Basin, Mendoza province. Focus on conventional exploration and unconventional gas.', href: '/operaciones#cerro' },
+                ].map(b => (
+                  <li className="ops-card" data-pin={b.pin} key={b.pin}>
+                    <div className="ops-card-hd">
+                      <span className="ops-card-num num">{b.num}</span>
+                      <span className="chip">
+                        <span className="lang-es">{b.role}</span>
+                        <span className="lang-en">{b.roleEn}</span>
+                        {' · '}{b.wi}
+                      </span>
+                    </div>
+                    <h3 className="ops-card-title">{b.title}</h3>
+                    <p>
+                      <span className="lang-es">{b.es}</span>
+                      <span className="lang-en">{b.en}</span>
+                    </p>
+                    <Link className="btn-ghost" href={b.href}>
+                      <span className="lang-es">Detalle del bloque</span>
+                      <span className="lang-en">Block detail</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* INVESTOR HIGHLIGHT */}
+      {show['investor'] !== false && (
+        <section className="invest-feature" data-cpe-section="investor">
+          <div className="container invest-grid">
+            <div className="invest-copy reveal">
+              <span className="eyebrow"><span className="lang-es">Para inversores</span><span className="lang-en">For investors</span></span>
+              <h2 className="section-title">
+                <span className="lang-es">Una historia de valor<br/>respaldada por activos reales.</span>
+                <span className="lang-en">A value story<br/>backed by real assets.</span>
+              </h2>
+              <p className="invest-lede">
+                <span className="lang-es">Reservas certificadas, contratos de venta de gas en pesos y dólares, y un equipo con más de 25 años de experiencia en el upstream argentino.</span>
+                <span className="lang-en">Certified reserves, gas-sale contracts in both pesos and dollars, and a team with 25+ years of experience in Argentine upstream.</span>
+              </p>
+              <ul className="invest-list">
+                <li>
+                  <span className="bullet"></span>
+                  <div>
+                    <strong><span className="lang-es">Producción base diversificada</span><span className="lang-en">Diversified base production</span></strong>
+                    <span className="lang-es">Mix balanceado de gas natural, crudo y NGL en cuatro bloques.</span>
+                    <span className="lang-en">Balanced mix of natural gas, crude and NGLs across four blocks.</span>
+                  </div>
+                </li>
+                <li>
+                  <span className="bullet"></span>
+                  <div>
+                    <strong><span className="lang-es">Estructura financiera prudente</span><span className="lang-en">Prudent capital structure</span></strong>
+                    <span className="lang-es">Deuda/EBITDA &lt; 1,5x. Obligaciones negociables Clase IV emitidas en 2025.</span>
+                    <span className="lang-en">Net debt/EBITDA &lt; 1.5x. Class IV notes issued in 2025.</span>
+                  </div>
+                </li>
+                <li>
+                  <span className="bullet"></span>
+                  <div>
+                    <strong><span className="lang-es">Pipeline de crecimiento</span><span className="lang-en">Growth pipeline</span></strong>
+                    <span className="lang-es">Plan de 12 pozos para 2026–2027 enfocados en gas y crudo de bajo punto de equilibrio.</span>
+                    <span className="lang-en">12-well program for 2026–2027 targeting low-breakeven gas and oil.</span>
+                  </div>
+                </li>
+              </ul>
+              <div className="invest-cta">
+                <Link className="btn btn-primary" href="/inversores">
+                  <span className="lang-es">Ver resumen completo</span>
+                  <span className="lang-en">See full overview</span>
+                </Link>
+                <Link className="btn-ghost" href="/inversores#financieros">
+                  <span className="lang-es">Últimos estados financieros</span>
+                  <span className="lang-en">Latest financials</span>
+                </Link>
+              </div>
+            </div>
+
+            {show['investor.quotePanel'] !== false && (
+              <aside className="invest-panel reveal" data-cpe-section="investor.quotePanel">
+                <header>
+                  <span className="eyebrow"><span className="lang-es">Cotización TSX Venture</span><span className="lang-en">TSX Venture quote</span></span>
+                  <span className="chip"><span className="live-dot" style={{ background: 'var(--cp-green)' }}></span>Live · 15min</span>
+                </header>
+                <div className="ip-price">
+                  <span className="num" data-cpe-field="stock.price">{price}</span>
+                  <span className="ip-delta pos num" data-cpe-field="stock.delta">{delta}</span>
+                </div>
+                <table className="ip-table">
+                  {show['investor.beta'] !== false && (
+                    <tr data-cpe-section="investor.beta"><td>Beta</td><td className="num" data-cpe-field="stock.beta">{beta}</td></tr>
+                  )}
+                  {show['investor.vol30'] !== false && (
+                    <tr data-cpe-section="investor.vol30"><td><span className="lang-es">Vol. promedio (30d)</span><span className="lang-en">Avg vol (30d)</span></td><td className="num" data-cpe-field="stock.vol30">{vol30}</td></tr>
+                  )}
+                  {show['investor.high52'] !== false && (
+                    <tr data-cpe-section="investor.high52"><td>52w high</td><td className="num" data-cpe-field="stock.high52">{stockHigh52}</td></tr>
+                  )}
+                  {show['investor.low52'] !== false && (
+                    <tr data-cpe-section="investor.low52"><td>52w low</td><td className="num" data-cpe-field="stock.low52">{stockLow52}</td></tr>
+                  )}
+                  {show['investor.cap'] !== false && (
+                    <tr data-cpe-section="investor.cap"><td><span className="lang-es">Capitalización</span><span className="lang-en">Market cap</span></td><td className="num" data-cpe-field="stock.cap">{cap}</td></tr>
+                  )}
+                  {show['investor.shares'] !== false && (
+                    <tr data-cpe-section="investor.shares"><td><span className="lang-es">Acciones en circulación</span><span className="lang-en">Shares outstanding</span></td><td className="num" data-cpe-field="stock.shares">{stockShares}</td></tr>
+                  )}
+                </table>
+                {show['investor.sparkline'] !== false && (
+                  <div className="ip-spark" data-cpe-section="investor.sparkline">
+                    <svg viewBox="0 0 280 80" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="sparkFill" x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="0%" stopColor="var(--accent2)" stopOpacity="0.35"/>
+                          <stop offset="100%" stopColor="var(--accent2)" stopOpacity="0"/>
+                        </linearGradient>
+                      </defs>
+                      <path d="M0 55 L20 50 L40 53 L60 48 L80 45 L100 50 L120 40 L140 38 L160 42 L180 30 L200 32 L220 25 L240 28 L260 18 L280 22 L280 80 L0 80 Z" fill="url(#sparkFill)"/>
+                      <path d="M0 55 L20 50 L40 53 L60 48 L80 45 L100 50 L120 40 L140 38 L160 42 L180 30 L200 32 L220 25 L240 28 L260 18 L280 22" fill="none" stroke="var(--accent2)" strokeWidth="1.5"/>
+                    </svg>
+                    <span className="ip-spark-meta"><span className="lang-es">12 meses</span><span className="lang-en">12 months</span> · +28.1%</span>
+                  </div>
+                )}
+                <footer>
+                  <Link className="btn-ghost" href="/inversores"><span className="lang-es">Ver historial</span><span className="lang-en">See history</span></Link>
+                </footer>
+              </aside>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* PRESS */}
+      {show['press'] !== false && (
+        <section className="section press-section" data-cpe-section="press">
+          <div className="container">
+            <div className="section-head reveal">
+              <div>
+                <span className="eyebrow"><span className="lang-es">Sala de prensa</span><span className="lang-en">Newsroom</span></span>
+                <h2 className="section-title">
+                  <span className="lang-es">Últimas novedades.</span>
+                  <span className="lang-en">Latest releases.</span>
+                </h2>
+              </div>
+              <Link className="btn-ghost" href="/comunicados"><span className="lang-es">Todos los comunicados</span><span className="lang-en">All press releases</span></Link>
+            </div>
+            <ul className="press-list reveal">
+              {[
+                { date: '15 · 04 · 2026', cat: 'Resultados', catEn: 'Results',
+                  titleEs: 'Crown Point reporta resultados del primer trimestre 2026', titleEn: 'Crown Point reports Q1 2026 results',
+                  bodyEs: 'Producción promedio de 1.840 boe/d, EBITDA ajustado de USD 11,9M y reducción de deuda neta del 12%.', bodyEn: 'Average production of 1,840 boe/d, adjusted EBITDA of USD 11.9M and a 12% reduction in net debt.' },
+                { date: '02 · 04 · 2026', cat: 'Operaciones', catEn: 'Operations',
+                  titleEs: 'Inicio de la campaña de workover en Chañares Herrados', titleEn: 'Workover campaign begins at Chañares Herrados',
+                  bodyEs: 'El plan contempla intervenir 6 pozos productores con incremento estimado de 180 boe/d en el segundo trimestre.', bodyEn: 'The plan covers 6 producing wells with an estimated 180 boe/d uplift in Q2.' },
+                { date: '11 · 03 · 2026', cat: 'Mercado de capitales', catEn: 'Capital markets',
+                  titleEs: 'Emisión exitosa de Obligaciones Negociables Clase IV por USD 8M', titleEn: 'Successful Class IV notes issuance of USD 8M',
+                  bodyEs: 'Oferta sobresuscrita 2,3x. Los fondos se destinan al plan de inversión en Cerro de Los Leones.', bodyEn: 'Offer was 2.3x oversubscribed. Proceeds go to the Cerro de Los Leones investment plan.' },
+                { date: '22 · 02 · 2026', cat: 'ESG', catEn: 'ESG',
+                  titleEs: 'Publicamos nuestro Reporte de Sustentabilidad 2025', titleEn: '2025 Sustainability Report released',
+                  bodyEs: 'Reducción del 11% en intensidad de emisiones GEI y avances en plan de social license en Tierra del Fuego.', bodyEn: '11% reduction in GHG emissions intensity and progress on the social license plan in Tierra del Fuego.' },
+              ].map((item, i) => (
+                <li className="press-item" key={i}>
+                  <span className="press-date num">{item.date}</span>
+                  <div>
+                    <span className="chip"><span className="lang-es">{item.cat}</span><span className="lang-en">{item.catEn}</span></span>
+                    <h3><span className="lang-es">{item.titleEs}</span><span className="lang-en">{item.titleEn}</span></h3>
+                    <p><span className="lang-es">{item.bodyEs}</span><span className="lang-en">{item.bodyEn}</span></p>
+                  </div>
+                  <Link className="press-arrow" href="/comunicados" aria-label="Leer">
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11h12M12 5l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
+      {/* CONTACT CTA */}
+      {show['contact'] !== false && (
+        <section className="contact-cta" data-cpe-section="contact">
+          <div className="container">
+            <div className="cc-grid reveal">
+              <div className="cc-copy">
+                <span className="eyebrow"><span className="lang-es">Contacto institucional</span><span className="lang-en">Institutional contact</span></span>
+                <h2 className="section-title">
+                  <span className="lang-es">¿Sos analista,<br/>inversor o socio?</span>
+                  <span className="lang-en">Are you an analyst,<br/>investor or partner?</span>
+                </h2>
+                <p>
+                  <span className="lang-es">Nuestro equipo de Investor Relations responde consultas, agenda reuniones one-on-one y comparte materiales complementarios bajo NDA.</span>
+                  <span className="lang-en">Our Investor Relations team responds to enquiries, schedules one-on-one meetings and shares supporting materials under NDA.</span>
+                </p>
+              </div>
+              <div className="cc-card">
+                <div className="cc-channel">
+                  <span className="cc-key">Email IR</span>
+                  <a href="mailto:ir@crownpointenergy.com" className="cc-val">ir@crownpointenergy.com</a>
+                </div>
+                <div className="cc-channel">
+                  <span className="cc-key"><span className="lang-es">Teléfono</span><span className="lang-en">Phone</span></span>
+                  <a href="tel:+541152524801" className="cc-val">+54 11 5252-4801</a>
+                </div>
+                <div className="cc-channel">
+                  <span className="cc-key"><span className="lang-es">Oficinas Buenos Aires</span><span className="lang-en">Buenos Aires office</span></span>
+                  <span className="cc-val">Suipacha 1111, Piso 18 — C1008AAW</span>
+                </div>
+                <div className="cc-channel">
+                  <span className="cc-key"><span className="lang-es">Sede internacional</span><span className="lang-en">International HQ</span></span>
+                  <span className="cc-val">Calgary, AB · Canada</span>
+                </div>
+                <Link className="btn btn-primary cc-btn" href="/contacto">
+                  <span className="lang-es">Solicitar reunión</span>
+                  <span className="lang-en">Request a meeting</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+    </>
+  )
+}
