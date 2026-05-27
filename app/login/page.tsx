@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import styles from './login.module.css'
 
@@ -11,7 +10,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const router = useRouter()
   const supabase = createClient()
 
   async function handleLogin(e: React.FormEvent) {
@@ -25,8 +23,7 @@ export default function LoginPage() {
       setError('Email o contraseña incorrectos.')
       setLoading(false)
     } else {
-      router.push('/')
-      router.refresh()
+      window.location.href = '/'
     }
   }
 
