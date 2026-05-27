@@ -1,33 +1,33 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import styles from './login.module.css'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
 
+  const router = useRouter()
   const supabase = createClient()
 
-  async function handleMagicLink(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    })
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError('No pudimos enviarte el link. Verificá el email.')
+      setError('Email o contraseña incorrectos.')
+      setLoading(false)
     } else {
-      setSent(true)
+      router.push('/')
+      router.refresh()
     }
-    setLoading(false)
   }
 
   return (
@@ -40,39 +40,39 @@ export default function LoginPage() {
 
         <h1 className={styles.title}>Acceder a reportes</h1>
         <p className={styles.sub}>
-          Ingresá tu email y te enviamos un link de acceso.
+          Ingresá tu email y contraseña para entrar.
         </p>
 
-        {sent ? (
-          <div className={styles.success}>
-            <div className={styles.successIcon}>✓</div>
-            <p>Link enviado a <strong>{email}</strong></p>
-            <p className={styles.successNote}>
-              Revisá tu bandeja de entrada y hacé click en el link para entrar.
-            </p>
-            <button className={styles.again} onClick={() => { setSent(false); setEmail('') }}>
-              Usar otro email
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleMagicLink} className={styles.form}>
-            <label className={styles.label} htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="nombre@empresa.com"
-              className={styles.input}
-              required
-              autoFocus
-            />
-            {error && <p className={styles.error}>{error}</p>}
-            <button type="submit" className={styles.btn} disabled={loading}>
-              {loading ? 'Enviando…' : 'Enviar link de acceso'}
-            </button>
-          </form>
-        )}
+        <form onSubmit={handleLogin} className={styles.form}>
+          <label className={styles.label} htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="nombre@empresa.com"
+            className={styles.input}
+            required
+            autoFocus
+          />
+
+          <label className={styles.label} htmlFor="password">Contraseña</label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="••••••••"
+            className={styles.input}
+            required
+          />
+
+          {error && <p className={styles.error}>{error}</p>}
+
+          <button type="submit" className={styles.btn} disabled={loading}>
+            {loading ? 'Ingresando…' : 'Ingresar'}
+          </button>
+        </form>
 
         <p className={styles.footer}>
           Solo usuarios autorizados pueden acceder.
