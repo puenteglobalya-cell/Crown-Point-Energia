@@ -1,10 +1,43 @@
 import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
+import { createSupabaseServerAdminClient } from '@/lib/supabase'
 
 export const revalidate = 60
 
+type Documento = {
+  id: string
+  titulo_es: string
+  titulo_en: string
+  tipo: string
+  periodo: string
+  storage_path: string
+  file_name: string
+  file_size: number | null
+  publico: boolean
+}
+
+function docExt(fileName: string) {
+  const ext = fileName.split('.').pop()?.toUpperCase() ?? 'PDF'
+  return ['XLS', 'XLSX'].includes(ext) ? 'XLS' : ext
+}
+
+function publicUrl(path: string) {
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/documents/${path}`
+}
+
 export default async function InversoresPage() {
-  const s = await getCmsState()
+  const [s, docsResult] = await Promise.all([
+    getCmsState(),
+    createSupabaseServerAdminClient()
+      .from('documentos')
+      .select('*')
+      .eq('publico', true)
+      .order('created_at', { ascending: false }),
+  ])
+
+  const allDocs: Documento[] = docsResult.data ?? []
+  const docsByTipo = (tipo: string) => allDocs.filter(d => d.tipo === tipo)
+
   const f = s.fields
 
   const price = f['stock.price'] || 'CA $0.205'
@@ -127,23 +160,24 @@ export default async function InversoresPage() {
                 <span className="eyebrow"><span className="lang-es">Reportes recientes</span><span className="lang-en">Recent filings</span></span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Estados financieros</span><span className="lang-en">Financial statements</span></h2>
                 <p className="lede"><span className="lang-es">Reportes auditados según IFRS y compilados gerenciales trimestrales. Todos los documentos están disponibles también en SEDAR+.</span><span className="lang-en">IFRS-audited reports and quarterly management filings. All documents are also available on SEDAR+.</span></p>
-                <ul className="doc-list">
-                  {[
-                    { icon: 'PDF', titleEs: 'EE.FF. consolidados Q1 2026 (no auditados)', titleEn: 'Q1 2026 consolidated financial statements (unaudited)', meta: '15 abr 2026 · 2.4 MB' },
-                    { icon: 'PDF', titleEs: 'MD&A Q1 2026 — Análisis y discusión', titleEn: 'Q1 2026 MD&A — Discussion and analysis', meta: '15 abr 2026 · 1.1 MB' },
-                    { icon: 'PDF', titleEs: 'EE.FF. anuales 2025 — auditados', titleEn: '2025 annual financial statements — audited', meta: '28 feb 2026 · 3.6 MB' },
-                    { icon: 'PDF', titleEs: 'Reporte anual integrado 2025', titleEn: '2025 integrated annual report', meta: '28 feb 2026 · 8.9 MB' },
-                    { icon: 'XLS', titleEs: 'Modelo financiero — Datos abiertos 2020–2026', titleEn: 'Financial model — Open data 2020–2026', meta: '15 abr 2026 · 480 KB' },
-                    { icon: 'PDF', titleEs: 'Reporte NI 51-101 — Reservas certificadas 2025', titleEn: 'NI 51-101 report — 2025 certified reserves', meta: '28 feb 2026 · 5.2 MB' },
-                  ].map((d, i) => (
-                    <li className="doc-item" key={i}>
-                      <div className="doc-icon">{d.icon}</div>
-                      <div className="doc-title"><span className="lang-es">{d.titleEs}</span><span className="lang-en">{d.titleEn}</span></div>
-                      <div className="doc-meta">{d.meta}</div>
-                      <div className="doc-action"><span className="lang-es">Descargar</span><span className="lang-en">Download</span></div>
-                    </li>
-                  ))}
-                </ul>
+                {docsByTipo('financiero').length > 0 ? (
+                  <ul className="doc-list">
+                    {docsByTipo('financiero').map(d => (
+                      <li className="doc-item" key={d.id}>
+                        <div className="doc-icon">{docExt(d.file_name)}</div>
+                        <div className="doc-title"><span className="lang-es">{d.titulo_es}</span><span className="lang-en">{d.titulo_en}</span></div>
+                        <div className="doc-meta">{d.periodo}</div>
+                        <a className="doc-action" href={publicUrl(d.storage_path)} target="_blank" rel="noreferrer">
+                          <span className="lang-es">Descargar</span><span className="lang-en">Download</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
+                    <span className="lang-es">Próximamente.</span><span className="lang-en">Coming soon.</span>
+                  </p>
+                )}
               </div>
 
               <div className="section-block" id="cobertura">
@@ -171,40 +205,48 @@ export default async function InversoresPage() {
                 <span className="eyebrow"><span className="lang-es">Programa global</span><span className="lang-en">Global program</span></span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Obligaciones negociables</span><span className="lang-en">Notes program</span></h2>
                 <p className="lede"><span className="lang-es">Programa global de emisión por hasta USD 50 millones, autorizado por CNV. Clase IV emitida en marzo 2026.</span><span className="lang-en">Global issuance program of up to USD 50 million, authorized by the CNV. Class IV issued in March 2026.</span></p>
-                <ul className="doc-list">
-                  {[
-                    { icon: 'PDF', titleEs: 'Suplemento de Precio · Clase IV (USD 8M)', titleEn: 'Pricing supplement · Class IV (USD 8M)', meta: '11 mar 2026' },
-                    { icon: 'PDF', titleEs: 'Prospecto del programa global', titleEn: 'Global program prospectus', meta: '14 nov 2025' },
-                    { icon: 'PDF', titleEs: 'Calificación de riesgo · FIX Scr (Fitch)', titleEn: 'Risk rating · FIX Scr (Fitch)', meta: '14 nov 2025' },
-                  ].map((d, i) => (
-                    <li className="doc-item" key={i}>
-                      <div className="doc-icon">{d.icon}</div>
-                      <div className="doc-title"><span className="lang-es">{d.titleEs}</span><span className="lang-en">{d.titleEn}</span></div>
-                      <div className="doc-meta">{d.meta}</div>
-                      <div className="doc-action"><span className="lang-es">Descargar</span><span className="lang-en">Download</span></div>
-                    </li>
-                  ))}
-                </ul>
+                {docsByTipo('on').length > 0 ? (
+                  <ul className="doc-list">
+                    {docsByTipo('on').map(d => (
+                      <li className="doc-item" key={d.id}>
+                        <div className="doc-icon">{docExt(d.file_name)}</div>
+                        <div className="doc-title"><span className="lang-es">{d.titulo_es}</span><span className="lang-en">{d.titulo_en}</span></div>
+                        <div className="doc-meta">{d.periodo}</div>
+                        <a className="doc-action" href={publicUrl(d.storage_path)} target="_blank" rel="noreferrer">
+                          <span className="lang-es">Descargar</span><span className="lang-en">Download</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
+                    <span className="lang-es">Próximamente.</span><span className="lang-en">Coming soon.</span>
+                  </p>
+                )}
               </div>
 
               <div className="section-block" id="gobierno">
                 <span className="eyebrow"><span className="lang-es">Compliance &amp; ESG</span><span className="lang-en">Compliance &amp; ESG</span></span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Gobierno corporativo</span><span className="lang-en">Corporate governance</span></h2>
                 <p className="lede"><span className="lang-es">Crown Point Energy Inc. cotiza en TSX Venture Exchange y reporta bajo las normas canadienses para emisores junior.</span><span className="lang-en">Crown Point Energy Inc. is listed on TSX Venture Exchange and reports under Canadian junior issuer standards.</span></p>
-                <ul className="doc-list">
-                  {[
-                    { icon: 'PDF', titleEs: 'Carta del directorio 2025', titleEn: '2025 Board letter', meta: '28 feb 2026' },
-                    { icon: 'PDF', titleEs: 'Código de ética y conducta', titleEn: 'Code of ethics and conduct', meta: 'Actualizado 2025' },
-                    { icon: 'PDF', titleEs: 'Política de información privilegiada', titleEn: 'Insider information policy', meta: 'Actualizado 2024' },
-                  ].map((d, i) => (
-                    <li className="doc-item" key={i}>
-                      <div className="doc-icon">{d.icon}</div>
-                      <div className="doc-title"><span className="lang-es">{d.titleEs}</span><span className="lang-en">{d.titleEn}</span></div>
-                      <div className="doc-meta">{d.meta}</div>
-                      <div className="doc-action"><span className="lang-es">Descargar</span><span className="lang-en">Download</span></div>
-                    </li>
-                  ))}
-                </ul>
+                {docsByTipo('gobierno').length > 0 ? (
+                  <ul className="doc-list">
+                    {docsByTipo('gobierno').map(d => (
+                      <li className="doc-item" key={d.id}>
+                        <div className="doc-icon">{docExt(d.file_name)}</div>
+                        <div className="doc-title"><span className="lang-es">{d.titulo_es}</span><span className="lang-en">{d.titulo_en}</span></div>
+                        <div className="doc-meta">{d.periodo}</div>
+                        <a className="doc-action" href={publicUrl(d.storage_path)} target="_blank" rel="noreferrer">
+                          <span className="lang-es">Descargar</span><span className="lang-en">Download</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
+                    <span className="lang-es">Próximamente.</span><span className="lang-en">Coming soon.</span>
+                  </p>
+                )}
               </div>
             </main>
           </div>

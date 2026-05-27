@@ -6,6 +6,7 @@ export type CMSState = {
   lang: 'es' | 'en'
   show: Record<string, boolean>
   fields: Record<string, string>
+  maintenance: boolean
 }
 
 const HARD_DEFAULTS: CMSState = {
@@ -14,6 +15,7 @@ const HARD_DEFAULTS: CMSState = {
   lang: 'es',
   show: {},
   fields: {},
+  maintenance: false,
 }
 
 export async function getCmsState(): Promise<CMSState> {
@@ -21,7 +23,7 @@ export async function getCmsState(): Promise<CMSState> {
     const supabase = createSupabaseServerAdminClient()
 
     const [settingsRes, sectionsRes, fieldsRes] = await Promise.all([
-      supabase.from('cms_settings').select('direction,theme,lang').eq('id', 1).single(),
+      supabase.from('cms_settings').select('direction,theme,lang,maintenance').eq('id', 1).single(),
       supabase.from('cms_sections').select('key,visible'),
       supabase.from('cms_fields').select('key,value_es,value_en'),
     ])
@@ -44,6 +46,7 @@ export async function getCmsState(): Promise<CMSState> {
       lang: (settings?.lang as CMSState['lang']) ?? HARD_DEFAULTS.lang,
       show,
       fields: fieldMap,
+      maintenance: settings?.maintenance ?? false,
     }
   } catch {
     return HARD_DEFAULTS
@@ -55,12 +58,13 @@ export async function patchCmsState(patch: Partial<CMSState>): Promise<void> {
 
   const ops: PromiseLike<unknown>[] = []
 
-  if (patch.direction || patch.theme || patch.lang) {
+  if (patch.direction || patch.theme || patch.lang || patch.maintenance !== undefined) {
     ops.push(
       supabase.from('cms_settings').update({
         ...(patch.direction && { direction: patch.direction }),
         ...(patch.theme && { theme: patch.theme }),
         ...(patch.lang && { lang: patch.lang }),
+        ...(patch.maintenance !== undefined && { maintenance: patch.maintenance }),
         updated_at: new Date().toISOString(),
       }).eq('id', 1).then(r => r)
     )

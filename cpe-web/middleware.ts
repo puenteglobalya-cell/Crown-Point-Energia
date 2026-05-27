@@ -40,9 +40,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/admin', request.url))
   }
 
+  // Maintenance mode: redirect all public routes
+  const isAdminRoute = pathname.startsWith('/admin')
+  const isApiRoute = pathname.startsWith('/api')
+  const isMaintenancePage = pathname === '/maintenance'
+
+  if (!isAdminRoute && !isApiRoute && !isMaintenancePage) {
+    try {
+      const { data } = await supabase
+        .from('cms_settings')
+        .select('maintenance')
+        .eq('id', 1)
+        .single()
+      if (data?.maintenance === true) {
+        return NextResponse.redirect(new URL('/maintenance', request.url))
+      }
+    } catch {}
+  }
+
   return supabaseResponse
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
