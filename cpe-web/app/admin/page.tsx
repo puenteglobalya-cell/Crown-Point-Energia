@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { createSupabaseBrowserClient } from '@/lib/supabase'
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import type { CMSState } from '@/lib/cms'
 
 // ─── Schema ────────────────────────────────────────────────────────────────
