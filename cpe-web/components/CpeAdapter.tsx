@@ -8,6 +8,14 @@ import type { CMSState } from '@/lib/cms'
 // This preserves the window.CPE public API so the admin editor can work.
 export default function CpeAdapter({ state }: { state: CMSState }) {
   useEffect(() => {
+    // Redirect Supabase password-recovery links to the reset page
+    if (window.location.hash.includes('type=recovery')) {
+      window.location.replace('/admin/reset-password' + window.location.hash)
+      return
+    }
+  }, [])
+
+  useEffect(() => {
     let currentState: CMSState = structuredClone(state)
 
     function applyAll(s: CMSState) {
