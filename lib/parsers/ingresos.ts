@@ -12,6 +12,10 @@ export interface DatosIngresos {
   precio_neto_gas: number
   brent_prom: number
   medanito_prom: number
+  oil_pct_prod: number
+  gas_pct_prod: number
+  oil_pct_vend: number
+  gas_pct_vend: number
   areas: {
     ET: AreaOil
     PCKK: AreaOil
@@ -25,7 +29,7 @@ export interface DatosIngresos {
   mensual_historico?: MesHistorico[]
 }
 
-interface AreaOil {
+export interface AreaOil {
   prod_100_m3d: number
   prod_neta_m3d: number
   entregados_m3: number
@@ -41,16 +45,101 @@ interface AreaOil {
   descuento?: number
 }
 
-interface AreaGas {
+export interface AreaGas {
   prod_mcfd: number
   vol_mes_mcf: number
   precio_mcf: number
   ingreso: number
 }
 
-interface MesHistorico {
+export interface MesHistorico {
   mes: string
   total_MM: number
+  ET_MM: number
+  PCKK_MM: number
+  CH_MM: number
+  RCLV_MM: number
+  gas_MM: number
+  precio_ET: number
+  precio_PCKK: number
+  precio_CH: number
+  precio_RCLV: number
+}
+
+// ── Excel date serial → "Ene-26" ─────────────────────────────
+function excelSerialToMesLabel(serial: number): string {
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+  const d = new Date(Math.round((serial - 25569) * 86400 * 1000))
+  return `${meses[d.getUTCMonth()]}-${String(d.getUTCFullYear()).slice(2)}`
+}
+
+// ── Parse historical data from "sales & Volume" ──────────────
+function parsearSalesVolume(
+  wb: XLSX.WorkBook,
+  currentPrices: { ET: number; PCKK: number; CH: number; RCLV: number }
+): MesHistorico[] {
+  const ws = wb.Sheets['sales & Volume']
+  if (!ws) return []
+  const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }) as any[][]
+
+  // Build map: date serial → price row (rows 35–54)
+  const priceMap: Record<number, any[]> = {}
+  for (let i = 35; i < Math.min(data.length, 55); i++) {
+    const row = data[i]
+    if (!row) continue
+    const serial = row[1]
+    if (typeof serial === 'number' && serial > 45000 && serial < 47500) {
+      priceMap[serial] = row
+    }
+  }
+
+  const result: MesHistorico[] = []
+
+  // Revenue rows start at ~7, find by date serial in col[1]
+  for (let i = 6; i < Math.min(data.length, 22); i++) {
+    const row = data[i]
+    if (!row) continue
+    const serial = row[1]
+    if (typeof serial !== 'number' || serial < 45000 || serial > 47500) continue
+
+    const total_MM = Number(row[15] ?? 0) / 1_000_000
+    if (total_MM <= 0) continue
+
+    const ET_MM   = Number(row[4]  ?? 0) / 1_000_000
+    const PCKK_MM = Number(row[3]  ?? 0) / 1_000_000
+    const RCLV_MM = Number(row[5]  ?? 0) / 1_000_000
+    const CH_MM   = (Number(row[6] ?? 0) + Number(row[7] ?? 0)) / 1_000_000
+    const gas_MM  = (Number(row[9] ?? 0) + Number(row[10] ?? 0)) / 1_000_000
+
+    const priceRow = priceMap[serial]
+    let precio_PCKK = Number(priceRow?.[3] ?? 0)
+    let precio_ET   = Number(priceRow?.[4] ?? 0)
+    let precio_RCLV = Number(priceRow?.[5] ?? 0)
+    let precio_CH   = Number(priceRow?.[6] ?? 0)
+
+    if (precio_ET === 0) {
+      precio_ET   = currentPrices.ET
+      precio_PCKK = currentPrices.PCKK
+      precio_CH   = currentPrices.CH
+      precio_RCLV = currentPrices.RCLV
+    }
+
+    result.push({
+      mes: excelSerialToMesLabel(serial),
+      total_MM,
+      ET_MM,
+      PCKK_MM,
+      CH_MM,
+      RCLV_MM,
+      gas_MM,
+      precio_ET,
+      precio_PCKK,
+      precio_CH,
+      precio_RCLV,
+    })
+  }
+
+  return result
 }
 
 // ── PARSER PRINCIPAL ────────────────────────────────────────
@@ -58,49 +147,55 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   const buffer = await file.arrayBuffer()
   const wb = XLSX.read(buffer, { type: 'array', cellDates: true })
 
-  // Leer hojas clave
   const resumen  = leerHoja(wb, 'Resumen')
   const detalle  = leerHoja(wb, '2026-05') || leerHojaConFecha(wb)
-  const precios  = leerHoja(wb, 'Precio estimado')
 
   if (!resumen || !detalle) {
     throw new Error('El archivo no tiene el formato esperado. Verificá que sea un Revenue estimado.')
   }
 
-  // Extraer período del nombre de hoja o celda
   const periodoRaw = encontrarPeriodo(wb, resumen)
   const periodo = periodoRaw || '2026-00'
   const mes = formatearMes(periodo)
 
-  // ── Resumen ─────────────────────────────────────────────
-  const ventas_MM        = buscarValor(resumen, 'VENTAS ESTIMADAS', 1)  ?? 0
-  const vol_prod         = buscarValor(resumen, 'Volumen Producido', 1) ?? 0
-  const vol_venta        = buscarValor(resumen, 'Volumen Ventas', 1)    ?? 0
-  const precio_oil       = buscarValor(resumen, 'Oil', 3)               ?? 0
-  const precio_gas       = buscarValor(resumen, 'Gas', 3)               ?? 0
-  const dias             = Number(buscarCelda(detalle, 0, 2))           || 30
+  const ventas_MM  = buscarValor(resumen, 'VENTAS ESTIMADAS', 1) ?? 0
+  const vol_prod   = buscarValor(resumen, 'Volumen Producido', 1) ?? 0
+  const vol_venta  = buscarValor(resumen, 'Volumen Ventas', 1)    ?? 0
+  const precio_oil = buscarValor(resumen, 'Oil', 3)               ?? 0
+  const precio_gas = buscarValor(resumen, 'Gas', 3)               ?? 0
+  const dias       = Number(buscarCelda(detalle, 0, 3))           || 30
 
-  // ── Detalle por área ─────────────────────────────────────
-  const brent_ref  = buscarValor(detalle, 'mes', 1)          ?? 0
-  const medanito   = buscarValor(detalle, 'MEDANITO', 1)     ?? 0
-  const brent_1q   = buscarValor(detalle, '1Quincena', 1)    ?? 0
-  const brent_2q   = buscarValor(detalle, '2Quincena', 1)    ?? 0
+  const oil_pct_prod = (buscarValor(resumen, 'Oil', -1) ?? 0) * 100
+  const gas_pct_prod = (buscarValor(resumen, 'Gas', -1) ?? 0) * 100
+  const oil_pct_vend = (buscarValor(resumen, 'Oil',  1) ?? 0) * 100
+  const gas_pct_vend = (buscarValor(resumen, 'Gas',  1) ?? 0) * 100
 
-  const prod100   = buscarFila(detalle, '100% m3/d')
-  const prodNeta  = buscarFila(detalle, 'Neto')
+  const brent_ref = buscarValor(detalle, 'mes', 1)      ?? 0
+  const medanito  = buscarValor(detalle, 'MEDANITO', 1) ?? 0
+  const brent_1q  = buscarValor(detalle, '1Quincena', 1) ?? 0
+  const brent_2q  = buscarValor(detalle, '2Quincena', 1) ?? 0
+
+  const prod100    = buscarFila(detalle, '100% m3/d')
+  const prodNeta   = buscarFila(detalle, 'Neto')
   const entregados = buscarFila(detalle, 'm3 entregados')
-  const bbls      = buscarFila(detalle, 'Volumen en bbl')
-  const totalUs   = buscarFila(detalle, 'Total us$')
-  const precioN   = buscarFila(detalle, 'Precio Neto')
-  const stockM3   = buscarFila(detalle, 'STOCK Estimado en m3')
-  const stockUs   = buscarFila(detalle, /^us\$/)
-  const stockDias = buscarFila(detalle, 'Stock en días')
+  const bbls       = buscarFila(detalle, 'Volumen en bbl')
+  const totalUs    = buscarFila(detalle, 'Total us$')
+  const precioN    = buscarFila(detalle, 'Precio Neto')
+  const stockM3    = buscarFila(detalle, 'STOCK Estimado en m3')
+  const stockUs    = buscarFila(detalle, /^us\$/)
+  const stockDias  = buscarFila(detalle, 'Stock en días')
 
-  // Gas
-  const gasProd   = buscarFila(detalle, /Neto.*Gas|Gas.*Neto/, true)
-  const gasPrec   = buscarFila(detalle, /us.*mcf|mcf.*us/, true)
+  const gasProd = buscarFila(detalle, /Neto.*Gas|Gas.*Neto/, true)
+  const gasPrec = buscarFila(detalle, /us.*mcf|mcf.*us/, true)
 
   const stock_total = (stockUs?.[2] ?? 0) + (stockUs?.[3] ?? 0)
+
+  const currentPrices = {
+    ET:   precioN?.[2] ?? 0,
+    PCKK: precioN?.[3] ?? 0,
+    CH:   precioN?.[4] ?? 0,
+    RCLV: precioN?.[5] ?? 0,
+  }
 
   return {
     mes,
@@ -114,6 +209,10 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
     precio_neto_gas: precio_gas,
     brent_prom: brent_ref,
     medanito_prom: medanito,
+    oil_pct_prod,
+    gas_pct_prod,
+    oil_pct_vend,
+    gas_pct_vend,
 
     areas: {
       ET: {
@@ -165,18 +264,20 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
 
     gas: {
       ET: {
-        prod_mcfd:    gasProd?.[6]  ?? 0,
-        vol_mes_mcf:  0,
-        precio_mcf:   gasPrec?.[6] ?? 0,
-        ingreso:      totalUs?.[6] ?? 0,
+        prod_mcfd:   gasProd?.[6]  ?? 0,
+        vol_mes_mcf: (gasProd?.[6]  ?? 0) * dias,
+        precio_mcf:  gasPrec?.[6]  ?? 0,
+        ingreso:     totalUs?.[6]  ?? 0,
       },
       RCLV: {
-        prod_mcfd:    gasProd?.[7]  ?? 0,
-        vol_mes_mcf:  0,
-        precio_mcf:   gasPrec?.[7] ?? 0,
-        ingreso:      totalUs?.[7] ?? 0,
+        prod_mcfd:   gasProd?.[7]  ?? 0,
+        vol_mes_mcf: (gasProd?.[7] ?? 0) * dias,
+        precio_mcf:  gasPrec?.[7]  ?? 0,
+        ingreso:     totalUs?.[7]  ?? 0,
       },
     },
+
+    mensual_historico: parsearSalesVolume(wb, currentPrices),
   }
 }
 
@@ -189,17 +290,14 @@ function leerHoja(wb: XLSX.WorkBook, nombre: string): any[][] | null {
 }
 
 function leerHojaConFecha(wb: XLSX.WorkBook): any[][] | null {
-  // Buscar hoja con formato YYYY-MM
   const hoja = wb.SheetNames.find(n => /^\d{4}-\d{2}$/.test(n))
   return hoja ? leerHoja(wb, hoja) : null
 }
 
 function encontrarPeriodo(wb: XLSX.WorkBook, resumen: any[][]): string {
-  // Intentar desde nombre de hoja
   const hoja = wb.SheetNames.find(n => /^\d{4}-\d{2}$/.test(n))
   if (hoja) return hoja
 
-  // Intentar desde celda de fecha en Resumen
   for (const row of resumen) {
     for (const cell of row) {
       if (cell instanceof Date) {
