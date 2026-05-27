@@ -100,7 +100,7 @@ export default function UploadPage() {
           <p className={styles.sectionLbl}>Tipo de reporte</p>
           <div className={styles.tipoGrid}>
             {[
-              { id: 'ingresos', label: 'Ingresos estimados', desc: 'Excel con formato Revenue mensual — se parsea automáticamente', icon: '📊' },
+              { id: 'ingresos', label: 'Ingresos estimados', desc: 'Excel con formato Ingresos mensual — se parsea automáticamente', icon: '📊' },
               { id: 'custom',   label: 'Otro tipo',          desc: 'Subís el archivo tal cual. Se puede ver y descargar.',         icon: '📁' },
             ].map(t => (
               <button
@@ -130,7 +130,7 @@ export default function UploadPage() {
             {drag ? 'Soltá el archivo acá' : 'Arrastrá el archivo acá'}
           </p>
           <p className={styles.dropSub}>
-            {tipo === 'ingresos' ? 'Excel .xlsx — Revenue estimado' : 'Excel, HTML, PDF'}
+            {tipo === 'ingresos' ? 'Excel .xlsx — Ingresos estimados' : 'Excel, HTML, PDF'}
           </p>
           <label className={styles.dropBtn}>
             Seleccionar archivo

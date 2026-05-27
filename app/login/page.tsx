@@ -35,8 +35,7 @@ export default function LoginPage() {
       <div className={styles.card}>
 
         <div className={styles.logo}>
-          <span className={styles.logoText}>Revenue</span>
-          <span className={styles.logoDot}>.</span>
+          <span className={styles.logoText}>Crown Point Energía</span>
         </div>
 
         <h1 className={styles.title}>Acceder a reportes</h1>

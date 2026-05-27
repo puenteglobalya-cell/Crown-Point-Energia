@@ -35,8 +35,7 @@ export default async function HomePage() {
 
       <header className={styles.header}>
         <div>
-          <span className={styles.logoText}>Revenue</span>
-          <span className={styles.logoDot}>.</span>
+          <span className={styles.logoText}>Crown Point Energía</span>
         </div>
         <div className={styles.headerRight}>
           <span className={styles.userEmail}>{user.email}</span>
