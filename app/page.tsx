@@ -65,6 +65,18 @@ export default async function HomePage() {
             </Link>
           ))}
         </div>
+
+        {/* Admin link — solo visible para admins */}
+        {['mezquieta@crownpointenergy.com'].includes(user.email ?? '') && (
+          <div className={styles.adminBar}>
+            <Link href="/admin/generar" className={styles.adminLink}>
+              Generar reporte HTML
+            </Link>
+            <Link href="/admin/upload" className={styles.adminLink}>
+              Subir reporte
+            </Link>
+          </div>
+        )}
       </main>
 
     </div>

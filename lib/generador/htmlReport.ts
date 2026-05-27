@@ -1,13 +1,14 @@
-import { DatosIngresos } from '@/lib/parsers/ingresos'
+import type { DatosIngresos } from '@/lib/parsers/ingresos'
 
+// ── Helpers de formateo ──────────────────────────────────────
 function f(n: number | null | undefined, d = 2): string {
-  if (n == null || isNaN(n)) return '—'
-  return n.toFixed(d).replace('.', ',')
+  if (n == null || isNaN(n as number)) return '—'
+  return (n as number).toFixed(d).replace('.', ',')
 }
 
 function fN(n: number | null | undefined): string {
-  if (n == null || isNaN(n)) return '—'
-  return Math.round(n).toLocaleString('es-AR')
+  if (n == null || isNaN(n as number)) return '—'
+  return Math.round(n as number).toLocaleString('es-AR')
 }
 
 export function generarReporteHTML(datos: DatosIngresos): string {
@@ -24,9 +25,6 @@ export function generarReporteHTML(datos: DatosIngresos): string {
 
   // ── Participación % ───────────────────────────────────────
   const pct = (v: number) => totalMM > 0 ? ((v / totalMM) * 100).toFixed(1) : '0.0'
-
-  // ── Stock ─────────────────────────────────────────────────
-  const stockStr = datos.stock_MM > 0 ? `us$ ${f(datos.stock_MM)} MM` : '—'
 
   // ── Historial ─────────────────────────────────────────────
   const hasHistorico = mensual_historico && mensual_historico.length > 1
