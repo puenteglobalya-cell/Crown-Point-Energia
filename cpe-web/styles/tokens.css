@@ -7,8 +7,7 @@
    Plus dark/light via [data-theme="dark"|"light"]
 ----------------------------------------------------------------*/
 
-/* Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@400;500;600;700;800&display=swap');
+/* Fonts — loaded via next/font/google (self-hosted) in layout.tsx */
 
 :root {
   /* Brand palette — Crown Point Energy (sampled from real logo) */
@@ -52,10 +51,10 @@
   --accent2:   var(--cp-green);
   --accent2-deep: var(--cp-green-deep);
 
-  /* Type stacks */
-  --font-display: 'Playfair Display', 'Fraunces', Georgia, serif;
-  --font-body:    'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+  /* Type stacks — font vars injected by next/font on <html> element */
+  --font-display: var(--font-nf-playfair), Georgia, serif;
+  --font-body:    var(--font-nf-inter), system-ui, -apple-system, sans-serif;
+  --font-mono:    var(--font-nf-mono), ui-monospace, monospace;
 
   /* Scale */
   --t-eyebrow: 11px;
@@ -71,7 +70,7 @@
   --t-5xl:   104px;
 
   /* Spacing */
-  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;  --s-5: 20px;
   --s-6: 24px; --s-8: 32px; --s-10: 40px;
   --s-12: 48px; --s-16: 64px; --s-20: 80px;
   --s-24: 96px; --s-32: 128px;
@@ -113,8 +112,8 @@
   --on-accent: var(--cp-white);
   --accent2:   var(--cp-copper);
   --accent2-deep: #8A3F1A;
-  --font-display: 'Fraunces', 'Playfair Display', Georgia, serif;
-  --font-body:    'Inter', system-ui, sans-serif;
+  --font-display: var(--font-nf-fraunces), Georgia, serif;
+  --font-body:    var(--font-nf-inter), system-ui, sans-serif;
 }
 
 /* ==== Direction: Industrial (dark navy + green, geometric bold) ==== */
@@ -133,8 +132,8 @@
   --on-accent: var(--cp-navy-darker);
   --accent2:   #C9A24A;
   --accent2-deep: #A37F2C;
-  --font-display: 'Manrope', 'Inter', sans-serif;
-  --font-body:    'Manrope', 'Inter', sans-serif;
+  --font-display: var(--font-nf-manrope), system-ui, sans-serif;
+  --font-body:    var(--font-nf-manrope), system-ui, sans-serif;
 }
 
 /* ==== Dark theme overlay (applied to any direction) ==== */
@@ -652,14 +651,52 @@ h1, h2, h3, h4 {
   border-color: color-mix(in oklab, var(--accent) 40%, var(--rule));
 }
 
+/* ---------- Skip navigation (WCAG) ---------- */
+.skip-nav {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  z-index: 9999;
+  padding: 12px 24px;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: 0 0 var(--r-md) var(--r-md);
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.skip-nav:focus { left: 50%; top: 0; transform: translateX(-50%); }
+
+/* ---------- Focus styles (WCAG) ---------- */
+:focus-visible {
+  outline: 2.5px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+:focus:not(:focus-visible) { outline: none; }
+
 /* ---------- Utility ---------- */
 .hidden { display: none !important; }
 [data-lang="es"] .lang-en { display: none; }
 [data-lang="en"] .lang-es { display: none; }
 
-/* fade-in on scroll */
-.reveal { opacity: 0; transform: translateY(16px); transition: opacity 600ms ease-out, transform 600ms ease-out; }
+/* ---- Scroll reveal (stagger via --reveal-delay CSS var) ---- */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity  600ms ease-out var(--reveal-delay, 0ms),
+    transform 600ms ease-out var(--reveal-delay, 0ms);
+}
 .reveal.in { opacity: 1; transform: none; }
+.reveal-left  { transform: translateX(-28px); }
+.reveal-right { transform: translateX(28px); }
+.reveal-scale { transform: scale(0.96); }
+.reveal-left.in, .reveal-right.in, .reveal-scale.in { transform: none; }
+.reveal-d1 { --reveal-delay: 80ms; }
+.reveal-d2 { --reveal-delay: 160ms; }
+.reveal-d3 { --reveal-delay: 240ms; }
+.reveal-d4 { --reveal-delay: 320ms; }
 
 /* ---------- Argentina map ---------- */
 :root {

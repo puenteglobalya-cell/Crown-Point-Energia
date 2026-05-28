@@ -1,11 +1,12 @@
 import Link from 'next/link'
-import ArgentinaMapInteractive, { type MapBlockData } from '@/components/ArgentinaMapInteractive'
+import MapSection from './MapSection'
+import type { MapBlockData } from '@/components/ArgentinaMapInteractive'
 
 export const revalidate = 60
 
 const BLOCKS = [
   {
-    id: 'ppc', eyebrow: '01 · Cuenca Neuquina Norte',
+    id: 'ppc', commodity: 'oil' as Commodity, eyebrow: '01 · Cuenca Neuquina Norte',
     title: 'Puesto Pozo Cercado Oriental',
     ledeEs: 'Bloque exploratorio en el norte de la provincia de Mendoza, sobre el flanco norte de la Cuenca Neuquina. Joint venture con foco en prospectos convencionales y oportunidades sobre Vaca Muerta.',
     ledeEn: 'Exploration block in northern Mendoza, on the northern flank of the Neuquén Basin. JV targeting conventional prospects and Vaca Muerta opportunities.',
@@ -25,7 +26,7 @@ const BLOCKS = [
     ]
   },
   {
-    id: 'chanares', eyebrow: '02 · Cuenca Cuyana',
+    id: 'chanares', commodity: 'oil' as Commodity, eyebrow: '02 · Cuenca Cuyana',
     title: 'Chañares Herrados',
     ledeEs: 'Concesión productiva en el centro de Mendoza, con crudo liviano (38° API) e infraestructura propia conectada al oleoducto Allanito–Luján de Cuyo.',
     ledeEn: 'Producing concession in central Mendoza, light crude (38° API) with proprietary infrastructure connected to the Allanito–Luján de Cuyo oil pipeline.',
@@ -44,7 +45,7 @@ const BLOCKS = [
     ]
   },
   {
-    id: 'cerro', eyebrow: '03 · Cuenca Neuquina',
+    id: 'cerro', commodity: 'oil' as Commodity, eyebrow: '03 · Cuenca Neuquina',
     title: 'Cerro de Los Leones',
     ledeEs: 'Bloque exploratorio de 101.208 hectáreas en el norte de la Cuenca Neuquina, provincia de Mendoza, con potencial convencional y no convencional.',
     ledeEn: '101,208-hectare exploration block in the northern Neuquén Basin, Mendoza province, with conventional and unconventional potential.',
@@ -63,7 +64,7 @@ const BLOCKS = [
     ]
   },
   {
-    id: 'tordillo', eyebrow: '04 · Golfo San Jorge · Chubut',
+    id: 'tordillo', commodity: 'mixed' as Commodity, eyebrow: '04 · Golfo San Jorge · Chubut',
     title: 'El Tordillo · La Tapera · Puesto Quiroga',
     ledeEs: 'Tres concesiones contiguas en el flanco norte de la Cuenca del Golfo San Jorge, provincia de Chubut. El bloque productivo más grande de Crown Point por volumen.',
     ledeEn: 'Three contiguous concessions on the northern flank of the San Jorge Gulf Basin, Chubut province. Crown Point\'s largest producing block by volume.',
@@ -83,7 +84,7 @@ const BLOCKS = [
     ]
   },
   {
-    id: 'piedra', eyebrow: '05 · Golfo San Jorge · Santa Cruz',
+    id: 'piedra', commodity: 'oil' as Commodity, eyebrow: '05 · Golfo San Jorge · Santa Cruz',
     title: 'Piedra Clavada – Koluel Kaike',
     ledeEs: 'Bloque adquirido en 2024 en la provincia de Santa Cruz, parte del prolífico play Golfo San Jorge, con foco en crudo pesado y oportunidades de EOR.',
     ledeEn: 'Block acquired in 2024 in Santa Cruz province, part of the prolific San Jorge Gulf play, focused on heavy crude and EOR opportunities.',
@@ -102,7 +103,7 @@ const BLOCKS = [
     ]
   },
   {
-    id: 'tdf', eyebrow: '06 · Cuenca Austral · Tierra del Fuego',
+    id: 'tdf', commodity: 'gas' as Commodity, eyebrow: '06 · Cuenca Austral · Tierra del Fuego',
     title: 'Río Cullen · Las Violetas · La Angostura',
     ledeEs: 'Tres concesiones contiguas — Las Violetas, Río Cullen y La Angostura — con producción estable de gas natural y líquidos asociados desde 1986.',
     ledeEn: 'Three contiguous concessions — Las Violetas, Río Cullen and La Angostura — producing stable natural gas and associated liquids since 1986.',
@@ -121,6 +122,13 @@ const BLOCKS = [
     ]
   },
 ]
+
+type Commodity = 'oil' | 'gas' | 'mixed'
+const COMMODITY: Record<Commodity, { color: string; es: string; en: string }> = {
+  oil:   { color: '#E2B23A', es: 'Petróleo',       en: 'Oil' },
+  gas:   { color: '#2FA08A', es: 'Gas natural',     en: 'Natural gas' },
+  mixed: { color: '#6CAE52', es: 'Petróleo + Gas',  en: 'Oil + Gas' },
+}
 
 const MAP_BLOCKS: MapBlockData[] = [
   { id: 'ppc',      title: 'Puesto Pozo Cercado Oriental', eyebrow: '01 · Cuenca Neuquina Norte', commodity: 'oil',   stats: [['WI', '50%'], [{ es: 'Superficie', en: 'Acreage' }, '9,500 ha'], [{ es: 'Target', en: 'Target' }, 'Vaca Muerta'], [{ es: 'Estado', en: 'Status' }, { es: 'Exploratorio', en: 'Exploration' }]] },
@@ -198,7 +206,7 @@ export default function OperacionesPage() {
                   <span className="lang-en">Our six blocks span Mendoza, Chubut, Santa Cruz and Tierra del Fuego across four historically producing basins.</span>
                 </p>
                 <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: 'var(--s-6) var(--s-4)', marginTop: 'var(--s-6)', overflow: 'hidden' }}>
-                  <ArgentinaMapInteractive blocks={MAP_BLOCKS} style={{ maxHeight: 760, margin: '0 auto' }} />
+                  <MapSection blocks={MAP_BLOCKS} style={{ maxHeight: 760, margin: '0 auto' }} />
                 </div>
               </div>
 
@@ -210,10 +218,14 @@ export default function OperacionesPage() {
                     <span className="lang-es">{b.ledeEs}</span>
                     <span className="lang-en">{b.ledeEn}</span>
                   </p>
-                  <div className="block-card">
+                  <div className="block-card" style={{ borderTop: `3px solid ${COMMODITY[b.commodity].color}` }}>
                     <header className="block-card-hd">
                       <h3><span className="lang-es">{b.cardTitle.es}</span><span className="lang-en">{b.cardTitle.en}</span></h3>
                       <div className="chips">
+                        <span className="chip" style={{ background: `${COMMODITY[b.commodity].color}20`, color: COMMODITY[b.commodity].color, fontWeight: 600 }}>
+                          <span className="lang-es">{COMMODITY[b.commodity].es}</span>
+                          <span className="lang-en">{COMMODITY[b.commodity].en}</span>
+                        </span>
                         {b.chips.map((c, ci) => (
                           <span className="chip" key={ci}>
                             {typeof c === 'string' ? c : <><span className="lang-es">{c.es}</span><span className="lang-en">{c.en}</span></>}

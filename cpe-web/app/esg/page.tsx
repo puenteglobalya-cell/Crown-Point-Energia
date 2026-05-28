@@ -147,7 +147,7 @@ export default function EsgPage() {
       {/* KPI strip */}
       <section className="section-tight" style={{ borderBottom: '1px solid var(--rule)' }}>
         <div className="container">
-          <div className="esg-kpi-strip">
+          <div className="esg-kpi-strip reveal">
             {[
               { valEs: '−18%',  labelEs: 'Reducción emisiones vs 2022',  labelEn: 'Emissions reduction vs 2022' },
               { valEs: '94%',   labelEs: 'Agua reinyectada',              labelEn: 'Water reinjected' },
@@ -183,8 +183,8 @@ export default function EsgPage() {
           </div>
 
           <div className="esg-pillars">
-            {PILLARS.map(p => (
-              <div className="esg-pillar" key={p.id}>
+            {PILLARS.map((p, pi) => (
+              <div className={`esg-pillar reveal reveal-d${pi + 1}`} key={p.id}>
                 <div className="esg-pillar-head">
                   <div className="esg-pillar-icon" style={{ background: `${p.color}22`, color: p.color }}>
                     {p.icon}

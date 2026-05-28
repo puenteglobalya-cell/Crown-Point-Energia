@@ -126,7 +126,7 @@ export default function CarrerasPage() {
           </h2>
           <div className="culture-grid">
             {CULTURE_CARDS.map((c, i) => (
-              <div className="culture-card" key={i}>
+              <div className={`culture-card reveal reveal-d${i + 1}`} key={i}>
                 <div className="culture-card-icon" style={{ background: `${c.color}18`, color: c.color }}>
                   {c.icon}
                 </div>
