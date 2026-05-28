@@ -226,14 +226,18 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   const vol_producido_final = vol_prod   > 0 ? vol_prod   : volProdDerived
   const vol_vendido_final   = vol_venta  > 0 ? vol_venta  : volVentaDerived
 
+  // Gas prices from Resumen H13 (ET) and I13 (RCLV) — direct cell read
+  const precioGasResumenET   = Number(buscarCelda(resumen, 12, 7)) || 0
+  const precioGasResumenRCLV = Number(buscarCelda(resumen, 12, 8)) || 0
+
   // Gas area prices — derive from ingreso ÷ volume when direct read is 0
   const gasETProdRaw   = gasProd?.[6] ?? prodNeta?.[6] ?? 0
   const gasRCLVProdRaw = gasProd?.[7] ?? prodNeta?.[7] ?? 0
   const gasETIngreso   = totalUs?.[6] ?? 0
   const gasRCLVIngreso = totalUs?.[7] ?? 0
 
-  const rawETPrec   = gasPrec?.[6] ?? precioN?.[6] ?? 0
-  const rawRCLVPrec = gasPrec?.[7] ?? precioN?.[7] ?? 0
+  const rawETPrec   = precioGasResumenET   || gasPrec?.[6] || precioN?.[6] || 0
+  const rawRCLVPrec = precioGasResumenRCLV || gasPrec?.[7] || precioN?.[7] || 0
 
   const gasETPrec_final = rawETPrec > 0
     ? rawETPrec
