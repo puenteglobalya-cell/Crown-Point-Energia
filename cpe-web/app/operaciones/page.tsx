@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import ArgentinaMap from '@/components/ArgentinaMap'
+import ArgentinaMapInteractive, { type MapBlockData } from '@/components/ArgentinaMapInteractive'
 
 export const revalidate = 60
 
@@ -122,6 +122,15 @@ const BLOCKS = [
   },
 ]
 
+const MAP_BLOCKS: MapBlockData[] = [
+  { id: 'ppc',      title: 'Puesto Pozo Cercado Oriental', eyebrow: '01 · Cuenca Neuquina Norte', commodity: 'oil',   stats: [['WI', '50%'], [{ es: 'Superficie', en: 'Acreage' }, '9,500 ha'], [{ es: 'Target', en: 'Target' }, 'Vaca Muerta'], [{ es: 'Estado', en: 'Status' }, { es: 'Exploratorio', en: 'Exploration' }]] },
+  { id: 'chanares', title: 'Chañares Herrados',            eyebrow: '02 · Cuenca Cuyana',         commodity: 'oil',   stats: [['WI', '75.8%'], [{ es: 'Producción neta', en: 'Net production' }, '288 boe/d'], [{ es: 'Calidad', en: 'Quality' }, '38° API'], [{ es: 'Vencimiento', en: 'Expiry' }, '2037']] },
+  { id: 'cerro',    title: 'Cerro de Los Leones',          eyebrow: '03 · Cuenca Neuquina',       commodity: 'oil',   stats: [['WI', '100%'], [{ es: 'Superficie', en: 'Acreage' }, '101,208 ha'], [{ es: 'Estado', en: 'Status' }, { es: 'Exploratorio', en: 'Exploration' }], [{ es: 'Próximo hito', en: 'Next milestone' }, 'CdLL.x-1 · Q3 2026']] },
+  { id: 'tordillo', title: 'El Tordillo · La Tapera',      eyebrow: '04 · Golfo San Jorge · Chubut', commodity: 'mixed', stats: [['WI', '22.5%'], [{ es: 'Producción petróleo', en: 'Oil prod.' }, '4,557 Bbl/d'], [{ es: 'Producción gas', en: 'Gas prod.' }, '6,843 Mcf/d'], [{ es: 'Pozos activos', en: 'Active wells' }, '269']] },
+  { id: 'piedra',   title: 'Piedra Clavada – Koluel Kaike', eyebrow: '05 · Golfo San Jorge · Santa Cruz', commodity: 'oil',   stats: [['WI', '100%'], [{ es: 'Producción neta', en: 'Net production' }, '342 boe/d'], [{ es: 'Calidad', en: 'Quality' }, '21° API'], [{ es: 'Vencimiento', en: 'Expiry' }, '2049']] },
+  { id: 'tdf',      title: 'Río Cullen · Las Violetas',     eyebrow: '06 · Cuenca Austral · Tierra del Fuego', commodity: 'gas',   stats: [['WI', '48.3%'], [{ es: 'Producción neta', en: 'Net production' }, '1,210 boe/d'], [{ es: 'Mix', en: 'Mix' }, '78% gas · 22% líquidos'], [{ es: 'Vencimiento', en: 'Expiry' }, '2041']] },
+]
+
 export default function OperacionesPage() {
   return (
     <>
@@ -189,7 +198,7 @@ export default function OperacionesPage() {
                   <span className="lang-en">Our six blocks span Mendoza, Chubut, Santa Cruz and Tierra del Fuego across four historically producing basins.</span>
                 </p>
                 <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: 'var(--s-6) var(--s-4)', marginTop: 'var(--s-6)', overflow: 'hidden' }}>
-                  <ArgentinaMap style={{ maxHeight: 760, margin: '0 auto' }} />
+                  <ArgentinaMapInteractive blocks={MAP_BLOCKS} style={{ maxHeight: 760, margin: '0 auto' }} />
                 </div>
               </div>
 
