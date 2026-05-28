@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import type { CMSState } from '@/lib/cms'
 
@@ -157,6 +158,9 @@ export default function AdminPage() {
                 ✓ {savedMsg}
               </span>
             )}
+            <Link href="/admin/documentos" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
+              Documentos
+            </Link>
             <button onClick={handleSignOut} className="btn" style={{ fontSize: 13, padding: '8px 16px' }}>
               Cerrar sesión
             </button>
@@ -223,6 +227,48 @@ export default function AdminPage() {
               onChange={v => save({ lang: v as CMSState['lang'] })}
               saving={saving}
             />
+
+            {/* Maintenance mode */}
+            <div style={{ paddingTop: 8, borderTop: '1px solid var(--rule)' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg-soft)', marginBottom: 12 }}>
+                Modo mantenimiento
+              </div>
+              <label style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '16px 20px',
+                background: state.maintenance
+                  ? 'color-mix(in oklab, var(--cp-negative) 10%, var(--surface))'
+                  : 'var(--surface)',
+                border: `1px solid ${state.maintenance ? 'var(--cp-negative)' : 'var(--rule)'}`,
+                borderRadius: 'var(--r-md)', cursor: saving ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+              }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 500 }}>
+                    {state.maintenance ? 'Sitio fuera de servicio' : 'Sitio en línea'}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 3 }}>
+                    {state.maintenance
+                      ? 'Los visitantes ven la página de mantenimiento. El panel /admin sigue accesible.'
+                      : 'El sitio es visible para todos. Activá para ocultarlo mientras hacés cambios.'}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    width: 48, height: 26, borderRadius: 13, flexShrink: 0, marginLeft: 16,
+                    background: state.maintenance ? 'var(--cp-negative)' : 'var(--rule)',
+                    position: 'relative', transition: 'background 0.2s',
+                  }}
+                  onClick={() => !saving && save({ maintenance: !state.maintenance })}
+                >
+                  <div style={{
+                    position: 'absolute', top: 3, left: state.maintenance ? 25 : 3,
+                    width: 20, height: 20, borderRadius: '50%',
+                    background: '#fff', transition: 'left 0.2s',
+                  }} />
+                </div>
+              </label>
+            </div>
           </div>
         )}
 
