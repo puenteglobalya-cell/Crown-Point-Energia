@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { logActivity } from '@/lib/roles'
+import { logActivity, getPermissionsForRole } from '@/lib/roles'
 
 const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
 
@@ -50,12 +50,12 @@ export async function GET() {
   }
 
   const db = createSupabaseServerAdminClient()
+  const permissions = await getPermissionsForRole(userWithRole.role!)
   let q = db.from('reportes')
     .select('id, titulo, periodo, estado, file_name, file_size, created_at')
     .order('created_at', { ascending: false })
 
-  // Viewers only see published reports
-  if (userWithRole.role === 'viewer') {
+  if (!permissions.has('view_drafts')) {
     q = q.eq('estado', 'publicado')
   }
 
@@ -67,8 +67,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const userWithRole = await getUserWithRole()
 
-  // Only uploader and admin can create reports
-  if (!userWithRole?.activo || (userWithRole.role !== 'uploader' && userWithRole.role !== 'admin')) {
+  // Only roles with upload_reports permission can create reports
+  const uploadPerms = await getPermissionsForRole(userWithRole.role!)
+  if (!userWithRole?.activo || !uploadPerms.has('upload_reports')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

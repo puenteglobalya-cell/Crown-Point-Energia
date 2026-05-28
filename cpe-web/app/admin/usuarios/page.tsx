@@ -12,11 +12,23 @@ type UserWithRole = {
   last_sign_in_at: string | null
 }
 
+type PermMatrix = Record<string, Record<string, boolean>>
+
+const ROLES = ['viewer', 'uploader', 'admin'] as const
 const ROLE_LABELS: Record<string, string> = {
-  viewer: 'Consulta',
+  viewer:   'Consulta',
   uploader: 'Carga',
-  admin: 'Admin',
+  admin:    'Admin',
 }
+
+const PERM_LABELS: Record<string, string> = {
+  view_drafts:     'Ver borradores',
+  upload_reports:  'Subir reportes',
+  publish_reports: 'Publicar reportes',
+  manage_users:    'Gestionar usuarios',
+  manage_cms:      'Panel CMS',
+}
+const ADMIN_LOCKED = ['manage_users', 'manage_cms']
 
 function fmtDate(iso: string | null) {
   if (!iso) return '—'
@@ -61,6 +73,10 @@ export default function UsuariosPage() {
   const [inviteRole, setInviteRole] = useState<'viewer' | 'uploader' | 'admin'>('viewer')
   const [inviting, setInviting] = useState(false)
 
+  // Permissions matrix
+  const [matrix, setMatrix] = useState<PermMatrix | null>(null)
+  const [matrixLoading, setMatrixLoading] = useState(true)
+
   function showFlash(msg: string, type: 'ok' | 'err' = 'ok') {
     setFlash({ msg, type })
     setTimeout(() => setFlash(null), 4000)
@@ -69,15 +85,19 @@ export default function UsuariosPage() {
   const loadUsers = useCallback(async () => {
     setLoading(true)
     const res = await fetch('/api/admin/usuarios')
-    if (res.ok) {
-      setUsers(await res.json())
-    } else {
-      showFlash('Error al cargar usuarios', 'err')
-    }
+    if (res.ok) setUsers(await res.json())
+    else showFlash('Error al cargar usuarios', 'err')
     setLoading(false)
   }, [])
 
-  useEffect(() => { loadUsers() }, [loadUsers])
+  const loadMatrix = useCallback(async () => {
+    setMatrixLoading(true)
+    const res = await fetch('/api/admin/permisos')
+    if (res.ok) setMatrix(await res.json())
+    setMatrixLoading(false)
+  }, [])
+
+  useEffect(() => { loadUsers(); loadMatrix() }, [loadUsers, loadMatrix])
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
@@ -108,9 +128,7 @@ export default function UsuariosPage() {
     if (res.ok) {
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: newRole } : u))
       showFlash(`Rol de ${user.email} actualizado`)
-    } else {
-      showFlash('Error al cambiar rol', 'err')
-    }
+    } else showFlash('Error al cambiar rol', 'err')
   }
 
   async function handleToggleActivo(user: UserWithRole) {
@@ -123,9 +141,14 @@ export default function UsuariosPage() {
     if (res.ok) {
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, activo: newActivo } : u))
       showFlash(`Usuario ${newActivo ? 'activado' : 'desactivado'}`)
-    } else {
-      showFlash('Error al cambiar estado', 'err')
-    }
+    } else showFlash('Error al cambiar estado', 'err')
+  }
+
+  async function handleResetPassword(user: UserWithRole) {
+    if (!confirm(`¿Enviar email de restablecimiento de contraseña a "${user.email}"?`)) return
+    const res = await fetch(`/api/admin/usuarios/${user.id}/reset`, { method: 'POST' })
+    if (res.ok) showFlash(`Email de reset enviado a ${user.email}`)
+    else showFlash('Error al enviar el reset', 'err')
   }
 
   async function handleDelete(user: UserWithRole) {
@@ -134,14 +157,32 @@ export default function UsuariosPage() {
     if (res.ok) {
       setUsers(prev => prev.filter(u => u.id !== user.id))
       showFlash(`Usuario ${user.email} eliminado`)
-    } else {
-      showFlash('Error al eliminar usuario', 'err')
+    } else showFlash('Error al eliminar usuario', 'err')
+  }
+
+  async function handlePermToggle(role: string, perm: string, enabled: boolean) {
+    if (role === 'admin' && ADMIN_LOCKED.includes(perm)) return
+    // Optimistic update
+    setMatrix(prev => prev ? {
+      ...prev,
+      [role]: { ...prev[role], [perm]: enabled }
+    } : prev)
+    const res = await fetch('/api/admin/permisos', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ role, permission: perm, enabled }),
+    })
+    if (!res.ok) {
+      showFlash('Error al actualizar permiso', 'err')
+      await loadMatrix() // revert
     }
   }
 
+  const perms = Object.keys(PERM_LABELS)
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
-      <div style={{ maxWidth: 860, margin: '0 auto' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto' }}>
 
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
@@ -159,10 +200,7 @@ export default function UsuariosPage() {
         {/* Flash message */}
         {flash && (
           <div style={{
-            fontSize: 13,
-            padding: '12px 16px',
-            borderRadius: 'var(--r-md)',
-            marginBottom: 20,
+            fontSize: 13, padding: '12px 16px', borderRadius: 'var(--r-md)', marginBottom: 20,
             background: flash.type === 'ok' ? 'rgba(108,174,82,0.1)' : 'rgba(179,59,46,0.08)',
             color: flash.type === 'ok' ? 'var(--cp-green-deep)' : 'var(--cp-negative)',
           }}>
@@ -182,12 +220,9 @@ export default function UsuariosPage() {
             <div className="form-row" style={{ flex: 2, minWidth: 220, margin: 0 }}>
               <label>Email corporativo</label>
               <input
-                type="email"
-                required
-                value={inviteEmail}
+                type="email" required value={inviteEmail}
                 onChange={e => setInviteEmail(e.target.value)}
-                placeholder="usuario@empresa.com"
-                autoComplete="off"
+                placeholder="usuario@empresa.com" autoComplete="off"
               />
             </div>
             <div className="form-row" style={{ flex: 1, minWidth: 140, margin: 0 }}>
@@ -202,12 +237,8 @@ export default function UsuariosPage() {
                 <option value="admin">Admin</option>
               </select>
             </div>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={inviting}
-              style={{ padding: '10px 24px', opacity: inviting ? 0.7 : 1, alignSelf: 'flex-end' }}
-            >
+            <button type="submit" className="btn btn-primary" disabled={inviting}
+              style={{ padding: '10px 24px', opacity: inviting ? 0.7 : 1, alignSelf: 'flex-end' }}>
               {inviting ? 'Invitando…' : 'Invitar'}
             </button>
           </form>
@@ -217,7 +248,7 @@ export default function UsuariosPage() {
         </div>
 
         {/* User list */}
-        <div>
+        <div style={{ marginBottom: 48 }}>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, margin: '0 0 12px', letterSpacing: '-0.01em' }}>
             Usuarios registrados
           </h2>
@@ -233,8 +264,8 @@ export default function UsuariosPage() {
                   key={user.id}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '1fr auto auto auto auto',
-                    gap: 12,
+                    gridTemplateColumns: '1fr auto auto auto auto auto',
+                    gap: 10,
                     alignItems: 'center',
                     padding: '14px 18px',
                     borderBottom: i < users.length - 1 ? '1px solid var(--rule)' : 'none',
@@ -255,15 +286,11 @@ export default function UsuariosPage() {
                   {/* Role badge */}
                   <RoleBadge role={user.role} />
 
-                  {/* Change role select */}
+                  {/* Change role */}
                   <select
                     value={user.role ?? ''}
                     onChange={e => handleRoleChange(user, e.target.value)}
-                    style={{
-                      fontSize: 12, padding: '5px 8px',
-                      borderRadius: 'var(--r-md)', border: '1px solid var(--rule)',
-                      background: 'var(--bg)', color: 'var(--fg)', cursor: 'pointer',
-                    }}
+                    style={{ fontSize: 12, padding: '5px 8px', borderRadius: 'var(--r-md)', border: '1px solid var(--rule)', background: 'var(--bg)', color: 'var(--fg)', cursor: 'pointer' }}
                   >
                     <option value="" disabled>Cambiar rol</option>
                     <option value="viewer">Consulta</option>
@@ -288,6 +315,16 @@ export default function UsuariosPage() {
                     }} />
                   </div>
 
+                  {/* Reset password */}
+                  <button
+                    onClick={() => handleResetPassword(user)}
+                    className="btn"
+                    title="Enviar email de restablecimiento de contraseña"
+                    style={{ fontSize: 12, padding: '6px 12px', whiteSpace: 'nowrap' }}
+                  >
+                    Reset contraseña
+                  </button>
+
                   {/* Delete */}
                   <button
                     onClick={() => handleDelete(user)}
@@ -296,6 +333,86 @@ export default function UsuariosPage() {
                   >
                     Eliminar
                   </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Permissions matrix */}
+        <div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, margin: '0 0 6px', letterSpacing: '-0.01em' }}>
+            Permisos por rol
+          </h2>
+          <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '0 0 16px' }}>
+            Configurá qué puede hacer cada rol. Los cambios se aplican de inmediato.
+          </p>
+
+          {matrixLoading || !matrix ? (
+            <p style={{ color: 'var(--fg-soft)', fontFamily: 'var(--font-mono)', fontSize: 13 }}>Cargando…</p>
+          ) : (
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
+              {/* Header row */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr repeat(3, 110px)',
+                gap: 0,
+                background: 'var(--bg-alt)',
+                borderBottom: '1px solid var(--rule)',
+                padding: '10px 18px',
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Permiso
+                </div>
+                {ROLES.map(role => (
+                  <div key={role} style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>
+                    <RoleBadge role={role} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Permission rows */}
+              {perms.map((perm, pi) => (
+                <div
+                  key={perm}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr repeat(3, 110px)',
+                    gap: 0,
+                    padding: '13px 18px',
+                    borderBottom: pi < perms.length - 1 ? '1px solid var(--rule)' : 'none',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div style={{ fontSize: 13, color: 'var(--fg)' }}>
+                    {PERM_LABELS[perm]}
+                  </div>
+                  {ROLES.map(role => {
+                    const locked = role === 'admin' && ADMIN_LOCKED.includes(perm)
+                    const enabled = matrix[role]?.[perm] ?? false
+                    return (
+                      <div key={role} style={{ display: 'flex', justifyContent: 'center' }}>
+                        <div
+                          title={locked ? 'Siempre activo para admin' : enabled ? 'Clic para desactivar' : 'Clic para activar'}
+                          onClick={() => !locked && handlePermToggle(role, perm, !enabled)}
+                          style={{
+                            width: 36, height: 20, borderRadius: 10,
+                            background: enabled ? 'var(--accent)' : 'var(--rule)',
+                            position: 'relative',
+                            cursor: locked ? 'not-allowed' : 'pointer',
+                            transition: 'background 0.2s',
+                            opacity: locked ? 0.7 : 1,
+                          }}
+                        >
+                          <div style={{
+                            position: 'absolute', top: 2, left: enabled ? 17 : 2,
+                            width: 16, height: 16, borderRadius: '50%',
+                            background: '#fff', transition: 'left 0.2s',
+                          }} />
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               ))}
             </div>
