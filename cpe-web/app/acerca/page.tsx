@@ -55,7 +55,7 @@ export default function AcercaPage() {
                 <a href="#estrategia" className="active"><span className="lang-es">Estrategia</span><span className="lang-en">Strategy</span></a>
                 <a href="#management">Management</a>
                 <a href="#directorio"><span className="lang-es">Directorio CPE Inc.</span><span className="lang-en">CPE Inc. Board</span></a>
-                <a href="#esg"><span className="lang-es">Responsabilidad corporativa</span><span className="lang-en">Corporate responsibility</span></a>
+                <Link href="/esg"><span className="lang-es">ESG &amp; Responsabilidad corporativa</span><span className="lang-en">ESG &amp; Corporate responsibility</span></Link>
               </nav>
             </aside>
             <main>
@@ -125,29 +125,40 @@ export default function AcercaPage() {
                 </ul>
               </div>
 
-              <div className="section-block" id="esg">
+              <div className="section-block" id="esg" style={{ borderBottom: 0 }}>
                 <span className="eyebrow">ESG</span>
-                <h2 style={{ marginTop: 8 }}><span className="lang-es">Responsabilidad corporativa</span><span className="lang-en">Corporate responsibility</span></h2>
+                <h2 style={{ marginTop: 8 }}>
+                  <span className="lang-es">Responsabilidad corporativa</span>
+                  <span className="lang-en">Corporate responsibility</span>
+                </h2>
                 <p className="lede">
-                  <span className="lang-es">Operar de forma responsable es la condición para operar a largo plazo. Reportamos métricas ambientales, sociales y de gobierno con criterios SASB para upstream oil &amp; gas.</span>
-                  <span className="lang-en">Operating responsibly is the condition for operating long-term. We report environmental, social and governance metrics using SASB criteria for upstream oil &amp; gas.</span>
+                  <span className="lang-es">Operar de forma responsable es la condición para operar a largo plazo. Reportamos métricas ambientales, sociales y de gobierno bajo criterios SASB para upstream oil &amp; gas y las recomendaciones del TCFD.</span>
+                  <span className="lang-en">Operating responsibly is the condition for operating long-term. We report environmental, social and governance metrics using SASB upstream oil &amp; gas criteria and TCFD recommendations.</span>
                 </p>
-                <div className="kpi-grid" style={{ marginTop: 'var(--s-4)' }}>
+                <div style={{ display: 'flex', gap: 'var(--s-4)', flexWrap: 'wrap', marginTop: 'var(--s-6)', padding: 'var(--s-6)', background: 'var(--bg-alt)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)' }}>
                   {[
-                    { labelEs: 'Intensidad GEI', labelEn: 'GHG intensity', val: '21.4', unit: 'kgCO₂e/boe', badge: '−11% YoY' },
-                    { labelEs: 'Agua de procesos reciclada', labelEn: 'Process water recycled', val: '82', unit: '%', metaEs: 'Objetivo 2027: 90%', metaEn: '2027 target: 90%' },
-                    { labelEs: 'Incidentes registrables (TRIR)', labelEn: 'Recordable incidents (TRIR)', val: '0.78', metaEs: 'Industria: 1,1', metaEn: 'Industry: 1.1' },
-                    { labelEs: 'Empleo local directo', labelEn: 'Direct local hires', val: '88', unit: '%', metaEs: 'Sobre total contratado', metaEn: 'Of total hired' },
-                  ].map((k, i) => (
-                    <div className="kpi" key={i}>
-                      <span className="kpi-label"><span className="lang-es">{k.labelEs}</span><span className="lang-en">{k.labelEn}</span></span>
-                      <div><span className="kpi-value num">{k.val}</span>{k.unit && <span className="kpi-unit">{k.unit}</span>}</div>
-                      <span className="kpi-meta">
-                        {k.badge && <span className="badge">{k.badge}</span>}
-                        {k.metaEs && <><span className="lang-es">{k.metaEs}</span><span className="lang-en">{k.metaEn}</span></>}
-                      </span>
+                    { col: '#E2B23A', labelEs: 'Ambiental', labelEn: 'Environmental', metaEs: '−18% emisiones vs 2022', metaEn: '−18% emissions vs 2022' },
+                    { col: '#6CAE52', labelEs: 'Social',    labelEn: 'Social',         metaEs: 'TRIR 0.87 · 71% empleo local', metaEn: 'TRIR 0.87 · 71% local hires' },
+                    { col: '#2FA08A', labelEs: 'Gobernanza',labelEn: 'Governance',     metaEs: '4/5 directores independientes', metaEn: '4/5 independent directors' },
+                  ].map(p => (
+                    <div key={p.col} style={{ flex: '1 1 160px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 2, background: p.col, flexShrink: 0 }}></span>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
+                          <span className="lang-es">{p.labelEs}</span>
+                          <span className="lang-en">{p.labelEn}</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>
+                          <span className="lang-es">{p.metaEs}</span>
+                          <span className="lang-en">{p.metaEn}</span>
+                        </div>
+                      </div>
                     </div>
                   ))}
+                  <Link href="/esg" className="btn btn-secondary" style={{ alignSelf: 'center', flexShrink: 0 }}>
+                    <span className="lang-es">Ver reporte ESG completo</span>
+                    <span className="lang-en">Full ESG report</span>
+                  </Link>
                 </div>
               </div>
             </main>
