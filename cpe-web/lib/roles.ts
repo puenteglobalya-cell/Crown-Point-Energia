@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { isAdminEmail } from '@/lib/admin-auth'
 import type { User } from '@supabase/supabase-js'
 import {
   type Permission,
@@ -45,8 +46,7 @@ export async function getCurrentUserAndRole(): Promise<{
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { user: null, role: null, permissions: new Set() }
 
-  const adminEmails = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
-  if (user.email && adminEmails.includes(user.email)) {
+  if (isAdminEmail(user.email)) {
     const role: RoleRow = { role: 'admin', activo: true }
     const permissions = await getPermissionsForRole('admin')
     ADMIN_LOCKED.forEach(p => permissions.add(p))

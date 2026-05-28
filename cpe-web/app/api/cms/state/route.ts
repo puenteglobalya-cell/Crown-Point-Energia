@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { getCmsState, patchCmsState, CMSState } from '@/lib/cms'
-import { createSupabaseServerClient } from '@/lib/supabase'
-
-const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
+import { requireAdminUser } from '@/lib/admin-auth'
 
 export async function GET() {
   const state = await getCmsState()
@@ -11,10 +9,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user?.email || !CMS_ADMIN_EMAILS.includes(user.email)) {
+  const user = await requireAdminUser()
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

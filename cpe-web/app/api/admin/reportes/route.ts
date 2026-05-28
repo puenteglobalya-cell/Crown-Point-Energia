@@ -3,8 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity, getPermissionsForRole } from '@/lib/roles'
-
-const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
+import { isAdminEmail } from '@/lib/admin-auth'
 
 type UserWithRole = {
   id: string
@@ -23,12 +22,10 @@ async function getUserWithRole(): Promise<UserWithRole | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  // CMS_ADMIN_EMAILS → always admin
-  if (user.email && CMS_ADMIN_EMAILS.includes(user.email)) {
+  if (isAdminEmail(user.email)) {
     return { id: user.id, email: user.email, role: 'admin', activo: true }
   }
 
-  // Check user_roles table
   const db = createSupabaseServerAdminClient()
   const { data: roleRow } = await db.from('user_roles').select('role, activo').eq('user_id', user.id).single()
   if (!roleRow) return null

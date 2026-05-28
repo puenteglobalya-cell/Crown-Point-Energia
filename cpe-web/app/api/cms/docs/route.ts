@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
-import { createSupabaseServerClient, createSupabaseServerAdminClient } from '@/lib/supabase'
-
-const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
+import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { requireAdminUser } from '@/lib/admin-auth'
 
 async function getAdmin() {
-  const supabase = createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user?.email && CMS_ADMIN_EMAILS.includes(user.email) ? user : null
+  return requireAdminUser()
 }
 
 export async function GET() {

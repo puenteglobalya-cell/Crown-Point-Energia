@@ -1,34 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity } from '@/lib/roles'
-
-const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
-
-async function getAdminUser() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
-  )
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  // Check CMS_ADMIN_EMAILS first
-  if (user.email && CMS_ADMIN_EMAILS.includes(user.email)) return user
-
-  // Check user_roles table for admin role
-  const db = createSupabaseServerAdminClient()
-  const { data: roleRow } = await db.from('user_roles').select('role, activo').eq('user_id', user.id).single()
-  if (roleRow?.role === 'admin' && roleRow?.activo) return user
-
-  return null
-}
+import { requireAdminUser, isAdminEmail } from '@/lib/admin-auth'
 
 export async function GET() {
-  const adminUser = await getAdminUser()
+  const adminUser = await requireAdminUser()
   if (!adminUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -47,12 +23,12 @@ export async function GET() {
 
   const result = users.map(u => {
     const roleRow = roleMap.get(u.id)
-    const isAdminEmail = u.email && CMS_ADMIN_EMAILS.includes(u.email)
+    const isAdminEmailFlag = isAdminEmail(u.email)
     return {
       id: u.id,
       email: u.email ?? '',
-      role: isAdminEmail ? 'admin' : (roleRow?.role ?? null),
-      activo: isAdminEmail ? true : (roleRow?.activo ?? null),
+      role: isAdminEmailFlag ? 'admin' : (roleRow?.role ?? null),
+      activo: isAdminEmailFlag ? true : (roleRow?.activo ?? null),
       created_at: u.created_at,
       last_sign_in_at: u.last_sign_in_at ?? null,
     }
@@ -62,7 +38,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const adminUser = await getAdminUser()
+  const adminUser = await requireAdminUser()
   if (!adminUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
