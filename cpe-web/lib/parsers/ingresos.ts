@@ -149,6 +149,16 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
     throw new Error('El archivo no tiene el formato esperado. Verificá que sea un Revenue estimado.')
   }
 
+  // DEV: log Resumen sheet so we can see actual labels/layout
+  if (typeof window !== 'undefined') {
+    console.group('📊 Resumen sheet — primeras 30 filas')
+    resumen.slice(0, 30).forEach((row, i) => {
+      const cells = row.map((c: unknown, j: number) => `[${j}]=${JSON.stringify(c)}`).join('  ')
+      if (cells) console.log(`row[${i}]: ${cells}`)
+    })
+    console.groupEnd()
+  }
+
   const periodoRaw = encontrarPeriodo(wb, resumen)
   const periodo = periodoRaw || '2026-00'
   const mes = formatearMes(periodo)
