@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import InversoresDocsTabs from './InversoresDocsTabs'
 
 export const revalidate = 60
 
@@ -16,15 +17,6 @@ type Documento = {
   publico: boolean
 }
 
-function docExt(fileName: string) {
-  const ext = fileName.split('.').pop()?.toUpperCase() ?? 'PDF'
-  return ['XLS', 'XLSX'].includes(ext) ? 'XLS' : ext
-}
-
-function publicUrl(path: string) {
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/documents/${path}`
-}
-
 export default async function InversoresPage() {
   const [s, docsResult] = await Promise.all([
     getCmsState(),
@@ -36,7 +28,6 @@ export default async function InversoresPage() {
   ])
 
   const allDocs: Documento[] = docsResult.data ?? []
-  const docsByTipo = (tipo: string) => allDocs.filter(d => d.tipo === tipo)
 
   const f = s.fields
 
@@ -163,24 +154,7 @@ export default async function InversoresPage() {
                   <span className="lang-es">Reportes auditados según IFRS y compilados gerenciales trimestrales. Disponibles también en <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a> y en la <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a> (buscar &quot;Crown Point Energía S.A.&quot;).</span>
                   <span className="lang-en">IFRS-audited reports and quarterly management filings. Also available on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a> and the <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a> (search for &quot;Crown Point Energía S.A.&quot;).</span>
                 </p>
-                {docsByTipo('financiero').length > 0 ? (
-                  <ul className="doc-list">
-                    {docsByTipo('financiero').map(d => (
-                      <li className="doc-item" key={d.id}>
-                        <div className="doc-icon">{docExt(d.file_name)}</div>
-                        <div className="doc-title"><span className="lang-es">{d.titulo_es}</span><span className="lang-en">{d.titulo_en}</span></div>
-                        <div className="doc-meta">{d.periodo}</div>
-                        <a className="doc-action" href={publicUrl(d.storage_path)} target="_blank" rel="noreferrer">
-                          <span className="lang-es">Descargar</span><span className="lang-en">Download</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
-                    <span className="lang-es">Próximamente.</span><span className="lang-en">Coming soon.</span>
-                  </p>
-                )}
+                <InversoresDocsTabs docs={allDocs} tipo="financiero" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
               </div>
 
               <div className="section-block" id="cobertura">
@@ -208,48 +182,14 @@ export default async function InversoresPage() {
                 <span className="eyebrow"><span className="lang-es">Programa global</span><span className="lang-en">Global program</span></span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Obligaciones negociables</span><span className="lang-en">Notes program</span></h2>
                 <p className="lede"><span className="lang-es">Programa global de emisión por hasta USD 50 millones, autorizado por CNV. Clase IV emitida en marzo 2026.</span><span className="lang-en">Global issuance program of up to USD 50 million, authorized by the CNV. Class IV issued in March 2026.</span></p>
-                {docsByTipo('on').length > 0 ? (
-                  <ul className="doc-list">
-                    {docsByTipo('on').map(d => (
-                      <li className="doc-item" key={d.id}>
-                        <div className="doc-icon">{docExt(d.file_name)}</div>
-                        <div className="doc-title"><span className="lang-es">{d.titulo_es}</span><span className="lang-en">{d.titulo_en}</span></div>
-                        <div className="doc-meta">{d.periodo}</div>
-                        <a className="doc-action" href={publicUrl(d.storage_path)} target="_blank" rel="noreferrer">
-                          <span className="lang-es">Descargar</span><span className="lang-en">Download</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
-                    <span className="lang-es">Próximamente.</span><span className="lang-en">Coming soon.</span>
-                  </p>
-                )}
+                <InversoresDocsTabs docs={allDocs} tipo="on" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
               </div>
 
               <div className="section-block" id="gobierno">
                 <span className="eyebrow"><span className="lang-es">Compliance &amp; ESG</span><span className="lang-en">Compliance &amp; ESG</span></span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Gobierno corporativo</span><span className="lang-en">Corporate governance</span></h2>
                 <p className="lede"><span className="lang-es">Crown Point Energy Inc. cotiza en TSX Venture Exchange y reporta bajo las normas canadienses para emisores junior.</span><span className="lang-en">Crown Point Energy Inc. is listed on TSX Venture Exchange and reports under Canadian junior issuer standards.</span></p>
-                {docsByTipo('gobierno').length > 0 ? (
-                  <ul className="doc-list">
-                    {docsByTipo('gobierno').map(d => (
-                      <li className="doc-item" key={d.id}>
-                        <div className="doc-icon">{docExt(d.file_name)}</div>
-                        <div className="doc-title"><span className="lang-es">{d.titulo_es}</span><span className="lang-en">{d.titulo_en}</span></div>
-                        <div className="doc-meta">{d.periodo}</div>
-                        <a className="doc-action" href={publicUrl(d.storage_path)} target="_blank" rel="noreferrer">
-                          <span className="lang-es">Descargar</span><span className="lang-en">Download</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
-                    <span className="lang-es">Próximamente.</span><span className="lang-en">Coming soon.</span>
-                  </p>
-                )}
+                <InversoresDocsTabs docs={allDocs} tipo="gobierno" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
               </div>
             </main>
           </div>

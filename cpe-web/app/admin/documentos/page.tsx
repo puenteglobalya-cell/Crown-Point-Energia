@@ -37,6 +37,7 @@ export default function DocumentosPage() {
   const [uploading, setUploading] = useState(false)
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
+  const [search, setSearch] = useState('')
 
   // Form state
   const fileRef = useRef<HTMLInputElement>(null)
@@ -147,9 +148,14 @@ export default function DocumentosPage() {
     return `${supabaseUrl}/storage/v1/object/public/documents/${storagePath}`
   }
 
+  const q = search.toLowerCase()
+  const filteredDocs = q
+    ? docs.filter(d => d.titulo_es.toLowerCase().includes(q) || d.titulo_en.toLowerCase().includes(q) || d.periodo.toLowerCase().includes(q))
+    : docs
+
   const byTipo = TIPOS.map(t => ({
     ...t,
-    items: docs.filter(d => d.tipo === t.value),
+    items: filteredDocs.filter(d => d.tipo === t.value),
   })).filter(t => t.items.length > 0)
 
   return (
@@ -266,6 +272,20 @@ export default function DocumentosPage() {
             </button>
           </form>
         </div>
+
+        {/* Search */}
+        {docs.length > 0 && (
+          <div style={{ position: 'relative', marginBottom: 20 }}>
+            <input
+              type="search"
+              placeholder="Buscar documentos…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ width: '100%', padding: '10px 14px 10px 38px', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', background: 'var(--surface)', color: 'var(--fg)', fontFamily: 'inherit', fontSize: 14 }}
+            />
+            <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)' }} width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.2" stroke="currentColor" strokeWidth="1.6"/><path d="m18 18-4.5-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+          </div>
+        )}
 
         {/* Document list */}
         {loading ? (

@@ -60,6 +60,7 @@ export default function ComunicadosAdminPage() {
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
   const [yearFilter, setYearFilter] = useState<string>('all')
+  const [search, setSearch] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const fileRef = useRef<HTMLInputElement>(null)
@@ -186,7 +187,10 @@ export default function ComunicadosAdminPage() {
   }
 
   const years = Array.from(new Set(items.map(c => getYear(c.fecha)))).sort((a, b) => +b - +a)
-  const filtered = yearFilter === 'all' ? items : items.filter(c => getYear(c.fecha) === yearFilter)
+  const q = search.toLowerCase()
+  const filtered = items
+    .filter(c => yearFilter === 'all' || getYear(c.fecha) === yearFilter)
+    .filter(c => !q || c.titulo_es.toLowerCase().includes(q) || c.titulo_en.toLowerCase().includes(q))
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
@@ -303,6 +307,18 @@ export default function ComunicadosAdminPage() {
           <p style={{ color: 'var(--fg-muted)', fontSize: 14 }}>No hay comunicados todavía.</p>
         ) : (
           <div>
+            {/* Search */}
+            <div style={{ position: 'relative', marginBottom: 14 }}>
+              <input
+                type="search"
+                placeholder="Buscar comunicados…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ width: '100%', padding: '10px 14px 10px 38px', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', background: 'var(--surface)', color: 'var(--fg)', fontFamily: 'inherit', fontSize: 14 }}
+              />
+              <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)' }} width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.2" stroke="currentColor" strokeWidth="1.6"/><path d="m18 18-4.5-4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+            </div>
+
             <div style={{ display: 'flex', gap: 4, marginBottom: 20, flexWrap: 'wrap' }}>
               {['all', ...years].map(y => (
                 <button

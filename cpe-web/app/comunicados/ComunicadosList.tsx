@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 
 type Comunicado = {
@@ -114,8 +115,10 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
                               <span className="lang-en">{catLabel.en}</span>
                             </span>
                             <h3>
-                              <span className="lang-es">{item.titulo_es}</span>
-                              <span className="lang-en">{item.titulo_en}</span>
+                              <Link href={`/comunicados/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                                <span className="lang-es">{item.titulo_es}</span>
+                                <span className="lang-en">{item.titulo_en}</span>
+                              </Link>
                             </h3>
                             {(item.resumen_es || item.resumen_en) && (
                               <p>
@@ -129,9 +132,9 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
                               <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11h12M12 5l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
                             </a>
                           ) : (
-                            <span className="press-arrow" style={{ opacity: 0.2 }}>
+                            <Link className="press-arrow" href={`/comunicados/${item.id}`} aria-label="Leer">
                               <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11h12M12 5l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            </span>
+                            </Link>
                           )}
                         </li>
                       )

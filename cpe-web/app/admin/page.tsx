@@ -164,6 +164,9 @@ export default function AdminPage() {
             <Link href="/admin/comunicados" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Comunicados
             </Link>
+            <Link href="/admin/reportes" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
+              Reportes
+            </Link>
             <button onClick={handleSignOut} className="btn" style={{ fontSize: 13, padding: '8px 16px' }}>
               Cerrar sesión
             </button>
