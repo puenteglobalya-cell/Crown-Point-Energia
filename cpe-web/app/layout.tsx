@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { getCmsState } from '@/lib/cms'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -23,6 +23,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const langCookie = cookieStore.get('cpe_lang')?.value
   const lang = (langCookie === 'en' || langCookie === 'es') ? langCookie : state.lang
 
+  // Hide site chrome (Header/Footer/CookieBanner) for portal and admin routes
+  const headersList = headers()
+  const pathname = headersList.get('x-pathname') ?? ''
+  const showSiteChrome = !pathname.startsWith('/portal') && !pathname.startsWith('/admin')
+
   return (
     <html
       lang={lang}
@@ -31,13 +36,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       data-lang={lang}
     >
       <body>
-        <Header fields={state.fields} show={state.show} lang={lang} />
+        {showSiteChrome && <Header fields={state.fields} show={state.show} lang={lang} />}
         <main>{children}</main>
-        <Footer />
+        {showSiteChrome && <Footer />}
         {/* Exposes window.CPE for the admin panel and any inline scripts */}
         <CpeAdapter state={{ ...state, lang }} />
         <RevealObserver />
-        <CookieBanner />
+        {showSiteChrome && <CookieBanner />}
       </body>
     </html>
   )

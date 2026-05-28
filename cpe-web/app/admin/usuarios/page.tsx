@@ -1,0 +1,308 @@
+'use client'
+
+import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
+
+type UserWithRole = {
+  id: string
+  email: string
+  role: string | null
+  activo: boolean | null
+  created_at: string
+  last_sign_in_at: string | null
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  viewer: 'Consulta',
+  uploader: 'Carga',
+  admin: 'Admin',
+}
+
+function fmtDate(iso: string | null) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function RoleBadge({ role }: { role: string | null }) {
+  if (!role) return <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>Sin rol</span>
+  return (
+    <span style={{
+      fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+      padding: '3px 8px', borderRadius: 'var(--r-pill)',
+      background: role === 'admin'
+        ? 'rgba(108,174,82,0.15)'
+        : role === 'uploader'
+        ? 'color-mix(in oklab, var(--accent) 12%, var(--surface))'
+        : 'var(--bg-alt)',
+      color: role === 'admin'
+        ? 'var(--cp-green-deep)'
+        : role === 'uploader'
+        ? 'var(--accent)'
+        : 'var(--fg-muted)',
+      border: '1px solid',
+      borderColor: role === 'admin'
+        ? 'rgba(108,174,82,0.3)'
+        : role === 'uploader'
+        ? 'color-mix(in oklab, var(--accent) 30%, transparent)'
+        : 'var(--rule)',
+    }}>
+      {ROLE_LABELS[role] ?? role}
+    </span>
+  )
+}
+
+export default function UsuariosPage() {
+  const [users, setUsers] = useState<UserWithRole[]>([])
+  const [loading, setLoading] = useState(true)
+  const [flash, setFlash] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
+
+  // Invite form
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<'viewer' | 'uploader' | 'admin'>('viewer')
+  const [inviting, setInviting] = useState(false)
+
+  function showFlash(msg: string, type: 'ok' | 'err' = 'ok') {
+    setFlash({ msg, type })
+    setTimeout(() => setFlash(null), 4000)
+  }
+
+  const loadUsers = useCallback(async () => {
+    setLoading(true)
+    const res = await fetch('/api/admin/usuarios')
+    if (res.ok) {
+      setUsers(await res.json())
+    } else {
+      showFlash('Error al cargar usuarios', 'err')
+    }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { loadUsers() }, [loadUsers])
+
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault()
+    setInviting(true)
+    const res = await fetch('/api/admin/usuarios', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+    })
+    if (res.ok) {
+      showFlash(`Invitación enviada a ${inviteEmail}`)
+      setInviteEmail('')
+      setInviteRole('viewer')
+      await loadUsers()
+    } else {
+      const { error } = await res.json().catch(() => ({ error: 'Error desconocido' }))
+      showFlash(error ?? 'Error al invitar', 'err')
+    }
+    setInviting(false)
+  }
+
+  async function handleRoleChange(user: UserWithRole, newRole: string) {
+    const res = await fetch(`/api/admin/usuarios/${user.id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ role: newRole }),
+    })
+    if (res.ok) {
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, role: newRole } : u))
+      showFlash(`Rol de ${user.email} actualizado`)
+    } else {
+      showFlash('Error al cambiar rol', 'err')
+    }
+  }
+
+  async function handleToggleActivo(user: UserWithRole) {
+    const newActivo = !user.activo
+    const res = await fetch(`/api/admin/usuarios/${user.id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ activo: newActivo }),
+    })
+    if (res.ok) {
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, activo: newActivo } : u))
+      showFlash(`Usuario ${newActivo ? 'activado' : 'desactivado'}`)
+    } else {
+      showFlash('Error al cambiar estado', 'err')
+    }
+  }
+
+  async function handleDelete(user: UserWithRole) {
+    if (!confirm(`¿Eliminar permanentemente al usuario "${user.email}"? Esta acción no se puede deshacer.`)) return
+    const res = await fetch(`/api/admin/usuarios/${user.id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setUsers(prev => prev.filter(u => u.id !== user.id))
+      showFlash(`Usuario ${user.email} eliminado`)
+    } else {
+      showFlash('Error al eliminar usuario', 'err')
+    }
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
+      <div style={{ maxWidth: 860, margin: '0 auto' }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: 32 }}>
+          <Link href="/admin" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>
+            ← Panel CMS
+          </Link>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: '8px 0 4px' }}>
+            Gestión de usuarios
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: 0 }}>
+            Invitá usuarios y gestioná sus roles de acceso al portal.
+          </p>
+        </div>
+
+        {/* Flash message */}
+        {flash && (
+          <div style={{
+            fontSize: 13,
+            padding: '12px 16px',
+            borderRadius: 'var(--r-md)',
+            marginBottom: 20,
+            background: flash.type === 'ok' ? 'rgba(108,174,82,0.1)' : 'rgba(179,59,46,0.08)',
+            color: flash.type === 'ok' ? 'var(--cp-green-deep)' : 'var(--cp-negative)',
+          }}>
+            {flash.msg}
+          </div>
+        )}
+
+        {/* Invite form */}
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--rule)',
+          borderRadius: 'var(--r-lg)', padding: '28px', marginBottom: 36,
+        }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.01em' }}>
+            Invitar usuario
+          </h2>
+          <form onSubmit={handleInvite} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div className="form-row" style={{ flex: 2, minWidth: 220, margin: 0 }}>
+              <label>Email corporativo</label>
+              <input
+                type="email"
+                required
+                value={inviteEmail}
+                onChange={e => setInviteEmail(e.target.value)}
+                placeholder="usuario@empresa.com"
+                autoComplete="off"
+              />
+            </div>
+            <div className="form-row" style={{ flex: 1, minWidth: 140, margin: 0 }}>
+              <label>Rol</label>
+              <select
+                value={inviteRole}
+                onChange={e => setInviteRole(e.target.value as 'viewer' | 'uploader' | 'admin')}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 'var(--r-md)', border: '1px solid var(--rule)', background: 'var(--bg)', color: 'var(--fg)', fontSize: 14 }}
+              >
+                <option value="viewer">Consulta (viewer)</option>
+                <option value="uploader">Carga (uploader)</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={inviting}
+              style={{ padding: '10px 24px', opacity: inviting ? 0.7 : 1, alignSelf: 'flex-end' }}
+            >
+              {inviting ? 'Invitando…' : 'Invitar'}
+            </button>
+          </form>
+          <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '12px 0 0' }}>
+            El usuario recibirá un email para establecer su contraseña y acceder al portal.
+          </p>
+        </div>
+
+        {/* User list */}
+        <div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, margin: '0 0 12px', letterSpacing: '-0.01em' }}>
+            Usuarios registrados
+          </h2>
+
+          {loading ? (
+            <p style={{ color: 'var(--fg-soft)', fontFamily: 'var(--font-mono)', fontSize: 13 }}>Cargando…</p>
+          ) : users.length === 0 ? (
+            <p style={{ color: 'var(--fg-muted)', fontSize: 14 }}>No hay usuarios todavía.</p>
+          ) : (
+            <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--surface)' }}>
+              {users.map((user, i) => (
+                <div
+                  key={user.id}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto auto auto auto',
+                    gap: 12,
+                    alignItems: 'center',
+                    padding: '14px 18px',
+                    borderBottom: i < users.length - 1 ? '1px solid var(--rule)' : 'none',
+                    opacity: user.activo === false ? 0.6 : 1,
+                  }}
+                >
+                  {/* User info */}
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}>
+                      {user.email}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>
+                      Creado: {fmtDate(user.created_at)}
+                      {user.last_sign_in_at ? ` · Último acceso: ${fmtDate(user.last_sign_in_at)}` : ''}
+                    </div>
+                  </div>
+
+                  {/* Role badge */}
+                  <RoleBadge role={user.role} />
+
+                  {/* Change role select */}
+                  <select
+                    value={user.role ?? ''}
+                    onChange={e => handleRoleChange(user, e.target.value)}
+                    style={{
+                      fontSize: 12, padding: '5px 8px',
+                      borderRadius: 'var(--r-md)', border: '1px solid var(--rule)',
+                      background: 'var(--bg)', color: 'var(--fg)', cursor: 'pointer',
+                    }}
+                  >
+                    <option value="" disabled>Cambiar rol</option>
+                    <option value="viewer">Consulta</option>
+                    <option value="uploader">Carga</option>
+                    <option value="admin">Admin</option>
+                  </select>
+
+                  {/* Activo toggle */}
+                  <div
+                    title={user.activo ? 'Clic para desactivar' : 'Clic para activar'}
+                    style={{
+                      width: 36, height: 20, borderRadius: 10,
+                      background: user.activo ? 'var(--accent)' : 'var(--rule)',
+                      position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0,
+                    }}
+                    onClick={() => handleToggleActivo(user)}
+                  >
+                    <div style={{
+                      position: 'absolute', top: 2, left: user.activo ? 17 : 2,
+                      width: 16, height: 16, borderRadius: '50%',
+                      background: '#fff', transition: 'left 0.2s',
+                    }} />
+                  </div>
+
+                  {/* Delete */}
+                  <button
+                    onClick={() => handleDelete(user)}
+                    className="btn"
+                    style={{ fontSize: 12, padding: '6px 12px', color: 'var(--cp-negative)' }}
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+      </div>
+    </div>
+  )
+}
