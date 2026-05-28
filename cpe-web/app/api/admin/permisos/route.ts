@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { PERMISSION_LABELS, ADMIN_LOCKED, type Permission, type UserRole } from '@/lib/roles'
+import { PERMISSIONS, PERMISSION_KEYS, ADMIN_LOCKED, type Permission } from '@/lib/permissions-config'
+import type { UserRole } from '@/lib/roles'
 
 const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
 
@@ -22,7 +23,6 @@ async function getAdminUser() {
 }
 
 const ROLES: UserRole[] = ['viewer', 'uploader', 'admin']
-const PERMISSIONS = Object.keys(PERMISSION_LABELS) as Permission[]
 
 // GET — returns full permissions matrix
 export async function GET() {
@@ -37,7 +37,7 @@ export async function GET() {
   const matrix: Record<string, Record<string, boolean>> = {}
   for (const role of ROLES) {
     matrix[role] = {}
-    for (const perm of PERMISSIONS) {
+    for (const perm of PERMISSION_KEYS) {
       matrix[role][perm] = false
     }
   }
@@ -60,7 +60,7 @@ export async function PUT(req: NextRequest) {
   const { role, permission, enabled } = await req.json()
 
   if (!ROLES.includes(role)) return NextResponse.json({ error: 'Rol inválido' }, { status: 400 })
-  if (!PERMISSIONS.includes(permission)) return NextResponse.json({ error: 'Permiso inválido' }, { status: 400 })
+  if (!PERMISSION_KEYS.includes(permission as Permission)) return NextResponse.json({ error: 'Permiso inválido' }, { status: 400 })
 
   // Prevent disabling locked admin permissions
   if (role === 'admin' && ADMIN_LOCKED.includes(permission as Permission) && !enabled) {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { PERMISSIONS, PERMISSION_KEYS, ADMIN_LOCKED } from '@/lib/permissions-config'
 
 type UserWithRole = {
   id: string
@@ -20,15 +21,6 @@ const ROLE_LABELS: Record<string, string> = {
   uploader: 'Carga',
   admin:    'Admin',
 }
-
-const PERM_LABELS: Record<string, string> = {
-  view_drafts:     'Ver borradores',
-  upload_reports:  'Subir reportes',
-  publish_reports: 'Publicar reportes',
-  manage_users:    'Gestionar usuarios',
-  manage_cms:      'Panel CMS',
-}
-const ADMIN_LOCKED = ['manage_users', 'manage_cms']
 
 function fmtDate(iso: string | null) {
   if (!iso) return '—'
@@ -178,7 +170,7 @@ export default function UsuariosPage() {
     }
   }
 
-  const perms = Object.keys(PERM_LABELS)
+  const perms = PERMISSION_KEYS
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
@@ -385,7 +377,7 @@ export default function UsuariosPage() {
                   }}
                 >
                   <div style={{ fontSize: 13, color: 'var(--fg)' }}>
-                    {PERM_LABELS[perm]}
+                    {PERMISSIONS[perm as keyof typeof PERMISSIONS]}
                   </div>
                   {ROLES.map(role => {
                     const locked = role === 'admin' && ADMIN_LOCKED.includes(perm)

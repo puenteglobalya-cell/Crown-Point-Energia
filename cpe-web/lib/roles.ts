@@ -2,34 +2,18 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
+import {
+  type Permission,
+  ADMIN_LOCKED,
+  DEFAULT_PERMISSIONS,
+} from '@/lib/permissions-config'
 
+export type { Permission }
 export type UserRole = 'viewer' | 'uploader' | 'admin'
 export type RoleRow = { role: UserRole; activo: boolean }
 
-export type Permission =
-  | 'view_drafts'
-  | 'upload_reports'
-  | 'publish_reports'
-  | 'manage_users'
-  | 'manage_cms'
-
-export const PERMISSION_LABELS: Record<Permission, string> = {
-  view_drafts:     'Ver reportes borrador',
-  upload_reports:  'Subir reportes',
-  publish_reports: 'Publicar / despublicar reportes',
-  manage_users:    'Gestionar usuarios',
-  manage_cms:      'Panel CMS / Admin',
-}
-
-// Permissions that are always locked for admin (structural — can't lock yourself out)
-export const ADMIN_LOCKED: Permission[] = ['manage_users', 'manage_cms']
-
-// Fallback defaults when role_permissions table has no data
-const DEFAULT_PERMISSIONS: Record<UserRole, Permission[]> = {
-  viewer:   [],
-  uploader: ['view_drafts', 'upload_reports'],
-  admin:    ['view_drafts', 'upload_reports', 'publish_reports', 'manage_users', 'manage_cms'],
-}
+export { ADMIN_LOCKED }
+export { PERMISSIONS, PERMISSION_KEYS } from '@/lib/permissions-config'
 
 export async function getPermissionsForRole(role: UserRole): Promise<Set<Permission>> {
   try {
@@ -38,16 +22,15 @@ export async function getPermissionsForRole(role: UserRole): Promise<Set<Permiss
       .from('role_permissions')
       .select('permission, enabled')
       .eq('role', role)
-    if (!data || data.length === 0) return new Set(DEFAULT_PERMISSIONS[role])
+    if (!data || data.length === 0) return new Set(DEFAULT_PERMISSIONS[role] ?? [])
     return new Set(
       data.filter(r => r.enabled).map(r => r.permission as Permission)
     )
   } catch {
-    return new Set(DEFAULT_PERMISSIONS[role])
+    return new Set(DEFAULT_PERMISSIONS[role] ?? [])
   }
 }
 
-// Returns user + role (checks CMS_ADMIN_EMAILS first for backward compat)
 export async function getCurrentUserAndRole(): Promise<{
   user: User | null
   role: RoleRow | null
@@ -66,7 +49,6 @@ export async function getCurrentUserAndRole(): Promise<{
   if (user.email && adminEmails.includes(user.email)) {
     const role: RoleRow = { role: 'admin', activo: true }
     const permissions = await getPermissionsForRole('admin')
-    // Admin email always gets manage_users + manage_cms regardless of DB
     ADMIN_LOCKED.forEach(p => permissions.add(p))
     return { user, role, permissions }
   }
@@ -90,7 +72,6 @@ export async function getCurrentUserAndRole(): Promise<{
 export function canUpload(permissions: Set<Permission> | UserRole | null | undefined): boolean {
   if (!permissions) return false
   if (permissions instanceof Set) return permissions.has('upload_reports')
-  // Legacy: role string fallback
   return permissions === 'uploader' || permissions === 'admin'
 }
 
@@ -108,7 +89,6 @@ export function canManageCms(permissions: Set<Permission>): boolean {
   return permissions.has('manage_cms')
 }
 
-// Log an action to activity_log
 export async function logActivity(opts: {
   userId: string | null
   userEmail: string | null

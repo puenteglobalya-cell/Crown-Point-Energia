@@ -68,8 +68,11 @@ export async function POST(req: NextRequest) {
   const userWithRole = await getUserWithRole()
 
   // Only roles with upload_reports permission can create reports
+  if (!userWithRole?.activo) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   const uploadPerms = await getPermissionsForRole(userWithRole.role!)
-  if (!userWithRole?.activo || !uploadPerms.has('upload_reports')) {
+  if (!uploadPerms.has('upload_reports')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
