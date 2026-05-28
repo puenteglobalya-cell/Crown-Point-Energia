@@ -6,7 +6,13 @@ type CookieEntry = { name: string; value: string; options?: CookieOptions }
 const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+  const { pathname } = request.nextUrl
+
+  // Propagate pathname so layout.tsx can conditionally render Header/Footer
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-pathname', pathname)
+
+  let supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,7 +22,7 @@ export async function middleware(request: NextRequest) {
         getAll() { return request.cookies.getAll() },
         setAll(toSet: CookieEntry[]) {
           toSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
+          supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } })
           toSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -26,26 +32,66 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  const { pathname } = request.nextUrl
 
-  // /admin requires authenticated admin
+  // ── Portal auth ──────────────────────────────────────────────────────────
+  if (pathname.startsWith('/portal') && !pathname.startsWith('/portal/login')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/portal/login', request.url))
+    }
+    // Check role: CMS_ADMIN_EMAILS are always allowed; others need an active role row
+    const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
+    if (!isAdminEmail) {
+      const { data: roleRow } = await supabase.from('user_roles').select('role, activo').eq('user_id', user.id).single()
+      if (!roleRow?.activo) {
+        return NextResponse.redirect(new URL('/portal/login', request.url))
+      }
+    }
+  }
+
+  // Logged-in user on /portal/login → redirect to /portal
+  if (pathname === '/portal/login' && user) {
+    const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
+    if (isAdminEmail) return NextResponse.redirect(new URL('/portal', request.url))
+    const { data: roleRow } = await supabase.from('user_roles').select('activo').eq('user_id', user.id).single()
+    if (roleRow?.activo) return NextResponse.redirect(new URL('/portal', request.url))
+  }
+
+  // ── Admin auth ───────────────────────────────────────────────────────────
   if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
-    if (!user?.email || !CMS_ADMIN_EMAILS.includes(user.email)) {
-      return NextResponse.redirect(new URL('/admin/login', request.url))
+    const isAdminEmail = user?.email && CMS_ADMIN_EMAILS.includes(user.email)
+    if (!isAdminEmail) {
+      // Also accept users with admin role in user_roles table
+      let hasAdminRole = false
+      if (user) {
+        const { data: roleRow } = await supabase.from('user_roles').select('role, activo').eq('user_id', user.id).single()
+        hasAdminRole = roleRow?.role === 'admin' && roleRow?.activo === true
+      }
+      if (!hasAdminRole) {
+        return NextResponse.redirect(new URL('/admin/login', request.url))
+      }
     }
   }
 
   // Logged-in admin on /admin/login → redirect to /admin
-  if (pathname === '/admin/login' && user?.email && CMS_ADMIN_EMAILS.includes(user.email)) {
-    return NextResponse.redirect(new URL('/admin', request.url))
+  if (pathname === '/admin/login' && user) {
+    const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
+    if (isAdminEmail) {
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
+    // Also check user_roles
+    const { data: roleRow } = await supabase.from('user_roles').select('role, activo').eq('user_id', user.id).single()
+    if (roleRow?.role === 'admin' && roleRow?.activo) {
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
   }
 
-  // Maintenance mode: redirect all public routes
+  // ── Maintenance mode ─────────────────────────────────────────────────────
   const isAdminRoute = pathname.startsWith('/admin')
+  const isPortalRoute = pathname.startsWith('/portal')
   const isApiRoute = pathname.startsWith('/api')
   const isMaintenancePage = pathname === '/maintenance'
 
-  if (!isAdminRoute && !isApiRoute && !isMaintenancePage) {
+  if (!isAdminRoute && !isPortalRoute && !isApiRoute && !isMaintenancePage) {
     try {
       const timeout = new Promise<null>(r => setTimeout(() => r(null), 2000))
       const result = await Promise.race([

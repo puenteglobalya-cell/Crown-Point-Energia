@@ -2,10 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { logActivity } from '@/lib/roles'
 
 const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
 
-async function getUser() {
+type UserWithRole = {
+  id: string
+  email: string | undefined
+  role: 'viewer' | 'uploader' | 'admin' | null
+  activo: boolean
+}
+
+async function getUserWithRole(): Promise<UserWithRole | null> {
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,16 +21,43 @@ async function getUser() {
     { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
   )
   const { data: { user } } = await supabase.auth.getUser()
-  return user
+  if (!user) return null
+
+  // CMS_ADMIN_EMAILS → always admin
+  if (user.email && CMS_ADMIN_EMAILS.includes(user.email)) {
+    return { id: user.id, email: user.email, role: 'admin', activo: true }
+  }
+
+  // Check user_roles table
+  const db = createSupabaseServerAdminClient()
+  const { data: roleRow } = await db.from('user_roles').select('role, activo').eq('user_id', user.id).single()
+  if (!roleRow) return null
+
+  return {
+    id: user.id,
+    email: user.email,
+    role: roleRow.role as 'viewer' | 'uploader' | 'admin',
+    activo: roleRow.activo,
+  }
 }
 
 export async function GET() {
-  const user = await getUser()
-  const isAdmin = user?.email && CMS_ADMIN_EMAILS.includes(user.email)
-  const db = createSupabaseServerAdminClient()
+  const userWithRole = await getUserWithRole()
 
-  const q = db.from('reportes').select('id, titulo, periodo, estado, file_name, file_size, created_at').order('created_at', { ascending: false })
-  if (!isAdmin) q.eq('estado', 'publicado')
+  // Any active internal role can view reports
+  if (!userWithRole?.activo) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const db = createSupabaseServerAdminClient()
+  let q = db.from('reportes')
+    .select('id, titulo, periodo, estado, file_name, file_size, created_at')
+    .order('created_at', { ascending: false })
+
+  // Viewers only see published reports
+  if (userWithRole.role === 'viewer') {
+    q = q.eq('estado', 'publicado')
+  }
 
   const { data, error } = await q
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -30,8 +65,10 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const user = await getUser()
-  if (!user?.email || !CMS_ADMIN_EMAILS.includes(user.email)) {
+  const userWithRole = await getUserWithRole()
+
+  // Only uploader and admin can create reports
+  if (!userWithRole?.activo || (userWithRole.role !== 'uploader' && userWithRole.role !== 'admin')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -52,9 +89,19 @@ export async function POST(req: NextRequest) {
     storage_path: storage_path ?? null,
     file_name: file_name ?? null,
     file_size: file_size ?? null,
-    subido_por: user.email,
+    subido_por: userWithRole.email ?? null,
   }).select('id').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logActivity({
+    userId: userWithRole.id,
+    userEmail: userWithRole.email ?? null,
+    action: 'upload_report',
+    resourceType: 'reporte',
+    resourceId: data.id,
+    metadata: { titulo, periodo, estado: estado ?? 'borrador' },
+  })
+
   return NextResponse.json(data, { status: 201 })
 }
