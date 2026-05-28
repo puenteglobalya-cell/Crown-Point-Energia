@@ -226,6 +226,29 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   const vol_producido_final = vol_prod   > 0 ? vol_prod   : volProdDerived
   const vol_vendido_final   = vol_venta  > 0 ? vol_venta  : volVentaDerived
 
+  // Gas area prices — derive from ingreso ÷ volume when direct read is 0
+  const gasETProdRaw   = gasProd?.[6] ?? prodNeta?.[6] ?? 0
+  const gasRCLVProdRaw = gasProd?.[7] ?? prodNeta?.[7] ?? 0
+  const gasETIngreso   = totalUs?.[6] ?? 0
+  const gasRCLVIngreso = totalUs?.[7] ?? 0
+
+  const rawETPrec   = gasPrec?.[6] ?? precioN?.[6] ?? 0
+  const rawRCLVPrec = gasPrec?.[7] ?? precioN?.[7] ?? 0
+
+  const gasETPrec_final = rawETPrec > 0
+    ? rawETPrec
+    : (gasETProdRaw > 0 && dias > 0 ? gasETIngreso / (gasETProdRaw * dias) : 0)
+  const gasRCLVPrec_final = rawRCLVPrec > 0
+    ? rawRCLVPrec
+    : (gasRCLVProdRaw > 0 && dias > 0 ? gasRCLVIngreso / (gasRCLVProdRaw * dias) : 0)
+
+  // Ingreso-weighted average for the header KPI
+  const gasIngTotal = gasETIngreso + gasRCLVIngreso
+  const precioGasDerived = gasIngTotal > 0
+    ? (gasETIngreso * gasETPrec_final + gasRCLVIngreso * gasRCLVPrec_final) / gasIngTotal
+    : (gasETPrec_final + gasRCLVPrec_final) / 2
+  const precio_gas_final = precio_gas > 0 ? precio_gas : precioGasDerived
+
   const oil_pct_prod = oilPct  * 100
   const gas_pct_prod = gasPct  * 100
   const oil_pct_vend = oilPctVend * 100
@@ -240,7 +263,7 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
     vol_producido_boed: vol_producido_final,
     vol_vendido_boed:   vol_vendido_final,
     precio_neto_oil:    precio_oil,
-    precio_neto_gas:    precio_gas,
+    precio_neto_gas:    precio_gas_final,
     brent_prom:         brent_ref,
     medanito_prom:      medanito,
     oil_pct_prod,
@@ -298,15 +321,15 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
 
     gas: {
       ET: {
-        prod_mcfd:   gasProd?.[6]  ?? prodNeta?.[6]  ?? 0,
-        vol_mes_mcf: (gasProd?.[6] ?? prodNeta?.[6]  ?? 0) * dias,
-        precio_mcf:  gasPrec?.[6]  ?? precioN?.[6]   ?? 0,
-        ingreso:     totalUs?.[6]  ?? 0,
+        prod_mcfd:   gasETProdRaw,
+        vol_mes_mcf: gasETProdRaw * dias,
+        precio_mcf:  gasETPrec_final,
+        ingreso:     gasETIngreso,
       },
       RCLV: {
-        prod_mcfd:   gasProd?.[7]  ?? prodNeta?.[7]  ?? 0,
-        vol_mes_mcf: (gasProd?.[7] ?? prodNeta?.[7]  ?? 0) * dias,
-        precio_mcf:  gasPrec?.[7]  ?? precioN?.[7]   ?? 0,
+        prod_mcfd:   gasRCLVProdRaw,
+        vol_mes_mcf: gasRCLVProdRaw * dias,
+        precio_mcf:  gasRCLVPrec_final,
         ingreso:     totalUs?.[7]  ?? 0,
       },
     },

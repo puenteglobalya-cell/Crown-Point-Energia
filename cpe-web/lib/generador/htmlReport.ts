@@ -62,23 +62,23 @@ export function generarReporteHTML(datos: DatosIngresos): string {
 <title>Ingresos Estimados — ${datos.mes}</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  --bg:#F7F5F0; --bg2:#EEEAE1; --card:#FFFFFF; --card2:#FAFAF7;
-  --border:#E0DBD0; --shadow:rgba(40,30,10,.07); --shadow2:rgba(40,30,10,.13);
-  --naranja:#B5611A; --azul:#1B5FA6; --verde:#1A7A48;
-  --violeta:#6B3AA8; --warm:#C09020; --rojo:#B83030;
-  --text:#1A1714; --muted:#776B58; --muted2:#A89B85;
+  --bg:#F4F6FB; --bg2:#E6EAF5; --card:#FFFFFF; --card2:#FAFBFE;
+  --border:#DCDAE6; --shadow:rgba(31,37,102,.06); --shadow2:rgba(31,37,102,.12);
+  --naranja:#1F2566; --azul:#6CAE52; --verde:#C9A24A;
+  --violeta:#4F5478; --warm:#8BC87A; --rojo:#B33B2E;
+  --text:#14172E; --muted:#4F5478; --muted2:#8488A8;
   --r:14px;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
 body::before{
   content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:
-    radial-gradient(ellipse 55% 45% at 5% 5%, rgba(181,97,26,.07) 0%,transparent 60%),
-    radial-gradient(ellipse 45% 55% at 95% 95%,rgba(27,95,166,.06) 0%,transparent 60%);
+    radial-gradient(ellipse 55% 45% at 5% 5%, rgba(31,37,102,.05) 0%,transparent 60%),
+    radial-gradient(ellipse 45% 55% at 95% 95%,rgba(108,174,82,.04) 0%,transparent 60%);
 }
 .wrap{max-width:1400px;margin:0 auto;padding:0 36px 72px;position:relative;z-index:1;}
 
@@ -88,7 +88,7 @@ header{
   padding:48px 0 30px;border-bottom:2px solid var(--border);margin-bottom:38px;
 }
 .h-left h1{
-  font-family:'Lora',serif;font-size:46px;font-weight:600;line-height:1.08;
+  font-family:'Playfair Display',serif;font-size:46px;font-weight:600;line-height:1.08;
   letter-spacing:-.5px;color:var(--text);
 }
 .h-left h1 em{font-style:italic;color:var(--naranja);}
@@ -388,10 +388,10 @@ ${hasPriceHistory ? `
 
 <script>
 const C = {
-  naranja:'#B5611A', azul:'#1B5FA6', verde:'#1A7A48',
-  violeta:'#6B3AA8', warm:'#C09020', rojo:'#B83030',
-  muted:'#776B58', muted2:'#A89B85', border:'#E0DBD0',
-  bg2:'#EEEAE1', card:'#FFFFFF'
+  naranja:'#1F2566', azul:'#6CAE52', verde:'#C9A24A',
+  violeta:'#4F5478', warm:'#8BC87A', rojo:'#B33B2E',
+  muted:'#4F5478', muted2:'#8488A8', border:'#DCDAE6',
+  bg2:'#E6EAF5', card:'#FFFFFF'
 };
 const tip = {
   backgroundColor:C.card, borderColor:C.border, borderWidth:1,
@@ -399,7 +399,7 @@ const tip = {
 };
 Chart.defaults.color = C.muted;
 Chart.defaults.borderColor = C.border;
-Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.font.family = "'Inter', sans-serif";
 
 // ── BARRAS POR ÁREA ──────────────────────────────────────────
 new Chart(document.getElementById('cBarras'),{
@@ -463,9 +463,9 @@ new Chart(document.getElementById('cDonut'),{
       const {ctx,chartArea:{left,top,right,bottom}}=chart;
       const cx=(left+right)/2, cy=(top+bottom)/2-18;
       ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillStyle=C.muted; ctx.font='10px DM Sans'; ctx.fillText('VENTAS TOTALES',cx,cy-13);
-      ctx.fillStyle='#1A1714'; ctx.font='bold 16px JetBrains Mono'; ctx.fillText('${totalMMStr}',cx,cy+4);
-      ctx.fillStyle=C.muted; ctx.font='9.5px DM Sans'; ctx.fillText('sin stock',cx,cy+20);
+      ctx.fillStyle=C.muted; ctx.font='10px Inter'; ctx.fillText('VENTAS TOTALES',cx,cy-13);
+      ctx.fillStyle='#14172E'; ctx.font='bold 16px JetBrains Mono'; ctx.fillText('${totalMMStr}',cx,cy+4);
+      ctx.fillStyle=C.muted; ctx.font='9.5px Inter'; ctx.fillText('sin stock',cx,cy+20);
       ctx.restore();
     }
   }]
