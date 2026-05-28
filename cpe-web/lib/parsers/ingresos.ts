@@ -149,16 +149,6 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
     throw new Error('El archivo no tiene el formato esperado. Verificá que sea un Revenue estimado.')
   }
 
-  // DEV: log Resumen sheet so we can see actual labels/layout
-  if (typeof window !== 'undefined') {
-    console.group('📊 Resumen sheet — primeras 30 filas')
-    resumen.slice(0, 30).forEach((row, i) => {
-      const cells = row.map((c: unknown, j: number) => `[${j}]=${JSON.stringify(c)}`).join('  ')
-      if (cells) console.log(`row[${i}]: ${cells}`)
-    })
-    console.groupEnd()
-  }
-
   const periodoRaw = encontrarPeriodo(wb, resumen)
   const periodo = periodoRaw || '2026-00'
   const mes = formatearMes(periodo)
@@ -308,15 +298,15 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
 
     gas: {
       ET: {
-        prod_mcfd:   gasProd?.[6]  ?? 0,
-        vol_mes_mcf: (gasProd?.[6]  ?? 0) * dias,
-        precio_mcf:  gasPrec?.[6]  ?? 0,
+        prod_mcfd:   gasProd?.[6]  ?? prodNeta?.[6]  ?? 0,
+        vol_mes_mcf: (gasProd?.[6] ?? prodNeta?.[6]  ?? 0) * dias,
+        precio_mcf:  gasPrec?.[6]  ?? precioN?.[6]   ?? 0,
         ingreso:     totalUs?.[6]  ?? 0,
       },
       RCLV: {
-        prod_mcfd:   gasProd?.[7]  ?? 0,
-        vol_mes_mcf: (gasProd?.[7] ?? 0) * dias,
-        precio_mcf:  gasPrec?.[7]  ?? 0,
+        prod_mcfd:   gasProd?.[7]  ?? prodNeta?.[7]  ?? 0,
+        vol_mes_mcf: (gasProd?.[7] ?? prodNeta?.[7]  ?? 0) * dias,
+        precio_mcf:  gasPrec?.[7]  ?? precioN?.[7]   ?? 0,
         ingreso:     totalUs?.[7]  ?? 0,
       },
     },
