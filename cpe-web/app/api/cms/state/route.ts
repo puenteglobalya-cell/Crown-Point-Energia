@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { revalidateTag } from 'next/cache'
+import { revalidatePath } from 'next/cache'
 import { getCmsState, patchCmsState, CMSState } from '@/lib/cms'
 import { createSupabaseServerClient } from '@/lib/supabase'
 
@@ -11,7 +11,6 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  // Verify authenticated admin
   const supabase = createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -21,7 +20,9 @@ export async function POST(req: NextRequest) {
 
   const patch: Partial<CMSState> = await req.json()
   await patchCmsState(patch)
-  revalidateTag('cms')
+
+  // Revalidate all public pages so theme/visibility changes are instant
+  revalidatePath('/', 'layout')
 
   return NextResponse.json({ ok: true })
 }

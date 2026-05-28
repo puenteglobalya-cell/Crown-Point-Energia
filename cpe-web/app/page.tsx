@@ -1,12 +1,39 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { getCmsState } from '@/lib/cms'
+import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import ArgentinaMap from '@/components/ArgentinaMap'
 
 export const revalidate = 60
 
+const CAT_LABEL: Record<string, { es: string; en: string }> = {
+  resultados:  { es: 'Resultados',          en: 'Results' },
+  operaciones: { es: 'Operaciones',          en: 'Operations' },
+  mercados:    { es: 'Mercado de capitales', en: 'Capital markets' },
+  esg:         { es: 'ESG',                  en: 'ESG' },
+  gobierno:    { es: 'Gobierno corporativo', en: 'Governance' },
+  general:     { es: 'General',              en: 'General' },
+}
+
+function fmtFechaHome(iso: string) {
+  const d = new Date(iso + 'T12:00:00Z')
+  const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
+  return `${String(d.getUTCDate()).padStart(2,'0')} · ${months[d.getUTCMonth()]} · ${d.getUTCFullYear()}`
+}
+
 export default async function HomePage() {
-  const s = await getCmsState()
+  const [s, comunicadosRes] = await Promise.all([
+    getCmsState(),
+    createSupabaseServerAdminClient()
+      .from('comunicados')
+      .select('id,fecha,titulo_es,titulo_en,resumen_es,resumen_en,url,tipo')
+      .eq('publicado', true)
+      .order('fecha', { ascending: false })
+      .limit(4),
+  ])
+
+  const latestComunicados = comunicadosRes.data ?? []
+
   const f = s.fields
   const show = s.show
 
@@ -389,34 +416,43 @@ export default async function HomePage() {
               </div>
               <Link className="btn-ghost" href="/comunicados"><span className="lang-es">Todos los comunicados</span><span className="lang-en">All press releases</span></Link>
             </div>
-            <ul className="press-list reveal">
-              {[
-                { date: '15 · 04 · 2026', cat: 'Resultados', catEn: 'Results',
-                  titleEs: 'Crown Point reporta resultados del primer trimestre 2026', titleEn: 'Crown Point reports Q1 2026 results',
-                  bodyEs: 'Producción promedio de 1.840 boe/d, EBITDA ajustado de USD 11,9M y reducción de deuda neta del 12%.', bodyEn: 'Average production of 1,840 boe/d, adjusted EBITDA of USD 11.9M and a 12% reduction in net debt.' },
-                { date: '02 · 04 · 2026', cat: 'Operaciones', catEn: 'Operations',
-                  titleEs: 'Inicio de la campaña de workover en Chañares Herrados', titleEn: 'Workover campaign begins at Chañares Herrados',
-                  bodyEs: 'El plan contempla intervenir 6 pozos productores con incremento estimado de 180 boe/d en el segundo trimestre.', bodyEn: 'The plan covers 6 producing wells with an estimated 180 boe/d uplift in Q2.' },
-                { date: '11 · 03 · 2026', cat: 'Mercado de capitales', catEn: 'Capital markets',
-                  titleEs: 'Emisión exitosa de Obligaciones Negociables Clase IV por USD 8M', titleEn: 'Successful Class IV notes issuance of USD 8M',
-                  bodyEs: 'Oferta sobresuscrita 2,3x. Los fondos se destinan al plan de inversión en Cerro de Los Leones.', bodyEn: 'Offer was 2.3x oversubscribed. Proceeds go to the Cerro de Los Leones investment plan.' },
-                { date: '22 · 02 · 2026', cat: 'ESG', catEn: 'ESG',
-                  titleEs: 'Publicamos nuestro Reporte de Sustentabilidad 2025', titleEn: '2025 Sustainability Report released',
-                  bodyEs: 'Reducción del 11% en intensidad de emisiones GEI y avances en plan de social license en Tierra del Fuego.', bodyEn: '11% reduction in GHG emissions intensity and progress on the social license plan in Tierra del Fuego.' },
-              ].map((item, i) => (
-                <li className="press-item" key={i}>
-                  <span className="press-date num">{item.date}</span>
-                  <div>
-                    <span className="chip"><span className="lang-es">{item.cat}</span><span className="lang-en">{item.catEn}</span></span>
-                    <h3><span className="lang-es">{item.titleEs}</span><span className="lang-en">{item.titleEn}</span></h3>
-                    <p><span className="lang-es">{item.bodyEs}</span><span className="lang-en">{item.bodyEn}</span></p>
-                  </div>
-                  <Link className="press-arrow" href="/comunicados" aria-label="Leer">
-                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11h12M12 5l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            {latestComunicados.length > 0 ? (
+              <ul className="press-list reveal">
+                {latestComunicados.map(item => {
+                  const label = CAT_LABEL[item.tipo] ?? { es: item.tipo, en: item.tipo }
+                  const href = item.url || '/comunicados'
+                  return (
+                    <li className="press-item" key={item.id}>
+                      <span className="press-date num">{fmtFechaHome(item.fecha)}</span>
+                      <div>
+                        <span className="chip">
+                          <span className="lang-es">{label.es}</span>
+                          <span className="lang-en">{label.en}</span>
+                        </span>
+                        <h3>
+                          <span className="lang-es">{item.titulo_es}</span>
+                          <span className="lang-en">{item.titulo_en}</span>
+                        </h3>
+                        {(item.resumen_es || item.resumen_en) && (
+                          <p>
+                            <span className="lang-es">{item.resumen_es}</span>
+                            <span className="lang-en">{item.resumen_en}</span>
+                          </p>
+                        )}
+                      </div>
+                      <a className="press-arrow" href={href} target={item.url ? '_blank' : undefined} rel={item.url ? 'noreferrer' : undefined} aria-label="Leer comunicado">
+                        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11h12M12 5l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </a>
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : (
+              <p style={{ color: 'var(--fg-muted)', fontSize: 15, fontStyle: 'italic', padding: 'var(--s-6) 0' }}>
+                <span className="lang-es">Próximamente — los comunicados aparecen aquí.</span>
+                <span className="lang-en">Coming soon — press releases appear here.</span>
+              </p>
+            )}
           </div>
         </section>
       )}

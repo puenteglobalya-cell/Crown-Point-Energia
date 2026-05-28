@@ -17,14 +17,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json()
   const admin = createSupabaseServerAdminClient()
   const { data, error } = await admin
-    .from('documentos')
+    .from('comunicados')
     .update({ ...body, updated_at: new Date().toISOString() })
     .eq('id', params.id)
     .select()
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  revalidatePath('/inversores')
+  revalidatePath('/comunicados')
+  revalidatePath('/')
   return NextResponse.json(data)
 }
 
@@ -34,7 +35,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const admin = createSupabaseServerAdminClient()
 
   const { data: doc } = await admin
-    .from('documentos')
+    .from('comunicados')
     .select('storage_path')
     .eq('id', params.id)
     .single()
@@ -43,8 +44,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     await admin.storage.from('documents').remove([doc.storage_path])
   }
 
-  const { error } = await admin.from('documentos').delete().eq('id', params.id)
+  const { error } = await admin.from('comunicados').delete().eq('id', params.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  revalidatePath('/inversores')
+  revalidatePath('/comunicados')
+  revalidatePath('/')
   return NextResponse.json({ ok: true })
 }
