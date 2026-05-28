@@ -41,7 +41,7 @@ export default function PortalLoginPage() {
     const supabase = createSupabaseBrowserClient()
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin
     const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${siteUrl}/admin/reset-password`,
+      redirectTo: `${siteUrl}/portal/reset-password`,
     })
 
     if (error) {

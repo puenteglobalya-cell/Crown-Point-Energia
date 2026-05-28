@@ -34,7 +34,7 @@ function fmtSize(bytes: number | null) {
 }
 
 export default async function PortalPage() {
-  const { user, role } = await getCurrentUserAndRole()
+  const { user, role, permissions } = await getCurrentUserAndRole()
 
   if (!user || !role?.activo) {
     redirect('/portal/login')
@@ -42,13 +42,13 @@ export default async function PortalPage() {
 
   const db = createSupabaseServerAdminClient()
 
-  // Fetch reports based on role
+  // Fetch reports based on permissions
   let reportQuery = db
     .from('reportes')
     .select('id, titulo, periodo, estado, file_name, file_size, created_at')
     .order('created_at', { ascending: false })
 
-  if (role.role === 'viewer') {
+  if (!permissions.has('view_drafts')) {
     reportQuery = reportQuery.eq('estado', 'publicado')
   }
 
@@ -57,7 +57,7 @@ export default async function PortalPage() {
 
   // Activity log for admins
   let activityLog: ActivityEntry[] = []
-  if (isAdminRole(role.role)) {
+  if (isAdminRole(permissions)) {
     const { data } = await db
       .from('activity_log')
       .select('id, user_email, action, resource_type, resource_id, metadata, created_at')
@@ -66,8 +66,8 @@ export default async function PortalPage() {
     activityLog = (data ?? []) as ActivityEntry[]
   }
 
-  const userCanUpload = canUpload(role.role)
-  const userIsAdmin = isAdminRole(role.role)
+  const userCanUpload = canUpload(permissions)
+  const userIsAdmin = isAdminRole(permissions)
 
   return (
     <div style={{ maxWidth: 820, margin: '0 auto' }}>
@@ -97,7 +97,7 @@ export default async function PortalPage() {
       <section style={{ marginBottom: 48 }}>
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-0.01em' }}>
           Reportes de ingresos
-          {!userCanUpload && (
+          {!permissions.has('view_drafts') && (
             <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--fg-muted)', fontWeight: 400, fontFamily: 'var(--font-mono)' }}>
               — solo publicados
             </span>
