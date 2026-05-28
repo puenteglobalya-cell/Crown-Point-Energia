@@ -24,7 +24,10 @@ type ActivityEntry = {
 }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleString('es-AR', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
 }
 
 function fmtSize(bytes: number | null) {

@@ -160,11 +160,6 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   const precio_gas = buscarValor(resumen, 'Gas', 3)               ?? 0
   const dias       = Number(buscarCelda(detalle, 0, 3))           || 30
 
-  const oil_pct_prod = (buscarValor(resumen, 'Oil', -1) ?? 0) * 100
-  const gas_pct_prod = (buscarValor(resumen, 'Gas', -1) ?? 0) * 100
-  const oil_pct_vend = (buscarValor(resumen, 'Oil',  1) ?? 0) * 100
-  const gas_pct_vend = (buscarValor(resumen, 'Gas',  1) ?? 0) * 100
-
   const brent_ref = buscarValor(detalle, 'mes', 1)      ?? 0
   const medanito  = buscarValor(detalle, 'MEDANITO', 1) ?? 0
   const brent_1q  = buscarValor(detalle, '1Quincena', 1) ?? 0
@@ -192,18 +187,62 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
     RCLV: precioN?.[5] ?? 0,
   }
 
+  // ── Derive KPIs from area data when Resumen labels don't match ───────────
+  const M3_TO_BBL = 6.2898
+
+  // Oil production m³/d → BOE/d
+  const oilProdM3d = (
+    (prodNeta?.[2] ?? 0) + (prodNeta?.[3] ?? 0) +
+    (prodNeta?.[4] ?? 0) + (prodNeta?.[5] ?? 0)
+  )
+  const oilProdBOEd = oilProdM3d * M3_TO_BBL
+
+  // Total production BOE/d: oil ÷ oil% (gas included via composition)
+  const oilPct = (buscarValor(resumen, 'Oil', -1) ?? 0)
+  const gasPct = (buscarValor(resumen, 'Gas', -1) ?? 0)
+  const volProdDerived = oilPct > 0
+    ? Math.round(oilProdBOEd / oilPct)
+    : Math.round(oilProdBOEd)
+
+  // Oil bbls entregados → BOE/d sold
+  const oilBblsVendidos = (
+    (bbls?.[2] ?? 0) + (bbls?.[3] ?? 0) +
+    (bbls?.[4] ?? 0) + (bbls?.[5] ?? 0)
+  )
+  const oilVendBOEd = dias > 0 ? oilBblsVendidos / dias : 0
+  const oilPctVend = (buscarValor(resumen, 'Oil', 1) ?? 0)
+  const volVentaDerived = oilPctVend > 0
+    ? Math.round(oilVendBOEd / oilPctVend)
+    : Math.round(oilVendBOEd)
+
+  // ventas_MM from sum of area ingresos
+  const ventasDerived = (
+    (totalUs?.[2] ?? 0) + (totalUs?.[3] ?? 0) +
+    (totalUs?.[4] ?? 0) + (totalUs?.[5] ?? 0) +
+    (totalUs?.[6] ?? 0) + (totalUs?.[7] ?? 0)
+  ) / 1_000_000
+
+  const ventas_MM_final     = ventas_MM  > 0 ? ventas_MM  : ventasDerived
+  const vol_producido_final = vol_prod   > 0 ? vol_prod   : volProdDerived
+  const vol_vendido_final   = vol_venta  > 0 ? vol_venta  : volVentaDerived
+
+  const oil_pct_prod = oilPct  * 100
+  const gas_pct_prod = gasPct  * 100
+  const oil_pct_vend = oilPctVend * 100
+  const gas_pct_vend = (buscarValor(resumen, 'Gas', 1) ?? 0) * 100
+
   return {
     mes,
     periodo,
     dias,
-    ventas_MM,
-    stock_MM: stock_total / 1_000_000,
-    vol_producido_boed: vol_prod,
-    vol_vendido_boed: vol_venta,
-    precio_neto_oil: precio_oil,
-    precio_neto_gas: precio_gas,
-    brent_prom: brent_ref,
-    medanito_prom: medanito,
+    ventas_MM:          ventas_MM_final,
+    stock_MM:           stock_total / 1_000_000,
+    vol_producido_boed: vol_producido_final,
+    vol_vendido_boed:   vol_vendido_final,
+    precio_neto_oil:    precio_oil,
+    precio_neto_gas:    precio_gas,
+    brent_prom:         brent_ref,
+    medanito_prom:      medanito,
     oil_pct_prod,
     gas_pct_prod,
     oil_pct_vend,
@@ -259,15 +298,15 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
 
     gas: {
       ET: {
-        prod_mcfd:   gasProd?.[6]  ?? 0,
-        vol_mes_mcf: (gasProd?.[6]  ?? 0) * dias,
-        precio_mcf:  gasPrec?.[6]  ?? 0,
+        prod_mcfd:   gasProd?.[6]  ?? prodNeta?.[6]  ?? 0,
+        vol_mes_mcf: (gasProd?.[6] ?? prodNeta?.[6]  ?? 0) * dias,
+        precio_mcf:  gasPrec?.[6]  ?? precioN?.[6]   ?? 0,
         ingreso:     totalUs?.[6]  ?? 0,
       },
       RCLV: {
-        prod_mcfd:   gasProd?.[7]  ?? 0,
-        vol_mes_mcf: (gasProd?.[7] ?? 0) * dias,
-        precio_mcf:  gasPrec?.[7]  ?? 0,
+        prod_mcfd:   gasProd?.[7]  ?? prodNeta?.[7]  ?? 0,
+        vol_mes_mcf: (gasProd?.[7] ?? prodNeta?.[7]  ?? 0) * dias,
+        precio_mcf:  gasPrec?.[7]  ?? precioN?.[7]   ?? 0,
         ingreso:     totalUs?.[7]  ?? 0,
       },
     },

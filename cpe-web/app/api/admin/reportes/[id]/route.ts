@@ -2,18 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { logActivity } from '@/lib/roles'
+import { logActivity, getPermissionsForRole } from '@/lib/roles'
 
 const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
 
-type UserWithRole = {
-  id: string
-  email: string | undefined
-  role: 'viewer' | 'uploader' | 'admin' | null
-  activo: boolean
-}
-
-async function getUserWithRole(): Promise<UserWithRole | null> {
+async function getUserWithRole() {
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,37 +17,29 @@ async function getUserWithRole(): Promise<UserWithRole | null> {
   if (!user) return null
 
   if (user.email && CMS_ADMIN_EMAILS.includes(user.email)) {
-    return { id: user.id, email: user.email, role: 'admin', activo: true }
+    return { id: user.id, email: user.email, role: 'admin' as const, activo: true }
   }
 
   const db = createSupabaseServerAdminClient()
   const { data: roleRow } = await db.from('user_roles').select('role, activo').eq('user_id', user.id).single()
   if (!roleRow) return null
 
-  return {
-    id: user.id,
-    email: user.email,
-    role: roleRow.role as 'viewer' | 'uploader' | 'admin',
-    activo: roleRow.activo,
-  }
+  return { id: user.id, email: user.email, role: roleRow.role as 'viewer' | 'uploader' | 'admin', activo: roleRow.activo }
 }
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const userWithRole = await getUserWithRole()
+  if (!userWithRole?.activo) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const db = createSupabaseServerAdminClient()
   const { data, error } = await db.from('reportes').select('html, estado').eq('id', params.id).single()
 
   if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  // Unpublished reports: only uploader/admin can view
+  // Drafts require view_drafts permission
   if (data.estado !== 'publicado') {
-    if (!userWithRole?.activo || userWithRole.role === 'viewer') {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    }
-  } else {
-    // Published reports: any active internal role can view
-    if (!userWithRole?.activo) {
+    const permissions = await getPermissionsForRole(userWithRole.role)
+    if (!permissions.has('view_drafts')) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
   }

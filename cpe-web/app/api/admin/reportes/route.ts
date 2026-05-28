@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     storage_path: storage_path ?? null,
     file_name: file_name ?? null,
     file_size: file_size ?? null,
-    subido_por: userWithRole.email ?? null,
+    subido_por: userWithRole.id,
   }).select('id').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
