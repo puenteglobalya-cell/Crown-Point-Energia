@@ -5,6 +5,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import CpeAdapter from '@/components/CpeAdapter'
 import RevealObserver from '@/components/RevealObserver'
+import CookieBanner from '@/components/CookieBanner'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -36,6 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* Exposes window.CPE for the admin panel and any inline scripts */}
         <CpeAdapter state={{ ...state, lang }} />
         <RevealObserver />
+        <CookieBanner />
       </body>
     </html>
   )

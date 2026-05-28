@@ -6,9 +6,9 @@ export default function Footer() {
       <div className="container">
         <div className="footer-grid">
           <div className="footer-brand">
-            <strong>Crown Point Energy</strong>
-            <p className="lang-es">Empresa argentina de petróleo y gas con cartera de oportunidades en las cuencas Austral, Neuquina y Cuyana. Listada en TSXV: CWV.</p>
-            <p className="lang-en">Argentine oil &amp; gas company with a portfolio across the Austral, Neuquén and Cuyana basins. Listed on TSXV: CWV.</p>
+            <strong>Crown Point Energía S.A.</strong>
+            <p className="lang-es">Empresa argentina de petróleo y gas con casa matriz internacional. Operamos en las cuencas Austral (Tierra del Fuego), Neuquina y Cuyana (Mendoza). La empresa holding Crown Point Energy Inc. cotiza en TSXV: CWV.</p>
+            <p className="lang-en">Argentine oil &amp; gas company with international headquarters. We operate in the Austral (Tierra del Fuego), Neuquén and Cuyana (Mendoza) basins. Holding company Crown Point Energy Inc. is listed on TSXV: CWV.</p>
           </div>
           <div className="footer-col">
             <h5><span className="lang-es">Inversores</span><span className="lang-en">Investors</span></h5>
@@ -38,14 +38,37 @@ export default function Footer() {
             </ul>
           </div>
         </div>
+
+        {/* Legal disclaimer */}
+        <div className="footer-legal">
+          <p className="lang-es">
+            <strong>Información forward-looking:</strong> Este sitio puede contener declaraciones prospectivas en el sentido de la legislación canadiense de valores. Dichas declaraciones implican riesgos e incertidumbres conocidos y desconocidos que podrían provocar que los resultados reales difieran materialmente. Crown Point Energy Inc. no asume ninguna obligación de actualizar declaraciones prospectivas.
+          </p>
+          <p className="lang-en">
+            <strong>Forward-looking information:</strong> This site may contain forward-looking statements within the meaning of applicable Canadian securities legislation. Such statements involve known and unknown risks and uncertainties that could cause actual results to differ materially. Crown Point Energy Inc. does not assume any obligation to update forward-looking statements.
+          </p>
+          <p className="lang-es" style={{ marginTop: 8 }}>
+            <strong>TSXV:</strong> Ni la TSX Venture Exchange ni su Proveedor de Servicios de Regulación (conforme a ese término se define en las políticas de TSX Venture Exchange) aceptan responsabilidad por la idoneidad o exactitud de este sitio.{' '}
+            <strong>CNV:</strong> Crown Point Energía S.A. se encuentra inscripta en el Registro de Emisoras de la Comisión Nacional de Valores de la República Argentina.
+          </p>
+          <p className="lang-en" style={{ marginTop: 8 }}>
+            <strong>TSXV:</strong> Neither TSX Venture Exchange nor its Regulation Services Provider accepts responsibility for the adequacy or accuracy of this site.{' '}
+            <strong>CNV:</strong> Crown Point Energía S.A. is registered as an issuer with the Comisión Nacional de Valores (Argentine Securities Commission).
+          </p>
+        </div>
+
         <div className="footer-bottom">
-          <span>© 2026 Crown Point Energy Inc.&nbsp;·&nbsp;TSXV: CWV</span>
+          <span>© {new Date().getFullYear()} Crown Point Energy Inc.&nbsp;·&nbsp;TSXV: CWV</span>
           <span>
-            <a href="#" style={{ opacity: 0.8 }}>Terms of Use</a>
+            <Link href="/legal/terminos" style={{ opacity: 0.8 }}>
+              <span className="lang-es">Términos y condiciones</span>
+              <span className="lang-en">Terms of Use</span>
+            </Link>
             {' · '}
-            <a href="#" style={{ opacity: 0.8 }}>Términos y condiciones</a>
-            {' · '}
-            <a href="#" style={{ opacity: 0.8 }}>Privacy</a>
+            <Link href="/legal/privacidad" style={{ opacity: 0.8 }}>
+              <span className="lang-es">Privacidad y cookies</span>
+              <span className="lang-en">Privacy &amp; Cookies</span>
+            </Link>
           </span>
         </div>
       </div>

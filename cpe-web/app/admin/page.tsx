@@ -161,6 +161,9 @@ export default function AdminPage() {
             <Link href="/admin/documentos" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Documentos
             </Link>
+            <Link href="/admin/comunicados" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
+              Comunicados
+            </Link>
             <button onClick={handleSignOut} className="btn" style={{ fontSize: 13, padding: '8px 16px' }}>
               Cerrar sesión
             </button>
@@ -274,6 +277,34 @@ export default function AdminPage() {
 
         {/* ── Tab: Visibilidad ──────────────────────────────────────────── */}
         {tab === 'visibilidad' && (
+          <div>
+            {/* Toggle all */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+              <button
+                className="btn"
+                style={{ fontSize: 12, padding: '7px 16px' }}
+                onClick={() => {
+                  const allShow: Record<string, boolean> = {}
+                  SECTIONS.forEach(s => { allShow[s.key] = true })
+                  save({ show: allShow })
+                }}
+                disabled={saving}
+              >
+                Mostrar todo
+              </button>
+              <button
+                className="btn"
+                style={{ fontSize: 12, padding: '7px 16px' }}
+                onClick={() => {
+                  const allShow: Record<string, boolean> = {}
+                  SECTIONS.forEach(s => { allShow[s.key] = false })
+                  save({ show: allShow })
+                }}
+                disabled={saving}
+              >
+                Ocultar todo
+              </button>
+            </div>
           <div style={{ display: 'grid', gap: 2 }}>
             {SECTIONS.map(s => {
               const visible = state.show[s.key] !== false
@@ -310,6 +341,7 @@ export default function AdminPage() {
                 </label>
               )
             })}
+          </div>
           </div>
         )}
 

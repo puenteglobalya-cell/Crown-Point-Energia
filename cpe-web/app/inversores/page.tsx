@@ -63,8 +63,8 @@ export default async function InversoresPage() {
             <span className="lang-en">A solid story<br/>of value creation.</span>
           </h1>
           <p>
-            <span className="lang-es">Crown Point Energy Inc. (TSXV: CWV) es una empresa de exploración y producción de petróleo y gas con operaciones íntegramente en Argentina y casa matriz en Calgary, Canadá.</span>
-            <span className="lang-en">Crown Point Energy Inc. (TSXV: CWV) is an oil &amp; gas exploration and production company with operations entirely in Argentina and headquarters in Calgary, Canada.</span>
+            <span className="lang-es">Crown Point Energía S.A. es una empresa dedicada al petróleo y gas con cobertura internacional que opera en el mercado argentino. Su empresa holding Crown Point Energy Inc. cotiza en el Toronto Stock Exchange Venture (TSXV) bajo el símbolo &quot;CWV&quot;. La Compañía está constituida en Canadá y tiene su sede central en Buenos Aires, Argentina.</span>
+            <span className="lang-en">Crown Point Energía S.A. is an internationally covered oil &amp; gas company operating in the Argentine market. Its holding company Crown Point Energy Inc. is listed on the Toronto Stock Exchange Venture (TSXV) under the symbol &quot;CWV&quot;. The Company is incorporated in Canada and has its headquarters in Buenos Aires, Argentina.</span>
           </p>
         </div>
       </section>
@@ -159,7 +159,10 @@ export default async function InversoresPage() {
               <div className="section-block" id="financieros">
                 <span className="eyebrow"><span className="lang-es">Reportes recientes</span><span className="lang-en">Recent filings</span></span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Estados financieros</span><span className="lang-en">Financial statements</span></h2>
-                <p className="lede"><span className="lang-es">Reportes auditados según IFRS y compilados gerenciales trimestrales. Todos los documentos están disponibles también en SEDAR+.</span><span className="lang-en">IFRS-audited reports and quarterly management filings. All documents are also available on SEDAR+.</span></p>
+                <p className="lede">
+                  <span className="lang-es">Reportes auditados según IFRS y compilados gerenciales trimestrales. Disponibles también en <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a> y en la <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a> (buscar &quot;Crown Point Energía S.A.&quot;).</span>
+                  <span className="lang-en">IFRS-audited reports and quarterly management filings. Also available on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a> and the <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a> (search for &quot;Crown Point Energía S.A.&quot;).</span>
+                </p>
                 {docsByTipo('financiero').length > 0 ? (
                   <ul className="doc-list">
                     {docsByTipo('financiero').map(d => (

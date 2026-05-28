@@ -36,12 +36,12 @@ export default function AcercaPage() {
           </div>
           <span className="eyebrow">Crown Point Energy</span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es">25 años produciendo<br/>energía en Argentina.</span>
-            <span className="lang-en">25 years producing<br/>energy in Argentina.</span>
+            <span className="lang-es">Producción real,<br/>base sólida,<br/>visión de largo plazo.</span>
+            <span className="lang-en">Real production,<br/>solid foundation,<br/>long-term vision.</span>
           </h1>
           <p>
-            <span className="lang-es">Empresa de petróleo y gas con operaciones íntegramente en Argentina y casa matriz en Calgary, Canadá. Cotiza en TSX Venture Exchange desde 2009.</span>
-            <span className="lang-en">An oil &amp; gas company with operations entirely in Argentina and headquarters in Calgary, Canada. Listed on TSX Venture Exchange since 2009.</span>
+            <span className="lang-es">Crown Point Energía S.A. opera en el mercado argentino con casa matriz internacional. Dedicada al petróleo y gas con sede en Buenos Aires, genera flujo de caja de su propia producción y mantiene una cartera de oportunidades en las cuencas Austral, Neuquina y Cuyana. La empresa holding Crown Point Energy Inc. cotiza en TSXV: CWV.</span>
+            <span className="lang-en">Crown Point Energía S.A. operates in the Argentine market with international headquarters. Dedicated to oil &amp; gas and based in Buenos Aires, it generates cash flow from its own production and maintains a portfolio of opportunities in the Austral, Neuquén and Cuyana basins. Holding company Crown Point Energy Inc. is listed on TSXV: CWV.</span>
           </p>
         </div>
       </section>
@@ -66,8 +66,8 @@ export default function AcercaPage() {
                   <span className="lang-en">Disciplined growth<br/>with real assets.</span>
                 </h2>
                 <p className="lede">
-                  <span className="lang-es">Nuestra estrategia se sostiene sobre cuatro pilares: producción base diversificada, disciplina de capital, crecimiento por adquisición selectiva y vinculación honesta con comunidades y reguladores.</span>
-                  <span className="lang-en">Our strategy rests on four pillars: diversified base production, capital discipline, selective acquisition-led growth and honest engagement with communities and regulators.</span>
+                  <span className="lang-es">La estrategia de Crown Point se centra en establecer una cartera de activos en producción, además de oportunidades de exploración y mejora de la producción actual en sus yacimientos, para proporcionar una base sólida de crecimiento futuro. Las actividades de exploración y desarrollo se concentran principalmente en la cuenca Austral (Tierra del Fuego) y la cuenca Neuquina (Mendoza y Neuquén).</span>
+                  <span className="lang-en">Crown Point&apos;s strategy focuses on building a portfolio of production assets, along with exploration opportunities and improvement of current production at its fields, to provide a solid foundation for future growth. Exploration and development activities are concentrated primarily in the Austral basin (Tierra del Fuego) and the Neuquén basin (Mendoza and Neuquén).</span>
                 </p>
                 <div className="strat-grid">
                   {[
