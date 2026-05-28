@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createSupabaseServerClient, createSupabaseServerAdminClient } from '@/lib/supabase'
 
 const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
@@ -10,15 +11,11 @@ async function getAdmin() {
 }
 
 export async function GET() {
-  const user = await getAdmin()
+  const adminUser = await getAdmin()
   const admin = createSupabaseServerAdminClient()
 
-  const query = admin
-    .from('documentos')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  const { data, error } = user ? await query : await query.eq('publico', true)
+  const base = admin.from('documentos').select('*').order('created_at', { ascending: false })
+  const { data, error } = await (adminUser ? base : base.eq('publico', true))
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
@@ -30,5 +27,7 @@ export async function POST(req: NextRequest) {
   const admin = createSupabaseServerAdminClient()
   const { data, error } = await admin.from('documentos').insert(body).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  revalidatePath('/inversores')
   return NextResponse.json(data)
 }

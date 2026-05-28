@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createSupabaseServerClient, createSupabaseServerAdminClient } from '@/lib/supabase'
 
 const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
@@ -23,6 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  revalidatePath('/inversores')
   return NextResponse.json(data)
 }
 
@@ -31,7 +33,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
   const admin = createSupabaseServerAdminClient()
 
-  // Fetch storage_path before deleting the row
   const { data: doc } = await admin
     .from('documentos')
     .select('storage_path')
@@ -44,5 +45,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
   const { error } = await admin.from('documentos').delete().eq('id', params.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  revalidatePath('/inversores')
   return NextResponse.json({ ok: true })
 }

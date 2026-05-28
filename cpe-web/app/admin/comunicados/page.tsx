@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
@@ -28,15 +28,30 @@ const TIPOS = [
   { value: 'gobierno',   label: 'Gobierno corporativo' },
 ]
 
+type FormState = {
+  fecha: string
+  titulo_es: string
+  titulo_en: string
+  resumen_es: string
+  resumen_en: string
+  url: string
+  tipo: string
+  publicado: boolean
+}
+
+const EMPTY_FORM: FormState = {
+  fecha: new Date().toISOString().slice(0, 10),
+  titulo_es: '', titulo_en: '', resumen_es: '', resumen_en: '',
+  url: '', tipo: 'general', publicado: true,
+}
+
 function fmtFecha(iso: string) {
   if (!iso) return ''
   const d = new Date(iso + 'T12:00:00Z')
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
-function getYear(iso: string) {
-  return iso ? iso.slice(0, 4) : '—'
-}
+function getYear(iso: string) { return iso ? iso.slice(0, 4) : '—' }
 
 export default function ComunicadosAdminPage() {
   const [items, setItems] = useState<Comunicado[]>([])
@@ -45,30 +60,44 @@ export default function ComunicadosAdminPage() {
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
   const [yearFilter, setYearFilter] = useState<string>('all')
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   const fileRef = useRef<HTMLInputElement>(null)
-  const [form, setForm] = useState({
-    fecha: new Date().toISOString().slice(0, 10),
-    titulo_es: '',
-    titulo_en: '',
-    resumen_es: '',
-    resumen_en: '',
-    url: '',
-    tipo: 'general',
-    publicado: true,
-  })
+  const formRef = useRef<HTMLDivElement>(null)
+  const [form, setForm] = useState<FormState>(EMPTY_FORM)
 
-  async function load() {
+  const load = useCallback(async () => {
     const res = await fetch('/api/cms/comunicados')
     if (res.ok) setItems(await res.json())
     setLoading(false)
-  }
+  }, [])
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [load])
 
   function flash(m: string, isErr = false) {
     if (isErr) { setErr(m); setTimeout(() => setErr(''), 4000) }
     else { setMsg(m); setTimeout(() => setMsg(''), 3000) }
+  }
+
+  function startEdit(item: Comunicado) {
+    setEditingId(item.id)
+    setForm({
+      fecha: item.fecha,
+      titulo_es: item.titulo_es,
+      titulo_en: item.titulo_en,
+      resumen_es: item.resumen_es,
+      resumen_en: item.resumen_en,
+      url: item.url,
+      tipo: item.tipo,
+      publicado: item.publicado,
+    })
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setForm(EMPTY_FORM)
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -98,30 +127,30 @@ export default function ComunicadosAdminPage() {
         finalUrl = publicUrl
       }
 
-      const res = await fetch('/api/cms/comunicados', {
-        method: 'POST',
+      const payload = {
+        fecha: form.fecha,
+        titulo_es: form.titulo_es.trim(),
+        titulo_en: form.titulo_en.trim() || form.titulo_es.trim(),
+        resumen_es: form.resumen_es.trim(),
+        resumen_en: form.resumen_en.trim(),
+        url: finalUrl,
+        tipo: form.tipo,
+        publicado: form.publicado,
+        ...(storagePath && { storage_path: storagePath, file_name: fileName }),
+      }
+
+      const url = editingId ? `/api/cms/comunicados/${editingId}` : '/api/cms/comunicados'
+      const method = editingId ? 'PATCH' : 'POST'
+      const res = await fetch(url, {
+        method,
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          fecha: form.fecha,
-          titulo_es: form.titulo_es.trim(),
-          titulo_en: form.titulo_en.trim() || form.titulo_es.trim(),
-          resumen_es: form.resumen_es.trim(),
-          resumen_en: form.resumen_en.trim(),
-          url: finalUrl,
-          storage_path: storagePath,
-          file_name: fileName,
-          tipo: form.tipo,
-          publicado: form.publicado,
-        }),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) throw new Error((await res.json()).error ?? 'Error')
 
-      flash('Comunicado guardado')
-      setForm(p => ({
-        ...p,
-        titulo_es: '', titulo_en: '', resumen_es: '', resumen_en: '', url: '',
-        fecha: new Date().toISOString().slice(0, 10),
-      }))
+      flash(editingId ? 'Comunicado actualizado' : 'Comunicado guardado')
+      setEditingId(null)
+      setForm(EMPTY_FORM)
       if (fileRef.current) fileRef.current.value = ''
       await load()
     } catch (e) {
@@ -137,14 +166,23 @@ export default function ComunicadosAdminPage() {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ publicado: !item.publicado }),
     })
-    if (res.ok) setItems(prev => prev.map(c => c.id === item.id ? { ...c, publicado: !c.publicado } : c))
+    if (res.ok) {
+      setItems(prev => prev.map(c => c.id === item.id ? { ...c, publicado: !c.publicado } : c))
+    } else {
+      flash('Error al actualizar', true)
+    }
   }
 
   async function handleDelete(item: Comunicado) {
     if (!confirm(`¿Eliminar "${item.titulo_es}"?`)) return
     const res = await fetch(`/api/cms/comunicados/${item.id}`, { method: 'DELETE' })
-    if (res.ok) { setItems(prev => prev.filter(c => c.id !== item.id)); flash('Eliminado') }
-    else flash('Error al eliminar', true)
+    if (res.ok) {
+      setItems(prev => prev.filter(c => c.id !== item.id))
+      flash('Eliminado')
+      if (editingId === item.id) cancelEdit()
+    } else {
+      flash('Error al eliminar', true)
+    }
   }
 
   const years = Array.from(new Set(items.map(c => getYear(c.fecha)))).sort((a, b) => +b - +a)
@@ -173,12 +211,20 @@ export default function ComunicadosAdminPage() {
         </div>
 
         {/* Form */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: '28px 28px 24px', marginBottom: 36 }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.01em' }}>
-            Agregar comunicado
-          </h2>
+        <div ref={formRef} style={{ background: 'var(--surface)', border: `1px solid ${editingId ? 'var(--accent)' : 'var(--rule)'}`, borderRadius: 'var(--r-lg)', padding: '28px 28px 24px', marginBottom: 36, transition: 'border-color 0.2s' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, margin: 0, letterSpacing: '-0.01em' }}>
+              {editingId ? 'Editando comunicado' : 'Agregar comunicado'}
+            </h2>
+            {editingId && (
+              <button onClick={cancelEdit} className="btn" style={{ fontSize: 12, padding: '6px 14px' }}>
+                Cancelar edición
+              </button>
+            )}
+          </div>
+
           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 16 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr 1fr', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(140px,160px) 1fr 1fr', gap: 16 }}>
               <div className="form-row">
                 <label>Fecha *</label>
                 <input type="date" required value={form.fecha} onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} />
@@ -190,7 +236,7 @@ export default function ComunicadosAdminPage() {
                 </select>
               </div>
               <div className="form-row">
-                <label>Publicado</label>
+                <label>Estado</label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 6, cursor: 'pointer' }}>
                   <div
                     style={{ width: 44, height: 24, borderRadius: 12, background: form.publicado ? 'var(--accent)' : 'var(--rule)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}
@@ -229,11 +275,11 @@ export default function ComunicadosAdminPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div className="form-row">
-                <label>URL externa (o dejá vacío para subir archivo)</label>
+                <label>URL externa (o subí un archivo abajo)</label>
                 <input type="url" value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))} placeholder="https://…" />
               </div>
               <div className="form-row">
-                <label>Archivo PDF (opcional)</label>
+                <label>Archivo PDF {editingId ? '(nuevo archivo reemplaza el actual)' : '(opcional)'}</label>
                 <input type="file" ref={fileRef} accept=".pdf" />
               </div>
             </div>
@@ -245,7 +291,7 @@ export default function ComunicadosAdminPage() {
             )}
 
             <button type="submit" className="btn btn-primary" disabled={uploading} style={{ justifyContent: 'center', padding: '13px 24px', opacity: uploading ? 0.7 : 1 }}>
-              {uploading ? 'Guardando…' : 'Guardar comunicado'}
+              {uploading ? 'Guardando…' : editingId ? 'Actualizar comunicado' : 'Guardar comunicado'}
             </button>
           </form>
         </div>
@@ -257,50 +303,39 @@ export default function ComunicadosAdminPage() {
           <p style={{ color: 'var(--fg-muted)', fontSize: 14 }}>No hay comunicados todavía.</p>
         ) : (
           <div>
-            {/* Year tabs */}
             <div style={{ display: 'flex', gap: 4, marginBottom: 20, flexWrap: 'wrap' }}>
-              <button
-                onClick={() => setYearFilter('all')}
-                style={{ padding: '6px 16px', fontSize: 13, fontWeight: 600, background: yearFilter === 'all' ? 'var(--accent)' : 'var(--surface)', color: yearFilter === 'all' ? '#fff' : 'var(--fg-soft)', border: '1px solid var(--rule)', borderRadius: 'var(--r-pill)', cursor: 'pointer' }}
-              >
-                Todos
-              </button>
-              {years.map(y => (
+              {['all', ...years].map(y => (
                 <button
                   key={y}
                   onClick={() => setYearFilter(y)}
                   style={{ padding: '6px 16px', fontSize: 13, fontWeight: 600, background: yearFilter === y ? 'var(--accent)' : 'var(--surface)', color: yearFilter === y ? '#fff' : 'var(--fg-soft)', border: '1px solid var(--rule)', borderRadius: 'var(--r-pill)', cursor: 'pointer' }}
                 >
-                  {y}
+                  {y === 'all' ? 'Todos' : y}
                 </button>
               ))}
             </div>
 
-            {/* List */}
             <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--surface)' }}>
               {filtered.map((item, i) => (
                 <div
                   key={item.id}
                   style={{
-                    display: 'grid', gridTemplateColumns: '120px 1fr auto auto auto',
-                    gap: 12, alignItems: 'center', padding: '14px 20px',
+                    display: 'grid', gridTemplateColumns: '110px 1fr auto auto auto auto',
+                    gap: 8, alignItems: 'center', padding: '12px 16px',
                     borderBottom: i < filtered.length - 1 ? '1px solid var(--rule)' : 'none',
+                    background: editingId === item.id ? 'color-mix(in oklab, var(--accent) 6%, var(--surface))' : undefined,
                   }}
                 >
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.4 }}>
                     {fmtFecha(item.fecha)}
                   </div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg)' }}>{item.titulo_es}</div>
-                    {item.resumen_es && (
-                      <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60ch' }}>{item.resumen_es}</div>
-                    )}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.titulo_es}</div>
                     <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2, fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       {TIPOS.find(t => t.value === item.tipo)?.label}
                     </div>
                   </div>
 
-                  {/* Visibility toggle */}
                   <div
                     title={item.publicado ? 'Visible — clic para ocultar' : 'Borrador — clic para publicar'}
                     style={{ width: 36, height: 20, borderRadius: 10, background: item.publicado ? 'var(--accent)' : 'var(--rule)', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}
@@ -309,12 +344,16 @@ export default function ComunicadosAdminPage() {
                     <div style={{ position: 'absolute', top: 2, left: item.publicado ? 17 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
                   </div>
 
+                  <button onClick={() => startEdit(item)} className="btn" style={{ fontSize: 12, padding: '5px 10px' }}>
+                    Editar
+                  </button>
+
                   {item.url && (
-                    <a href={item.url} target="_blank" rel="noreferrer" className="btn" style={{ fontSize: 12, padding: '6px 12px', textDecoration: 'none' }}>
+                    <a href={item.url} target="_blank" rel="noreferrer" className="btn" style={{ fontSize: 12, padding: '5px 10px', textDecoration: 'none' }}>
                       Ver
                     </a>
                   )}
-                  <button onClick={() => handleDelete(item)} className="btn" style={{ fontSize: 12, padding: '6px 12px', color: 'var(--cp-negative)' }}>
+                  <button onClick={() => handleDelete(item)} className="btn" style={{ fontSize: 12, padding: '5px 10px', color: 'var(--cp-negative)' }}>
                     Eliminar
                   </button>
                 </div>

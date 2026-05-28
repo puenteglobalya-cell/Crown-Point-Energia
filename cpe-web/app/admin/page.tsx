@@ -371,14 +371,21 @@ export default function AdminPage() {
                 </div>
               </div>
             ))}
-            <button
-              className="btn btn-primary"
-              onClick={saveFields}
-              disabled={saving}
-              style={{ justifyContent: 'center', padding: '14px 32px', opacity: saving ? 0.7 : 1 }}
-            >
-              {saving ? 'Guardando…' : 'Guardar textos'}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <button
+                className="btn btn-primary"
+                onClick={saveFields}
+                disabled={saving}
+                style={{ justifyContent: 'center', padding: '14px 32px', opacity: saving ? 0.7 : 1 }}
+              >
+                {saving ? 'Guardando…' : 'Guardar textos'}
+              </button>
+              {savedMsg && (
+                <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                  ✓ {savedMsg}
+                </span>
+              )}
+            </div>
           </div>
         )}
 

@@ -132,8 +132,17 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   text-align: right;
+  text-decoration: none;
+  cursor: pointer;
 }
 .doc-action::after { content: " ↓"; }
+a.doc-action:hover { color: var(--accent-deep); }
+
+/* Admin responsive grid helpers */
+@media (max-width: 680px) {
+  .admin-grid-3 { grid-template-columns: 1fr !important; }
+  .admin-grid-2 { grid-template-columns: 1fr !important; }
+}
 
 @media (max-width: 600px) {
   .doc-item { grid-template-columns: 40px 1fr; }

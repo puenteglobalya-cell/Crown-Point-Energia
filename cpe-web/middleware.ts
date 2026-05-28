@@ -47,12 +47,13 @@ export async function middleware(request: NextRequest) {
 
   if (!isAdminRoute && !isApiRoute && !isMaintenancePage) {
     try {
-      const { data } = await supabase
-        .from('cms_settings')
-        .select('maintenance')
-        .eq('id', 1)
-        .single()
-      if (data?.maintenance === true) {
+      const timeout = new Promise<null>(r => setTimeout(() => r(null), 2000))
+      const result = await Promise.race([
+        supabase.from('cms_settings').select('maintenance').eq('id', 1).single()
+          .then(r => r.data),
+        timeout,
+      ])
+      if (result?.maintenance === true) {
         return NextResponse.redirect(new URL('/maintenance', request.url))
       }
     } catch {}
