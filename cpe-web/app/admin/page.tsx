@@ -26,7 +26,14 @@ const SECTIONS: { key: string; labelEs: string; labelEn: string }[] = [
   { key: 'contact',             labelEs: 'Contacto (home)',         labelEn: 'Contact CTA (home)' },
 ]
 
-const TEXT_GROUPS: { group: string; items: { key: string; label: string }[] }[] = [
+type FieldItem = {
+  key: string
+  label: string
+  keyEn?: string
+  multiline?: boolean
+}
+
+const TEXT_GROUPS: { group: string; items: FieldItem[] }[] = [
   {
     group: 'Producción',
     items: [
@@ -72,20 +79,51 @@ const TEXT_GROUPS: { group: string; items: { key: string; label: string }[] }[] 
       { key: 'stock.shares', label: 'Acciones en circ.' },
     ],
   },
+  {
+    group: 'Hero',
+    items: [
+      { key: 'hero.title.es', label: 'Titular',     keyEn: 'hero.title.en', multiline: true },
+      { key: 'hero.lede.es',  label: 'Descripción', keyEn: 'hero.lede.en',  multiline: true },
+    ],
+  },
+  {
+    group: 'Sección KPIs · Período',
+    items: [
+      { key: 'kpis.periodo.es', label: 'Período', keyEn: 'kpis.periodo.en' },
+    ],
+  },
+  {
+    group: 'Contacto',
+    items: [
+      { key: 'contact.ir.email',     label: 'Email IR' },
+      { key: 'contact.ir.person',    label: 'Nombre IR' },
+      { key: 'contact.prensa.email', label: 'Email prensa' },
+      { key: 'contact.compras.email',label: 'Email compras' },
+      { key: 'contact.ba.address',   label: 'Dirección BA', multiline: true },
+      { key: 'contact.ba.phone',     label: 'Teléfono BA' },
+    ],
+  },
 ]
 
-type Tab = 'estilo' | 'visibilidad' | 'textos' | 'export'
+type Tab = 'estilo' | 'visibilidad' | 'textos' | 'sitio' | 'export'
+
+const TAB_LABELS: Record<Tab, string> = {
+  estilo:       'Estilo',
+  visibilidad:  'Visibilidad',
+  textos:       'Textos',
+  sitio:        'Vista previa',
+  export:       'Export',
+}
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('estilo')
   const [state, setState] = useState<CMSState | null>(null)
   const [saving, setSaving] = useState(false)
   const [savedMsg, setSavedMsg] = useState('')
-
-  // Local draft edits before save
   const [draftFields, setDraftFields] = useState<Record<string, string>>({})
   const [exportJson, setExportJson] = useState('')
   const [copyMsg, setCopyMsg] = useState('')
+  const [iframeKey, setIframeKey] = useState(0)
 
   const loadState = useCallback(async () => {
     const res = await fetch('/api/cms/state', { cache: 'no-store' })
@@ -140,7 +178,7 @@ export default function AdminPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
-      <div style={{ maxWidth: 760, margin: '0 auto' }}>
+      <div style={{ maxWidth: tab === 'sitio' ? 1280 : 760, margin: '0 auto', transition: 'max-width 0.2s' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
@@ -152,7 +190,7 @@ export default function AdminPage() {
               Los cambios se reflejan en el sitio público en hasta 60&nbsp;s.
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             {savedMsg && (
               <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
                 ✓ {savedMsg}
@@ -178,7 +216,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--rule)', marginBottom: 28 }}>
-          {(['estilo', 'visibilidad', 'textos', 'export'] as Tab[]).map(t => (
+          {(Object.keys(TAB_LABELS) as Tab[]).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -197,7 +235,7 @@ export default function AdminPage() {
                 transition: 'color 0.15s',
               }}
             >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+              {TAB_LABELS[t]}
             </button>
           ))}
         </div>
@@ -284,7 +322,6 @@ export default function AdminPage() {
         {/* ── Tab: Visibilidad ──────────────────────────────────────────── */}
         {tab === 'visibilidad' && (
           <div>
-            {/* Toggle all */}
             <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
               <button
                 className="btn"
@@ -311,43 +348,43 @@ export default function AdminPage() {
                 Ocultar todo
               </button>
             </div>
-          <div style={{ display: 'grid', gap: 2 }}>
-            {SECTIONS.map(s => {
-              const visible = state.show[s.key] !== false
-              return (
-                <label
-                  key={s.key}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '14px 0', borderBottom: '1px solid var(--rule)', cursor: 'pointer',
-                  }}
-                >
-                  <div>
-                    <span style={{ fontSize: 15, fontWeight: 500 }}>{s.labelEs}</span>
-                    {s.labelEn !== s.labelEs && (
-                      <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
-                        {s.key}
-                      </span>
-                    )}
-                  </div>
-                  <div
+            <div style={{ display: 'grid', gap: 2 }}>
+              {SECTIONS.map(s => {
+                const visible = state.show[s.key] !== false
+                return (
+                  <label
+                    key={s.key}
                     style={{
-                      width: 44, height: 24, borderRadius: 12,
-                      background: visible ? 'var(--accent)' : 'var(--rule)',
-                      position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '14px 0', borderBottom: '1px solid var(--rule)', cursor: 'pointer',
                     }}
-                    onClick={() => save({ show: { ...state.show, [s.key]: !visible } })}
                   >
-                    <div style={{
-                      position: 'absolute', top: 3, left: visible ? 22 : 3,
-                      width: 18, height: 18, borderRadius: '50%',
-                      background: '#fff', transition: 'left 0.2s',
-                    }} />
-                  </div>
-                </label>
-              )
-            })}
-          </div>
+                    <div>
+                      <span style={{ fontSize: 15, fontWeight: 500 }}>{s.labelEs}</span>
+                      {s.labelEn !== s.labelEs && (
+                        <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
+                          {s.key}
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        width: 44, height: 24, borderRadius: 12,
+                        background: visible ? 'var(--accent)' : 'var(--rule)',
+                        position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                      }}
+                      onClick={() => save({ show: { ...state.show, [s.key]: !visible } })}
+                    >
+                      <div style={{
+                        position: 'absolute', top: 3, left: visible ? 22 : 3,
+                        width: 18, height: 18, borderRadius: '50%',
+                        background: '#fff', transition: 'left 0.2s',
+                      }} />
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
           </div>
         )}
 
@@ -355,29 +392,65 @@ export default function AdminPage() {
         {tab === 'textos' && (
           <div>
             {TEXT_GROUPS.map(g => (
-              <div key={g.group} style={{ marginBottom: 28 }}>
+              <div key={g.group} style={{ marginBottom: 32 }}>
                 <h3 style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 12 }}>
                   {g.group}
                 </h3>
-                <div style={{ display: 'grid', gap: 10 }}>
+                <div style={{ display: 'grid', gap: 12 }}>
                   {g.items.map(item => (
-                    <div key={item.key} className="form-row" style={{ display: 'grid', gridTemplateColumns: '140px 1fr', alignItems: 'center', gap: 12 }}>
-                      <label style={{ fontSize: 13, color: 'var(--fg-soft)', fontWeight: 500, margin: 0 }}>
+                    <div
+                      key={item.key}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: item.keyEn ? '140px 1fr 1fr' : '140px 1fr',
+                        alignItems: 'start',
+                        gap: 12,
+                      }}
+                    >
+                      <label style={{ fontSize: 13, color: 'var(--fg-soft)', fontWeight: 500, margin: 0, paddingTop: item.keyEn ? 20 : 0 }}>
                         {item.label}
-                        <span style={{ display: 'block', fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)', marginTop: 1 }}>{item.key}</span>
+                        <span style={{ display: 'block', fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)', marginTop: 1 }}>
+                          {item.key}
+                        </span>
                       </label>
-                      <input
-                        type="text"
-                        value={draftFields[item.key] ?? ''}
-                        onChange={e => setDraftFields(prev => ({ ...prev, [item.key]: e.target.value }))}
-                        style={{ width: '100%' }}
-                      />
+
+                      {item.keyEn ? (
+                        <>
+                          <BilingualInput
+                            lang="ES"
+                            value={draftFields[item.key] ?? ''}
+                            onChange={v => setDraftFields(p => ({ ...p, [item.key]: v }))}
+                            multiline={item.multiline}
+                          />
+                          <BilingualInput
+                            lang="EN"
+                            value={draftFields[item.keyEn] ?? ''}
+                            onChange={v => setDraftFields(p => ({ ...p, [item.keyEn!]: v }))}
+                            multiline={item.multiline}
+                          />
+                        </>
+                      ) : item.multiline ? (
+                        <textarea
+                          rows={3}
+                          value={draftFields[item.key] ?? ''}
+                          onChange={e => setDraftFields(p => ({ ...p, [item.key]: e.target.value }))}
+                          style={{ width: '100%', resize: 'vertical', boxSizing: 'border-box' }}
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          value={draftFields[item.key] ?? ''}
+                          onChange={e => setDraftFields(p => ({ ...p, [item.key]: e.target.value }))}
+                          style={{ width: '100%' }}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
             ))}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingTop: 8 }}>
               <button
                 className="btn btn-primary"
                 onClick={saveFields}
@@ -392,6 +465,38 @@ export default function AdminPage() {
                 </span>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ── Tab: Vista previa (espejo) ────────────────────────────────── */}
+        {tab === 'sitio' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: 0 }}>
+                Vista en tiempo real del sitio público. Los cambios guardados aparecen en hasta 60 s.
+              </p>
+              <button
+                className="btn"
+                onClick={() => setIframeKey(k => k + 1)}
+                style={{ fontSize: 12, padding: '7px 16px', flexShrink: 0, marginLeft: 16 }}
+              >
+                Recargar
+              </button>
+            </div>
+            <iframe
+              key={iframeKey}
+              src="/"
+              title="Vista previa del sitio"
+              style={{
+                width: '100%',
+                height: 'calc(100vh - 220px)',
+                minHeight: 600,
+                border: '1px solid var(--rule)',
+                borderRadius: 'var(--r-md)',
+                background: 'var(--surface)',
+                display: 'block',
+              }}
+            />
           </div>
         )}
 
@@ -436,7 +541,46 @@ export default function AdminPage() {
   )
 }
 
-// ─── RadioGroup component ───────────────────────────────────────────────────
+// ─── Sub-components ─────────────────────────────────────────────────────────
+
+function BilingualInput({
+  lang,
+  value,
+  onChange,
+  multiline,
+}: {
+  lang: string
+  value: string
+  onChange: (v: string) => void
+  multiline?: boolean
+}) {
+  return (
+    <div>
+      <span style={{
+        display: 'block', fontSize: 10, fontFamily: 'var(--font-mono)', fontWeight: 700,
+        letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)',
+        marginBottom: 4,
+      }}>
+        {lang}
+      </span>
+      {multiline ? (
+        <textarea
+          rows={3}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          style={{ width: '100%', resize: 'vertical', boxSizing: 'border-box' }}
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          style={{ width: '100%' }}
+        />
+      )}
+    </div>
+  )
+}
 
 function RadioGroup({
   label,

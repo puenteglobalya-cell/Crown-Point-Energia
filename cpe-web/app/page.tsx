@@ -60,6 +60,13 @@ export default async function HomePage() {
   const stockLow52   = f['stock.low52']   || 'CA $0.16'
   const stockShares  = f['stock.shares']  || '96.6M'
 
+  const heroTitleEs  = f['hero.title.es'] || ''
+  const heroTitleEn  = f['hero.title.en'] || ''
+  const heroLedeEs   = f['hero.lede.es']  || ''
+  const heroLedeEn   = f['hero.lede.en']  || ''
+  const kpiPeriodoEs = f['kpis.periodo.es'] || 'Q1 2026 · Cifras clave'
+  const kpiPeriodoEn = f['kpis.periodo.en'] || 'Q1 2026 · Key figures'
+
   return (
     <>
       {/* HERO */}
@@ -83,12 +90,20 @@ export default async function HomePage() {
               </span>
             </div>
             <h1 className="hero-title">
-              <span className="lang-es">Energía que sostiene<br/>la matriz productiva<br/>argentina.</span>
-              <span className="lang-en">Energy that powers<br/>Argentina&apos;s productive<br/>backbone.</span>
+              {heroTitleEs
+                ? <span className="lang-es">{heroTitleEs}</span>
+                : <span className="lang-es">Energía que sostiene<br/>la matriz productiva<br/>argentina.</span>}
+              {heroTitleEn
+                ? <span className="lang-en">{heroTitleEn}</span>
+                : <span className="lang-en">Energy that powers<br/>Argentina&apos;s productive<br/>backbone.</span>}
             </h1>
             <p className="hero-lede">
-              <span className="lang-es">Operamos en cuatro de las cuencas más relevantes del país —<strong> Austral, Neuquina, Cuyana y Golfo San Jorge</strong>— con flujo de caja de producción propia, una cartera de proyectos de bajo riesgo y una estructura financiera prudente.</span>
-              <span className="lang-en">We operate across four of Argentina&apos;s most relevant basins — <strong>Austral, Neuquén, Cuyana and San Jorge Gulf</strong> — with cash flow from our own production, a low-risk project portfolio and a prudent financial structure.</span>
+              {heroLedeEs
+                ? <span className="lang-es">{heroLedeEs}</span>
+                : <span className="lang-es">Operamos en cuatro de las cuencas más relevantes del país —<strong> Austral, Neuquina, Cuyana y Golfo San Jorge</strong>— con flujo de caja de producción propia, una cartera de proyectos de bajo riesgo y una estructura financiera prudente.</span>}
+              {heroLedeEn
+                ? <span className="lang-en">{heroLedeEn}</span>
+                : <span className="lang-en">We operate across four of Argentina&apos;s most relevant basins — <strong>Austral, Neuquén, Cuyana and San Jorge Gulf</strong> — with cash flow from our own production, a low-risk project portfolio and a prudent financial structure.</span>}
             </p>
             <div className="hero-cta">
               <Link className="btn btn-primary" href="/inversores">
@@ -152,7 +167,7 @@ export default async function HomePage() {
           <div className="container">
             <div className="section-head reveal">
               <div>
-                <span className="eyebrow"><span className="lang-es">Q1 2026 · Cifras clave</span><span className="lang-en">Q1 2026 · Key figures</span></span>
+                <span className="eyebrow"><span className="lang-es">{kpiPeriodoEs}</span><span className="lang-en">{kpiPeriodoEn}</span></span>
                 <h2 className="section-title">
                   <span className="lang-es">Una operación de escala<br/>con balance saneado.</span>
                   <span className="lang-en">An at-scale operation<br/>on a clean balance sheet.</span>
