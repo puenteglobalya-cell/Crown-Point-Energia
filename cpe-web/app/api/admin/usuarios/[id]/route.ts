@@ -1,32 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity } from '@/lib/roles'
-
-const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
-
-async function getAdminUser() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
-  )
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  if (user.email && CMS_ADMIN_EMAILS.includes(user.email)) return user
-
-  const db = createSupabaseServerAdminClient()
-  const { data: roleRow } = await db.from('user_roles').select('role, activo').eq('user_id', user.id).single()
-  if (roleRow?.role === 'admin' && roleRow?.activo) return user
-
-  return null
-}
+import { requireAdminUser } from '@/lib/admin-auth'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const adminUser = await getAdminUser()
+  const adminUser = await requireAdminUser()
   if (!adminUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -69,7 +47,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const adminUser = await getAdminUser()
+  const adminUser = await requireAdminUser()
   if (!adminUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

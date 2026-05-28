@@ -3,8 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity, getPermissionsForRole } from '@/lib/roles'
-
-const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
+import { isAdminEmail } from '@/lib/admin-auth'
 
 async function getUserWithRole() {
   const cookieStore = await cookies()
@@ -16,7 +15,7 @@ async function getUserWithRole() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  if (user.email && CMS_ADMIN_EMAILS.includes(user.email)) {
+  if (isAdminEmail(user.email)) {
     return { id: user.id, email: user.email, role: 'admin' as const, activo: true }
   }
 
@@ -83,6 +82,13 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   }
 
   const db = createSupabaseServerAdminClient()
+
+  // Fetch storage_path before deleting so we can clean up the file
+  const { data: row } = await db.from('reportes').select('storage_path').eq('id', params.id).single()
+  if (row?.storage_path) {
+    await db.storage.from('documents').remove([row.storage_path])
+  }
+
   const { error } = await db.from('reportes').delete().eq('id', params.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

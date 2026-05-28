@@ -1,32 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { PERMISSIONS, PERMISSION_KEYS, ADMIN_LOCKED, type Permission } from '@/lib/permissions-config'
+import { requireAdminUser } from '@/lib/admin-auth'
 import type { UserRole } from '@/lib/roles'
-
-const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
-
-async function getAdminUser() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
-  )
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  if (user.email && CMS_ADMIN_EMAILS.includes(user.email)) return user
-  const db = createSupabaseServerAdminClient()
-  const { data } = await db.from('user_roles').select('role, activo').eq('user_id', user.id).single()
-  return data?.role === 'admin' && data?.activo ? user : null
-}
 
 const ROLES: UserRole[] = ['viewer', 'uploader', 'admin']
 
 // GET — returns full permissions matrix
 export async function GET() {
-  const adminUser = await getAdminUser()
+  const adminUser = await requireAdminUser()
   if (!adminUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const db = createSupabaseServerAdminClient()
@@ -54,7 +36,7 @@ export async function GET() {
 
 // PUT — update a single role+permission toggle
 export async function PUT(req: NextRequest) {
-  const adminUser = await getAdminUser()
+  const adminUser = await requireAdminUser()
   if (!adminUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { role, permission, enabled } = await req.json()
