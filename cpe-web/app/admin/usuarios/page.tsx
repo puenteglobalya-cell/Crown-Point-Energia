@@ -153,7 +153,7 @@ export default function UsuariosPage() {
   }
 
   async function handlePermToggle(role: string, perm: string, enabled: boolean) {
-    if (role === 'admin' && ADMIN_LOCKED.includes(perm)) return
+    if (role === 'admin' && ADMIN_LOCKED.includes(perm as typeof ADMIN_LOCKED[number])) return
     // Optimistic update
     setMatrix(prev => prev ? {
       ...prev,
