@@ -34,7 +34,8 @@ const NAV = [
       { href: '/acerca#estrategia', es: 'Estrategia', en: 'Strategy' },
       { href: '/acerca#management', es: 'Management', en: 'Management' },
       { href: '/acerca#directorio', es: 'Directorio CPE Inc.', en: 'CPE Inc. Board' },
-      { href: '/acerca#esg', es: 'Responsabilidad corporativa', en: 'Corporate responsibility' },
+      { href: '/esg', es: 'ESG & Responsabilidad corporativa', en: 'ESG & Corporate responsibility' },
+      { href: '/carreras', es: 'Carreras', en: 'Careers' },
     ]
   },
   { key: 'contacto', href: '/contacto', es: 'Contacto', en: 'Contact', menu: null },

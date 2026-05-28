@@ -5,6 +5,13 @@ import InversoresDocsTabs from './InversoresDocsTabs'
 
 export const revalidate = 60
 
+const IR_EVENTS = [
+  { id: 'q1-2026', type: 'results', dateEs: '25 jun 2026', dateEn: 'Jun 25, 2026', titleEs: 'Resultados Q1 2026', titleEn: 'Q1 2026 Results', noteEs: 'MD&A + estados trimestrales', noteEn: 'MD&A + quarterly financials' },
+  { id: 'agm-2026', type: 'agm', dateEs: '03 sep 2026', dateEn: 'Sep 3, 2026', titleEs: 'Asamblea General Anual', titleEn: 'Annual General Meeting', noteEs: 'TSX Venture · Calgary', noteEn: 'TSX Venture · Calgary' },
+  { id: 'q2-2026', type: 'results', dateEs: '14 ago 2026', dateEn: 'Aug 14, 2026', titleEs: 'Resultados Q2 2026', titleEn: 'Q2 2026 Results', noteEs: 'MD&A + estados trimestrales', noteEn: 'MD&A + quarterly financials' },
+  { id: 'q3-2026', type: 'results', dateEs: '13 nov 2026', dateEn: 'Nov 13, 2026', titleEs: 'Resultados Q3 2026', titleEn: 'Q3 2026 Results', noteEs: 'MD&A + estados trimestrales', noteEn: 'MD&A + quarterly financials' },
+]
+
 type Documento = {
   id: string
   titulo_es: string
@@ -121,6 +128,7 @@ export default async function InversoresPage() {
                 <a href="#cobertura"><span className="lang-es">Cobertura de analistas</span><span className="lang-en">Analyst coverage</span></a>
                 <a href="#on"><span className="lang-es">Obligaciones negociables</span><span className="lang-en">Notes</span></a>
                 <a href="#gobierno"><span className="lang-es">Gobierno corporativo</span><span className="lang-en">Corporate governance</span></a>
+                <a href="#calendario"><span className="lang-es">Calendario financiero</span><span className="lang-en">Financial calendar</span></a>
               </nav>
             </aside>
             <main>
@@ -190,6 +198,53 @@ export default async function InversoresPage() {
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Gobierno corporativo</span><span className="lang-en">Corporate governance</span></h2>
                 <p className="lede"><span className="lang-es">Crown Point Energy Inc. cotiza en TSX Venture Exchange y reporta bajo las normas canadienses para emisores junior.</span><span className="lang-en">Crown Point Energy Inc. is listed on TSX Venture Exchange and reports under Canadian junior issuer standards.</span></p>
                 <InversoresDocsTabs docs={allDocs} tipo="gobierno" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
+              </div>
+
+              <div className="section-block" id="calendario" style={{ borderBottom: 0 }}>
+                <span className="eyebrow">Investor Relations</span>
+                <h2 style={{ marginTop: 8 }}>
+                  <span className="lang-es">Calendario financiero</span>
+                  <span className="lang-en">Financial calendar</span>
+                </h2>
+                <p className="lede">
+                  <span className="lang-es">Fechas tentativas para resultados trimestrales y eventos corporativos. Sujeto a cambio — confirmación en SEDAR+ con al menos 2 semanas de anticipación.</span>
+                  <span className="lang-en">Tentative dates for quarterly results and corporate events. Subject to change — confirmation on SEDAR+ at least 2 weeks in advance.</span>
+                </p>
+                <style>{`
+                  .cal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--s-4); margin-top: var(--s-6); }
+                  .cal-event { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); padding: var(--s-5); display: flex; flex-direction: column; gap: 8px; }
+                  .cal-type-badge { font-size: 10px; letter-spacing: 0.12em; font-weight: 700; text-transform: uppercase; padding: 3px 10px; border-radius: var(--r-pill); align-self: start; }
+                  .cal-type-badge.results { background: rgba(108,174,82,0.14); color: var(--cp-green-deep); }
+                  [data-theme="dark"] .cal-type-badge.results { color: #8BD478; }
+                  .cal-type-badge.agm { background: rgba(201,162,74,0.14); color: var(--cp-gold-deep); }
+                  [data-theme="dark"] .cal-type-badge.agm { color: var(--cp-gold); }
+                  .cal-event-date { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--fg-muted); }
+                  .cal-event-title { font-size: 16px; font-weight: 600; color: var(--fg); letter-spacing: -0.01em; line-height: 1.3; }
+                  .cal-event-note { font-size: 12px; color: var(--fg-muted); }
+                `}</style>
+                <div className="cal-grid">
+                  {IR_EVENTS.map(ev => (
+                    <div className="cal-event" key={ev.id}>
+                      <span className={`cal-type-badge ${ev.type}`}>
+                        {ev.type === 'results'
+                          ? <><span className="lang-es">Resultados</span><span className="lang-en">Results</span></>
+                          : <><span className="lang-es">Asamblea</span><span className="lang-en">AGM</span></>}
+                      </span>
+                      <div className="cal-event-date">
+                        <span className="lang-es">{ev.dateEs}</span>
+                        <span className="lang-en">{ev.dateEn}</span>
+                      </div>
+                      <div className="cal-event-title">
+                        <span className="lang-es">{ev.titleEs}</span>
+                        <span className="lang-en">{ev.titleEn}</span>
+                      </div>
+                      <div className="cal-event-note">
+                        <span className="lang-es">{ev.noteEs}</span>
+                        <span className="lang-en">{ev.noteEn}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </main>
           </div>
