@@ -3,8 +3,10 @@ import { createServerClient } from '@supabase/ssr'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity } from '@/lib/roles'
 import { requireAdminUser } from '@/lib/admin-auth'
+import { isSameOrigin } from '@/lib/csrf'
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const adminUser = await requireAdminUser()
   if (!adminUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

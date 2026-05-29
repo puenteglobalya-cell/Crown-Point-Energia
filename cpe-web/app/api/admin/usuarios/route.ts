@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity } from '@/lib/roles'
 import { requireAdminUser, isAdminEmail } from '@/lib/admin-auth'
+import { isSameOrigin } from '@/lib/csrf'
 
 export async function GET() {
   const adminUser = await requireAdminUser()
@@ -38,6 +39,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const adminUser = await requireAdminUser()
   if (!adminUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

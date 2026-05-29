@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
+import { isSameOrigin } from '@/lib/csrf'
 
 async function isAdmin() {
   return requireAdminUser()
@@ -18,11 +19,17 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (!await isAdmin()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
+
+  // Explicit allowlist — prevents mass assignment of id, created_at, etc.
+  const { fecha, titulo_es, titulo_en, resumen_es, resumen_en, url, storage_path, file_name, tipo, publicado } = body
+  const record = { fecha, titulo_es, titulo_en, resumen_es, resumen_en, url, storage_path, file_name, tipo, publicado }
+
   const admin = createSupabaseServerAdminClient()
-  const { data, error } = await admin.from('comunicados').insert(body).select().single()
+  const { data, error } = await admin.from('comunicados').insert(record).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   revalidatePath('/comunicados')

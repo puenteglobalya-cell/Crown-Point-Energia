@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity, getPermissionsForRole } from '@/lib/roles'
 import { isAdminEmail } from '@/lib/admin-auth'
+import { isSameOrigin } from '@/lib/csrf'
 
 async function getUserWithRole() {
   const cookieStore = await cookies()
@@ -49,16 +50,25 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const userWithRole = await getUserWithRole()
 
-  // Only admin can patch reports
   if (!userWithRole?.activo || userWithRole.role !== 'admin') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const body = await req.json()
+
+  // Only estado is patchable — prevents overwriting titulo, datos, html, subido_por, etc.
+  const VALID_ESTADOS = ['borrador', 'publicado'] as const
+  type Estado = typeof VALID_ESTADOS[number]
+  if (!VALID_ESTADOS.includes(body.estado as Estado)) {
+    return NextResponse.json({ error: 'estado inválido' }, { status: 400 })
+  }
+  const patch = { estado: body.estado as Estado, updated_at: new Date().toISOString() }
+
   const db = createSupabaseServerAdminClient()
-  const { error } = await db.from('reportes').update({ ...body, updated_at: new Date().toISOString() }).eq('id', params.id)
+  const { error } = await db.from('reportes').update(patch).eq('id', params.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   await logActivity({
@@ -74,9 +84,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const userWithRole = await getUserWithRole()
 
-  // Only admin can delete reports
   if (!userWithRole?.activo || userWithRole.role !== 'admin') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
