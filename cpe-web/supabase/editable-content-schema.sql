@@ -223,6 +223,14 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
 )
 ON CONFLICT (slug) DO NOTHING;
 
+-- Normalise eyebrow numbering (idempotent — safe to re-run)
+UPDATE operations_blocks SET eyebrow = '01 · Cuenca Neuquina Norte'      WHERE slug = 'ppc';
+UPDATE operations_blocks SET eyebrow = '02 · Cuenca Cuyana'              WHERE slug = 'chanares';
+UPDATE operations_blocks SET eyebrow = '03 · Cuenca Neuquina'            WHERE slug = 'cerro';
+UPDATE operations_blocks SET eyebrow = '04 · Golfo San Jorge · Chubut'   WHERE slug = 'tordillo';
+UPDATE operations_blocks SET eyebrow = '05 · Golfo San Jorge · Santa Cruz' WHERE slug = 'piedra';
+UPDATE operations_blocks SET eyebrow = '06 · Cuenca Austral · Tierra del Fuego' WHERE slug = 'tdf';
+
 
 -- ── 5. Team Members (Management + Board) ───────────────────────────────────
 CREATE TABLE IF NOT EXISTS team_members (

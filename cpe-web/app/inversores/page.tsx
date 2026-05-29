@@ -152,8 +152,8 @@ export default async function InversoresPage() {
                   ))}
                 </div>
                 <p className="pull">
-                  <span className="lang-es">&ldquo;Operamos cuatro bloques en tres cuencas — diversificación geológica real con un solo país.&rdquo;</span>
-                  <span className="lang-en">&ldquo;We operate four blocks across three basins — real geological diversification within a single country.&rdquo;</span>
+                  <span className="lang-es">&ldquo;Operamos seis bloques en cuatro cuencas — diversificación geológica real con un solo país.&rdquo;</span>
+                  <span className="lang-en">&ldquo;We operate six blocks across four basins — real geological diversification within a single country.&rdquo;</span>
                 </p>
               </div>
 

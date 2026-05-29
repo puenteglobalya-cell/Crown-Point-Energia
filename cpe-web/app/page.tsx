@@ -216,7 +216,7 @@ export default async function HomePage() {
                 </span>
               </div>
               <div className="kpi">
-                <span className="kpi-label"><span className="lang-es">Bloques operados</span><span className="lang-en">Operated blocks</span></span>
+                <span className="kpi-label"><span className="lang-es">Áreas operativas</span><span className="lang-en">Operating areas</span></span>
                 <div>
                   <span className="kpi-value num" data-cpe-field="kpi.blocks.value">{kpiBlkVal}</span>
                   <span className="kpi-unit" data-cpe-field="kpi.blocks.unit">
@@ -322,16 +322,16 @@ export default async function HomePage() {
                 <span className="lang-en">A value story<br/>backed by real assets.</span>
               </h2>
               <p className="invest-lede">
-                <span className="lang-es">Reservas certificadas, contratos de venta de gas en pesos y dólares, y un equipo con más de 25 años de experiencia en el upstream argentino.</span>
-                <span className="lang-en">Certified reserves, gas-sale contracts in both pesos and dollars, and a team with 25+ years of experience in Argentine upstream.</span>
+                <span className="lang-es">Reservas certificadas bajo NI 51-101, contratos de suministro energético en USD y moneda local indexada, y un equipo con más de 25 años de experiencia en el upstream argentino.</span>
+                <span className="lang-en">NI 51-101 certified reserves, energy supply contracts denominated in USD and indexed local currency, and a team with 25+ years of Argentine upstream experience.</span>
               </p>
               <ul className="invest-list">
                 <li>
                   <span className="bullet"></span>
                   <div>
                     <strong><span className="lang-es">Producción base diversificada</span><span className="lang-en">Diversified base production</span></strong>
-                    <span className="lang-es">Mix balanceado de gas natural, crudo y NGL en cuatro bloques.</span>
-                    <span className="lang-en">Balanced mix of natural gas, crude and NGLs across four blocks.</span>
+                    <span className="lang-es">Mix balanceado de gas natural, crudo y NGL en seis bloques y cuatro cuencas.</span>
+                    <span className="lang-en">Balanced mix of natural gas, crude and NGLs across six blocks in four basins.</span>
                   </div>
                 </li>
                 <li>
@@ -463,10 +463,16 @@ export default async function HomePage() {
                 })}
               </ul>
             ) : (
-              <p style={{ color: 'var(--fg-muted)', fontSize: 15, fontStyle: 'italic', padding: 'var(--s-6) 0' }}>
-                <span className="lang-es">Próximamente — los comunicados aparecen aquí.</span>
-                <span className="lang-en">Coming soon — press releases appear here.</span>
-              </p>
+              <div style={{ padding: 'var(--s-6) 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                <p style={{ color: 'var(--fg-muted)', fontSize: 14, margin: 0 }}>
+                  <span className="lang-es">No hay comunicados recientes. Consultá el archivo completo.</span>
+                  <span className="lang-en">No recent press releases. See the full archive.</span>
+                </p>
+                <a href="/comunicados" style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                  <span className="lang-es">Ver todos los comunicados →</span>
+                  <span className="lang-en">View all releases →</span>
+                </a>
+              </div>
             )}
           </div>
         </section>
@@ -490,24 +496,30 @@ export default async function HomePage() {
               </div>
               <div className="cc-card">
                 <div className="cc-channel">
-                  <span className="cc-key">Email IR</span>
+                  <span className="cc-key">Investor Relations</span>
                   <a href="mailto:ir@crownpointenergy.com" className="cc-val">ir@crownpointenergy.com</a>
                 </div>
                 <div className="cc-channel">
-                  <span className="cc-key"><span className="lang-es">Teléfono</span><span className="lang-en">Phone</span></span>
-                  <a href="tel:+541152524801" className="cc-val">+54 11 5252-4801</a>
+                  <span className="cc-key">
+                    <span className="lang-es">Comercialización hidrocarburos</span>
+                    <span className="lang-en">Hydrocarbon trading</span>
+                  </span>
+                  <a href="mailto:comercial@crownpointenergy.com" className="cc-val">comercial@crownpointenergy.com</a>
+                </div>
+                <div className="cc-channel">
+                  <span className="cc-key">
+                    <span className="lang-es">Proveedores &amp; compras</span>
+                    <span className="lang-en">Suppliers &amp; procurement</span>
+                  </span>
+                  <a href="mailto:compras@crownpointenergy.com" className="cc-val">compras@crownpointenergy.com</a>
                 </div>
                 <div className="cc-channel">
                   <span className="cc-key"><span className="lang-es">Oficinas Buenos Aires</span><span className="lang-en">Buenos Aires office</span></span>
                   <span className="cc-val">Suipacha 1111, Piso 18 — C1008AAW</span>
                 </div>
-                <div className="cc-channel">
-                  <span className="cc-key"><span className="lang-es">Sede internacional</span><span className="lang-en">International HQ</span></span>
-                  <span className="cc-val">Calgary, AB · Canada</span>
-                </div>
                 <Link className="btn btn-primary cc-btn" href="/contacto">
-                  <span className="lang-es">Solicitar reunión</span>
-                  <span className="lang-en">Request a meeting</span>
+                  <span className="lang-es">Ver todos los contactos</span>
+                  <span className="lang-en">All contacts</span>
                 </Link>
               </div>
             </div>
