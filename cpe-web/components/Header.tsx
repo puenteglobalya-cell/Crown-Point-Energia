@@ -39,6 +39,7 @@ const NAV = [
     ]
   },
   { key: 'contacto', href: '/contacto', es: 'Contacto', en: 'Contact', menu: null },
+  { key: 'portal', href: '/portal', es: 'Acceso', en: 'Login', menu: null, cta: true },
 ]
 
 type Props = {
@@ -135,6 +136,24 @@ export default function Header({ fields, show, lang }: Props) {
                       ))}
                     </div>
                   </>
+                ) : (it as { cta?: boolean }).cta ? (
+                  <Link
+                    href={it.href}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      fontSize: 13, fontWeight: 600,
+                      color: 'var(--accent-deep)', textDecoration: 'none',
+                      padding: '6px 14px', border: '1.5px solid currentColor',
+                      borderRadius: 'var(--r-pill)', marginLeft: 4,
+                    }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                      <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    <span className="lang-es">{it.es}</span>
+                    <span className="lang-en">{it.en}</span>
+                  </Link>
                 ) : (
                   <Link href={it.href} style={{ display: 'block', margin: '-10px -14px', padding: '10px 14px' }}>
                     <span className="lang-es">{it.es}</span>
