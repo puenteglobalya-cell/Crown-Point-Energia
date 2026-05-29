@@ -30,80 +30,187 @@ type FieldItem = {
   key: string
   label: string
   keyEn?: string
+  bilingualCol?: boolean
   multiline?: boolean
 }
 
-const TEXT_GROUPS: { group: string; items: FieldItem[] }[] = [
+type PageGroup = {
+  page: string
+  route: string
+  groups: { group: string; items: FieldItem[] }[]
+}
+
+const PAGE_GROUPS: PageGroup[] = [
   {
-    group: 'Producción',
-    items: [
-      { key: 'kpi.production.value', label: 'Valor' },
-      { key: 'kpi.production.unit',  label: 'Unidad' },
-      { key: 'kpi.production.delta', label: 'Delta' },
+    page: 'Inicio',
+    route: '/',
+    groups: [
+      {
+        group: 'Hero',
+        items: [
+          { key: 'hero.title.es', label: 'Titular',     keyEn: 'hero.title.en', multiline: true },
+          { key: 'hero.lede.es',  label: 'Descripción', keyEn: 'hero.lede.en',  multiline: true },
+        ],
+      },
+      {
+        group: 'KPIs · Período',
+        items: [
+          { key: 'kpis.periodo.es', label: 'Período', keyEn: 'kpis.periodo.en' },
+        ],
+      },
+      {
+        group: 'KPI Producción',
+        items: [
+          { key: 'kpi.production.value', label: 'Valor' },
+          { key: 'kpi.production.unit',  label: 'Unidad' },
+          { key: 'kpi.production.delta', label: 'Delta' },
+        ],
+      },
+      {
+        group: 'KPI Reservas',
+        items: [
+          { key: 'kpi.reserves.value', label: 'Valor' },
+          { key: 'kpi.reserves.unit',  label: 'Unidad' },
+          { key: 'kpi.reserves.delta', label: 'Delta' },
+        ],
+      },
+      {
+        group: 'KPI EBITDA',
+        items: [
+          { key: 'kpi.ebitda.value', label: 'Valor' },
+          { key: 'kpi.ebitda.unit',  label: 'Unidad' },
+          { key: 'kpi.ebitda.delta', label: 'Delta' },
+        ],
+      },
+      {
+        group: 'KPI Bloques',
+        items: [
+          { key: 'kpi.blocks.value', label: 'Valor' },
+          { key: 'kpi.blocks.unit',  label: 'Unidad' },
+          { key: 'kpi.blocks.delta', label: 'Delta' },
+        ],
+      },
+      {
+        group: 'Stock (TSXV: CWV)',
+        items: [
+          { key: 'stock.price',  label: 'Precio' },
+          { key: 'stock.delta',  label: 'Cambio' },
+          { key: 'stock.beta',   label: 'Beta' },
+          { key: 'stock.vol30',  label: 'Vol. 30d' },
+          { key: 'stock.high52', label: 'Máx. 52 sem.' },
+          { key: 'stock.low52',  label: 'Mín. 52 sem.' },
+          { key: 'stock.cap',    label: 'Market cap' },
+          { key: 'stock.shares', label: 'Acciones en circ.' },
+        ],
+      },
     ],
   },
   {
-    group: 'Reservas',
-    items: [
-      { key: 'kpi.reserves.value', label: 'Valor' },
-      { key: 'kpi.reserves.unit',  label: 'Unidad' },
-      { key: 'kpi.reserves.delta', label: 'Delta' },
+    page: 'Inversores',
+    route: '/inversores',
+    groups: [
+      {
+        group: 'Hero',
+        items: [
+          { key: 'page.inversores.h1',   label: 'Titular',     bilingualCol: true, multiline: true },
+          { key: 'page.inversores.lede', label: 'Descripción', bilingualCol: true, multiline: true },
+        ],
+      },
     ],
   },
   {
-    group: 'EBITDA',
-    items: [
-      { key: 'kpi.ebitda.value', label: 'Valor' },
-      { key: 'kpi.ebitda.unit',  label: 'Unidad' },
-      { key: 'kpi.ebitda.delta', label: 'Delta' },
+    page: 'Operaciones',
+    route: '/operaciones',
+    groups: [
+      {
+        group: 'Hero',
+        items: [
+          { key: 'page.operaciones.h1',   label: 'Titular',     bilingualCol: true, multiline: true },
+          { key: 'page.operaciones.lede', label: 'Descripción', bilingualCol: true, multiline: true },
+        ],
+      },
     ],
   },
   {
-    group: 'Bloques',
-    items: [
-      { key: 'kpi.blocks.value', label: 'Valor' },
-      { key: 'kpi.blocks.unit',  label: 'Unidad' },
-      { key: 'kpi.blocks.delta', label: 'Delta' },
+    page: 'Acerca de',
+    route: '/acerca',
+    groups: [
+      {
+        group: 'Hero',
+        items: [
+          { key: 'page.acerca.h1',   label: 'Titular',     bilingualCol: true, multiline: true },
+          { key: 'page.acerca.lede', label: 'Descripción', bilingualCol: true, multiline: true },
+        ],
+      },
     ],
   },
   {
-    group: 'Stock (TSXV: CWV)',
-    items: [
-      { key: 'stock.price',  label: 'Precio' },
-      { key: 'stock.delta',  label: 'Cambio' },
-      { key: 'stock.beta',   label: 'Beta' },
-      { key: 'stock.vol30',  label: 'Vol. 30d' },
-      { key: 'stock.high52', label: 'Máx. 52 sem.' },
-      { key: 'stock.low52',  label: 'Mín. 52 sem.' },
-      { key: 'stock.cap',    label: 'Market cap' },
-      { key: 'stock.shares', label: 'Acciones en circ.' },
+    page: 'ESG',
+    route: '/esg',
+    groups: [
+      {
+        group: 'Hero',
+        items: [
+          { key: 'page.esg.h1',   label: 'Titular',     bilingualCol: true, multiline: true },
+          { key: 'page.esg.lede', label: 'Descripción', bilingualCol: true, multiline: true },
+        ],
+      },
     ],
   },
   {
-    group: 'Hero',
-    items: [
-      { key: 'hero.title.es', label: 'Titular',     keyEn: 'hero.title.en', multiline: true },
-      { key: 'hero.lede.es',  label: 'Descripción', keyEn: 'hero.lede.en',  multiline: true },
+    page: 'Carreras',
+    route: '/carreras',
+    groups: [
+      {
+        group: 'Hero',
+        items: [
+          { key: 'page.carreras.h1',   label: 'Titular',     bilingualCol: true, multiline: true },
+          { key: 'page.carreras.lede', label: 'Descripción', bilingualCol: true, multiline: true },
+        ],
+      },
     ],
   },
   {
-    group: 'Sección KPIs · Período',
-    items: [
-      { key: 'kpis.periodo.es', label: 'Período', keyEn: 'kpis.periodo.en' },
-    ],
-  },
-  {
-    group: 'Contacto',
-    items: [
-      { key: 'contact.ir.email',     label: 'Email IR' },
-      { key: 'contact.ir.person',    label: 'Nombre IR' },
-      { key: 'contact.prensa.email', label: 'Email prensa' },
-      { key: 'contact.compras.email',label: 'Email compras' },
-      { key: 'contact.ba.address',   label: 'Dirección BA', multiline: true },
-      { key: 'contact.ba.phone',     label: 'Teléfono BA' },
+    page: 'Contacto',
+    route: '/contacto',
+    groups: [
+      {
+        group: 'Hero',
+        items: [
+          { key: 'page.contacto.h1',   label: 'Titular',     bilingualCol: true, multiline: true },
+          { key: 'page.contacto.lede', label: 'Descripción', bilingualCol: true, multiline: true },
+        ],
+      },
+      {
+        group: 'Datos de contacto',
+        items: [
+          { key: 'contact.ir.email',      label: 'Email IR' },
+          { key: 'contact.ir.person',     label: 'Nombre IR' },
+          { key: 'contact.prensa.email',  label: 'Email prensa' },
+          { key: 'contact.compras.email', label: 'Email compras' },
+          { key: 'contact.ba.address',    label: 'Dirección BA', multiline: true },
+          { key: 'contact.ba.phone',      label: 'Teléfono BA' },
+        ],
+      },
     ],
   },
 ]
+
+function filterBySearch(pg: PageGroup, q: string): PageGroup | null {
+  if (!q) return pg
+  const ql = q.toLowerCase()
+  if (pg.page.toLowerCase().includes(ql) || pg.route.toLowerCase().includes(ql)) return pg
+  const groups = pg.groups
+    .map(g => {
+      if (g.group.toLowerCase().includes(ql)) return g
+      const items = g.items.filter(it =>
+        it.label.toLowerCase().includes(ql) || it.key.toLowerCase().includes(ql)
+      )
+      return items.length > 0 ? { ...g, items } : null
+    })
+    .filter((g): g is { group: string; items: FieldItem[] } => g !== null)
+  return groups.length > 0 ? { ...pg, groups } : null
+}
 
 type Tab = 'estilo' | 'visibilidad' | 'textos' | 'sitio' | 'export'
 
@@ -121,6 +228,9 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false)
   const [savedMsg, setSavedMsg] = useState('')
   const [draftFields, setDraftFields] = useState<Record<string, string>>({})
+  const [draftFieldsEn, setDraftFieldsEn] = useState<Record<string, string>>({})
+  const [search, setSearch] = useState('')
+  const [openPages, setOpenPages] = useState<Record<string, boolean>>({})
   const [exportJson, setExportJson] = useState('')
   const [copyMsg, setCopyMsg] = useState('')
   const [iframeKey, setIframeKey] = useState(0)
@@ -131,6 +241,7 @@ export default function AdminPage() {
       const s: CMSState = await res.json()
       setState(s)
       setDraftFields({ ...s.fields })
+      setDraftFieldsEn({ ...s.fieldsEn })
       setExportJson(JSON.stringify(s, null, 2))
     }
   }, [])
@@ -153,7 +264,7 @@ export default function AdminPage() {
   }
 
   async function saveFields() {
-    await save({ fields: draftFields })
+    await save({ fields: draftFields, fieldsEn: draftFieldsEn })
   }
 
   async function handleReset() {
@@ -196,6 +307,9 @@ export default function AdminPage() {
                 ✓ {savedMsg}
               </span>
             )}
+            <Link href="/admin/cms" className="btn btn-primary" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
+              Contenido del sitio
+            </Link>
             <Link href="/admin/documentos" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Documentos
             </Link>
@@ -391,66 +505,141 @@ export default function AdminPage() {
         {/* ── Tab: Textos ───────────────────────────────────────────────── */}
         {tab === 'textos' && (
           <div>
-            {TEXT_GROUPS.map(g => (
-              <div key={g.group} style={{ marginBottom: 32 }}>
-                <h3 style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 12 }}>
-                  {g.group}
-                </h3>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  {g.items.map(item => (
-                    <div
-                      key={item.key}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: item.keyEn ? '140px 1fr 1fr' : '140px 1fr',
-                        alignItems: 'start',
-                        gap: 12,
-                      }}
-                    >
-                      <label style={{ fontSize: 13, color: 'var(--fg-soft)', fontWeight: 500, margin: 0, paddingTop: item.keyEn ? 20 : 0 }}>
-                        {item.label}
-                        <span style={{ display: 'block', fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)', marginTop: 1 }}>
-                          {item.key}
-                        </span>
-                      </label>
+            {/* Search bar */}
+            <div style={{ marginBottom: 20, position: 'relative' }}>
+              <svg
+                style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)', pointerEvents: 'none' }}
+                width="15" height="15" viewBox="0 0 24 24" fill="none"
+              >
+                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <input
+                type="search"
+                placeholder="Buscar por campo, clave o página…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ width: '100%', fontSize: 14, padding: '10px 14px 10px 36px', boxSizing: 'border-box' }}
+              />
+            </div>
 
-                      {item.keyEn ? (
-                        <>
-                          <BilingualInput
-                            lang="ES"
-                            value={draftFields[item.key] ?? ''}
-                            onChange={v => setDraftFields(p => ({ ...p, [item.key]: v }))}
-                            multiline={item.multiline}
-                          />
-                          <BilingualInput
-                            lang="EN"
-                            value={draftFields[item.keyEn] ?? ''}
-                            onChange={v => setDraftFields(p => ({ ...p, [item.keyEn!]: v }))}
-                            multiline={item.multiline}
-                          />
-                        </>
-                      ) : item.multiline ? (
-                        <textarea
-                          rows={3}
-                          value={draftFields[item.key] ?? ''}
-                          onChange={e => setDraftFields(p => ({ ...p, [item.key]: e.target.value }))}
-                          style={{ width: '100%', resize: 'vertical', boxSizing: 'border-box' }}
-                        />
-                      ) : (
-                        <input
-                          type="text"
-                          value={draftFields[item.key] ?? ''}
-                          onChange={e => setDraftFields(p => ({ ...p, [item.key]: e.target.value }))}
-                          style={{ width: '100%' }}
-                        />
-                      )}
+            {/* Page accordions */}
+            {PAGE_GROUPS.map(pg => {
+              const filtered = filterBySearch(pg, search)
+              if (!filtered) return null
+              const isOpen = search ? true : (openPages[pg.page] !== false)
+              return (
+                <div key={pg.page} style={{ marginBottom: 6, border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
+                  <button
+                    onClick={() => { if (!search) setOpenPages(p => ({ ...p, [pg.page]: !isOpen })) }}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '12px 18px',
+                      background: isOpen ? 'color-mix(in oklab, var(--accent) 6%, var(--surface))' : 'var(--surface)',
+                      border: 'none', cursor: search ? 'default' : 'pointer', textAlign: 'left', gap: 12,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>{pg.page}</span>
+                      <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)', background: 'var(--bg-alt)', padding: '2px 8px', borderRadius: 4 }}>
+                        {pg.route}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+                    {!search && (
+                      <svg
+                        style={{ color: 'var(--fg-muted)', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}
+                        width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      >
+                        <polyline points="6 9 12 15 18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingTop: 8 }}>
+                  {isOpen && (
+                    <div style={{ padding: '16px 20px 20px', borderTop: '1px solid var(--rule)' }}>
+                      {filtered.groups.map((g, gi) => (
+                        <div key={g.group} style={{ marginBottom: gi < filtered.groups.length - 1 ? 28 : 0 }}>
+                          <h3 style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 12, marginTop: 0 }}>
+                            {g.group}
+                          </h3>
+                          <div style={{ display: 'grid', gap: 12 }}>
+                            {g.items.map(item => {
+                              const hasBilingual = item.bilingualCol || !!item.keyEn
+                              return (
+                                <div
+                                  key={item.key}
+                                  style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: hasBilingual ? '140px 1fr 1fr' : '140px 1fr',
+                                    alignItems: 'start',
+                                    gap: 12,
+                                  }}
+                                >
+                                  <label style={{ fontSize: 13, color: 'var(--fg-soft)', fontWeight: 500, margin: 0, paddingTop: hasBilingual ? 20 : 0 }}>
+                                    {item.label}
+                                    <span style={{ display: 'block', fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)', marginTop: 1 }}>
+                                      {item.key}
+                                    </span>
+                                  </label>
+
+                                  {item.bilingualCol ? (
+                                    <>
+                                      <BilingualInput
+                                        lang="ES"
+                                        value={draftFields[item.key] ?? ''}
+                                        onChange={v => setDraftFields(p => ({ ...p, [item.key]: v }))}
+                                        multiline={item.multiline}
+                                      />
+                                      <BilingualInput
+                                        lang="EN"
+                                        value={draftFieldsEn[item.key] ?? ''}
+                                        onChange={v => setDraftFieldsEn(p => ({ ...p, [item.key]: v }))}
+                                        multiline={item.multiline}
+                                      />
+                                    </>
+                                  ) : item.keyEn ? (
+                                    <>
+                                      <BilingualInput
+                                        lang="ES"
+                                        value={draftFields[item.key] ?? ''}
+                                        onChange={v => setDraftFields(p => ({ ...p, [item.key]: v }))}
+                                        multiline={item.multiline}
+                                      />
+                                      <BilingualInput
+                                        lang="EN"
+                                        value={draftFields[item.keyEn] ?? ''}
+                                        onChange={v => setDraftFields(p => ({ ...p, [item.keyEn!]: v }))}
+                                        multiline={item.multiline}
+                                      />
+                                    </>
+                                  ) : item.multiline ? (
+                                    <textarea
+                                      rows={3}
+                                      value={draftFields[item.key] ?? ''}
+                                      onChange={e => setDraftFields(p => ({ ...p, [item.key]: e.target.value }))}
+                                      style={{ width: '100%', resize: 'vertical', boxSizing: 'border-box' }}
+                                    />
+                                  ) : (
+                                    <input
+                                      type="text"
+                                      value={draftFields[item.key] ?? ''}
+                                      onChange={e => setDraftFields(p => ({ ...p, [item.key]: e.target.value }))}
+                                      style={{ width: '100%' }}
+                                    />
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingTop: 20 }}>
               <button
                 className="btn btn-primary"
                 onClick={saveFields}
