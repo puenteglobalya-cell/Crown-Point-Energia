@@ -165,25 +165,6 @@ export default function Header({ fields, show, lang }: Props) {
           </nav>
 
           <div className="header-utils">
-            <Link
-              href="/portal"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
-                color: 'var(--fg-soft)', textDecoration: 'none',
-                padding: '6px 12px', border: '1px solid var(--rule)', borderRadius: 'var(--r-pill)',
-                transition: 'color 0.15s, border-color 0.15s',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--fg-soft)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg-soft)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--rule)' }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8"/>
-                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-              </svg>
-              <span className="lang-es">Acceso</span>
-              <span className="lang-en">Login</span>
-            </Link>
             <div className="lang-toggle" role="group" aria-label="Language">
               <button
                 data-lang-btn="es"
