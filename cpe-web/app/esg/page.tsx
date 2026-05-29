@@ -87,17 +87,17 @@ export default async function EsgPage() {
         <div className="container">
           <div className="esg-kpi-strip reveal">
             {[
-              { valEs: '−18%',  labelEs: 'Reducción emisiones vs 2022',  labelEn: 'Emissions reduction vs 2022' },
-              { valEs: '94%',   labelEs: 'Agua reinyectada',              labelEn: 'Water reinjected' },
-              { valEs: '0.87',  labelEs: 'TRIR seguridad 2024',           labelEn: 'Safety TRIR 2024' },
-              { valEs: '4/5',   labelEs: 'Directores independientes',     labelEn: 'Independent directors' },
+              { val: f['esg.kpi.emissions'] || '−18%',   labelEs: 'Reducción emisiones vs 2022',  labelEn: 'Emissions reduction vs 2022' },
+              { val: f['esg.kpi.water']     || '94%',    labelEs: 'Agua reinyectada',              labelEn: 'Water reinjected' },
+              { val: f['esg.kpi.trir']      || '0.87',   labelEs: 'TRIR seguridad 2024',           labelEn: 'Safety TRIR 2024' },
+              { val: f['esg.kpi.directors'] || '4/5',    labelEs: 'Directores independientes',     labelEn: 'Independent directors' },
             ].map((k, i) => (
               <div className="kpi" key={i} style={{ minHeight: 120 }}>
                 <span className="kpi-label">
                   <span className="lang-es">{k.labelEs}</span>
                   <span className="lang-en">{k.labelEn}</span>
                 </span>
-                <div><span className="kpi-value num" style={{ fontSize: 40 }}>{k.valEs}</span></div>
+                <div><span className="kpi-value num" style={{ fontSize: 40 }}>{k.val}</span></div>
               </div>
             ))}
           </div>
