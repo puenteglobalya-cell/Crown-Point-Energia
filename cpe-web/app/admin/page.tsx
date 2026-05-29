@@ -196,6 +196,9 @@ export default function AdminPage() {
                 ✓ {savedMsg}
               </span>
             )}
+            <Link href="/admin/cms" className="btn btn-primary" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
+              Contenido del sitio
+            </Link>
             <Link href="/admin/documentos" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Documentos
             </Link>
