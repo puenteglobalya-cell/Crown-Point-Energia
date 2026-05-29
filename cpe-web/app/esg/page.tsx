@@ -1,104 +1,42 @@
 import Link from 'next/link'
+import { getCmsState } from '@/lib/cms'
+import { fetchEsgPillars } from '@/lib/content-fetch'
 
 export const revalidate = 60
 
-const PILLARS = [
-  {
-    id: 'ambiental',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z" stroke="currentColor" strokeWidth="1.6"/>
-        <path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-        <path d="M7 10c.5-1 1.5-2 3-2m7 2c-.5-1-1.5-2-3-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-      </svg>
-    ),
-    color: '#2FA08A',
-    titleEs: 'Ambiental',
-    titleEn: 'Environmental',
-    ledeEs: 'Operamos con un enfoque de minimización de impactos y reducción progresiva de emisiones en todos nuestros bloques.',
-    ledeEn: 'We operate with a focus on minimising impacts and progressively reducing emissions across all our blocks.',
-    metrics: [
-      { labelEs: 'Reducción de emisiones (2024 vs. 2022)', labelEn: 'Emissions reduction (2024 vs. 2022)', val: '−18%' },
-      { labelEs: 'Gas antorcha quemado (% de producción)', labelEn: 'Gas flared (% of production)', val: '<2.1%' },
-      { labelEs: 'Agua reinyectada / producida', labelEn: 'Water reinjected / produced', val: '94%' },
-      { labelEs: 'Pozos remediados 2024', labelEn: 'Remediated wells 2024', val: '11' },
-    ],
-    initiativesEs: [
-      'Programa de monitoreo continuo de emisiones fugitivas en todas las instalaciones de superficie.',
-      'Electrificación progresiva de compresores en Tordillo con generación fotovoltaica solar.',
-      'Sistema de gestión ambiental certificado bajo ISO 14001 en las operaciones de Tierra del Fuego.',
-    ],
-    initiativesEn: [
-      'Continuous fugitive emission monitoring programme at all surface facilities.',
-      'Progressive electrification of Tordillo compressors with solar photovoltaic generation.',
-      'Environmental management system certified under ISO 14001 for Tierra del Fuego operations.',
-    ],
-  },
-  {
-    id: 'social',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.6"/>
-        <path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-        <path d="M16 3.13a4 4 0 010 7.75M21 21v-2a4 4 0 00-3-3.87" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-      </svg>
-    ),
-    color: '#6CAE52',
-    titleEs: 'Social',
-    titleEn: 'Social',
-    ledeEs: 'Las comunidades donde operamos son parte de nuestra estrategia. Generamos empleo local, apoyamos educación técnica y mantenemos estándares de salud y seguridad de primer nivel.',
-    ledeEn: 'The communities where we operate are part of our strategy. We generate local employment, support technical education and maintain world-class health and safety standards.',
-    metrics: [
-      { labelEs: 'Empleados directos', labelEn: 'Direct employees', val: '328' },
-      { labelEs: 'Empleados locales (en provincia)', labelEn: 'Local employees (in province)', val: '71%' },
-      { labelEs: 'Horas de capacitación / empleado', labelEn: 'Training hours / employee', val: '42h' },
-      { labelEs: 'Tasa de accidentes (TRIR)', labelEn: 'Accident rate (TRIR)', val: '0.87' },
-    ],
-    initiativesEs: [
-      'Programa de becas universitarias para hijos de colaboradores y estudiantes de comunidades aledañas a los bloques operativos.',
-      'Acuerdos con institutos técnicos en Mendoza, Chubut y Tierra del Fuego para formación de técnicos en petróleo y gas.',
-      'Clínicas móviles de salud y audiciones periódicas en localidades cercanas a los bloques en zonas remotas.',
-    ],
-    initiativesEn: [
-      'University scholarship programme for employees\' children and students from communities near operating blocks.',
-      'Agreements with technical institutes in Mendoza, Chubut and Tierra del Fuego for oil and gas technician training.',
-      'Mobile health clinics and periodic health screenings in communities near remote operating blocks.',
-    ],
-  },
-  {
-    id: 'gobernanza',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="11" width="18" height="10" rx="2" stroke="currentColor" strokeWidth="1.6"/>
-        <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-        <circle cx="12" cy="16" r="1.5" fill="currentColor"/>
-      </svg>
-    ),
-    color: '#C9A24A',
-    titleEs: 'Gobernanza',
-    titleEn: 'Governance',
-    ledeEs: 'Reportamos bajo estándares canadienses con directorio mayoritariamente independiente, política anti-corrupción, línea ética y divulgación completa en SEDAR+.',
-    ledeEn: 'We report under Canadian standards with a majority-independent board, anti-corruption policy, ethics hotline and full disclosure on SEDAR+.',
-    metrics: [
-      { labelEs: 'Directores independientes', labelEn: 'Independent directors', val: '4/5' },
-      { labelEs: 'Directoras mujeres', labelEn: 'Female directors', val: '2' },
-      { labelEs: 'Auditores externos', labelEn: 'External auditors', val: 'KPMG' },
-      { labelEs: 'Cotización regulatoria', labelEn: 'Regulatory listing', val: 'TSXV · CNV' },
-    ],
-    initiativesEs: [
-      'Código de Ética aplicable a todos los directores, ejecutivos, empleados y contratistas, con línea de reporte confidencial.',
-      'Política de anti-corrupción y anti-soborno conforme a la Ley Canadiense de Corrupción de Funcionarios Extranjeros (CFPOA).',
-      'Política de diversidad en el directorio con objetivo del 30% de representación de géneros no predominantes para 2027.',
-    ],
-    initiativesEn: [
-      'Code of Ethics applicable to all directors, officers, employees and contractors, with a confidential reporting hotline.',
-      'Anti-corruption and anti-bribery policy in compliance with the Canadian Corruption of Foreign Public Officials Act (CFPOA).',
-      'Board diversity policy with a target of 30% non-predominant gender representation by 2027.',
-    ],
-  },
-]
+const ESG_ICONS: Record<string, React.ReactNode> = {
+  ambiental: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z" stroke="currentColor" strokeWidth="1.6"/>
+      <path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+      <path d="M7 10c.5-1 1.5-2 3-2m7 2c-.5-1-1.5-2-3-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+    </svg>
+  ),
+  social: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.6"/>
+      <path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+      <path d="M16 3.13a4 4 0 010 7.75M21 21v-2a4 4 0 00-3-3.87" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+    </svg>
+  ),
+  gobernanza: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="11" width="18" height="10" rx="2" stroke="currentColor" strokeWidth="1.6"/>
+      <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+      <circle cx="12" cy="16" r="1.5" fill="currentColor"/>
+    </svg>
+  ),
+}
 
-export default function EsgPage() {
+export default async function EsgPage() {
+  const [s, pillars] = await Promise.all([
+    getCmsState(),
+    fetchEsgPillars(),
+  ])
+
+  const f = s.fields
+  const fe = s.fieldsEn
+
   return (
     <>
       <section className="page-hero">
@@ -113,12 +51,12 @@ export default function EsgPage() {
             <span className="lang-en">Corporate responsibility</span>
           </span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es">Operar bien.<br/>Reportar con claridad.</span>
-            <span className="lang-en">Operate responsibly.<br/>Report with clarity.</span>
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: f['page.esg.h1'] || 'Operar bien.<br/>Reportar con claridad.' }} />
+            <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.esg.h1'] || 'Operate responsibly.<br/>Report with clarity.' }} />
           </h1>
           <p>
-            <span className="lang-es">Nuestra estrategia ESG integra la responsabilidad ambiental, el compromiso social y la gobernanza robusta como pilares de creación de valor a largo plazo.</span>
-            <span className="lang-en">Our ESG strategy integrates environmental responsibility, social commitment and robust governance as pillars of long-term value creation.</span>
+            <span className="lang-es">{f['page.esg.lede'] || 'Nuestra estrategia ESG integra la responsabilidad ambiental, el compromiso social y la gobernanza robusta como pilares de creación de valor a largo plazo.'}</span>
+            <span className="lang-en">{fe['page.esg.lede'] || 'Our ESG strategy integrates environmental responsibility, social commitment and robust governance as pillars of long-term value creation.'}</span>
           </p>
         </div>
       </section>
@@ -183,19 +121,19 @@ export default function EsgPage() {
           </div>
 
           <div className="esg-pillars">
-            {PILLARS.map((p, pi) => (
-              <div className={`esg-pillar reveal reveal-d${pi + 1}`} key={p.id}>
+            {pillars.map((p, pi) => (
+              <div className={`esg-pillar reveal reveal-d${pi + 1}`} key={p.pilar}>
                 <div className="esg-pillar-head">
                   <div className="esg-pillar-icon" style={{ background: `${p.color}22`, color: p.color }}>
-                    {p.icon}
+                    {ESG_ICONS[p.pilar] ?? null}
                   </div>
                   <h3 style={{ color: p.color }}>
-                    <span className="lang-es">{p.titleEs}</span>
-                    <span className="lang-en">{p.titleEn}</span>
+                    <span className="lang-es">{p.pilar.charAt(0).toUpperCase() + p.pilar.slice(1)}</span>
+                    <span className="lang-en">{p.pilar === 'ambiental' ? 'Environmental' : p.pilar === 'social' ? 'Social' : 'Governance'}</span>
                   </h3>
                   <p className="lede">
-                    <span className="lang-es">{p.ledeEs}</span>
-                    <span className="lang-en">{p.ledeEn}</span>
+                    <span className="lang-es">{p.lede_es}</span>
+                    <span className="lang-en">{p.lede_en}</span>
                   </p>
                 </div>
                 <div className="esg-metrics">
@@ -215,10 +153,10 @@ export default function EsgPage() {
                     <span className="lang-en">Initiatives</span>
                   </h4>
                   <ul className="esg-init-list">
-                    {p.initiativesEs.map((item, i) => (
+                    {p.initiatives_es.map((item, i) => (
                       <li key={i}>
                         <span className="lang-es">{item}</span>
-                        <span className="lang-en">{p.initiativesEn[i]}</span>
+                        <span className="lang-en">{p.initiatives_en[i] ?? ''}</span>
                       </li>
                     ))}
                   </ul>
@@ -237,12 +175,12 @@ export default function EsgPage() {
               { name: 'SASB', descEs: 'Petroleum & Gas Integrated — Oil & Gas Exploration & Production', descEn: 'Petroleum & Gas Integrated — Oil & Gas E&P' },
               { name: 'TCFD', descEs: 'Recomendaciones para divulgación de riesgos climáticos financieros', descEn: 'Recommendations for climate-related financial risk disclosure' },
               { name: 'NI 51-101', descEs: 'Canadian Securities Administrators — estándar de reservas de petróleo y gas', descEn: 'Canadian Securities Administrators — oil & gas reserves standard' },
-            ].map(f => (
-              <div key={f.name} style={{ padding: 'var(--s-6)' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 600, color: 'var(--fg)', marginBottom: 8 }}>{f.name}</div>
+            ].map(fr => (
+              <div key={fr.name} style={{ padding: 'var(--s-6)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 600, color: 'var(--fg)', marginBottom: 8 }}>{fr.name}</div>
                 <p style={{ fontSize: 13, color: 'var(--fg-soft)', lineHeight: 1.6, margin: 0 }}>
-                  <span className="lang-es">{f.descEs}</span>
-                  <span className="lang-en">{f.descEn}</span>
+                  <span className="lang-es">{fr.descEs}</span>
+                  <span className="lang-en">{fr.descEn}</span>
                 </p>
               </div>
             ))}

@@ -1,8 +1,20 @@
 import Link from 'next/link'
+import { getCmsState } from '@/lib/cms'
+import { fetchTeamMembers, fetchStrategyCards } from '@/lib/content-fetch'
 
 export const revalidate = 60
 
-export default function AcercaPage() {
+export default async function AcercaPage() {
+  const [s, management, board, strategyCards] = await Promise.all([
+    getCmsState(),
+    fetchTeamMembers('management'),
+    fetchTeamMembers('board'),
+    fetchStrategyCards(),
+  ])
+
+  const f = s.fields
+  const fe = s.fieldsEn
+
   return (
     <>
       <style>{`
@@ -36,12 +48,12 @@ export default function AcercaPage() {
           </div>
           <span className="eyebrow">Crown Point Energy</span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es">Producción real,<br/>base sólida,<br/>visión de largo plazo.</span>
-            <span className="lang-en">Real production,<br/>solid foundation,<br/>long-term vision.</span>
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: f['page.acerca.h1'] || 'Producción real,<br/>base sólida,<br/>visión de largo plazo.' }} />
+            <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.acerca.h1'] || 'Real production,<br/>solid foundation,<br/>long-term vision.' }} />
           </h1>
           <p>
-            <span className="lang-es">Crown Point Energía S.A. opera en el mercado argentino con casa matriz internacional. Dedicada al petróleo y gas con sede en Buenos Aires, genera flujo de caja de su propia producción y mantiene una cartera de oportunidades en las cuencas Austral, Neuquina y Cuyana. La empresa holding Crown Point Energy Inc. cotiza en TSXV: CWV.</span>
-            <span className="lang-en">Crown Point Energía S.A. operates in the Argentine market with international headquarters. Dedicated to oil &amp; gas and based in Buenos Aires, it generates cash flow from its own production and maintains a portfolio of opportunities in the Austral, Neuquén and Cuyana basins. Holding company Crown Point Energy Inc. is listed on TSXV: CWV.</span>
+            <span className="lang-es">{f['page.acerca.lede'] || 'Crown Point Energía S.A. opera en el mercado argentino con casa matriz internacional.'}</span>
+            <span className="lang-en">{fe['page.acerca.lede'] || 'Crown Point Energía S.A. operates in the Argentine market with international headquarters.'}</span>
           </p>
         </div>
       </section>
@@ -66,20 +78,21 @@ export default function AcercaPage() {
                   <span className="lang-en">Disciplined growth<br/>with real assets.</span>
                 </h2>
                 <p className="lede">
-                  <span className="lang-es">La estrategia de Crown Point se centra en establecer una cartera de activos en producción, además de oportunidades de exploración y mejora de la producción actual en sus yacimientos, para proporcionar una base sólida de crecimiento futuro. Las actividades de exploración y desarrollo se concentran principalmente en la cuenca Austral (Tierra del Fuego) y la cuenca Neuquina (Mendoza y Neuquén).</span>
-                  <span className="lang-en">Crown Point&apos;s strategy focuses on building a portfolio of production assets, along with exploration opportunities and improvement of current production at its fields, to provide a solid foundation for future growth. Exploration and development activities are concentrated primarily in the Austral basin (Tierra del Fuego) and the Neuquén basin (Mendoza and Neuquén).</span>
+                  <span className="lang-es">La estrategia de Crown Point se centra en establecer una cartera de activos en producción, además de oportunidades de exploración y mejora de la producción actual en sus yacimientos.</span>
+                  <span className="lang-en">Crown Point&apos;s strategy focuses on building a portfolio of production assets, along with exploration opportunities and improvement of current production at its fields.</span>
                 </p>
                 <div className="strat-grid">
-                  {[
-                    { n: '01', titleEs: 'Producción base', titleEn: 'Base production', bodyEs: 'Sostener y optimizar la producción existente con workovers y recuperación secundaria. La base genera el cash flow que financia el crecimiento.', bodyEn: 'Sustain and optimize existing production with workovers and secondary recovery. The base generates the cash flow that funds growth.' },
-                    { n: '02', titleEs: 'Disciplina de capital', titleEn: 'Capital discipline', bodyEs: 'Solo aprobamos proyectos con TIR esperada > 30% a precios conservadores. Mantenemos Net Debt/EBITDA por debajo de 1,5x en todo momento.', bodyEn: 'We only approve projects with expected IRR > 30% at conservative prices. We keep Net Debt/EBITDA below 1.5x at all times.' },
-                    { n: '03', titleEs: 'Adquisición selectiva', titleEn: 'Selective acquisition', bodyEs: 'Crecemos por adquisición de bloques productivos con upside operativo identificable, priorizando cuencas donde ya operamos.', bodyEn: 'We grow by acquiring producing blocks with identifiable operational upside, prioritizing basins where we already operate.' },
-                    { n: '04', titleEs: 'Vinculación honesta', titleEn: 'Honest engagement', bodyEs: 'Reportamos con transparencia. Cumplimos con NI 51-101 y NI 52-110. Trabajamos cerca de comunidades locales en cada bloque.', bodyEn: 'We report transparently. We comply with NI 51-101 and NI 52-110. We work closely with local communities at every block.' },
-                  ].map(c => (
-                    <div className="strat-card" key={c.n}>
-                      <span className="num">{c.n}</span>
-                      <h4><span className="lang-es">{c.titleEs}</span><span className="lang-en">{c.titleEn}</span></h4>
-                      <p><span className="lang-es">{c.bodyEs}</span><span className="lang-en">{c.bodyEn}</span></p>
+                  {strategyCards.map(c => (
+                    <div className="strat-card" key={c.id}>
+                      <span className="num">{c.num}</span>
+                      <h4>
+                        <span className="lang-es">{c.title_es}</span>
+                        <span className="lang-en">{c.title_en}</span>
+                      </h4>
+                      <p>
+                        <span className="lang-es">{c.body_es}</span>
+                        <span className="lang-en">{c.body_en}</span>
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -93,17 +106,20 @@ export default function AcercaPage() {
                   <span className="lang-en">Professionals with over 25 years of experience in Argentine upstream and Canadian capital markets.</span>
                 </p>
                 <ul className="people-grid">
-                  {[
-                    { initials: 'AS', bg: 'linear-gradient(135deg, #1F2566, #4F5478)', name: 'Andrés Suárez', roleEs: 'CEO & Presidente', roleEn: 'CEO & President', bioEs: '25 años en upstream argentino. Ingeniero en Petróleo (UBA), MBA IAE.', bioEn: '25 years in Argentine upstream. Petroleum Engineer (UBA), IAE MBA.' },
-                    { initials: 'MV', bg: 'linear-gradient(135deg, #6CAE52, #4E8A38)', name: 'Mariano Vega', roleEs: 'CFO', roleEn: 'CFO', bioEs: '18 años en mercados de capital. Ex Macro Securities, ex YPF Treasury.', bioEn: '18 years in capital markets. Ex Macro Securities, ex YPF Treasury.' },
-                    { initials: 'LR', bg: 'linear-gradient(135deg, #B05E2A, #8A3F1A)', name: 'Laura Ramos', roleEs: 'COO', roleEn: 'COO', bioEs: '22 años de experiencia operativa en Cuenca Neuquina y Cuyana.', bioEn: '22 years of operational experience in the Neuquén and Cuyana basins.' },
-                    { initials: 'DG', bg: 'linear-gradient(135deg, #C9A24A, #A37F2C)', name: 'Diego García', roleEs: 'VP Operaciones', roleEn: 'VP Operations', bioEs: 'Ex Pluspetrol. Geólogo (UNLP). Especialista en Golfo San Jorge.', bioEn: 'Ex Pluspetrol. Geologist (UNLP). San Jorge specialist.' },
-                  ].map(p => (
-                    <li className="person" key={p.initials}>
+                  {management.map(p => (
+                    <li className="person" key={p.id}>
                       <div className="avatar" style={{ background: p.bg }}>{p.initials}</div>
                       <strong>{p.name}</strong>
-                      <span className="role"><span className="lang-es">{p.roleEs}</span><span className="lang-en">{p.roleEn}</span></span>
-                      <p><span className="lang-es">{p.bioEs}</span><span className="lang-en">{p.bioEn}</span></p>
+                      <span className="role">
+                        <span className="lang-es">{p.role_es}</span>
+                        <span className="lang-en">{p.role_en}</span>
+                      </span>
+                      {(p.bio_es || p.bio_en) && (
+                        <p>
+                          <span className="lang-es">{p.bio_es}</span>
+                          <span className="lang-en">{p.bio_en}</span>
+                        </p>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -113,15 +129,19 @@ export default function AcercaPage() {
                 <span className="eyebrow">Crown Point Energy Inc.</span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Directorio</span><span className="lang-en">Board of directors</span></h2>
                 <p className="lede">
-                  <span className="lang-es">Cinco directores, con mayoría independiente. Cumplimos con NI 58-101 sobre prácticas de gobierno corporativo.</span>
-                  <span className="lang-en">Five directors, majority independent. We comply with NI 58-101 on corporate governance practices.</span>
+                  <span className="lang-es">Cumplimos con NI 58-101 sobre prácticas de gobierno corporativo.</span>
+                  <span className="lang-en">We comply with NI 58-101 on corporate governance practices.</span>
                 </p>
                 <ul className="director-list">
-                  <li><strong>Brian Moss</strong> · Chairman · <span><span className="lang-es">Independiente</span><span className="lang-en">Independent</span></span></li>
-                  <li><strong>Andrés Suárez</strong> · CEO &amp; Director</li>
-                  <li><strong>Camila Pereyra</strong> · Director · <span><span className="lang-es">Independiente</span><span className="lang-en">Independent</span></span></li>
-                  <li><strong>Edward Brown</strong> · Director · <span><span className="lang-es">Independiente</span><span className="lang-en">Independent</span></span></li>
-                  <li><strong>Roberto Cuevas</strong> · Director · <span><span className="lang-es">Independiente</span><span className="lang-en">Independent</span></span></li>
+                  {board.map(d => (
+                    <li key={d.id}>
+                      <strong>{d.name}</strong>
+                      {d.cargo_board && <> · {d.cargo_board}</>}
+                      {d.independiente === true && (
+                        <span><span className="lang-es">Independiente</span><span className="lang-en">Independent</span></span>
+                      )}
+                    </li>
+                  ))}
                 </ul>
               </div>
 

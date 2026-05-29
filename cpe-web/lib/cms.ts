@@ -6,6 +6,7 @@ export type CMSState = {
   lang: 'es' | 'en'
   show: Record<string, boolean>
   fields: Record<string, string>
+  fieldsEn: Record<string, string>
   maintenance: boolean
 }
 
@@ -15,6 +16,7 @@ const HARD_DEFAULTS: CMSState = {
   lang: 'es',
   show: {},
   fields: {},
+  fieldsEn: {},
   maintenance: false,
 }
 
@@ -36,8 +38,10 @@ export async function getCmsState(): Promise<CMSState> {
     for (const s of sections) show[s.key] = s.visible
 
     const fieldMap: Record<string, string> = {}
+    const fieldMapEn: Record<string, string> = {}
     for (const f of fields) {
       fieldMap[f.key] = f.value_es ?? ''
+      fieldMapEn[f.key] = f.value_en ?? ''
     }
 
     return {
@@ -46,6 +50,7 @@ export async function getCmsState(): Promise<CMSState> {
       lang: (settings?.lang as CMSState['lang']) ?? HARD_DEFAULTS.lang,
       show,
       fields: fieldMap,
+      fieldsEn: fieldMapEn,
       maintenance: settings?.maintenance ?? false,
     }
   } catch {
@@ -81,10 +86,15 @@ export async function patchCmsState(patch: Partial<CMSState>): Promise<void> {
     }
   }
 
-  if (patch.fields) {
-    const upserts = Object.entries(patch.fields).map(([key, value_es]) => ({
+  if (patch.fields || patch.fieldsEn) {
+    const keys = new Set([
+      ...Object.keys(patch.fields ?? {}),
+      ...Object.keys(patch.fieldsEn ?? {}),
+    ])
+    const upserts = [...keys].map(key => ({
       key,
-      value_es,
+      ...(patch.fields?.[key] !== undefined ? { value_es: patch.fields[key] } : {}),
+      ...(patch.fieldsEn?.[key] !== undefined ? { value_en: patch.fieldsEn[key] } : {}),
       updated_at: new Date().toISOString(),
     }))
     if (upserts.length > 0) {

@@ -1,16 +1,10 @@
 import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { fetchIrEvents, fetchIrAnalysts, fetchObligaciones } from '@/lib/content-fetch'
 import InversoresDocsTabs from './InversoresDocsTabs'
 
 export const revalidate = 60
-
-const IR_EVENTS = [
-  { id: 'q1-2026', type: 'results', dateEs: '25 jun 2026', dateEn: 'Jun 25, 2026', titleEs: 'Resultados Q1 2026', titleEn: 'Q1 2026 Results', noteEs: 'MD&A + estados trimestrales', noteEn: 'MD&A + quarterly financials' },
-  { id: 'agm-2026', type: 'agm', dateEs: '03 sep 2026', dateEn: 'Sep 3, 2026', titleEs: 'Asamblea General Anual', titleEn: 'Annual General Meeting', noteEs: 'TSX Venture · Calgary', noteEn: 'TSX Venture · Calgary' },
-  { id: 'q2-2026', type: 'results', dateEs: '14 ago 2026', dateEn: 'Aug 14, 2026', titleEs: 'Resultados Q2 2026', titleEn: 'Q2 2026 Results', noteEs: 'MD&A + estados trimestrales', noteEn: 'MD&A + quarterly financials' },
-  { id: 'q3-2026', type: 'results', dateEs: '13 nov 2026', dateEn: 'Nov 13, 2026', titleEs: 'Resultados Q3 2026', titleEn: 'Q3 2026 Results', noteEs: 'MD&A + estados trimestrales', noteEn: 'MD&A + quarterly financials' },
-]
 
 type Documento = {
   id: string
@@ -25,18 +19,21 @@ type Documento = {
 }
 
 export default async function InversoresPage() {
-  const [s, docsResult] = await Promise.all([
+  const [s, docsResult, irEvents, analysts, obligaciones] = await Promise.all([
     getCmsState(),
     createSupabaseServerAdminClient()
       .from('documentos')
       .select('*')
       .eq('publico', true)
       .order('created_at', { ascending: false }),
+    fetchIrEvents(),
+    fetchIrAnalysts(),
+    fetchObligaciones(),
   ])
 
   const allDocs: Documento[] = docsResult.data ?? []
-
   const f = s.fields
+  const fe = s.fieldsEn
 
   const price = f['stock.price'] || 'CA $0.205'
   const delta = f['stock.delta'] || '+0.00%'
@@ -57,12 +54,12 @@ export default async function InversoresPage() {
           </div>
           <span className="eyebrow"><span className="lang-es">Resumen del inversor</span><span className="lang-en">Investor overview</span></span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es">Una historia sólida<br/>de creación de valor.</span>
-            <span className="lang-en">A solid story<br/>of value creation.</span>
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: f['page.inversores.h1'] || 'Una historia sólida<br/>de creación de valor.' }} />
+            <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.inversores.h1'] || 'A solid story<br/>of value creation.' }} />
           </h1>
           <p>
-            <span className="lang-es">Crown Point Energía S.A. es una empresa dedicada al petróleo y gas con cobertura internacional que opera en el mercado argentino. Su empresa holding Crown Point Energy Inc. cotiza en el Toronto Stock Exchange Venture (TSXV) bajo el símbolo &quot;CWV&quot;. La Compañía está constituida en Canadá y tiene su sede central en Buenos Aires, Argentina.</span>
-            <span className="lang-en">Crown Point Energía S.A. is an internationally covered oil &amp; gas company operating in the Argentine market. Its holding company Crown Point Energy Inc. is listed on the Toronto Stock Exchange Venture (TSXV) under the symbol &quot;CWV&quot;. The Company is incorporated in Canada and has its headquarters in Buenos Aires, Argentina.</span>
+            <span className="lang-es">{f['page.inversores.lede'] || 'Crown Point Energía S.A. es una empresa dedicada al petróleo y gas con cobertura internacional que opera en el mercado argentino.'}</span>
+            <span className="lang-en">{fe['page.inversores.lede'] || 'Crown Point Energía S.A. is an internationally covered oil & gas company operating in the Argentine market.'}</span>
           </p>
         </div>
       </section>
@@ -115,6 +112,11 @@ export default async function InversoresPage() {
         @media (max-width: 600px) { .analyst-grid { grid-template-columns: 1fr; } }
         .ir-subscribe { display: grid; gap: 12px; }
         @media (max-width: 800px) { .news-grid { grid-template-columns: 1fr !important; } }
+        .on-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .on-table th { text-align: left; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-muted); font-weight: 600; padding: 10px 12px; border-bottom: 1px solid var(--rule); }
+        .on-table td { padding: 12px 12px; border-bottom: 1px solid var(--rule); color: var(--fg-soft); vertical-align: middle; }
+        .on-table tr:last-child td { border-bottom: 0; }
+        .on-isin { font-family: var(--font-mono); font-size: 12px; }
       `}</style>
 
       <section className="section">
@@ -140,7 +142,7 @@ export default async function InversoresPage() {
                     { n: '01', labelEs: 'Producción', labelEn: 'Production', val: '1,840', unit: 'boe/d', metaEs: 'Mix 68% gas / 32% líquidos', metaEn: '68% gas / 32% liquids mix' },
                     { n: '02', labelEs: 'Costos', labelEn: 'Costs', val: 'US$14.2', unit: '/boe', metaEs: 'Opex total LTM', metaEn: 'Total opex LTM' },
                     { n: '03', labelEs: 'Apalancamiento', labelEn: 'Leverage', val: '1.2x', unit: 'Net debt / EBITDA', metaEs: 'Estructura prudente', metaEn: 'Prudent capital structure' },
-                    { n: '04', labelEs: 'Pipeline', labelEn: 'Pipeline', val: '12', unit: undefined, unitEs: 'pozos planeados', unitEn: 'planned wells', metaEs: '2026–2027', metaEn: '2026–2027' },
+                    { n: '04', labelEs: 'Pipeline', labelEn: 'Pipeline', val: '12', unitEs: 'pozos planeados', unitEn: 'planned wells', metaEs: '2026–2027', metaEn: '2026–2027' },
                   ].map(k => (
                     <div className="kpi" key={k.n}>
                       <span className="kpi-label">{k.n} · <span className="lang-es">{k.labelEs}</span><span className="lang-en">{k.labelEn}</span></span>
@@ -169,28 +171,59 @@ export default async function InversoresPage() {
                 <span className="eyebrow">Equity research</span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Cobertura de analistas</span><span className="lang-en">Analyst coverage</span></h2>
                 <p className="lede"><span className="lang-es">Brokers e instituciones financieras que mantienen cobertura activa sobre el papel.</span><span className="lang-en">Brokers and financial institutions actively covering the stock.</span></p>
-                <div className="analyst-grid">
-                  {[
-                    { name: 'Eight Capital', rec: 'BUY', tgt: 'CA $0.35', date: 'Mar 2026' },
-                    { name: 'Canaccord Genuity', rec: 'HOLD', tgt: 'CA $0.24', date: 'Feb 2026' },
-                    { name: 'Stifel GMP', rec: 'BUY', tgt: 'CA $0.32', date: 'Feb 2026' },
-                    { name: 'Cormark Securities', rec: 'BUY', tgt: 'CA $0.30', date: 'Jan 2026' },
-                  ].map(a => (
-                    <div className="analyst" key={a.name}>
-                      <strong>{a.name}</strong>
-                      <span className={`ar-rec ${a.rec.toLowerCase()}`}>{a.rec}</span>
-                      <span className="ar-tgt num">{a.tgt}</span>
-                      <span className="ar-date">{a.date}</span>
-                    </div>
-                  ))}
-                </div>
+                {analysts.length > 0 ? (
+                  <div className="analyst-grid">
+                    {analysts.map(a => (
+                      <div className="analyst" key={a.id}>
+                        <strong>{a.analyst} · <span style={{ fontWeight: 400, fontSize: 15, color: 'var(--fg-soft)' }}>{a.firm}</span></strong>
+                        <span className={`ar-rec ${a.rating_es.toLowerCase().includes('compra') || a.rating_es.toLowerCase() === 'buy' ? 'buy' : 'hold'}`}>
+                          <span className="lang-es">{a.rating_es}</span>
+                          <span className="lang-en">{a.rating_en}</span>
+                        </span>
+                        <span className="ar-tgt num">{a.target}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="lede" style={{ color: 'var(--fg-muted)', fontStyle: 'italic' }}>
+                    <span className="lang-es">Sin cobertura activa registrada.</span>
+                    <span className="lang-en">No active coverage registered.</span>
+                  </p>
+                )}
               </div>
 
               <div className="section-block" id="on">
                 <span className="eyebrow"><span className="lang-es">Programa global</span><span className="lang-en">Global program</span></span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Obligaciones negociables</span><span className="lang-en">Notes program</span></h2>
-                <p className="lede"><span className="lang-es">Programa global de emisión por hasta USD 50 millones, autorizado por CNV. Clase IV emitida en marzo 2026.</span><span className="lang-en">Global issuance program of up to USD 50 million, authorized by the CNV. Class IV issued in March 2026.</span></p>
-                <InversoresDocsTabs docs={allDocs} tipo="on" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
+                <p className="lede"><span className="lang-es">Programa global de emisión autorizado por CNV.</span><span className="lang-en">Global issuance program authorized by the CNV.</span></p>
+                {obligaciones.length > 0 ? (
+                  <table className="on-table">
+                    <thead>
+                      <tr>
+                        <th><span className="lang-es">Serie</span><span className="lang-en">Series</span></th>
+                        <th><span className="lang-es">Monto</span><span className="lang-en">Amount</span></th>
+                        <th><span className="lang-es">Vencimiento</span><span className="lang-en">Maturity</span></th>
+                        <th><span className="lang-es">Tasa</span><span className="lang-en">Rate</span></th>
+                        <th>ISIN</th>
+                        <th><span className="lang-es">Bolsa</span><span className="lang-en">Exchange</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {obligaciones.map(on => (
+                        <tr key={on.id}>
+                          <td style={{ fontWeight: 600, color: 'var(--fg)' }}>{on.serie}</td>
+                          <td>{on.monto}</td>
+                          <td>{on.vencimiento}</td>
+                          <td>{on.tasa}</td>
+                          <td className="on-isin">{on.isin}</td>
+                          <td>{on.bolsa}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <InversoresDocsTabs docs={allDocs} tipo="on" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
+                )}
               </div>
 
               <div className="section-block" id="gobierno">
@@ -223,27 +256,35 @@ export default async function InversoresPage() {
                   .cal-event-note { font-size: 12px; color: var(--fg-muted); }
                 `}</style>
                 <div className="cal-grid">
-                  {IR_EVENTS.map(ev => (
+                  {irEvents.map(ev => (
                     <div className="cal-event" key={ev.id}>
-                      <span className={`cal-type-badge ${ev.type}`}>
-                        {ev.type === 'results'
+                      <span className={`cal-type-badge ${ev.tipo}`}>
+                        {ev.tipo === 'results'
                           ? <><span className="lang-es">Resultados</span><span className="lang-en">Results</span></>
-                          : <><span className="lang-es">Asamblea</span><span className="lang-en">AGM</span></>}
+                          : ev.tipo === 'agm'
+                          ? <><span className="lang-es">Asamblea</span><span className="lang-en">AGM</span></>
+                          : ev.tipo}
                       </span>
                       <div className="cal-event-date">
-                        <span className="lang-es">{ev.dateEs}</span>
-                        <span className="lang-en">{ev.dateEn}</span>
+                        <span className="lang-es">{ev.fecha}</span>
+                        <span className="lang-en">{ev.fecha}</span>
                       </div>
                       <div className="cal-event-title">
-                        <span className="lang-es">{ev.titleEs}</span>
-                        <span className="lang-en">{ev.titleEn}</span>
+                        <span className="lang-es">{ev.titulo_es}</span>
+                        <span className="lang-en">{ev.titulo_en}</span>
                       </div>
                       <div className="cal-event-note">
-                        <span className="lang-es">{ev.noteEs}</span>
-                        <span className="lang-en">{ev.noteEn}</span>
+                        <span className="lang-es">{ev.nota_es}</span>
+                        <span className="lang-en">{ev.nota_en}</span>
                       </div>
                     </div>
                   ))}
+                  {irEvents.length === 0 && (
+                    <p style={{ color: 'var(--fg-muted)', fontStyle: 'italic', fontSize: 14 }}>
+                      <span className="lang-es">Sin eventos próximos registrados.</span>
+                      <span className="lang-en">No upcoming events registered.</span>
+                    </p>
+                  )}
                 </div>
               </div>
             </main>

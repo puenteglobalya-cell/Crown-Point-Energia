@@ -1,51 +1,46 @@
 import Link from 'next/link'
 import ApplicationForm from './ApplicationForm'
+import { getCmsState } from '@/lib/cms'
+import { fetchCultureCards, fetchOpenPositions } from '@/lib/content-fetch'
 
 export const revalidate = 60
 
-const CULTURE_CARDS = [
-  {
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg>,
-    color: '#C9A24A',
-    titleEs: 'Seguridad primero',
-    titleEn: 'Safety first',
-    descEs: 'Ningún trabajo justifica poner en riesgo la integridad de las personas. Trabajamos con permisos de trabajo, análisis de riesgo y cultura de stop-work authority.',
-    descEn: 'No job justifies putting people at risk. We operate with work permits, risk analysis and a stop-work authority culture.',
-  },
-  {
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>,
-    color: '#6CAE52',
-    titleEs: 'Innovación aplicada',
-    titleEn: 'Applied innovation',
-    descEs: 'Resolvemos desafíos técnicos reales: desde sísmica 3D en zonas remotas hasta optimización de inyección de agua con machine learning.',
-    descEn: 'We solve real technical challenges: from 3D seismic in remote areas to waterflood optimisation with machine learning.',
-  },
-  {
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.6"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>,
-    color: '#2FA08A',
-    titleEs: 'Equipo diverso',
-    titleEn: 'Diverse team',
-    descEs: 'Nuestro equipo combina trayectorias locales e internacionales en geología, ingeniería, finanzas y ESG. Valoramos perspectivas distintas.',
-    descEn: 'Our team combines local and international backgrounds in geology, engineering, finance and ESG. We value different perspectives.',
-  },
-  {
-    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-    color: '#1F2566',
-    titleEs: 'Impacto medible',
-    titleEn: 'Measurable impact',
-    descEs: 'Trabajamos con métricas claras: producción, costos, reservas, emisiones. Cada área tiene objetivos cuantificables y visibility en los resultados de la compañía.',
-    descEn: 'We work with clear metrics: production, costs, reserves, emissions. Every area has quantifiable goals and visibility into company results.',
-  },
-]
+const CULTURE_ICONS: Record<string, React.ReactNode> = {
+  shield: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/>
+    </svg>
+  ),
+  sun: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6"/>
+      <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+    </svg>
+  ),
+  people: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+      <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.6"/>
+      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+    </svg>
+  ),
+  chart: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  ),
+}
 
-const OPEN_POSITIONS = [
-  { area: 'Ingeniería de yacimientos', location: 'Buenos Aires / Chubut', type: 'Full-time' },
-  { area: 'Geología & geofísica', location: 'Buenos Aires / Mendoza', type: 'Full-time' },
-  { area: 'HSE & ESG Coordinator', location: 'Buenos Aires', type: 'Full-time' },
-  { area: 'Finance & IR Analyst', location: 'Buenos Aires', type: 'Full-time' },
-]
+export default async function CarrerasPage() {
+  const [s, cultureCards, openPositions] = await Promise.all([
+    getCmsState(),
+    fetchCultureCards(),
+    fetchOpenPositions(),
+  ])
 
-export default function CarrerasPage() {
+  const f = s.fields
+  const fe = s.fieldsEn
+
   return (
     <>
       <section className="page-hero">
@@ -60,12 +55,12 @@ export default function CarrerasPage() {
             <span className="lang-en">Join the team</span>
           </span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es">Construimos el futuro<br/>del energético argentino.</span>
-            <span className="lang-en">Building Argentina&apos;s<br/>energy future.</span>
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: f['page.carreras.h1'] || 'Construimos el futuro<br/>del energético argentino.' }} />
+            <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.carreras.h1'] || "Building Argentina's<br/>energy future." }} />
           </h1>
           <p>
-            <span className="lang-es">Crown Point opera en cuatro cuencas. Buscamos profesionales que quieran dejar huella en la industria energética con un equipo técnico de alto nivel.</span>
-            <span className="lang-en">Crown Point operates across four basins. We look for professionals who want to make a mark in the energy industry alongside a top-tier technical team.</span>
+            <span className="lang-es">{f['page.carreras.lede'] || 'Crown Point opera en cuatro cuencas. Buscamos profesionales que quieran dejar huella en la industria energética con un equipo técnico de alto nivel.'}</span>
+            <span className="lang-en">{fe['page.carreras.lede'] || 'Crown Point operates across four basins. We look for professionals who want to make a mark in the energy industry alongside a top-tier technical team.'}</span>
           </p>
         </div>
       </section>
@@ -125,18 +120,18 @@ export default function CarrerasPage() {
             <span className="lang-en">Why work at Crown Point.</span>
           </h2>
           <div className="culture-grid">
-            {CULTURE_CARDS.map((c, i) => (
-              <div className={`culture-card reveal reveal-d${i + 1}`} key={i}>
+            {cultureCards.map((c, i) => (
+              <div className={`culture-card reveal reveal-d${i + 1}`} key={c.id}>
                 <div className="culture-card-icon" style={{ background: `${c.color}18`, color: c.color }}>
-                  {c.icon}
+                  {CULTURE_ICONS[c.icon_key] ?? null}
                 </div>
                 <h3>
-                  <span className="lang-es">{c.titleEs}</span>
-                  <span className="lang-en">{c.titleEn}</span>
+                  <span className="lang-es">{c.title_es}</span>
+                  <span className="lang-en">{c.title_en}</span>
                 </h3>
                 <p>
-                  <span className="lang-es">{c.descEs}</span>
-                  <span className="lang-en">{c.descEn}</span>
+                  <span className="lang-es">{c.desc_es}</span>
+                  <span className="lang-en">{c.desc_en}</span>
                 </p>
               </div>
             ))}
@@ -162,13 +157,19 @@ export default function CarrerasPage() {
                 <span className="lang-en">Permanent positions. For internships or traineeships, note it in the form.</span>
               </p>
               <div className="positions-list">
-                {OPEN_POSITIONS.map((pos, i) => (
-                  <div className="position-row" key={i}>
+                {openPositions.map((pos) => (
+                  <div className="position-row" key={pos.id}>
                     <span className="position-area">{pos.area}</span>
                     <span className="position-location">{pos.location}</span>
-                    <span className="position-type">{pos.type}</span>
+                    <span className="position-type">{pos.tipo}</span>
                   </div>
                 ))}
+                {openPositions.length === 0 && (
+                  <div style={{ padding: '16px 18px', fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
+                    <span className="lang-es">Sin posiciones abiertas en este momento.</span>
+                    <span className="lang-en">No open positions at this time.</span>
+                  </div>
+                )}
                 <div style={{ padding: '12px 18px', fontSize: 13, color: 'var(--fg-muted)', borderTop: '1px solid var(--rule)', marginTop: 4 }}>
                   <span className="lang-es">¿No encontrás tu perfil? Enviá una postulación espontánea →</span>
                   <span className="lang-en">Don&apos;t see your profile? Send a spontaneous application →</span>
