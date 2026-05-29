@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity } from '@/lib/roles'
 import { requireAdminUser } from '@/lib/admin-auth'
+import { isSameOrigin } from '@/lib/csrf'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const adminUser = await requireAdminUser()
   if (!adminUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -47,6 +49,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const adminUser = await requireAdminUser()
   if (!adminUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

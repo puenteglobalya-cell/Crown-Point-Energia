@@ -4,6 +4,9 @@ import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity, getPermissionsForRole } from '@/lib/roles'
 import { isAdminEmail } from '@/lib/admin-auth'
+import { isSameOrigin } from '@/lib/csrf'
+
+const MAX_FILE_SIZE = 52_428_800 // 50 MB — matches Supabase bucket limit
 
 type UserWithRole = {
   id: string
@@ -62,9 +65,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const userWithRole = await getUserWithRole()
 
-  // Only roles with upload_reports permission can create reports
   if (!userWithRole?.activo) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -74,23 +77,37 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
+
+  // Explicit allowlist — subido_por comes from session, not from request body
   const { titulo, periodo, datos, html, storage_path, file_name, file_size, estado } = body
 
   if (!titulo || !periodo || !datos || !html) {
     return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
   }
 
+  if (typeof file_size === 'number' && file_size > MAX_FILE_SIZE) {
+    return NextResponse.json({ error: 'Archivo demasiado grande (máx 50 MB)' }, { status: 400 })
+  }
+
+  const VALID_ESTADOS = ['borrador', 'publicado']
+  const estadoFinal = VALID_ESTADOS.includes(estado) ? estado : 'borrador'
+
+  // Sanitize storage_path to prevent path traversal
+  const safePath = typeof storage_path === 'string'
+    ? storage_path.replace(/\.\.\//g, '').replace(/^\/+/, '')
+    : null
+
   const db = createSupabaseServerAdminClient()
   const { data, error } = await db.from('reportes').insert({
-    titulo,
-    periodo,
+    titulo: String(titulo).slice(0, 500),
+    periodo: String(periodo).slice(0, 20),
     datos,
     html,
-    estado: estado ?? 'borrador',
-    storage_path: storage_path ?? null,
-    file_name: file_name ?? null,
+    estado: estadoFinal,
+    storage_path: safePath,
+    file_name: file_name ? String(file_name).slice(0, 255) : null,
     file_size: file_size ?? null,
-    subido_por: userWithRole.id,
+    subido_por: userWithRole.id,  // always from session — never from body
   }).select('id').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

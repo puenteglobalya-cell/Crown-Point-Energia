@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { PERMISSIONS, PERMISSION_KEYS, ADMIN_LOCKED, type Permission } from '@/lib/permissions-config'
 import { requireAdminUser } from '@/lib/admin-auth'
+import { isSameOrigin } from '@/lib/csrf'
 import type { UserRole } from '@/lib/roles'
 
 const ROLES: UserRole[] = ['viewer', 'uploader', 'admin']
@@ -36,6 +37,7 @@ export async function GET() {
 
 // PUT — update a single role+permission toggle
 export async function PUT(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const adminUser = await requireAdminUser()
   if (!adminUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

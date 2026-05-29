@@ -2,19 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
+import { isSameOrigin } from '@/lib/csrf'
 
 async function requireAdmin() {
   return requireAdminUser()
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (!await requireAdmin()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
+
+  // Allowlist: storage_path/file_name/file_size are set at creation only
+  const { titulo_es, titulo_en, tipo, periodo, publico } = body
+  const patch = { titulo_es, titulo_en, tipo, periodo, publico, updated_at: new Date().toISOString() }
+
   const admin = createSupabaseServerAdminClient()
   const { data, error } = await admin
     .from('documentos')
-    .update({ ...body, updated_at: new Date().toISOString() })
+    .update(patch)
     .eq('id', params.id)
     .select()
     .single()
@@ -25,6 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (!await requireAdmin()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const admin = createSupabaseServerAdminClient()
