@@ -18,12 +18,21 @@ type Documento = {
 }
 
 const TIPOS = [
-  { value: 'financiero',  label: 'EE.FF. / MD&A' },
-  { value: 'on',          label: 'Obligaciones Negociables' },
-  { value: 'gobierno',    label: 'Gobierno corporativo' },
-  { value: 'produccion',  label: 'Reporte de producción' },
-  { value: 'otro',        label: 'Otro' },
+  { value: 'financiero',    label: 'EE.FF. / MD&A' },
+  { value: 'on',            label: 'Obligaciones Negociables' },
+  { value: 'gobierno',      label: 'Gobierno corporativo' },
+  { value: 'produccion',    label: 'Reporte de producción' },
+  { value: 'presentacion',  label: 'Presentación corporativa' },
+  { value: 'otro',          label: 'Otro' },
 ]
+
+function fileNameToTitle(name: string): string {
+  return name
+    .replace(/\.[^.]+$/, '')        // remove extension
+    .replace(/[-_]+/g, ' ')         // dashes/underscores → spaces
+    .replace(/\b\w/g, c => c.toUpperCase()) // title case
+    .trim()
+}
 
 function fmtSize(bytes: number | null) {
   if (!bytes) return ''
@@ -60,6 +69,16 @@ export default function DocumentosPage() {
   function flash(m: string, isErr = false) {
     if (isErr) { setErr(m); setTimeout(() => setErr(''), 4000) }
     else { setMsg(m); setTimeout(() => setMsg(''), 3000) }
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setForm(p => ({
+      ...p,
+      titulo_es: p.titulo_es.trim() ? p.titulo_es : fileNameToTitle(file.name),
+      titulo_en: p.titulo_en.trim() ? p.titulo_en : fileNameToTitle(file.name),
+    }))
   }
 
   async function handleUpload(e: React.FormEvent) {
@@ -174,7 +193,7 @@ export default function DocumentosPage() {
               Documentos
             </h1>
             <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
-              Balances, reportes y documentos legales · PDF / Excel
+              Balances, reportes, presentaciones y documentos legales · PDF / Excel / PowerPoint / Word
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -252,8 +271,17 @@ export default function DocumentosPage() {
             </div>
 
             <div className="form-row">
-              <label>Archivo (PDF / Excel)</label>
-              <input type="file" ref={fileRef} accept=".pdf,.xls,.xlsx,.png,.jpg" required />
+              <label>Archivo</label>
+              <input
+                type="file"
+                ref={fileRef}
+                accept=".pdf,.xls,.xlsx,.ppt,.pptx,.doc,.docx,.png,.jpg"
+                required
+                onChange={handleFileChange}
+              />
+              <span style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 4 }}>
+                PDF · Excel · PowerPoint · Word · Imagen
+              </span>
             </div>
 
             {err && (
