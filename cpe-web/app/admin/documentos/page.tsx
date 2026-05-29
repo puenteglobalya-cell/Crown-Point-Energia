@@ -94,12 +94,22 @@ export default function DocumentosPage() {
       const supabase = createSupabaseBrowserClient()
 
       // Upload file to Supabase Storage
-      const ext = file.name.split('.').pop()
       const path = `${form.tipo}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+
+      const MIME_MAP: Record<string, string> = {
+        pdf: 'application/pdf',
+        xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        xls: 'application/vnd.ms-excel',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+      }
+      const fileExt = (file.name.split('.').pop() ?? '').toLowerCase()
+      const contentType = MIME_MAP[fileExt] ?? 'application/octet-stream'
 
       const { error: storageErr } = await supabase.storage
         .from('documents')
-        .upload(path, file, { upsert: false })
+        .upload(path, file, { upsert: false, contentType })
 
       if (storageErr) throw new Error(storageErr.message)
 
