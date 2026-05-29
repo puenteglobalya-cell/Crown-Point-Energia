@@ -58,10 +58,19 @@ export default async function OperacionesPage() {
         <div className="container">
           <div className="kpi-grid">
             {[
-              { labelEs: 'Hectáreas operadas', labelEn: 'Operated acreage', val: '372k', unit: 'ha', metaEs: `${blocks.length} bloques`, metaEn: `${blocks.length} blocks` },
-              { labelEs: 'Pozos productores', labelEn: 'Producing wells', val: '357', unitEs: 'activos', unitEn: 'active', metaEs: '+83 inyectores en operación', metaEn: '+83 injectors in operation' },
-              { labelEs: 'Producción promedio', labelEn: 'Average production', val: '3,090', unit: 'boe/d', meta: 'Q1 2026 · neto' },
-              { labelEs: 'Mix producción', labelEn: 'Production mix', val: '54/46', unitEs: 'gas / líquidos', unitEn: 'gas / liquids', metaEs: 'Balance gas/oil', metaEn: 'Gas/oil balance' },
+              { labelEs: 'Hectáreas operadas', labelEn: 'Operated acreage',
+                val: f['ops.kpi.acreage'] || '372k', unit: 'ha',
+                metaEs: `${blocks.length} bloques`, metaEn: `${blocks.length} blocks` },
+              { labelEs: 'Pozos productores', labelEn: 'Producing wells',
+                val: f['ops.kpi.wells'] || '357', unitEs: 'activos', unitEn: 'active',
+                metaEs: f['ops.kpi.wells.meta'] || '+83 inyectores en operación',
+                metaEn: fe['ops.kpi.wells.meta'] || '+83 injectors in operation' },
+              { labelEs: 'Producción promedio', labelEn: 'Average production',
+                val: f['ops.kpi.production'] || '3,090', unit: 'boe/d',
+                meta: f['ops.kpi.production.meta'] || 'Q1 2026 · neto' },
+              { labelEs: 'Mix producción', labelEn: 'Production mix',
+                val: f['ops.kpi.mix'] || '54/46', unitEs: 'gas / líquidos', unitEn: 'gas / liquids',
+                metaEs: 'Balance gas/oil', metaEn: 'Gas/oil balance' },
             ].map((k, i) => (
               <div className="kpi" key={i}>
                 <span className="kpi-label"><span className="lang-es">{k.labelEs}</span><span className="lang-en">{k.labelEn}</span></span>

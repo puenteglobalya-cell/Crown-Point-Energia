@@ -116,6 +116,23 @@ const PAGE_GROUPS: PageGroup[] = [
           { key: 'page.inversores.lede', label: 'Descripción', bilingualCol: true, multiline: true },
         ],
       },
+      {
+        group: 'Tesis de inversión · KPIs',
+        items: [
+          { key: 'inv.thesis.1.val',  label: '01 Producción — Valor' },
+          { key: 'inv.thesis.1.unit', label: '01 Producción — Unidad' },
+          { key: 'inv.thesis.1.meta', label: '01 Producción — Meta', bilingualCol: true },
+          { key: 'inv.thesis.2.val',  label: '02 Costos — Valor' },
+          { key: 'inv.thesis.2.unit', label: '02 Costos — Unidad' },
+          { key: 'inv.thesis.2.meta', label: '02 Costos — Meta', bilingualCol: true },
+          { key: 'inv.thesis.3.val',  label: '03 Apalancamiento — Valor' },
+          { key: 'inv.thesis.3.unit', label: '03 Apalancamiento — Unidad' },
+          { key: 'inv.thesis.3.meta', label: '03 Apalancamiento — Meta', bilingualCol: true },
+          { key: 'inv.thesis.4.val',  label: '04 Pipeline — Valor' },
+          { key: 'inv.thesis.4.unit', label: '04 Pipeline — Unidad', bilingualCol: true },
+          { key: 'inv.thesis.4.meta', label: '04 Pipeline — Meta' },
+        ],
+      },
     ],
   },
   {
@@ -127,6 +144,17 @@ const PAGE_GROUPS: PageGroup[] = [
         items: [
           { key: 'page.operaciones.h1',   label: 'Titular',     bilingualCol: true, multiline: true },
           { key: 'page.operaciones.lede', label: 'Descripción', bilingualCol: true, multiline: true },
+        ],
+      },
+      {
+        group: 'KPIs del encabezado',
+        items: [
+          { key: 'ops.kpi.acreage',         label: 'Hectáreas operadas' },
+          { key: 'ops.kpi.wells',           label: 'Pozos productores' },
+          { key: 'ops.kpi.wells.meta',      label: 'Pozos — nota (inyectores)', bilingualCol: true },
+          { key: 'ops.kpi.production',      label: 'Producción promedio' },
+          { key: 'ops.kpi.production.meta', label: 'Producción — período' },
+          { key: 'ops.kpi.mix',             label: 'Mix gas/líquidos' },
         ],
       },
     ],
@@ -153,6 +181,15 @@ const PAGE_GROUPS: PageGroup[] = [
         items: [
           { key: 'page.esg.h1',   label: 'Titular',     bilingualCol: true, multiline: true },
           { key: 'page.esg.lede', label: 'Descripción', bilingualCol: true, multiline: true },
+        ],
+      },
+      {
+        group: 'KPIs de impacto',
+        items: [
+          { key: 'esg.kpi.emissions',  label: 'Reducción emisiones' },
+          { key: 'esg.kpi.water',      label: 'Agua reinyectada' },
+          { key: 'esg.kpi.trir',       label: 'TRIR seguridad' },
+          { key: 'esg.kpi.directors',  label: 'Directores independientes' },
         ],
       },
     ],

@@ -139,10 +139,27 @@ export default async function InversoresPage() {
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Tres motivos para mirar Crown Point.</span><span className="lang-en">Three reasons to look at Crown Point.</span></h2>
                 <div className="kpi-grid" style={{ marginTop: 'var(--s-6)' }}>
                   {[
-                    { n: '01', labelEs: 'Producción', labelEn: 'Production', val: '1,840', unit: 'boe/d', metaEs: 'Mix 68% gas / 32% líquidos', metaEn: '68% gas / 32% liquids mix' },
-                    { n: '02', labelEs: 'Costos', labelEn: 'Costs', val: 'US$14.2', unit: '/boe', metaEs: 'Opex total LTM', metaEn: 'Total opex LTM' },
-                    { n: '03', labelEs: 'Apalancamiento', labelEn: 'Leverage', val: '1.2x', unit: 'Net debt / EBITDA', metaEs: 'Estructura prudente', metaEn: 'Prudent capital structure' },
-                    { n: '04', labelEs: 'Pipeline', labelEn: 'Pipeline', val: '12', unitEs: 'pozos planeados', unitEn: 'planned wells', metaEs: '2026–2027', metaEn: '2026–2027' },
+                    { n: '01', labelEs: 'Producción', labelEn: 'Production',
+                      val: f['inv.thesis.1.val'] || '1,840',
+                      unit: f['inv.thesis.1.unit'] || 'boe/d',
+                      metaEs: f['inv.thesis.1.meta'] || 'Mix 68% gas / 32% líquidos',
+                      metaEn: fe['inv.thesis.1.meta'] || '68% gas / 32% liquids mix' },
+                    { n: '02', labelEs: 'Costos', labelEn: 'Costs',
+                      val: f['inv.thesis.2.val'] || 'US$14.2',
+                      unit: f['inv.thesis.2.unit'] || '/boe',
+                      metaEs: f['inv.thesis.2.meta'] || 'Opex total LTM',
+                      metaEn: fe['inv.thesis.2.meta'] || 'Total opex LTM' },
+                    { n: '03', labelEs: 'Apalancamiento', labelEn: 'Leverage',
+                      val: f['inv.thesis.3.val'] || '1.2x',
+                      unit: f['inv.thesis.3.unit'] || 'Net debt / EBITDA',
+                      metaEs: f['inv.thesis.3.meta'] || 'Estructura prudente',
+                      metaEn: fe['inv.thesis.3.meta'] || 'Prudent capital structure' },
+                    { n: '04', labelEs: 'Pipeline', labelEn: 'Pipeline',
+                      val: f['inv.thesis.4.val'] || '12',
+                      unitEs: f['inv.thesis.4.unit'] || 'pozos planeados',
+                      unitEn: fe['inv.thesis.4.unit'] || 'planned wells',
+                      metaEs: f['inv.thesis.4.meta'] || '2026–2027',
+                      metaEn: fe['inv.thesis.4.meta'] || '2026–2027' },
                   ].map(k => (
                     <div className="kpi" key={k.n}>
                       <span className="kpi-label">{k.n} · <span className="lang-es">{k.labelEs}</span><span className="lang-en">{k.labelEn}</span></span>
