@@ -80,7 +80,6 @@ function parsearSalesVolume(
   if (!ws) return []
   const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }) as any[][]
 
-  // Search first 4 columns for an Excel date serial (number or Date object)
   function findDateSerial(row: any[]): number | null {
     for (let c = 0; c <= 3; c++) {
       const v = row[c]
@@ -93,8 +92,9 @@ function parsearSalesVolume(
     return null
   }
 
+  // Price history rows are below the revenue table (rows 35+)
   const priceMap: Record<number, any[]> = {}
-  for (let i = 28; i < Math.min(data.length, 70); i++) {
+  for (let i = 33; i < Math.min(data.length, 65); i++) {
     const row = data[i]
     if (!row) continue
     const serial = findDateSerial(row)
@@ -103,22 +103,40 @@ function parsearSalesVolume(
 
   const result: MesHistorico[] = []
 
-  for (let i = 4; i < Math.min(data.length, 30); i++) {
+  // Revenue table: Excel rows 7–19 (data[6]–data[18]) per "sales & Volume" Q7:W19
+  // Revenue columns: R(17)=PCKK, S(18)=ET, T(19)=RCLV, U(20)=CH, V(21)=PPCO
+  // Fallback to old layout cols 3–10 if new layout has no values
+  for (let i = 6; i <= 18; i++) {
     const row = data[i]
     if (!row) continue
     const serial = findDateSerial(row)
     if (serial === null) continue
 
-    const ET_MM   = Number(row[4]  ?? 0) / 1_000_000
-    const PCKK_MM = Number(row[3]  ?? 0) / 1_000_000
-    const RCLV_MM = Number(row[5]  ?? 0) / 1_000_000
-    const CH_MM   = (Number(row[6] ?? 0) + Number(row[7] ?? 0)) / 1_000_000
-    const gas_MM  = (Number(row[9] ?? 0) + Number(row[10] ?? 0)) / 1_000_000
+    // New layout: cols R–V (17–21) — PCKK, ET, RCLV, CH, PPCO
+    const n_PCKK = Number(row[17] ?? 0) / 1_000_000
+    const n_ET   = Number(row[18] ?? 0) / 1_000_000
+    const n_RCLV = Number(row[19] ?? 0) / 1_000_000
+    const n_CH   = (Number(row[20] ?? 0) + Number(row[21] ?? 0)) / 1_000_000
+    const newSum = n_PCKK + n_ET + n_RCLV + n_CH
 
-    // Use sum of parsed areas as the total (avoids relying on a specific "total" column)
-    const total_MM = ET_MM + PCKK_MM + RCLV_MM + CH_MM + gas_MM
+    // Old layout: cols D–K (3–10)
+    const o_PCKK = Number(row[3]  ?? 0) / 1_000_000
+    const o_ET   = Number(row[4]  ?? 0) / 1_000_000
+    const o_RCLV = Number(row[5]  ?? 0) / 1_000_000
+    const o_CH   = (Number(row[6] ?? 0) + Number(row[7] ?? 0)) / 1_000_000
+    const o_gas  = (Number(row[9] ?? 0) + Number(row[10] ?? 0)) / 1_000_000
+    const oldSum = o_PCKK + o_ET + o_RCLV + o_CH + o_gas
+
+    const useNew = newSum > oldSum
+    const PCKK_MM = useNew ? n_PCKK : o_PCKK
+    const ET_MM   = useNew ? n_ET   : o_ET
+    const RCLV_MM = useNew ? n_RCLV : o_RCLV
+    const CH_MM   = useNew ? n_CH   : o_CH
+    const gas_MM  = useNew ? 0      : o_gas
+    const total_MM = PCKK_MM + ET_MM + RCLV_MM + CH_MM + gas_MM
     if (total_MM <= 0) continue
 
+    // Price lookup — fallback to currentPrices if no historical row found
     const priceRow = priceMap[serial]
     let precio_PCKK = Number(priceRow?.[3] ?? 0)
     let precio_ET   = Number(priceRow?.[4] ?? 0)
