@@ -80,51 +80,71 @@ function parsearSalesVolume(
   if (!ws) return []
   const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }) as any[][]
 
-  // Search first 4 columns for an Excel date serial (number or Date object)
-  function findDateSerial(row: any[]): number | null {
-    for (let c = 0; c <= 3; c++) {
-      const v = row[c]
-      if (typeof v === 'number' && v > 45000 && v < 47500) return v
-      if (v instanceof Date) {
-        const s = Math.round(v.getTime() / 86400000 + 25569)
-        if (s > 45000 && s < 47500) return s
-      }
+  // Months are text labels in col B ("ene-26", "feb-26", …), not date serials.
+  // Parse to a canonical "Ene-26" format used as map keys.
+  function parseMesLabel(v: any): string | null {
+    if (typeof v !== 'string') return null
+    const mMap: Record<string, string> = {
+      ene:'Ene', jan:'Ene', enero:'Ene', january:'Ene',
+      feb:'Feb', febrero:'Feb', february:'Feb',
+      mar:'Mar', marzo:'Mar', march:'Mar',
+      abr:'Abr', apr:'Abr', abril:'Abr', april:'Abr',
+      may:'May', mayo:'May',
+      jun:'Jun', junio:'Jun', june:'Jun',
+      jul:'Jul', julio:'Jul', july:'Jul',
+      ago:'Ago', aug:'Ago', agosto:'Ago', august:'Ago',
+      sep:'Sep', sept:'Sep', septiembre:'Sep', september:'Sep',
+      oct:'Oct', octubre:'Oct', october:'Oct',
+      nov:'Nov', noviembre:'Nov', november:'Nov',
+      dic:'Dic', dec:'Dic', diciembre:'Dic', december:'Dic',
     }
-    return null
+    const m = v.toLowerCase().trim().match(/^([a-záéíóú]+)[-.\s]?(\d{2,4})/)
+    if (!m) return null
+    const abbr = mMap[m[1]]
+    if (!abbr) return null
+    const yr = m[2].length === 4 ? m[2].slice(2) : m[2]
+    return `${abbr}-${yr}`
   }
 
-  const priceMap: Record<number, any[]> = {}
-  for (let i = 28; i < Math.min(data.length, 70); i++) {
+  // Price section: D40:H51 in Excel (data[39]–data[50])
+  // Col B (1) = Spanish month label (current year), col A (0) = English prior-year label
+  // Col D(3)=PCKK, E(4)=ETLPPQ, F(5)=RCLV, G(6)=CH, H(7)=PPCO
+  const priceByLabel: Record<string, any[]> = {}
+  for (let i = 39; i <= 50; i++) {
     const row = data[i]
     if (!row) continue
-    const serial = findDateSerial(row)
-    if (serial !== null) priceMap[serial] = row
+    const label = parseMesLabel(row[1]) ?? parseMesLabel(row[0])
+    if (label) priceByLabel[label] = row
   }
 
   const result: MesHistorico[] = []
+  const seen = new Set<string>()
 
-  for (let i = 4; i < Math.min(data.length, 30); i++) {
+  // Revenue section: Excel rows 8–19 (data[7]–data[18])
+  // Col B (1) = Spanish month label
+  // Col D(3)=PCKK, E(4)=ETLPPQ, F(5)=RCLV, G(6)=CH, H(7)=PPCO, J(9)=GasET, K(10)=GasRCLV
+  for (let i = 7; i <= 18; i++) {
     const row = data[i]
     if (!row) continue
-    const serial = findDateSerial(row)
-    if (serial === null) continue
+    const label = parseMesLabel(row[1])
+    if (!label || seen.has(label)) continue
 
-    const ET_MM   = Number(row[4]  ?? 0) / 1_000_000
-    const PCKK_MM = Number(row[3]  ?? 0) / 1_000_000
-    const RCLV_MM = Number(row[5]  ?? 0) / 1_000_000
+    const PCKK_MM = Number(row[3] ?? 0) / 1_000_000
+    const ET_MM   = Number(row[4] ?? 0) / 1_000_000
+    const RCLV_MM = Number(row[5] ?? 0) / 1_000_000
     const CH_MM   = (Number(row[6] ?? 0) + Number(row[7] ?? 0)) / 1_000_000
     const gas_MM  = (Number(row[9] ?? 0) + Number(row[10] ?? 0)) / 1_000_000
-
-    // Use sum of parsed areas as the total (avoids relying on a specific "total" column)
-    const total_MM = ET_MM + PCKK_MM + RCLV_MM + CH_MM + gas_MM
+    const total_MM = PCKK_MM + ET_MM + RCLV_MM + CH_MM + gas_MM
     if (total_MM <= 0) continue
 
-    const priceRow = priceMap[serial]
-    let precio_PCKK = Number(priceRow?.[3] ?? 0)
-    let precio_ET   = Number(priceRow?.[4] ?? 0)
-    let precio_RCLV = Number(priceRow?.[5] ?? 0)
-    let precio_CH   = Number(priceRow?.[6] ?? 0)
+    // Match price row by same month label
+    const priceRow = priceByLabel[label]
+    let precio_PCKK = Number(priceRow?.[3] ?? 0)  // D = PCKK
+    let precio_ET   = Number(priceRow?.[4] ?? 0)  // E = ETLPPQ
+    let precio_RCLV = Number(priceRow?.[5] ?? 0)  // F = RCLV
+    let precio_CH   = Number(priceRow?.[6] ?? 0)  // G = CH
 
+    // Current month has no price row yet — use prices from the detail sheet
     if (precio_ET === 0) {
       precio_ET   = currentPrices.ET
       precio_PCKK = currentPrices.PCKK
@@ -132,8 +152,9 @@ function parsearSalesVolume(
       precio_RCLV = currentPrices.RCLV
     }
 
+    seen.add(label)
     result.push({
-      mes: excelSerialToMesLabel(serial),
+      mes: label,
       total_MM,
       ET_MM,
       PCKK_MM,

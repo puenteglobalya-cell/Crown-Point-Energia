@@ -31,7 +31,16 @@ export function generarReporteHTML(datos: DatosIngresos): string {
   const pct = (v: number) => totalUS > 0 ? ((v / totalUS) * 100).toFixed(1) : '0.0'
 
   const hasHistorico = !!(mensual_historico && mensual_historico.length >= 2)
-  const hasPriceHistory = hasHistorico && mensual_historico!.some(h => h.precio_ET > 0)
+
+  // Only show price chart when prices actually vary across months.
+  // When all months use currentPrices (no historical price table in the Excel),
+  // every month shows the same value — a flat chart with no informational value.
+  const hasPriceHistory = hasHistorico && (() => {
+    const h = mensual_historico!
+    const etPrices = h.map(m => m.precio_ET)
+    const spread = Math.max(...etPrices) - Math.min(...etPrices)
+    return spread > 0.5  // meaningful variation > 0.5 us$/bbl
+  })()
 
   const mensualLabels = hasHistorico ? JSON.stringify(mensual_historico!.map(h => h.mes)) : '[]'
   const mensualPCKK   = hasHistorico ? j(mensual_historico!.map(h => h.PCKK_MM)) : '[]'
