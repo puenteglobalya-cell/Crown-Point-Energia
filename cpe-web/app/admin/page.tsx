@@ -334,6 +334,8 @@ export default function AdminPage() {
   const [exportJson, setExportJson] = useState('')
   const [copyMsg, setCopyMsg] = useState('')
   const [iframeKey, setIframeKey] = useState(0)
+  const [refreshingStock, setRefreshingStock] = useState(false)
+  const [stockMsg, setStockMsg] = useState('')
 
   const loadState = useCallback(async () => {
     const res = await fetch('/api/cms/state', { cache: 'no-store' })
@@ -365,6 +367,22 @@ export default function AdminPage() {
 
   async function saveFields() {
     await save({ fields: draftFields, fieldsEn: draftFieldsEn })
+  }
+
+  async function refreshStock() {
+    setRefreshingStock(true)
+    setStockMsg('')
+    try {
+      const res = await fetch('/api/admin/stock', { method: 'POST' })
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Error')
+      const data = await res.json()
+      await loadState()
+      setStockMsg(`Actualizado: ${data.fields?.['stock.price'] ?? ''}`)
+      setTimeout(() => setStockMsg(''), 5000)
+    } catch (e) {
+      setStockMsg(`Error: ${(e as Error).message}`)
+    }
+    setRefreshingStock(false)
   }
 
   async function handleReset() {
@@ -708,9 +726,24 @@ export default function AdminPage() {
                     <div style={{ padding: '16px 20px 20px', borderTop: '1px solid var(--rule)' }}>
                       {filtered.groups.map((g, gi) => (
                         <div key={g.group} style={{ marginBottom: gi < filtered.groups.length - 1 ? 28 : 0 }}>
-                          <h3 style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 12, marginTop: 0 }}>
-                            {g.group}
-                          </h3>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                            <h3 style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent)', margin: 0 }}>
+                              {g.group}
+                            </h3>
+                            {g.group.includes('Stock') && (
+                              <>
+                                <button
+                                  className="btn"
+                                  disabled={refreshingStock}
+                                  onClick={refreshStock}
+                                  style={{ fontSize: 11, padding: '3px 10px', lineHeight: 1.4 }}
+                                >
+                                  {refreshingStock ? 'Actualizando…' : 'Actualizar cotización'}
+                                </button>
+                                {stockMsg && <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{stockMsg}</span>}
+                              </>
+                            )}
+                          </div>
                           <div style={{ display: 'grid', gap: 12 }}>
                             {g.items.map(item => {
                               const hasBilingual = item.bilingualCol || !!item.keyEn
