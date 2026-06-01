@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import { cookies, headers } from 'next/headers'
 import {
-  Playfair_Display,
+  Montserrat,
   Inter,
   JetBrains_Mono,
+  Playfair_Display,
   Fraunces,
   Manrope,
 } from 'next/font/google'
@@ -15,6 +16,12 @@ import RevealObserver from '@/components/RevealObserver'
 import CookieBanner from '@/components/CookieBanner'
 import './globals.css'
 
+const fontMontserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['500', '600', '700', '800'],
+  variable: '--font-nf-montserrat',
+  display: 'swap',
+})
 const fontPlayfair = Playfair_Display({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
@@ -47,6 +54,7 @@ const fontManrope = Manrope({
 })
 
 const fontClasses = [
+  fontMontserrat.variable,
   fontPlayfair.variable,
   fontInter.variable,
   fontMono.variable,

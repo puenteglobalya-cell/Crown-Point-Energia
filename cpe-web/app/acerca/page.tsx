@@ -14,6 +14,7 @@ export default async function AcercaPage() {
 
   const f = s.fields
   const fe = s.fieldsEn
+  const heroImg = f['hero.acerca.img'] || ''
 
   return (
     <>
@@ -39,7 +40,10 @@ export default async function AcercaPage() {
         .director-list span { font-size: 12px; color: var(--fg-muted); letter-spacing: 0.06em; text-transform: uppercase; }
       `}</style>
 
-      <section className="page-hero">
+      <section
+        className={`page-hero${heroImg ? ' has-photo' : ''}`}
+        style={heroImg ? { '--hero-photo-url': `url(${heroImg})` } as React.CSSProperties : undefined}
+      >
         <div className="container">
           <div className="crumbs">
             <Link href="/"><span className="lang-es">Inicio</span><span className="lang-en">Home</span></Link>

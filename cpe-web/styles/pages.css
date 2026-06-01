@@ -32,6 +32,33 @@
   margin: 0;
 }
 
+/* -------- Page hero with photo background -------- */
+.page-hero.has-photo {
+  background-color: var(--cp-navy-darker);
+  border-bottom: none;
+  padding-top: var(--s-24);
+  padding-bottom: var(--s-20);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.page-hero.has-photo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--hero-photo-url);
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+  opacity: 0.42;
+  filter: saturate(0.85);
+}
+.page-hero.has-photo h1    { color: #ffffff; }
+.page-hero.has-photo p     { color: rgba(255,255,255,0.82); }
+.page-hero.has-photo .crumbs      { color: rgba(255,255,255,0.48); }
+.page-hero.has-photo .crumbs a:hover { color: rgba(255,255,255,0.9); }
+.page-hero.has-photo .eyebrow     { color: var(--cp-green) !important; }
+
 /* -------- Two-column layout -------- */
 .two-col {
   display: grid;

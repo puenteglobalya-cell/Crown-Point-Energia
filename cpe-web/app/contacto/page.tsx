@@ -7,6 +7,7 @@ export const revalidate = 60
 export default async function ContactoPage() {
   const s = await getCmsState()
   const f = s.fields
+  const heroImg = f['hero.contacto.img'] || ''
 
   const irEmail      = f['contact.ir.email']      || 'ir@crownpointenergy.com'
   const irPerson     = f['contact.ir.person']      || 'Eugenia Martínez · IR Officer'
@@ -17,7 +18,10 @@ export default async function ContactoPage() {
 
   return (
     <>
-      <section className="page-hero">
+      <section
+        className={`page-hero${heroImg ? ' has-photo' : ''}`}
+        style={heroImg ? { '--hero-photo-url': `url(${heroImg})` } as React.CSSProperties : undefined}
+      >
         <div className="container">
           <div className="crumbs">
             <Link href="/"><span className="lang-es">Inicio</span><span className="lang-en">Home</span></Link>

@@ -10,13 +10,13 @@
 /* Fonts — loaded via next/font/google (self-hosted) in layout.tsx */
 
 :root {
-  /* Brand palette — Crown Point Energy (sampled from real logo) */
-  --cp-navy:         #1F2566;
-  --cp-navy-deep:    #161B4D;
-  --cp-navy-darker:  #0E1235;
-  --cp-green:        #6CAE52;
-  --cp-green-deep:   #4E8A38;
-  --cp-green-soft:   #C8E0B9;
+  /* Brand palette — Crown Point Energy */
+  --cp-navy:         #1A2B4C;
+  --cp-navy-deep:    #0F1E38;
+  --cp-navy-darker:  #031636;
+  --cp-green:        #82BC00;
+  --cp-green-deep:   #5C8700;
+  --cp-green-soft:   #D4EE8A;
   --cp-black:        #0B0F12;
   --cp-ink:          #14172E;
   --cp-graphite:     #2A2E50;
@@ -52,7 +52,7 @@
   --accent2-deep: var(--cp-green-deep);
 
   /* Type stacks — font vars injected by next/font on <html> element */
-  --font-display: var(--font-nf-playfair), Georgia, serif;
+  --font-display: var(--font-nf-montserrat), 'Montserrat', system-ui, sans-serif;
   --font-body:    var(--font-nf-inter), system-ui, -apple-system, sans-serif;
   --font-mono:    var(--font-nf-mono), ui-monospace, monospace;
 
@@ -97,6 +97,20 @@
   --t-base-: 220ms cubic-bezier(.2,.7,.2,1);
 }
 
+/* ==== Glassmorphic header when page has a photo hero (:has() — ~95% support) ==== */
+html:has(.page-hero.has-photo) .site-header {
+  background: rgba(3, 22, 54, 0.62);
+  border-bottom-color: rgba(255,255,255,0.08);
+}
+html:has(.page-hero.has-photo) .site-header .nav-item { color: rgba(255,255,255,0.88); }
+html:has(.page-hero.has-photo) .site-header .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+html:has(.page-hero.has-photo) .site-header .nav-item.active { color: var(--cp-green); }
+html:has(.page-hero.has-photo) .site-header .brand-name strong { color: #fff; }
+html:has(.page-hero.has-photo) .site-header .brand-name span { color: rgba(255,255,255,0.45); }
+html:has(.page-hero.has-photo) .site-header .lang-toggle { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
+html:has(.page-hero.has-photo) .site-header .lang-toggle button { color: rgba(255,255,255,0.65); }
+html:has(.page-hero.has-photo) .site-header .lang-toggle button.active { background: rgba(255,255,255,0.2); color: #fff; }
+
 /* ==== Direction: Editorial (cream paper, oversized serif, refined IR) ==== */
 [data-direction="editorial"] {
   --bg:        var(--cp-paper);
@@ -112,7 +126,7 @@
   --on-accent: var(--cp-white);
   --accent2:   var(--cp-copper);
   --accent2-deep: #8A3F1A;
-  --font-display: var(--font-nf-fraunces), Georgia, serif;
+  --font-display: var(--font-nf-fraunces), var(--font-nf-playfair), Georgia, serif;
   --font-body:    var(--font-nf-inter), system-ui, sans-serif;
 }
 

@@ -34,6 +34,7 @@ export default async function InversoresPage() {
   const allDocs: Documento[] = docsResult.data ?? []
   const f = s.fields
   const fe = s.fieldsEn
+  const heroImg = f['hero.inversores.img'] || ''
 
   const price = f['stock.price'] || 'CA $0.205'
   const delta = f['stock.delta'] || '+0.00%'
@@ -45,7 +46,10 @@ export default async function InversoresPage() {
 
   return (
     <>
-      <section className="page-hero">
+      <section
+        className={`page-hero${heroImg ? ' has-photo' : ''}`}
+        style={heroImg ? { '--hero-photo-url': `url(${heroImg})` } as React.CSSProperties : undefined}
+      >
         <div className="container">
           <div className="crumbs">
             <Link href="/"><span className="lang-es">Inicio</span><span className="lang-en">Home</span></Link>
