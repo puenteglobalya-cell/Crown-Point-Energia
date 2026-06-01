@@ -80,32 +80,44 @@ function parsearSalesVolume(
   if (!ws) return []
   const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }) as any[][]
 
+  // Search first 4 columns for an Excel date serial (number or Date object)
+  function findDateSerial(row: any[]): number | null {
+    for (let c = 0; c <= 3; c++) {
+      const v = row[c]
+      if (typeof v === 'number' && v > 45000 && v < 47500) return v
+      if (v instanceof Date) {
+        const s = Math.round(v.getTime() / 86400000 + 25569)
+        if (s > 45000 && s < 47500) return s
+      }
+    }
+    return null
+  }
+
   const priceMap: Record<number, any[]> = {}
-  for (let i = 35; i < Math.min(data.length, 55); i++) {
+  for (let i = 28; i < Math.min(data.length, 70); i++) {
     const row = data[i]
     if (!row) continue
-    const serial = row[1]
-    if (typeof serial === 'number' && serial > 45000 && serial < 47500) {
-      priceMap[serial] = row
-    }
+    const serial = findDateSerial(row)
+    if (serial !== null) priceMap[serial] = row
   }
 
   const result: MesHistorico[] = []
 
-  for (let i = 6; i < Math.min(data.length, 22); i++) {
+  for (let i = 4; i < Math.min(data.length, 30); i++) {
     const row = data[i]
     if (!row) continue
-    const serial = row[1]
-    if (typeof serial !== 'number' || serial < 45000 || serial > 47500) continue
-
-    const total_MM = Number(row[15] ?? 0) / 1_000_000
-    if (total_MM <= 0) continue
+    const serial = findDateSerial(row)
+    if (serial === null) continue
 
     const ET_MM   = Number(row[4]  ?? 0) / 1_000_000
     const PCKK_MM = Number(row[3]  ?? 0) / 1_000_000
     const RCLV_MM = Number(row[5]  ?? 0) / 1_000_000
     const CH_MM   = (Number(row[6] ?? 0) + Number(row[7] ?? 0)) / 1_000_000
     const gas_MM  = (Number(row[9] ?? 0) + Number(row[10] ?? 0)) / 1_000_000
+
+    // Use sum of parsed areas as the total (avoids relying on a specific "total" column)
+    const total_MM = ET_MM + PCKK_MM + RCLV_MM + CH_MM + gas_MM
+    if (total_MM <= 0) continue
 
     const priceRow = priceMap[serial]
     let precio_PCKK = Number(priceRow?.[3] ?? 0)
