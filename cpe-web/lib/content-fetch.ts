@@ -60,64 +60,72 @@ export type EsgPillarData = {
   initiatives_es: string[]; initiatives_en: string[]
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function db() { return createSupabaseServerAdminClient() }
+
+async function safeQuery<T>(fn: () => PromiseLike<{ data: T | null; error: unknown }>): Promise<T extends (infer U)[] ? U[] : T | null> {
+  try {
+    const { data } = await fn()
+    return (data ?? []) as any
+  } catch {
+    return [] as any
+  }
+}
+
 // ── Fetch functions ────────────────────────────────────────────────────────
 
 export async function fetchIrEvents(): Promise<IrEvent[]> {
-  const { data } = await createSupabaseServerAdminClient()
-    .from('ir_events').select('*').eq('activo', true).order('orden')
-  return (data ?? []) as IrEvent[]
+  return safeQuery(() => db().from('ir_events').select('*').eq('activo', true).order('orden'))
 }
 
 export async function fetchIrAnalysts(): Promise<IrAnalyst[]> {
-  const { data } = await createSupabaseServerAdminClient()
-    .from('ir_analysts').select('*').eq('activo', true).order('orden')
-  return (data ?? []) as IrAnalyst[]
+  return safeQuery(() => db().from('ir_analysts').select('*').eq('activo', true).order('orden'))
 }
 
 export async function fetchObligaciones(): Promise<ObligacionNegociable[]> {
-  const { data } = await createSupabaseServerAdminClient()
-    .from('obligaciones_negociables').select('*').eq('activo', true).order('orden')
-  return (data ?? []) as ObligacionNegociable[]
+  return safeQuery(() => db().from('obligaciones_negociables').select('*').eq('activo', true).order('orden'))
 }
 
 export async function fetchOperationsBlocks(): Promise<OperationsBlock[]> {
-  const { data } = await createSupabaseServerAdminClient()
-    .from('operations_blocks').select('*').eq('activo', true).order('orden')
-  return (data ?? []) as OperationsBlock[]
+  return safeQuery(() => db().from('operations_blocks').select('*').eq('activo', true).order('orden'))
 }
 
 export async function fetchTeamMembers(tipo?: 'management' | 'board'): Promise<TeamMember[]> {
-  let q = createSupabaseServerAdminClient()
-    .from('team_members').select('*').eq('activo', true).order('orden')
-  if (tipo) q = q.eq('tipo', tipo)
-  const { data } = await q
-  return (data ?? []) as TeamMember[]
+  return safeQuery(() => {
+    let q = db().from('team_members').select('*').eq('activo', true).order('orden')
+    if (tipo) q = q.eq('tipo', tipo)
+    return q
+  })
 }
 
 export async function fetchStrategyCards(): Promise<StrategyCard[]> {
-  const { data } = await createSupabaseServerAdminClient()
-    .from('strategy_cards').select('*').order('orden')
-  return (data ?? []) as StrategyCard[]
+  const rows = await safeQuery(() => db().from('strategy_cards').select('*').order('orden'))
+  const seen = new Set<string>()
+  return (rows as StrategyCard[]).filter(c => {
+    if (seen.has(c.num)) return false
+    seen.add(c.num)
+    return true
+  })
 }
 
 export async function fetchOpenPositions(): Promise<OpenPosition[]> {
-  const { data } = await createSupabaseServerAdminClient()
-    .from('open_positions').select('*').eq('activo', true).order('orden')
-  return (data ?? []) as OpenPosition[]
+  return safeQuery(() => db().from('open_positions').select('*').eq('activo', true).order('orden'))
 }
 
 export async function fetchCultureCards(): Promise<CultureCard[]> {
-  const { data } = await createSupabaseServerAdminClient()
-    .from('culture_cards').select('*').order('orden')
-  return (data ?? []) as CultureCard[]
+  return safeQuery(() => db().from('culture_cards').select('*').order('orden'))
 }
 
 export async function fetchEsgPillars(): Promise<EsgPillarData[]> {
-  const { data } = await createSupabaseServerAdminClient()
-    .from('esg_pillar_data').select('*').order('pilar')
-  if (!data) return []
-  return data.map(p => ({
-    ...p,
-    metrics: p.metrics as EsgPillarData['metrics'],
-  })) as EsgPillarData[]
+  try {
+    const { data } = await db().from('esg_pillar_data').select('*').order('pilar')
+    if (!data) return []
+    return data.map(p => ({
+      ...p,
+      metrics: p.metrics as EsgPillarData['metrics'],
+    })) as EsgPillarData[]
+  } catch {
+    return []
+  }
 }

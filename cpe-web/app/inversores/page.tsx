@@ -19,19 +19,31 @@ type Documento = {
 }
 
 export default async function InversoresPage() {
-  const [s, docsResult, irEvents, analysts, obligaciones] = await Promise.all([
-    getCmsState(),
-    createSupabaseServerAdminClient()
-      .from('documentos')
-      .select('*')
-      .eq('publico', true)
-      .order('created_at', { ascending: false }),
-    fetchIrEvents(),
-    fetchIrAnalysts(),
-    fetchObligaciones(),
-  ])
+  let s, allDocs: Documento[] = [], irEvents: Awaited<ReturnType<typeof fetchIrEvents>> = [],
+    analysts: Awaited<ReturnType<typeof fetchIrAnalysts>> = [],
+    obligaciones: Awaited<ReturnType<typeof fetchObligaciones>> = []
 
-  const allDocs: Documento[] = docsResult.data ?? []
+  try {
+    const [sResult, docsResult, evts, anls, obs] = await Promise.all([
+      getCmsState(),
+      createSupabaseServerAdminClient()
+        .from('documentos')
+        .select('*')
+        .eq('publico', true)
+        .order('created_at', { ascending: false })
+        .then(r => (r.data ?? []) as Documento[]),
+      fetchIrEvents(),
+      fetchIrAnalysts(),
+      fetchObligaciones(),
+    ])
+    s = sResult
+    allDocs = docsResult as Documento[]
+    irEvents = evts
+    analysts = anls
+    obligaciones = obs
+  } catch {
+    s = await getCmsState()
+  }
   const f = s.fields
   const fe = s.fieldsEn
   const heroImg = f['hero.inversores.img'] || ''
