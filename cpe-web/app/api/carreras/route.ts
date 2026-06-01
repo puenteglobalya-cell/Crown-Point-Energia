@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { requireAdminUser } from '@/lib/admin-auth'
+import { requireHrUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 
 export const dynamic = 'force-dynamic'
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  const user = await requireAdminUser()
+  const user = await requireHrUser()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

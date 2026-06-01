@@ -451,8 +451,8 @@ export default function AdminPage() {
             <Link href="/admin/reportes" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Reportes
             </Link>
-            <Link href="/admin/postulaciones" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              Postulaciones
+            <Link href="/admin/rrhh" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
+              RRHH
             </Link>
             <Link href="/admin/usuarios" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Usuarios

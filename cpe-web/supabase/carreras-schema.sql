@@ -1,6 +1,11 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- Job Applications Schema — Crown Point Energía
+-- Job Applications + RRHH Role — Crown Point Energía
 -- ═══════════════════════════════════════════════════════════════════════════
+
+-- Add 'rrhh' to the user_roles check constraint (idempotent)
+ALTER TABLE user_roles DROP CONSTRAINT IF EXISTS user_roles_role_check;
+ALTER TABLE user_roles ADD CONSTRAINT user_roles_role_check
+  CHECK (role IN ('viewer', 'uploader', 'admin', 'rrhh'));
 
 CREATE TABLE IF NOT EXISTS job_applications (
   id          UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
