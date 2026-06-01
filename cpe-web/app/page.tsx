@@ -60,6 +60,7 @@ export default async function HomePage() {
   const stockLow52   = f['stock.low52']   || 'CA $0.16'
   const stockShares  = f['stock.shares']  || '96.6M'
 
+  const heroImg      = f['hero.home.img'] || 'https://crownpointenergy.com/wp-content/uploads/2014/12/slider-image1.jpg'
   const heroTitleEs  = f['hero.title.es'] || ''
   const heroTitleEn  = f['hero.title.en'] || ''
   const heroLedeEs   = f['hero.lede.es']  || ''
@@ -74,7 +75,7 @@ export default async function HomePage() {
         <section className="hero" data-cpe-section="hero">
           <div className="hero-media">
             <Image
-              src="https://crownpointenergy.com/wp-content/uploads/2014/12/slider-image1.jpg"
+              src={heroImg}
               alt=""
               fill
               loading="eager"

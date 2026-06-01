@@ -46,7 +46,13 @@ const PAGE_GROUPS: PageGroup[] = [
     route: '/',
     groups: [
       {
-        group: 'Hero',
+        group: 'Imagen hero',
+        items: [
+          { key: 'hero.home.img', label: 'URL foto hero (pegar desde /admin/imagenes)' },
+        ],
+      },
+      {
+        group: 'Hero · Textos',
         items: [
           { key: 'hero.title.es', label: 'Titular',     keyEn: 'hero.title.en', multiline: true },
           { key: 'hero.lede.es',  label: 'Descripción', keyEn: 'hero.lede.en',  multiline: true },
@@ -110,7 +116,13 @@ const PAGE_GROUPS: PageGroup[] = [
     route: '/inversores',
     groups: [
       {
-        group: 'Hero',
+        group: 'Imagen hero',
+        items: [
+          { key: 'hero.inversores.img', label: 'URL foto hero' },
+        ],
+      },
+      {
+        group: 'Hero · Textos',
         items: [
           { key: 'page.inversores.h1',   label: 'Titular',     bilingualCol: true, multiline: true },
           { key: 'page.inversores.lede', label: 'Descripción', bilingualCol: true, multiline: true },
@@ -140,7 +152,13 @@ const PAGE_GROUPS: PageGroup[] = [
     route: '/operaciones',
     groups: [
       {
-        group: 'Hero',
+        group: 'Imagen hero',
+        items: [
+          { key: 'hero.operaciones.img', label: 'URL foto hero' },
+        ],
+      },
+      {
+        group: 'Hero · Textos',
         items: [
           { key: 'page.operaciones.h1',   label: 'Titular',     bilingualCol: true, multiline: true },
           { key: 'page.operaciones.lede', label: 'Descripción', bilingualCol: true, multiline: true },
@@ -164,7 +182,13 @@ const PAGE_GROUPS: PageGroup[] = [
     route: '/acerca',
     groups: [
       {
-        group: 'Hero',
+        group: 'Imagen hero',
+        items: [
+          { key: 'hero.acerca.img', label: 'URL foto hero' },
+        ],
+      },
+      {
+        group: 'Hero · Textos',
         items: [
           { key: 'page.acerca.h1',   label: 'Titular',     bilingualCol: true, multiline: true },
           { key: 'page.acerca.lede', label: 'Descripción', bilingualCol: true, multiline: true },
@@ -177,7 +201,13 @@ const PAGE_GROUPS: PageGroup[] = [
     route: '/esg',
     groups: [
       {
-        group: 'Hero',
+        group: 'Imagen hero',
+        items: [
+          { key: 'hero.esg.img', label: 'URL foto hero' },
+        ],
+      },
+      {
+        group: 'Hero · Textos',
         items: [
           { key: 'page.esg.h1',   label: 'Titular',     bilingualCol: true, multiline: true },
           { key: 'page.esg.lede', label: 'Descripción', bilingualCol: true, multiline: true },
@@ -212,7 +242,13 @@ const PAGE_GROUPS: PageGroup[] = [
     route: '/contacto',
     groups: [
       {
-        group: 'Hero',
+        group: 'Imagen hero',
+        items: [
+          { key: 'hero.contacto.img', label: 'URL foto hero' },
+        ],
+      },
+      {
+        group: 'Hero · Textos',
         items: [
           { key: 'page.contacto.h1',   label: 'Titular',     bilingualCol: true, multiline: true },
           { key: 'page.contacto.lede', label: 'Descripción', bilingualCol: true, multiline: true },

@@ -21,6 +21,7 @@ export default async function OperacionesPage() {
 
   const f = s.fields
   const fe = s.fieldsEn
+  const heroImg = f['hero.operaciones.img'] || ''
 
   const mapBlocks: MapBlockData[] = blocks.map(b => ({
     id: b.slug,
@@ -35,7 +36,10 @@ export default async function OperacionesPage() {
 
   return (
     <>
-      <section className="page-hero">
+      <section
+        className={`page-hero${heroImg ? ' has-photo' : ''}`}
+        style={heroImg ? { '--hero-photo-url': `url(${heroImg})` } as React.CSSProperties : undefined}
+      >
         <div className="container">
           <div className="crumbs">
             <Link href="/"><span className="lang-es">Inicio</span><span className="lang-en">Home</span></Link>
