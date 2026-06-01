@@ -80,9 +80,17 @@ function parsearSalesVolume(
   if (!ws) return []
   const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }) as any[][]
 
-  // Months are text labels in col B ("ene-26", "feb-26", …), not date serials.
-  // Parse to a canonical "Ene-26" format used as map keys.
+  // Months in col B may be text strings, JS Date objects (cellDates:true), or numeric serials.
+  // Parse all three forms to a canonical "Ene-26" format used as map keys.
   function parseMesLabel(v: any): string | null {
+    const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+    if (v instanceof Date) {
+      return `${meses[v.getUTCMonth()]}-${String(v.getUTCFullYear()).slice(2)}`
+    }
+    if (typeof v === 'number' && v > 40000 && v < 55000) {
+      const d = new Date(Math.round((v - 25569) * 86400 * 1000))
+      return `${meses[d.getUTCMonth()]}-${String(d.getUTCFullYear()).slice(2)}`
+    }
     if (typeof v !== 'string') return null
     const mMap: Record<string, string> = {
       ene:'Ene', jan:'Ene', enero:'Ene', january:'Ene',
@@ -259,9 +267,10 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   const vol_producido_final = vol_prod   > 0 ? vol_prod   : volProdDerived
   const vol_vendido_final   = vol_venta  > 0 ? vol_venta  : volVentaDerived
 
-  // Gas prices from Resumen H13 (ET) and I13 (RCLV) — direct cell read
-  const precioGasResumenET   = Number(buscarCelda(resumen, 12, 7)) || 0
-  const precioGasResumenRCLV = Number(buscarCelda(resumen, 12, 8)) || 0
+  // Gas prices from Resumen H13 (ET/ETLPPQ) and I13 (RCLV) — direct cell address
+  const resumenSheet = wb.Sheets['Resumen']
+  const precioGasResumenET   = resumenSheet ? (Number(resumenSheet['H13']?.v) || 0) : 0
+  const precioGasResumenRCLV = resumenSheet ? (Number(resumenSheet['I13']?.v) || 0) : 0
 
   // Gas area prices — derive from ingreso ÷ volume when direct read is 0
   const gasETProdRaw   = gasProd?.[6] ?? prodNeta?.[6] ?? 0
