@@ -255,14 +255,41 @@ const PAGE_GROUPS: PageGroup[] = [
         ],
       },
       {
-        group: 'Datos de contacto',
+        group: 'Argentina',
         items: [
-          { key: 'contact.ir.email',      label: 'Email IR' },
-          { key: 'contact.ir.person',     label: 'Nombre IR' },
-          { key: 'contact.prensa.email',  label: 'Email prensa' },
-          { key: 'contact.compras.email', label: 'Email compras' },
-          { key: 'contact.ba.address',    label: 'Dirección BA', multiline: true },
-          { key: 'contact.ba.phone',      label: 'Teléfono BA' },
+          { key: 'contact.ar.address', label: 'Dirección', multiline: true },
+          { key: 'contact.ar.phone',   label: 'Teléfono' },
+          { key: 'contact.ar.email',   label: 'Email' },
+        ],
+      },
+      {
+        group: 'Canadá',
+        items: [
+          { key: 'contact.ca.address', label: 'Dirección', multiline: true },
+          { key: 'contact.ca.phone',   label: 'Teléfono' },
+          { key: 'contact.ca.email',   label: 'Email' },
+        ],
+      },
+      {
+        group: 'Agente de Transferencia',
+        items: [
+          { key: 'contact.ta.name',    label: 'Nombre' },
+          { key: 'contact.ta.address', label: 'Dirección', multiline: true },
+          { key: 'contact.ta.phone',   label: 'Teléfono' },
+          { key: 'contact.ta.url',     label: 'Sitio web' },
+        ],
+      },
+      {
+        group: 'Relaciones con Inversores',
+        items: [
+          { key: 'contact.ir.email', label: 'Email IR' },
+        ],
+      },
+      {
+        group: 'Línea de ética',
+        items: [
+          { key: 'contact.ethics.phone', label: 'Teléfono ética' },
+          { key: 'contact.ethics.email', label: 'Email ética' },
         ],
       },
     ],
