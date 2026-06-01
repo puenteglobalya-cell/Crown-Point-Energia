@@ -58,16 +58,23 @@ export async function middleware(request: NextRequest) {
 
   // ── Admin auth ───────────────────────────────────────────────────────────
   if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
-    const isAdminEmail = user?.email && CMS_ADMIN_EMAILS.includes(user.email)
-    if (!isAdminEmail) {
-      // Also accept users with admin role in user_roles table
-      let hasAdminRole = false
+    const isAdminEmailFlag = user?.email && CMS_ADMIN_EMAILS.includes(user.email)
+    if (!isAdminEmailFlag) {
+      let userRole: string | null = null
       if (user) {
         const { data: roleRow } = await supabase.from('user_roles').select('role, activo').eq('user_id', user.id).single()
-        hasAdminRole = roleRow?.role === 'admin' && roleRow?.activo === true
+        if (roleRow?.activo) userRole = roleRow.role
       }
-      if (!hasAdminRole) {
-        return NextResponse.redirect(new URL('/admin/login', request.url))
+
+      // /admin/rrhh/* is accessible to 'rrhh' and 'admin' roles
+      if (pathname.startsWith('/admin/rrhh')) {
+        if (userRole !== 'rrhh' && userRole !== 'admin') {
+          return NextResponse.redirect(new URL('/admin/login', request.url))
+        }
+      } else {
+        if (userRole !== 'admin') {
+          return NextResponse.redirect(new URL('/admin/login', request.url))
+        }
       }
     }
   }

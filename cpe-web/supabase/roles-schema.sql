@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS user_roles (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role       TEXT NOT NULL CHECK (role IN ('viewer', 'uploader', 'admin')),
+  role       TEXT NOT NULL CHECK (role IN ('viewer', 'uploader', 'admin', 'rrhh')),
   activo     BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

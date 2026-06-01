@@ -18,11 +18,12 @@ type BibUG    = { user_id: string; grupo_id: number }
 
 type PermMatrix = Record<string, Record<string, boolean>>
 
-const ROLES = ['viewer', 'uploader', 'admin'] as const
+const ROLES = ['viewer', 'uploader', 'admin', 'rrhh'] as const
 const ROLE_LABELS: Record<string, string> = {
   viewer:   'Consulta',
   uploader: 'Carga',
   admin:    'Admin',
+  rrhh:     'RRHH',
 }
 
 function fmtDate(iso: string | null) {
