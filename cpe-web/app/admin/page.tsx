@@ -413,7 +413,8 @@ export default function AdminPage() {
               </button>
             </div>
           </div>
-          <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Admin tools */}
             <Link href="/admin/cms" className="btn btn-primary" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Contenido del sitio
             </Link>
@@ -424,7 +425,7 @@ export default function AdminPage() {
               Documentos
             </Link>
             <Link href="/admin/biblioteca" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              Biblioteca interna
+              Biblioteca
             </Link>
             <Link href="/admin/comunicados" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Comunicados
@@ -434,6 +435,44 @@ export default function AdminPage() {
             </Link>
             <Link href="/admin/usuarios" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Usuarios
+            </Link>
+
+            {/* Divider */}
+            <span style={{ width: 1, height: 24, background: 'var(--rule)', margin: '0 4px', flexShrink: 0 }} />
+
+            {/* User-facing links */}
+            <Link href="/" target="_blank" rel="noreferrer" style={{
+              fontSize: 13, padding: '7px 14px', textDecoration: 'none',
+              border: '1px solid var(--rule)', borderRadius: 'var(--r-md)',
+              color: 'var(--fg-soft)', display: 'inline-flex', alignItems: 'center', gap: 5,
+              background: 'var(--surface)',
+            }}>
+              Sitio web
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.5 }}>
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Link>
+            <Link href="/biblioteca" target="_blank" rel="noreferrer" style={{
+              fontSize: 13, padding: '7px 14px', textDecoration: 'none',
+              border: '1px solid var(--rule)', borderRadius: 'var(--r-md)',
+              color: 'var(--fg-soft)', display: 'inline-flex', alignItems: 'center', gap: 5,
+              background: 'var(--surface)',
+            }}>
+              Biblioteca
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.5 }}>
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Link>
+            <Link href="/portal" target="_blank" rel="noreferrer" style={{
+              fontSize: 13, padding: '7px 14px', textDecoration: 'none',
+              border: '1px solid var(--rule)', borderRadius: 'var(--r-md)',
+              color: 'var(--fg-soft)', display: 'inline-flex', alignItems: 'center', gap: 5,
+              background: 'var(--surface)',
+            }}>
+              Portal
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.5 }}>
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </Link>
           </nav>
         </div>
