@@ -92,9 +92,10 @@ function parsearSalesVolume(
     return null
   }
 
-  // Price history rows are below the revenue table (rows 35+)
+  // Price history: D40:H51 in Excel (data[39]–data[50])
+  // Col D (3) = date serial, cols E–H (4–7) = PCKK, ET, RCLV, CH prices
   const priceMap: Record<number, any[]> = {}
-  for (let i = 33; i < Math.min(data.length, 65); i++) {
+  for (let i = 39; i <= 50; i++) {
     const row = data[i]
     if (!row) continue
     const serial = findDateSerial(row)
@@ -136,19 +137,12 @@ function parsearSalesVolume(
     const total_MM = PCKK_MM + ET_MM + RCLV_MM + CH_MM + gas_MM
     if (total_MM <= 0) continue
 
-    // Price lookup — try old layout (cols 3-6) then new layout (cols 17-20)
+    // Price lookup: D40:H51 layout — col D(3)=date, E(4)=PCKK, F(5)=ET, G(6)=RCLV, H(7)=CH
     const priceRow = priceMap[serial]
-    let precio_PCKK = Number(priceRow?.[3] ?? 0)
-    let precio_ET   = Number(priceRow?.[4] ?? 0)
-    let precio_RCLV = Number(priceRow?.[5] ?? 0)
-    let precio_CH   = Number(priceRow?.[6] ?? 0)
-    // If old layout cols empty, try new layout cols (R-U = 17-20)
-    if (precio_ET === 0 && priceRow) {
-      precio_PCKK = Number(priceRow[17] ?? 0)
-      precio_ET   = Number(priceRow[18] ?? 0)
-      precio_RCLV = Number(priceRow[19] ?? 0)
-      precio_CH   = Number(priceRow[20] ?? 0)
-    }
+    let precio_PCKK = Number(priceRow?.[4] ?? 0)
+    let precio_ET   = Number(priceRow?.[5] ?? 0)
+    let precio_RCLV = Number(priceRow?.[6] ?? 0)
+    let precio_CH   = Number(priceRow?.[7] ?? 0)
 
     if (precio_ET === 0) {
       precio_ET   = currentPrices.ET
