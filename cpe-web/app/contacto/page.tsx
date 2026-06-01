@@ -10,9 +10,9 @@ export default async function ContactoPage() {
   const heroImg = f['hero.contacto.img'] || ''
 
   const irEmail     = f['contact.ir.email']     || 'ir@crownpointenergy.com'
-  const arAddress   = f['contact.ar.address']   || 'Suipacha 1111, Piso 18\nC1008AAW, Buenos Aires'
-  const arPhone     = f['contact.ar.phone']     || '+54 11 5252-4801'
-  const arEmail     = f['contact.ar.email']     || 'ir@crownpointenergy.com'
+  const arAddress   = f['contact.ar.address']   || 'Godoy Cruz 2769, Piso 4\nC1425FQK, Buenos Aires'
+  const arPhone     = f['contact.ar.phone']     || '+54 11-5032-5600'
+  const arEmail     = f['contact.ar.email']     || 'notificaciones@crownpointenergy.com'
   const caAddress   = f['contact.ca.address']   || 'PO Box 1562 Station M.\nCalgary, Alberta T2P 3B9'
   const caPhone     = f['contact.ca.phone']     || '+1 403-232-1150'
   const caEmail     = f['contact.ca.email']     || 'info@crownpointenergy.com'

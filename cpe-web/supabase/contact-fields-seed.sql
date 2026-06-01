@@ -9,10 +9,10 @@ DELETE FROM cms_fields WHERE key IN (
 
 -- Argentina
 INSERT INTO cms_fields (key, value_es, value_en) VALUES
-  ('contact.ar.address', 'Suipacha 1111, Piso 18' || chr(10) || 'C1008AAW, Buenos Aires',
-                         'Suipacha 1111, Floor 18' || chr(10) || 'C1008AAW, Buenos Aires'),
-  ('contact.ar.phone',   '+54 11 5252-4801', '+54 11 5252-4801'),
-  ('contact.ar.email',   'ir@crownpointenergy.com', 'ir@crownpointenergy.com')
+  ('contact.ar.address', 'Godoy Cruz 2769, Piso 4' || chr(10) || 'C1425FQK, Buenos Aires',
+                         'Godoy Cruz 2769, Floor 4' || chr(10) || 'C1425FQK, Buenos Aires'),
+  ('contact.ar.phone',   '+54 11-5032-5600', '+54 11-5032-5600'),
+  ('contact.ar.email',   'notificaciones@crownpointenergy.com', 'notificaciones@crownpointenergy.com')
 ON CONFLICT (key) DO UPDATE SET
   value_es   = EXCLUDED.value_es,
   value_en   = EXCLUDED.value_en,

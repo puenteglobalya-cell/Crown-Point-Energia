@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient, createSupabaseServerAdminClient } from '@/lib/supabase'
+import { isAdminEmail } from '@/lib/admin-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,12 +38,16 @@ export default async function BibliotecaPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: rawCarpetas } = await supabase
+  const adminClient = createSupabaseServerAdminClient()
+
+  // Admins bypass RLS and see all carpetas; regular users are filtered by their groups
+  const queryClient = isAdminEmail(user.email) ? adminClient : supabase
+
+  const { data: rawCarpetas } = await queryClient
     .from('bib_carpetas')
     .select('id, nombre, descripcion, orden, bib_documentos(id, nombre, path, size_bytes, mime_type, vigente, created_at)')
+    .eq('activa', true)
     .order('orden')
-
-  const adminClient = createSupabaseServerAdminClient()
   const carpetas: (Carpeta & { bib_documentos: (Doc & { signedUrl: string })[] })[] = await Promise.all(
     (rawCarpetas ?? []).map(async (c) => ({
       ...c,
