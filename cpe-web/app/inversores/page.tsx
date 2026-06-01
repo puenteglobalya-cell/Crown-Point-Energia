@@ -3,6 +3,7 @@ import { getCmsState } from '@/lib/cms'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { fetchIrEvents, fetchIrAnalysts, fetchObligaciones } from '@/lib/content-fetch'
 import InversoresDocsTabs from './InversoresDocsTabs'
+import IrSubscribeForm from './IrSubscribeForm'
 
 export const revalidate = 60
 
@@ -339,19 +340,7 @@ export default async function InversoresPage() {
                 <span className="lang-en">Subscribe to our IR list to get press releases, quarterly results and material events in your inbox.</span>
               </p>
             </div>
-            <form className="ir-subscribe" onSubmit={(e) => e.preventDefault()}>
-              <div className="form-row">
-                <label style={{ color: 'rgba(236,238,251,0.7)' }}><span className="lang-es">Nombre</span><span className="lang-en">Name</span></label>
-                <input type="text" required placeholder="—" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.18)', color: '#fff' }} />
-              </div>
-              <div className="form-row">
-                <label style={{ color: 'rgba(236,238,251,0.7)' }}>Email</label>
-                <input type="email" required placeholder="you@firm.com" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.18)', color: '#fff' }} />
-              </div>
-              <button type="submit" className="btn btn-primary" style={{ background: 'var(--cp-green)', color: 'var(--cp-navy-darker)', marginTop: 8 }}>
-                <span className="lang-es">Suscribirme</span><span className="lang-en">Subscribe</span>
-              </button>
-            </form>
+            <IrSubscribeForm />
           </div>
         </div>
       </section>

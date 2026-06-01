@@ -516,7 +516,7 @@ export default async function HomePage() {
                 </div>
                 <div className="cc-channel">
                   <span className="cc-key"><span className="lang-es">Oficinas Buenos Aires</span><span className="lang-en">Buenos Aires office</span></span>
-                  <span className="cc-val">Suipacha 1111, Piso 18 — C1008AAW</span>
+                  <span className="cc-val">Godoy Cruz 2769, Piso 4 — C1425FQK</span>
                 </div>
                 <Link className="btn btn-primary cc-btn" href="/contacto">
                   <span className="lang-es">Ver todos los contactos</span>

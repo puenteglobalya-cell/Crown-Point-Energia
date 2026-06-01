@@ -79,10 +79,10 @@ export default function Footer() {
           <div className="footer-col">
             <h5><span className="lang-es">Contacto directo</span><span className="lang-en">Direct contact</span></h5>
             <ul>
-              <li>Suipacha 1111, Piso&nbsp;18</li>
-              <li>C1008AAW, Buenos Aires</li>
+              <li>Godoy Cruz 2769, Piso&nbsp;4</li>
+              <li>C1425FQK, Buenos Aires</li>
               <li><a href="mailto:ir@crownpointenergy.com">ir@crownpointenergy.com</a></li>
-              <li>+54 11 5252-4801</li>
+              <li>+54 11-5032-5600</li>
             </ul>
             <div style={{
               marginTop: 20, padding: '14px 16px',
