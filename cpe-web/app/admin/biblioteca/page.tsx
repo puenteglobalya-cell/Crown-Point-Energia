@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -29,6 +30,7 @@ const MIME_MAP: Record<string, string> = {
   doc:  'application/msword',
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   ppt:  'application/vnd.ms-powerpoint',
+  zip:  'application/zip',
   png:  'image/png',
   jpg:  'image/jpeg',
   jpeg: 'image/jpeg',
@@ -89,6 +91,17 @@ export default function AdminBiblioteca() {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px' }}>
       <div style={{ marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
+          <Link href="/admin" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>← Panel CMS</Link>
+          <span style={{ color: 'var(--rule)' }}>|</span>
+          <Link href="/admin/usuarios" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Usuarios</Link>
+          <Link href="/admin/documentos" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Documentos</Link>
+          <Link href="/admin/comunicados" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Comunicados</Link>
+          <Link href="/admin/reportes" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Reportes</Link>
+          <span style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
+            <Link href="/biblioteca" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--cp-green)', textDecoration: 'none' }}>Ver Biblioteca →</Link>
+          </span>
+        </div>
         <span style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--cp-green)', fontWeight: 700 }}>Admin</span>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginTop: 4, marginBottom: 0 }}>Biblioteca</h1>
       </div>
@@ -405,7 +418,7 @@ function DocumentosTab({ data, reload }: { data: Data; reload: () => void }) {
           <div>
             <label style={labelStyle}>Archivo *</label>
             <input ref={fileRef} type="file" required style={{ ...inputFull, padding: '6px 8px', cursor: 'pointer' }}
-              accept=".pdf,.xlsx,.xls,.docx,.doc,.pptx,.ppt,.png,.jpg,.jpeg" />
+              accept=".pdf,.xlsx,.xls,.docx,.doc,.pptx,.ppt,.zip,.png,.jpg,.jpeg" />
           </div>
           <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: 0 }}>El archivo más reciente marcado como ★ vigente es el que ven los usuarios.</p>
           <button type="submit" disabled={uploading || !carpetaId} style={btnPrimary}>

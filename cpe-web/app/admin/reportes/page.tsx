@@ -70,9 +70,13 @@ export default function ReportesAdminPage() {
     setErr('')
     try {
       const supabase = createSupabaseBrowserClient()
-      const path = `reportes/${datos.periodo}-${Date.now()}.xlsx`
-      const { error: storageErr } = await supabase.storage.from('documents').upload(path, file, { upsert: false })
-      if (storageErr) throw new Error(storageErr.message)
+      // Storage upload is best-effort — report saves even if this fails
+      let storage_path: string | null = null
+      try {
+        const path = `reportes/${datos.periodo}-${Date.now()}.xlsx`
+        const { error: storageErr } = await supabase.storage.from('documents').upload(path, file, { upsert: false })
+        if (!storageErr) storage_path = path
+      } catch { /* non-blocking */ }
 
       const html = generarReporteHTML(datos)
 
@@ -84,7 +88,7 @@ export default function ReportesAdminPage() {
           periodo: datos.periodo,
           datos,
           html,
-          storage_path: path,
+          storage_path,
           file_name: file.name,
           file_size: file.size,
           estado,
