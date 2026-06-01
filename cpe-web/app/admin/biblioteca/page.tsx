@@ -29,6 +29,7 @@ const MIME_MAP: Record<string, string> = {
   doc:  'application/msword',
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   ppt:  'application/vnd.ms-powerpoint',
+  zip:  'application/zip',
   png:  'image/png',
   jpg:  'image/jpeg',
   jpeg: 'image/jpeg',
@@ -405,7 +406,7 @@ function DocumentosTab({ data, reload }: { data: Data; reload: () => void }) {
           <div>
             <label style={labelStyle}>Archivo *</label>
             <input ref={fileRef} type="file" required style={{ ...inputFull, padding: '6px 8px', cursor: 'pointer' }}
-              accept=".pdf,.xlsx,.xls,.docx,.doc,.pptx,.ppt,.png,.jpg,.jpeg" />
+              accept=".pdf,.xlsx,.xls,.docx,.doc,.pptx,.ppt,.zip,.png,.jpg,.jpeg" />
           </div>
           <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: 0 }}>El archivo más reciente marcado como ★ vigente es el que ven los usuarios.</p>
           <button type="submit" disabled={uploading || !carpetaId} style={btnPrimary}>

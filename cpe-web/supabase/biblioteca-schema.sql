@@ -147,6 +147,8 @@ VALUES (
     'application/msword',
     'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     'application/vnd.ms-powerpoint',
+    'application/zip',
+    'application/x-zip-compressed',
     'application/octet-stream',
     'image/png',
     'image/jpeg'
@@ -177,3 +179,21 @@ DO $$ BEGIN
       USING (bucket_id = 'biblioteca');
   END IF;
 END $$;
+
+-- If bucket already exists, update MIME types to add ZIP support
+UPDATE storage.buckets
+SET allowed_mime_types = ARRAY[
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/vnd.ms-powerpoint',
+  'application/zip',
+  'application/x-zip-compressed',
+  'application/octet-stream',
+  'image/png',
+  'image/jpeg'
+]
+WHERE id = 'biblioteca';

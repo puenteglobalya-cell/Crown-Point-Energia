@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient, createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isAdminEmail } from '@/lib/admin-auth'
+import DocActions from './DocActions'
 
 export const dynamic = 'force-dynamic'
 
@@ -137,23 +138,11 @@ export default async function BibliotecaPage() {
                       </p>
                     </div>
                     {vigente.signedUrl && (
-                      <a
-                        href={vigente.signedUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 6,
-                          padding: '9px 18px',
-                          background: 'var(--cp-green)', color: '#fff',
-                          borderRadius: 'var(--r-md)', fontSize: 13, fontWeight: 600,
-                          textDecoration: 'none', flexShrink: 0,
-                        }}
-                      >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                        Descargar
-                      </a>
+                      <DocActions
+                        docName={vigente.nombre}
+                        docPath={vigente.path}
+                        signedUrl={vigente.signedUrl}
+                      />
                     )}
                   </div>
                 ) : (
@@ -182,18 +171,11 @@ export default async function BibliotecaPage() {
                           </p>
                         </div>
                         {doc.signedUrl && (
-                          <a
-                            href={doc.signedUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              fontSize: 12, color: 'var(--accent)',
-                              padding: '5px 12px', border: '1px solid var(--rule)',
-                              borderRadius: 'var(--r-sm)', textDecoration: 'none',
-                            }}
-                          >
-                            Descargar
-                          </a>
+                          <DocActions
+                            docName={doc.nombre}
+                            docPath={doc.path}
+                            signedUrl={doc.signedUrl}
+                          />
                         )}
                       </div>
                     ))}
