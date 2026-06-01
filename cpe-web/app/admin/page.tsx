@@ -392,21 +392,28 @@ export default function AdminPage() {
       <div style={{ maxWidth: tab === 'sitio' ? 1280 : 760, margin: '0 auto', transition: 'max-width 0.2s' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
-              CMS — Crown Point
-            </h1>
-            <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
-              Los cambios se reflejan en el sitio público en hasta 60&nbsp;s.
-            </p>
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
+                CMS — Crown Point
+              </h1>
+              <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
+                Los cambios se reflejan en el sitio público en hasta 60&nbsp;s.
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {savedMsg && (
+                <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                  ✓ {savedMsg}
+                </span>
+              )}
+              <button onClick={handleSignOut} className="btn" style={{ fontSize: 13, padding: '8px 16px' }}>
+                Cerrar sesión
+              </button>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            {savedMsg && (
-              <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                ✓ {savedMsg}
-              </span>
-            )}
+          <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <Link href="/admin/cms" className="btn btn-primary" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Contenido del sitio
             </Link>
@@ -428,10 +435,7 @@ export default function AdminPage() {
             <Link href="/admin/usuarios" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Usuarios
             </Link>
-            <button onClick={handleSignOut} className="btn" style={{ fontSize: 13, padding: '8px 16px' }}>
-              Cerrar sesión
-            </button>
-          </div>
+          </nav>
         </div>
 
         {/* Tabs */}
