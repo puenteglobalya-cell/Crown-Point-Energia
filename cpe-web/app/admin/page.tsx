@@ -416,6 +416,9 @@ export default function AdminPage() {
             <Link href="/admin/documentos" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Documentos
             </Link>
+            <Link href="/admin/biblioteca" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
+              Biblioteca interna
+            </Link>
             <Link href="/admin/comunicados" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Comunicados
             </Link>
