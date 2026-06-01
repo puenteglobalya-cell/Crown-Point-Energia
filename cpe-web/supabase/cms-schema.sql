@@ -32,11 +32,17 @@ ALTER TABLE cms_sections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cms_fields   ENABLE ROW LEVEL SECURITY;
 
 -- Public can read
+DROP POLICY IF EXISTS "public select settings"      ON cms_settings;
+DROP POLICY IF EXISTS "public select sections"      ON cms_sections;
+DROP POLICY IF EXISTS "public select fields"        ON cms_fields;
 CREATE POLICY "public select settings" ON cms_settings FOR SELECT USING (true);
 CREATE POLICY "public select sections" ON cms_sections FOR SELECT USING (true);
 CREATE POLICY "public select fields"   ON cms_fields   FOR SELECT USING (true);
 
 -- Authenticated users can write (admin email check is done in the API route)
+DROP POLICY IF EXISTS "auth insert/update settings" ON cms_settings;
+DROP POLICY IF EXISTS "auth insert/update sections" ON cms_sections;
+DROP POLICY IF EXISTS "auth insert/update fields"   ON cms_fields;
 CREATE POLICY "auth insert/update settings" ON cms_settings FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "auth insert/update sections" ON cms_sections FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "auth insert/update fields"   ON cms_fields   FOR ALL TO authenticated USING (true) WITH CHECK (true);

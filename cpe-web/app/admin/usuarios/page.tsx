@@ -13,6 +13,9 @@ type UserWithRole = {
   last_sign_in_at: string | null
 }
 
+type BibGrupo = { id: number; slug: string; label: string; orden: number }
+type BibUG    = { user_id: string; grupo_id: number }
+
 type PermMatrix = Record<string, Record<string, boolean>>
 
 const ROLES = ['viewer', 'uploader', 'admin'] as const
@@ -60,6 +63,10 @@ export default function UsuariosPage() {
   const [loading, setLoading] = useState(true)
   const [flash, setFlash] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
 
+  // Biblioteca groups
+  const [bibGrupos, setBibGrupos]       = useState<BibGrupo[]>([])
+  const [usuarioGrupos, setUsuarioGrupos] = useState<BibUG[]>([])
+
   // Invite form
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<'viewer' | 'uploader' | 'admin'>('viewer')
@@ -89,7 +96,31 @@ export default function UsuariosPage() {
     setMatrixLoading(false)
   }, [])
 
-  useEffect(() => { loadUsers(); loadMatrix() }, [loadUsers, loadMatrix])
+  const loadBibData = useCallback(async () => {
+    const res = await fetch('/api/admin/biblioteca')
+    if (res.ok) {
+      const data = await res.json()
+      setBibGrupos(data.grupos ?? [])
+      setUsuarioGrupos(data.usuarioGrupos ?? [])
+    }
+  }, [])
+
+  async function handleBibGrupoToggle(userId: string, grupoId: number, checked: boolean) {
+    const current = usuarioGrupos.filter(ug => ug.user_id === userId).map(ug => ug.grupo_id)
+    const next = checked ? [...current, grupoId] : current.filter(id => id !== grupoId)
+    // Optimistic update
+    setUsuarioGrupos(prev => [
+      ...prev.filter(ug => ug.user_id !== userId),
+      ...next.map(grupo_id => ({ user_id: userId, grupo_id })),
+    ])
+    await fetch('/api/admin/biblioteca', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'set_usuario_grupos', user_id: userId, grupo_ids: next }),
+    })
+  }
+
+  useEffect(() => { loadUsers(); loadMatrix(); loadBibData() }, [loadUsers, loadMatrix, loadBibData])
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
@@ -251,82 +282,116 @@ export default function UsuariosPage() {
             <p style={{ color: 'var(--fg-muted)', fontSize: 14 }}>No hay usuarios todavía.</p>
           ) : (
             <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--surface)' }}>
-              {users.map((user, i) => (
-                <div
-                  key={user.id}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto auto auto auto auto',
-                    gap: 10,
-                    alignItems: 'center',
-                    padding: '14px 18px',
-                    borderBottom: i < users.length - 1 ? '1px solid var(--rule)' : 'none',
-                    opacity: user.activo === false ? 0.6 : 1,
-                  }}
-                >
-                  {/* User info */}
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}>
-                      {user.email}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>
-                      Creado: {fmtDate(user.created_at)}
-                      {user.last_sign_in_at ? ` · Último acceso: ${fmtDate(user.last_sign_in_at)}` : ''}
-                    </div>
-                  </div>
-
-                  {/* Role badge */}
-                  <RoleBadge role={user.role} />
-
-                  {/* Change role */}
-                  <select
-                    value={user.role ?? ''}
-                    onChange={e => handleRoleChange(user, e.target.value)}
-                    style={{ fontSize: 12, padding: '5px 8px', borderRadius: 'var(--r-md)', border: '1px solid var(--rule)', background: 'var(--bg)', color: 'var(--fg)', cursor: 'pointer' }}
-                  >
-                    <option value="" disabled>Cambiar rol</option>
-                    <option value="viewer">Consulta</option>
-                    <option value="uploader">Carga</option>
-                    <option value="admin">Admin</option>
-                  </select>
-
-                  {/* Activo toggle */}
+              {users.map((user, i) => {
+                const userGrupos = usuarioGrupos.filter(ug => ug.user_id === user.id).map(ug => ug.grupo_id)
+                return (
                   <div
-                    title={user.activo ? 'Clic para desactivar' : 'Clic para activar'}
+                    key={user.id}
                     style={{
-                      width: 36, height: 20, borderRadius: 10,
-                      background: user.activo ? 'var(--accent)' : 'var(--rule)',
-                      position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0,
+                      borderBottom: i < users.length - 1 ? '1px solid var(--rule)' : 'none',
+                      opacity: user.activo === false ? 0.6 : 1,
                     }}
-                    onClick={() => handleToggleActivo(user)}
                   >
+                    {/* Top row: controls */}
                     <div style={{
-                      position: 'absolute', top: 2, left: user.activo ? 17 : 2,
-                      width: 16, height: 16, borderRadius: '50%',
-                      background: '#fff', transition: 'left 0.2s',
-                    }} />
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto auto auto auto auto',
+                      gap: 10,
+                      alignItems: 'center',
+                      padding: '14px 18px 10px',
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}>
+                          {user.email}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>
+                          Creado: {fmtDate(user.created_at)}
+                          {user.last_sign_in_at ? ` · Último acceso: ${fmtDate(user.last_sign_in_at)}` : ''}
+                        </div>
+                      </div>
+
+                      <RoleBadge role={user.role} />
+
+                      <select
+                        value={user.role ?? ''}
+                        onChange={e => handleRoleChange(user, e.target.value)}
+                        style={{ fontSize: 12, padding: '5px 8px', borderRadius: 'var(--r-md)', border: '1px solid var(--rule)', background: 'var(--bg)', color: 'var(--fg)', cursor: 'pointer' }}
+                      >
+                        <option value="" disabled>Cambiar rol</option>
+                        <option value="viewer">Consulta</option>
+                        <option value="uploader">Carga</option>
+                        <option value="admin">Admin</option>
+                      </select>
+
+                      <div
+                        title={user.activo ? 'Clic para desactivar' : 'Clic para activar'}
+                        style={{
+                          width: 36, height: 20, borderRadius: 10,
+                          background: user.activo ? 'var(--accent)' : 'var(--rule)',
+                          position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0,
+                        }}
+                        onClick={() => handleToggleActivo(user)}
+                      >
+                        <div style={{
+                          position: 'absolute', top: 2, left: user.activo ? 17 : 2,
+                          width: 16, height: 16, borderRadius: '50%',
+                          background: '#fff', transition: 'left 0.2s',
+                        }} />
+                      </div>
+
+                      <button
+                        onClick={() => handleResetPassword(user)}
+                        className="btn"
+                        title="Enviar email de restablecimiento de contraseña"
+                        style={{ fontSize: 12, padding: '6px 12px', whiteSpace: 'nowrap' }}
+                      >
+                        Reset contraseña
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(user)}
+                        className="btn"
+                        style={{ fontSize: 12, padding: '6px 12px', color: 'var(--cp-negative)' }}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+
+                    {/* Bottom row: biblioteca sectors */}
+                    <div style={{
+                      padding: '8px 18px 12px',
+                      display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+                      borderTop: '1px dashed var(--rule)',
+                      background: 'var(--bg-alt)',
+                    }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--fg-muted)', flexShrink: 0 }}>
+                        Biblioteca
+                      </span>
+                      {bibGrupos.length === 0 ? (
+                        <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>—</span>
+                      ) : bibGrupos.map(g => {
+                        const checked = userGrupos.includes(g.id)
+                        return (
+                          <label key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 13 }}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={e => handleBibGrupoToggle(user.id, g.id, e.target.checked)}
+                            />
+                            <span style={{
+                              padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600,
+                              background: checked ? 'rgba(130,188,0,0.14)' : 'var(--rule)',
+                              color: checked ? 'var(--cp-green)' : 'var(--fg-muted)',
+                            }}>
+                              {g.label}
+                            </span>
+                          </label>
+                        )
+                      })}
+                    </div>
                   </div>
-
-                  {/* Reset password */}
-                  <button
-                    onClick={() => handleResetPassword(user)}
-                    className="btn"
-                    title="Enviar email de restablecimiento de contraseña"
-                    style={{ fontSize: 12, padding: '6px 12px', whiteSpace: 'nowrap' }}
-                  >
-                    Reset contraseña
-                  </button>
-
-                  {/* Delete */}
-                  <button
-                    onClick={() => handleDelete(user)}
-                    className="btn"
-                    style={{ fontSize: 12, padding: '6px 12px', color: 'var(--cp-negative)' }}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

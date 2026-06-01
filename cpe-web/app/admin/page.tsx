@@ -255,14 +255,41 @@ const PAGE_GROUPS: PageGroup[] = [
         ],
       },
       {
-        group: 'Datos de contacto',
+        group: 'Argentina',
         items: [
-          { key: 'contact.ir.email',      label: 'Email IR' },
-          { key: 'contact.ir.person',     label: 'Nombre IR' },
-          { key: 'contact.prensa.email',  label: 'Email prensa' },
-          { key: 'contact.compras.email', label: 'Email compras' },
-          { key: 'contact.ba.address',    label: 'Dirección BA', multiline: true },
-          { key: 'contact.ba.phone',      label: 'Teléfono BA' },
+          { key: 'contact.ar.address', label: 'Dirección', multiline: true },
+          { key: 'contact.ar.phone',   label: 'Teléfono' },
+          { key: 'contact.ar.email',   label: 'Email' },
+        ],
+      },
+      {
+        group: 'Canadá',
+        items: [
+          { key: 'contact.ca.address', label: 'Dirección', multiline: true },
+          { key: 'contact.ca.phone',   label: 'Teléfono' },
+          { key: 'contact.ca.email',   label: 'Email' },
+        ],
+      },
+      {
+        group: 'Agente de Transferencia',
+        items: [
+          { key: 'contact.ta.name',    label: 'Nombre' },
+          { key: 'contact.ta.address', label: 'Dirección', multiline: true },
+          { key: 'contact.ta.phone',   label: 'Teléfono' },
+          { key: 'contact.ta.url',     label: 'Sitio web' },
+        ],
+      },
+      {
+        group: 'Relaciones con Inversores',
+        items: [
+          { key: 'contact.ir.email', label: 'Email IR' },
+        ],
+      },
+      {
+        group: 'Línea de ética',
+        items: [
+          { key: 'contact.ethics.phone', label: 'Teléfono ética' },
+          { key: 'contact.ethics.email', label: 'Email ética' },
         ],
       },
     ],
@@ -365,21 +392,29 @@ export default function AdminPage() {
       <div style={{ maxWidth: tab === 'sitio' ? 1280 : 760, margin: '0 auto', transition: 'max-width 0.2s' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
-              CMS — Crown Point
-            </h1>
-            <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
-              Los cambios se reflejan en el sitio público en hasta 60&nbsp;s.
-            </p>
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
+                CMS — Crown Point
+              </h1>
+              <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
+                Los cambios se reflejan en el sitio público en hasta 60&nbsp;s.
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {savedMsg && (
+                <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                  ✓ {savedMsg}
+                </span>
+              )}
+              <button onClick={handleSignOut} className="btn" style={{ fontSize: 13, padding: '8px 16px' }}>
+                Cerrar sesión
+              </button>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            {savedMsg && (
-              <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                ✓ {savedMsg}
-              </span>
-            )}
+          <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Admin tools */}
             <Link href="/admin/cms" className="btn btn-primary" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Contenido del sitio
             </Link>
@@ -388,6 +423,9 @@ export default function AdminPage() {
             </Link>
             <Link href="/admin/documentos" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Documentos
+            </Link>
+            <Link href="/admin/biblioteca" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
+              Biblioteca
             </Link>
             <Link href="/admin/comunicados" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Comunicados
@@ -398,10 +436,45 @@ export default function AdminPage() {
             <Link href="/admin/usuarios" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Usuarios
             </Link>
-            <button onClick={handleSignOut} className="btn" style={{ fontSize: 13, padding: '8px 16px' }}>
-              Cerrar sesión
-            </button>
-          </div>
+
+            {/* Divider */}
+            <span style={{ width: 1, height: 24, background: 'var(--rule)', margin: '0 4px', flexShrink: 0 }} />
+
+            {/* User-facing links */}
+            <Link href="/" target="_blank" rel="noreferrer" style={{
+              fontSize: 13, padding: '7px 14px', textDecoration: 'none',
+              border: '1px solid var(--rule)', borderRadius: 'var(--r-md)',
+              color: 'var(--fg-soft)', display: 'inline-flex', alignItems: 'center', gap: 5,
+              background: 'var(--surface)',
+            }}>
+              Sitio web
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.5 }}>
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Link>
+            <Link href="/biblioteca" target="_blank" rel="noreferrer" style={{
+              fontSize: 13, padding: '7px 14px', textDecoration: 'none',
+              border: '1px solid var(--rule)', borderRadius: 'var(--r-md)',
+              color: 'var(--fg-soft)', display: 'inline-flex', alignItems: 'center', gap: 5,
+              background: 'var(--surface)',
+            }}>
+              Biblioteca
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.5 }}>
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Link>
+            <Link href="/portal" target="_blank" rel="noreferrer" style={{
+              fontSize: 13, padding: '7px 14px', textDecoration: 'none',
+              border: '1px solid var(--rule)', borderRadius: 'var(--r-md)',
+              color: 'var(--fg-soft)', display: 'inline-flex', alignItems: 'center', gap: 5,
+              background: 'var(--surface)',
+            }}>
+              Portal
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.5 }}>
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </Link>
+          </nav>
         </div>
 
         {/* Tabs */}

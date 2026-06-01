@@ -85,13 +85,19 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // ── Biblioteca auth (any authenticated user) ─────────────────────────────
+  if (pathname.startsWith('/biblioteca')) {
+    if (!user) return NextResponse.redirect(new URL('/login', request.url))
+  }
+
   // ── Maintenance mode ─────────────────────────────────────────────────────
   const isAdminRoute = pathname.startsWith('/admin')
   const isPortalRoute = pathname.startsWith('/portal')
   const isApiRoute = pathname.startsWith('/api')
+  const isBibliotecaRoute = pathname.startsWith('/biblioteca')
   const isMaintenancePage = pathname === '/maintenance'
 
-  if (!isAdminRoute && !isPortalRoute && !isApiRoute && !isMaintenancePage) {
+  if (!isAdminRoute && !isPortalRoute && !isApiRoute && !isBibliotecaRoute && !isMaintenancePage) {
     try {
       const timeout = new Promise<null>(r => setTimeout(() => r(null), 2000))
       const result = await Promise.race([
