@@ -80,70 +80,71 @@ function parsearSalesVolume(
   if (!ws) return []
   const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }) as any[][]
 
-  function findDateSerial(row: any[]): number | null {
-    for (let c = 0; c <= 3; c++) {
-      const v = row[c]
-      if (typeof v === 'number' && v > 45000 && v < 47500) return v
-      if (v instanceof Date) {
-        const s = Math.round(v.getTime() / 86400000 + 25569)
-        if (s > 45000 && s < 47500) return s
-      }
+  // Months are text labels in col B ("ene-26", "feb-26", …), not date serials.
+  // Parse to a canonical "Ene-26" format used as map keys.
+  function parseMesLabel(v: any): string | null {
+    if (typeof v !== 'string') return null
+    const mMap: Record<string, string> = {
+      ene:'Ene', jan:'Ene', enero:'Ene', january:'Ene',
+      feb:'Feb', febrero:'Feb', february:'Feb',
+      mar:'Mar', marzo:'Mar', march:'Mar',
+      abr:'Abr', apr:'Abr', abril:'Abr', april:'Abr',
+      may:'May', mayo:'May',
+      jun:'Jun', junio:'Jun', june:'Jun',
+      jul:'Jul', julio:'Jul', july:'Jul',
+      ago:'Ago', aug:'Ago', agosto:'Ago', august:'Ago',
+      sep:'Sep', sept:'Sep', septiembre:'Sep', september:'Sep',
+      oct:'Oct', octubre:'Oct', october:'Oct',
+      nov:'Nov', noviembre:'Nov', november:'Nov',
+      dic:'Dic', dec:'Dic', diciembre:'Dic', december:'Dic',
     }
-    return null
+    const m = v.toLowerCase().trim().match(/^([a-záéíóú]+)[-.\s]?(\d{2,4})/)
+    if (!m) return null
+    const abbr = mMap[m[1]]
+    if (!abbr) return null
+    const yr = m[2].length === 4 ? m[2].slice(2) : m[2]
+    return `${abbr}-${yr}`
   }
 
-  // Price history: D40:H51 in Excel (data[39]–data[50])
-  // Col D (3) = date serial, cols E–H (4–7) = PCKK, ET, RCLV, CH prices
-  const priceMap: Record<number, any[]> = {}
+  // Price section: D40:H51 in Excel (data[39]–data[50])
+  // Col B (1) = Spanish month label (current year), col A (0) = English prior-year label
+  // Col D(3)=PCKK, E(4)=ETLPPQ, F(5)=RCLV, G(6)=CH, H(7)=PPCO
+  const priceByLabel: Record<string, any[]> = {}
   for (let i = 39; i <= 50; i++) {
     const row = data[i]
     if (!row) continue
-    const serial = findDateSerial(row)
-    if (serial !== null) priceMap[serial] = row
+    const label = parseMesLabel(row[1]) ?? parseMesLabel(row[0])
+    if (label) priceByLabel[label] = row
   }
 
   const result: MesHistorico[] = []
+  const seen = new Set<string>()
 
-  // Revenue table: Excel rows 7–19 (data[6]–data[18]) per "sales & Volume" Q7:W19
-  // Revenue columns: R(17)=PCKK, S(18)=ET, T(19)=RCLV, U(20)=CH, V(21)=PPCO
-  // Fallback to old layout cols 3–10 if new layout has no values
-  for (let i = 6; i <= 18; i++) {
+  // Revenue section: Excel rows 8–19 (data[7]–data[18])
+  // Col B (1) = Spanish month label
+  // Col D(3)=PCKK, E(4)=ETLPPQ, F(5)=RCLV, G(6)=CH, H(7)=PPCO, J(9)=GasET, K(10)=GasRCLV
+  for (let i = 7; i <= 18; i++) {
     const row = data[i]
     if (!row) continue
-    const serial = findDateSerial(row)
-    if (serial === null) continue
+    const label = parseMesLabel(row[1])
+    if (!label || seen.has(label)) continue
 
-    // New layout: cols R–V (17–21) — PCKK, ET, RCLV, CH, PPCO
-    const n_PCKK = Number(row[17] ?? 0) / 1_000_000
-    const n_ET   = Number(row[18] ?? 0) / 1_000_000
-    const n_RCLV = Number(row[19] ?? 0) / 1_000_000
-    const n_CH   = (Number(row[20] ?? 0) + Number(row[21] ?? 0)) / 1_000_000
-    const newSum = n_PCKK + n_ET + n_RCLV + n_CH
-
-    // Old layout: cols D–K (3–10)
-    const o_PCKK = Number(row[3]  ?? 0) / 1_000_000
-    const o_ET   = Number(row[4]  ?? 0) / 1_000_000
-    const o_RCLV = Number(row[5]  ?? 0) / 1_000_000
-    const o_CH   = (Number(row[6] ?? 0) + Number(row[7] ?? 0)) / 1_000_000
-    const o_gas  = (Number(row[9] ?? 0) + Number(row[10] ?? 0)) / 1_000_000
-    const oldSum = o_PCKK + o_ET + o_RCLV + o_CH + o_gas
-
-    const useNew = newSum > oldSum
-    const PCKK_MM = useNew ? n_PCKK : o_PCKK
-    const ET_MM   = useNew ? n_ET   : o_ET
-    const RCLV_MM = useNew ? n_RCLV : o_RCLV
-    const CH_MM   = useNew ? n_CH   : o_CH
-    const gas_MM  = useNew ? 0      : o_gas
+    const PCKK_MM = Number(row[3] ?? 0) / 1_000_000
+    const ET_MM   = Number(row[4] ?? 0) / 1_000_000
+    const RCLV_MM = Number(row[5] ?? 0) / 1_000_000
+    const CH_MM   = (Number(row[6] ?? 0) + Number(row[7] ?? 0)) / 1_000_000
+    const gas_MM  = (Number(row[9] ?? 0) + Number(row[10] ?? 0)) / 1_000_000
     const total_MM = PCKK_MM + ET_MM + RCLV_MM + CH_MM + gas_MM
     if (total_MM <= 0) continue
 
-    // Price lookup: D40:H51 layout — col D(3)=date, E(4)=PCKK, F(5)=ET, G(6)=RCLV, H(7)=CH
-    const priceRow = priceMap[serial]
-    let precio_PCKK = Number(priceRow?.[4] ?? 0)
-    let precio_ET   = Number(priceRow?.[5] ?? 0)
-    let precio_RCLV = Number(priceRow?.[6] ?? 0)
-    let precio_CH   = Number(priceRow?.[7] ?? 0)
+    // Match price row by same month label
+    const priceRow = priceByLabel[label]
+    let precio_PCKK = Number(priceRow?.[3] ?? 0)  // D = PCKK
+    let precio_ET   = Number(priceRow?.[4] ?? 0)  // E = ETLPPQ
+    let precio_RCLV = Number(priceRow?.[5] ?? 0)  // F = RCLV
+    let precio_CH   = Number(priceRow?.[6] ?? 0)  // G = CH
 
+    // Current month has no price row yet — use prices from the detail sheet
     if (precio_ET === 0) {
       precio_ET   = currentPrices.ET
       precio_PCKK = currentPrices.PCKK
@@ -151,8 +152,9 @@ function parsearSalesVolume(
       precio_RCLV = currentPrices.RCLV
     }
 
+    seen.add(label)
     result.push({
-      mes: excelSerialToMesLabel(serial),
+      mes: label,
       total_MM,
       ET_MM,
       PCKK_MM,
