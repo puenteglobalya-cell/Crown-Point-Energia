@@ -136,12 +136,19 @@ function parsearSalesVolume(
     const total_MM = PCKK_MM + ET_MM + RCLV_MM + CH_MM + gas_MM
     if (total_MM <= 0) continue
 
-    // Price lookup — fallback to currentPrices if no historical row found
+    // Price lookup — try old layout (cols 3-6) then new layout (cols 17-20)
     const priceRow = priceMap[serial]
     let precio_PCKK = Number(priceRow?.[3] ?? 0)
     let precio_ET   = Number(priceRow?.[4] ?? 0)
     let precio_RCLV = Number(priceRow?.[5] ?? 0)
     let precio_CH   = Number(priceRow?.[6] ?? 0)
+    // If old layout cols empty, try new layout cols (R-U = 17-20)
+    if (precio_ET === 0 && priceRow) {
+      precio_PCKK = Number(priceRow[17] ?? 0)
+      precio_ET   = Number(priceRow[18] ?? 0)
+      precio_RCLV = Number(priceRow[19] ?? 0)
+      precio_CH   = Number(priceRow[20] ?? 0)
+    }
 
     if (precio_ET === 0) {
       precio_ET   = currentPrices.ET
