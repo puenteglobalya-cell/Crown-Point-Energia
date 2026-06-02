@@ -5,19 +5,22 @@ import Link from 'next/link'
 import { parsearIngresosExcel, type DatosIngresos } from '@/lib/parsers/ingresos'
 import { parsearAccionistaPPTX, type DatosAccionista } from '@/lib/parsers/accionista'
 import { parsearExcelGenerico, type DatosGenerico } from '@/lib/parsers/generico'
+import { parsearExcelMacro, type DatosMacro } from '@/lib/parsers/macro'
 import { generarReporteHTML } from '@/lib/generador/htmlReport'
 import { generarReporteAccionistaHTML } from '@/lib/generador/htmlReportAccionista'
 import { generarReporteGenericoHTML } from '@/lib/generador/htmlReportGenerico'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-type ReportType = 'ingresos' | 'accionista' | 'produccion' | 'financiero'
+type ReportType = 'ingresos' | 'accionista' | 'produccion' | 'financiero' | 'henry_hub' | 'ice_brent'
 type Step = 'type' | 'select' | 'parsing' | 'preview' | 'uploading' | 'done'
 
 const TYPES: { id: ReportType; label: string; desc: string; ext: string; icon: string }[] = [
-  { id: 'ingresos',   label: 'Ingresos Estimados',    desc: 'Revenue mensual petróleo & gas',    ext: '.xlsx,.xls', icon: '📊' },
-  { id: 'accionista', label: 'Informe de Seguimiento', desc: 'Cash flow operativo + comercial',   ext: '.pptx',      icon: '📋' },
-  { id: 'produccion', label: 'Reporte de Producción', desc: 'Volúmenes y pozos por área',         ext: '.xlsx,.xls', icon: '⛽' },
-  { id: 'financiero', label: 'Reporte Financiero',    desc: 'Estados financieros (P&L, balance)', ext: '.xlsx,.xls', icon: '💰' },
+  { id: 'ingresos',   label: 'Ingresos Estimados',    desc: 'Revenue mensual petróleo & gas',         ext: '.xlsx,.xls', icon: '📊' },
+  { id: 'accionista', label: 'Informe de Seguimiento', desc: 'Cash flow operativo + comercial',        ext: '.pptx',      icon: '📋' },
+  { id: 'produccion', label: 'Reporte de Producción', desc: 'Volúmenes y pozos por área',              ext: '.xlsx,.xls', icon: '⛽' },
+  { id: 'financiero', label: 'Reporte Financiero',    desc: 'Estados financieros (P&L, balance)',      ext: '.xlsx,.xls', icon: '💰' },
+  { id: 'henry_hub',  label: 'Henry Hub (Gas)',        desc: 'Futuros NG · col. A = mes, B = precio',  ext: '.xlsx,.xls', icon: '🔵' },
+  { id: 'ice_brent',  label: 'ICE Brent (Petróleo)',  desc: 'Futuros BRN · col. A = mes, B = precio', ext: '.xlsx,.xls', icon: '🟢' },
 ]
 
 function fmtSize(bytes: number | null) {
@@ -35,6 +38,7 @@ export default function PortalSubirPage() {
   const [datosIngresos, setDatosIngresos] = useState<DatosIngresos | null>(null)
   const [datosAccionista, setDatosAccionista] = useState<DatosAccionista | null>(null)
   const [datosGenerico, setDatosGenerico] = useState<DatosGenerico | null>(null)
+  const [datosMacro, setDatosMacro] = useState<DatosMacro | null>(null)
   const [titulo, setTitulo] = useState('')
   const [doneId, setDoneId] = useState('')
 
@@ -53,6 +57,13 @@ export default function PortalSubirPage() {
         const parsed = await parsearAccionistaPPTX(f)
         setDatosAccionista(parsed)
         setTitulo(`Informe de Seguimiento — ${parsed.periodo}`)
+      } else if (tipo === 'henry_hub' || tipo === 'ice_brent') {
+        const buf = await f.arrayBuffer()
+        const source = tipo === 'henry_hub' ? 'hh' : 'brent'
+        const parsed = parsearExcelMacro(buf, source)
+        setDatosMacro(parsed)
+        const tipoLabel = tipo === 'henry_hub' ? 'Henry Hub' : 'ICE Brent'
+        setTitulo(`Futuros ${tipoLabel} — ${parsed.periodo}`)
       } else {
         const parsed = await parsearExcelGenerico(f, tipo as 'produccion' | 'financiero')
         setDatosGenerico(parsed)
@@ -92,6 +103,11 @@ export default function PortalSubirPage() {
         html    = generarReporteGenericoHTML(datosGenerico)
         ext     = 'xlsx'
         periodo = datosGenerico.periodo
+      } else if ((tipo === 'henry_hub' || tipo === 'ice_brent') && datosMacro) {
+        datos   = datosMacro
+        html    = generarHTMLMacro(datosMacro, titulo.trim())
+        ext     = 'xlsx'
+        periodo = datosMacro.periodo
       } else {
         throw new Error('Sin datos para guardar')
       }
@@ -130,9 +146,27 @@ export default function PortalSubirPage() {
 
   function reset() {
     setStep('type'); setFile(null)
-    setDatosIngresos(null); setDatosAccionista(null); setDatosGenerico(null)
+    setDatosIngresos(null); setDatosAccionista(null); setDatosGenerico(null); setDatosMacro(null)
     setTitulo(''); setDoneId(''); setErr('')
     if (fileRef.current) fileRef.current.value = ''
+  }
+
+  function generarHTMLMacro(d: DatosMacro, t: string): string {
+    const stamp = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })
+    const decimals = d.source === 'hh' ? 3 : 2
+    const unit = d.source === 'hh' ? 'USD/MMBtu (Prior Settle)' : 'USD/bbl (Last)'
+    const rows = d.points.map(p =>
+      `<tr><td>${p.label}</td><td>${p.price.toFixed(decimals)}</td></tr>`
+    ).join('')
+    return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${t}</title>
+<style>body{font-family:system-ui,sans-serif;padding:40px;color:#14172E}
+h1{font-size:20px;margin-bottom:4px}p{color:#888;font-size:12px;margin-bottom:24px}
+table{border-collapse:collapse;width:420px}
+th{text-align:left;padding:6px 12px;border-bottom:2px solid #ddd;font-size:11px;color:#888}
+td{padding:6px 12px;border-bottom:1px solid #eee;font-family:monospace}</style></head>
+<body><h1>${t}</h1><p>Crown Point Energía · ${stamp}</p>
+<table><thead><tr><th>Mes</th><th>${unit}</th></tr></thead>
+<tbody>${rows}</tbody></table></body></html>`
   }
 
   const kv = (label: string, val: string) => (
@@ -275,6 +309,13 @@ export default function PortalSubirPage() {
                   {kv('Archivo', datosGenerico.titulo_archivo)}
                   {kv('Hojas encontradas', `${datosGenerico.hojas.length}`)}
                   {kv('Total filas', `${datosGenerico.hojas.reduce((s, h) => s + h.filas.length, 0)}`)}
+                </>}
+                {(tipo === 'henry_hub' || tipo === 'ice_brent') && datosMacro && <>
+                  {kv('Fuente', tipo === 'henry_hub' ? 'Henry Hub (CME · NYMEX)' : 'ICE Brent Crude')}
+                  {kv('M+1 (primer mes)', datosMacro.points[0]?.label ?? '—')}
+                  {kv('Último mes', datosMacro.points[datosMacro.points.length - 1]?.label ?? '—')}
+                  {kv('Contratos encontrados', `${datosMacro.points.length}`)}
+                  {kv('Precio M+1', `${tipo === 'henry_hub' ? datosMacro.points[0]?.price.toFixed(3) + ' USD/MMBtu' : datosMacro.points[0]?.price.toFixed(2) + ' USD/bbl'}`)}
                 </>}
               </div>
             </div>

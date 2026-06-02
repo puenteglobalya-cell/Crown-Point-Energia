@@ -40,6 +40,9 @@ export default async function PortalPage() {
     }
   }
 
+  // Hide internal price-data uploads from the reports list
+  items = items.filter(it => !['henry_hub', 'ice_brent'].includes(it.type_id ?? ''))
+
   const userCanUpload = canUpload(permissions)
   const userIsAdmin   = isAdminRole(permissions)
 
