@@ -38,6 +38,7 @@ const NAV = [
       { href: '/carreras', es: 'Carreras', en: 'Careers' },
     ]
   },
+  { key: 'comercial', href: '/comercial', es: 'Comercial', en: 'Commercial', menu: null },
   { key: 'contacto', href: '/contacto', es: 'Contacto', en: 'Contact', menu: null },
   { key: 'portal', href: '/portal', es: 'Acceso', en: 'Login', menu: null, cta: true },
 ]
@@ -84,11 +85,11 @@ export default function Header({ fields, show, lang }: Props) {
               <span className="live-dot"></span>TSXV: CWV
             </span>
             <div className="ticker-cell">
-              <span className="key">Price</span>
+              <span className="key"><span className="lang-es">Precio</span><span className="lang-en">Price</span></span>
               <span className="val" data-cpe-field="stock.price">{price}</span>
             </div>
             <div className="ticker-cell">
-              <span className="key">Change</span>
+              <span className="key"><span className="lang-es">Variación</span><span className="lang-en">Change</span></span>
               <span className="val delta pos" data-cpe-field="stock.delta">{delta}</span>
             </div>
             <div className="ticker-cell">
@@ -96,13 +97,13 @@ export default function Header({ fields, show, lang }: Props) {
               <span className="val" data-cpe-field="stock.beta">{beta}</span>
             </div>
             <div className="ticker-cell">
-              <span className="key">Volume</span>
+              <span className="key"><span className="lang-es">Volumen</span><span className="lang-en">Volume</span></span>
               <span className="val" data-cpe-field="stock.vol30">{vol30}</span>
             </div>
             <div className="ticker-spacer"></div>
             <span className="ticker-cell" style={{ opacity: 0.6 }}>
-              <span className="key">Updated</span>
-              <span className="val">15&nbsp;min&nbsp;delay</span>
+              <span className="key"><span className="lang-es">Actualizado</span><span className="lang-en">Updated</span></span>
+              <span className="val"><span className="lang-es">Cierre&nbsp;anterior</span><span className="lang-en">Prior&nbsp;close</span></span>
             </span>
           </div>
         </div>

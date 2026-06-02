@@ -65,8 +65,9 @@ export default async function PortalPage() {
     const { data } = await db
       .from('activity_log')
       .select('id, user_email, action, resource_type, resource_id, metadata, created_at')
+      .gte('created_at', new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: false })
-      .limit(10)
+      .limit(200)
     activityLog = (data ?? []) as ActivityEntry[]
   }
 

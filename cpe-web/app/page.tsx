@@ -22,15 +22,21 @@ function fmtFechaHome(iso: string) {
 }
 
 export default async function HomePage() {
-  const [s, comunicadosRes] = await Promise.all([
+  const db = createSupabaseServerAdminClient()
+  const [s, comunicadosRes, blocksRes] = await Promise.all([
     getCmsState(),
-    createSupabaseServerAdminClient()
-      .from('comunicados')
+    db.from('comunicados')
       .select('id,fecha,titulo_es,titulo_en,resumen_es,resumen_en,url,tipo')
       .eq('publicado', true)
       .order('fecha', { ascending: false })
       .limit(4),
+    db.from('operations_blocks')
+      .select('id,slug,titulo,subtitulo_es,subtitulo_en,commodity,wi,operador,chips_es,chips_en')
+      .eq('activo', true)
+      .order('orden'),
   ])
+
+  const opsBlocks = blocksRes.data ?? []
 
   const latestComunicados = comunicadosRes.data ?? []
 
@@ -60,7 +66,7 @@ export default async function HomePage() {
   const stockLow52   = f['stock.low52']   || 'CA $0.16'
   const stockShares  = f['stock.shares']  || '96.6M'
 
-  const heroImg      = f['hero.home.img'] || 'https://crownpointenergy.com/wp-content/uploads/2014/12/slider-image1.jpg'
+  const heroImg      = f['hero.home.img'] || ''
   const heroTitleEs  = f['hero.title.es'] || ''
   const heroTitleEn  = f['hero.title.en'] || ''
   const heroLedeEs   = f['hero.lede.es']  || ''
@@ -127,7 +133,7 @@ export default async function HomePage() {
                 <span><span className="lang-es">Beta</span><span className="lang-en">Beta</span> · <span data-cpe-field="stock.beta">{beta}</span></span>
                 <span><span className="lang-es">Vol.</span><span className="lang-en">Vol.</span> <span data-cpe-field="stock.vol30">{vol30}</span></span>
                 <span><span className="lang-es">Cap.</span><span className="lang-en">Mkt&nbsp;cap</span> <span data-cpe-field="stock.cap">{cap}</span></span>
-                <span className="hq-stale"><span className="lang-es">15&nbsp;min de demora</span><span className="lang-en">15&nbsp;min delayed</span></span>
+                <span className="hq-stale"><span className="lang-es">Actualizado al cierre anterior</span><span className="lang-en">Updated at prior close</span></span>
               </div>
             </div>
           </div>
@@ -248,8 +254,8 @@ export default async function HomePage() {
               <div>
                 <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
                 <h2 className="section-title">
-                  <span className="lang-es">Seis bloques<br/>en cuatro cuencas.</span>
-                  <span className="lang-en">Six blocks<br/>across four basins.</span>
+                  <span className="lang-es">{opsBlocks.length > 0 ? `${['Uno','Dos','Tres','Cuatro','Cinco','Seis','Siete','Ocho'][opsBlocks.length - 1] ?? opsBlocks.length} bloques` : 'Seis bloques'}<br/>en cuatro cuencas.</span>
+                  <span className="lang-en">{opsBlocks.length > 0 ? `${['One','Two','Three','Four','Five','Six','Seven','Eight'][opsBlocks.length - 1] ?? opsBlocks.length} blocks` : 'Six blocks'}<br/>across four basins.</span>
                 </h2>
               </div>
               <p>
@@ -260,47 +266,22 @@ export default async function HomePage() {
             <div className="ops-layout reveal">
               <div className="ops-map"><ArgentinaMap /></div>
               <ul className="ops-list">
-                {[
-                  { pin: 'tordillo', num: '04', wi: '95%', role: 'Operador', roleEn: 'Operator',
-                    title: 'El Tordillo · La Tapera · Puesto Quiroga',
-                    es: 'Tres concesiones contiguas en el flanco norte de la Cuenca del Golfo San Jorge, Chubut. 269 pozos productores y 83 inyectores en producción consolidada con waterflood.',
-                    en: 'Three contiguous concessions on the northern flank of the San Jorge Gulf Basin, Chubut. 269 producing wells and 83 waterflood injectors.', href: '/operaciones#tordillo' },
-                  { pin: 'piedra', num: '05', wi: '100%', role: 'Operador', roleEn: 'Operator',
-                    title: 'Piedra Clavada – Koluel Kaike',
-                    es: 'Bloque en Golfo San Jorge sur, Santa Cruz. Adquisición reciente con plan de desarrollo a mediano plazo y oportunidades de waterflood.',
-                    en: 'Block in southern San Jorge Gulf, Santa Cruz. Recent acquisition with mid-term development plan and waterflood opportunities.', href: '/operaciones#piedra' },
-                  { pin: 'chanares', num: '02', wi: '50%', role: 'Participación', roleEn: 'Working interest',
-                    title: 'Chañares Herrados',
-                    es: 'Concesión productiva en Cuenca Cuyana, provincia de Mendoza. Crudo liviano con infraestructura existente.',
-                    en: 'Producing concession in the Cuyana Basin, Mendoza. Light oil with existing infrastructure.', href: '/operaciones#chanares' },
-                  { pin: 'ppc', num: '01', wi: '50%', role: 'Participación', roleEn: 'Working interest',
-                    title: 'Puesto Pozo Cercado Oriental',
-                    es: 'Bloque exploratorio en el norte de la Cuenca Neuquina, Mendoza. Joint venture con foco en prospectos convencionales y no convencionales sobre Vaca Muerta.',
-                    en: 'Exploration block in the northern Neuquén Basin, Mendoza. JV targeting conventional and Vaca Muerta unconventional prospects.', href: '/operaciones#ppc' },
-                  { pin: 'tdf', num: '06', wi: '48,3275%', role: 'Participación', roleEn: 'Working interest',
-                    title: 'Río Cullen · Las Violetas · La Angostura',
-                    es: 'Tres concesiones en la Cuenca Austral, Tierra del Fuego. Operación de gas natural y condensado en producción estable desde 1986.',
-                    en: 'Three concessions in the Austral Basin, Tierra del Fuego. Stable natural gas and condensate production since 1986.', href: '/operaciones#tdf' },
-                  { pin: 'cerro', num: '03', wi: '100%', role: 'Operador', roleEn: 'Operator',
-                    title: 'Cerro de Los Leones',
-                    es: '101.208 hectáreas en la Cuenca Neuquina, provincia de Mendoza. Foco en exploración convencional y gas no convencional.',
-                    en: '101,208 hectares in the Neuquén Basin, Mendoza province. Focus on conventional exploration and unconventional gas.', href: '/operaciones#cerro' },
-                ].map(b => (
-                  <li className="ops-card" data-pin={b.pin} key={b.pin}>
+                {opsBlocks.map(b => (
+                  <li className="ops-card" data-pin={b.slug} key={b.id}>
                     <div className="ops-card-hd">
-                      <span className="ops-card-num num">{b.num}</span>
+                      <span className="ops-card-num num">{b.id}</span>
                       <span className="chip">
-                        <span className="lang-es">{b.role}</span>
-                        <span className="lang-en">{b.roleEn}</span>
-                        {' · '}{b.wi}
+                        <span className="lang-es">{b.operador ? 'Operador' : 'Participación'}</span>
+                        <span className="lang-en">{b.operador ? 'Operator' : 'Working interest'}</span>
+                        {b.wi ? ` · ${b.wi}` : ''}
                       </span>
                     </div>
-                    <h3 className="ops-card-title">{b.title}</h3>
+                    <h3 className="ops-card-title">{b.titulo}</h3>
                     <p>
-                      <span className="lang-es">{b.es}</span>
-                      <span className="lang-en">{b.en}</span>
+                      <span className="lang-es">{b.subtitulo_es}</span>
+                      <span className="lang-en">{b.subtitulo_en}</span>
                     </p>
-                    <Link className="btn-ghost" href={b.href}>
+                    <Link className="btn-ghost" href={`/operaciones#${b.slug}`}>
                       <span className="lang-es">Detalle del bloque</span>
                       <span className="lang-en">Block detail</span>
                     </Link>
@@ -368,13 +349,14 @@ export default async function HomePage() {
               <aside className="invest-panel reveal" data-cpe-section="investor.quotePanel">
                 <header>
                   <span className="eyebrow"><span className="lang-es">Cotización TSX Venture</span><span className="lang-en">TSX Venture quote</span></span>
-                  <span className="chip"><span className="live-dot" style={{ background: 'var(--cp-green)' }}></span>Live · 15min</span>
+                  <span className="chip"><span className="live-dot" style={{ background: 'var(--cp-green)' }}></span><span className="lang-es">Cierre anterior</span><span className="lang-en">Prior close</span></span>
                 </header>
                 <div className="ip-price">
                   <span className="num" data-cpe-field="stock.price">{price}</span>
                   <span className="ip-delta pos num" data-cpe-field="stock.delta">{delta}</span>
                 </div>
                 <table className="ip-table">
+                  <tbody>
                   {show['investor.beta'] !== false && (
                     <tr data-cpe-section="investor.beta"><td>Beta</td><td className="num" data-cpe-field="stock.beta">{beta}</td></tr>
                   )}
@@ -382,10 +364,10 @@ export default async function HomePage() {
                     <tr data-cpe-section="investor.vol30"><td><span className="lang-es">Vol. promedio (30d)</span><span className="lang-en">Avg vol (30d)</span></td><td className="num" data-cpe-field="stock.vol30">{vol30}</td></tr>
                   )}
                   {show['investor.high52'] !== false && (
-                    <tr data-cpe-section="investor.high52"><td>52w high</td><td className="num" data-cpe-field="stock.high52">{stockHigh52}</td></tr>
+                    <tr data-cpe-section="investor.high52"><td><span className="lang-es">Máx. 52 sem.</span><span className="lang-en">52w high</span></td><td className="num" data-cpe-field="stock.high52">{stockHigh52}</td></tr>
                   )}
                   {show['investor.low52'] !== false && (
-                    <tr data-cpe-section="investor.low52"><td>52w low</td><td className="num" data-cpe-field="stock.low52">{stockLow52}</td></tr>
+                    <tr data-cpe-section="investor.low52"><td><span className="lang-es">Mín. 52 sem.</span><span className="lang-en">52w low</span></td><td className="num" data-cpe-field="stock.low52">{stockLow52}</td></tr>
                   )}
                   {show['investor.cap'] !== false && (
                     <tr data-cpe-section="investor.cap"><td><span className="lang-es">Capitalización</span><span className="lang-en">Market cap</span></td><td className="num" data-cpe-field="stock.cap">{cap}</td></tr>
@@ -393,6 +375,7 @@ export default async function HomePage() {
                   {show['investor.shares'] !== false && (
                     <tr data-cpe-section="investor.shares"><td><span className="lang-es">Acciones en circulación</span><span className="lang-en">Shares outstanding</span></td><td className="num" data-cpe-field="stock.shares">{stockShares}</td></tr>
                   )}
+                  </tbody>
                 </table>
                 {show['investor.sparkline'] !== false && (
                   <div className="ip-spark" data-cpe-section="investor.sparkline">
@@ -406,7 +389,7 @@ export default async function HomePage() {
                       <path d="M0 55 L20 50 L40 53 L60 48 L80 45 L100 50 L120 40 L140 38 L160 42 L180 30 L200 32 L220 25 L240 28 L260 18 L280 22 L280 80 L0 80 Z" fill="url(#sparkFill)"/>
                       <path d="M0 55 L20 50 L40 53 L60 48 L80 45 L100 50 L120 40 L140 38 L160 42 L180 30 L200 32 L220 25 L240 28 L260 18 L280 22" fill="none" stroke="var(--accent2)" strokeWidth="1.5"/>
                     </svg>
-                    <span className="ip-spark-meta"><span className="lang-es">12 meses</span><span className="lang-en">12 months</span> · +28.1%</span>
+                    <span className="ip-spark-meta"><span className="lang-es">12 meses</span><span className="lang-en">12 months</span>{f['stock.delta'] && f['stock.delta'] !== '+0.00%' ? ` · ${f['stock.delta']}` : ''}</span>
                   </div>
                 )}
                 <footer>
