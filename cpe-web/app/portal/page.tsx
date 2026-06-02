@@ -22,8 +22,22 @@ export default async function PortalPage() {
     reportQuery = reportQuery.eq('estado', 'publicado')
   }
 
+  // Apply type-level access control (admin email bypasses)
   const { data: reportes } = await reportQuery
-  const items = (reportes ?? []) as Parameters<typeof ReportesLista>[0]['items']
+  let items = (reportes ?? []) as Parameters<typeof ReportesLista>[0]['items']
+
+  // Filter by report_type_access for non-admin roles
+  if (role?.role && role.role !== 'admin') {
+    const { data: typeAccess } = await db
+      .from('report_type_access')
+      .select('type_id')
+      .eq('role', role.role)
+      .eq('can_view', true)
+    if (typeAccess) {
+      const visible = new Set(typeAccess.map(r => r.type_id))
+      items = items.filter(it => !it.type_id || visible.has(it.type_id))
+    }
+  }
 
   const userCanUpload = canUpload(permissions)
   const userIsAdmin   = isAdminRole(permissions)
