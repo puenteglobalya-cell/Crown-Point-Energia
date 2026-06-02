@@ -4,16 +4,20 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { parsearIngresosExcel, type DatosIngresos } from '@/lib/parsers/ingresos'
 import { parsearAccionistaPPTX, type DatosAccionista } from '@/lib/parsers/accionista'
+import { parsearExcelGenerico, type DatosGenerico } from '@/lib/parsers/generico'
 import { generarReporteHTML } from '@/lib/generador/htmlReport'
 import { generarReporteAccionistaHTML } from '@/lib/generador/htmlReportAccionista'
+import { generarReporteGenericoHTML } from '@/lib/generador/htmlReportGenerico'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-type ReportType = 'ingresos' | 'accionista'
+type ReportType = 'ingresos' | 'accionista' | 'produccion' | 'financiero'
 type Step = 'type' | 'select' | 'parsing' | 'preview' | 'uploading' | 'done'
 
 const TYPES: { id: ReportType; label: string; desc: string; ext: string; icon: string }[] = [
   { id: 'ingresos',   label: 'Ingresos Estimados',    desc: 'Revenue mensual petróleo & gas',    ext: '.xlsx,.xls', icon: '📊' },
   { id: 'accionista', label: 'Informe de Seguimiento', desc: 'Cash flow operativo + comercial',   ext: '.pptx',      icon: '📋' },
+  { id: 'produccion', label: 'Reporte de Producción', desc: 'Volúmenes y pozos por área',         ext: '.xlsx,.xls', icon: '⛽' },
+  { id: 'financiero', label: 'Reporte Financiero',    desc: 'Estados financieros (P&L, balance)', ext: '.xlsx,.xls', icon: '💰' },
 ]
 
 function fmtSize(bytes: number | null) {
@@ -30,6 +34,7 @@ export default function PortalSubirPage() {
   const [file, setFile] = useState<File | null>(null)
   const [datosIngresos, setDatosIngresos] = useState<DatosIngresos | null>(null)
   const [datosAccionista, setDatosAccionista] = useState<DatosAccionista | null>(null)
+  const [datosGenerico, setDatosGenerico] = useState<DatosGenerico | null>(null)
   const [titulo, setTitulo] = useState('')
   const [doneId, setDoneId] = useState('')
 
@@ -44,10 +49,15 @@ export default function PortalSubirPage() {
         const parsed = await parsearIngresosExcel(f)
         setDatosIngresos(parsed)
         setTitulo(`Ingresos Estimados — ${parsed.mes}`)
-      } else {
+      } else if (tipo === 'accionista') {
         const parsed = await parsearAccionistaPPTX(f)
         setDatosAccionista(parsed)
         setTitulo(`Informe de Seguimiento — ${parsed.periodo}`)
+      } else {
+        const parsed = await parsearExcelGenerico(f, tipo as 'produccion' | 'financiero')
+        setDatosGenerico(parsed)
+        const tipoLabel = tipo === 'produccion' ? 'Reporte de Producción' : 'Reporte Financiero'
+        setTitulo(`${tipoLabel} — ${parsed.periodo}`)
       }
       setStep('preview')
     } catch (e) {
@@ -77,6 +87,11 @@ export default function PortalSubirPage() {
         html    = generarReporteAccionistaHTML(datosAccionista)
         ext     = 'pptx'
         periodo = datosAccionista.periodo.replace(/\s*\|\s*/, '_')
+      } else if ((tipo === 'produccion' || tipo === 'financiero') && datosGenerico) {
+        datos   = datosGenerico
+        html    = generarReporteGenericoHTML(datosGenerico)
+        ext     = 'xlsx'
+        periodo = datosGenerico.periodo
       } else {
         throw new Error('Sin datos para guardar')
       }
@@ -114,7 +129,7 @@ export default function PortalSubirPage() {
 
   function reset() {
     setStep('type'); setFile(null)
-    setDatosIngresos(null); setDatosAccionista(null)
+    setDatosIngresos(null); setDatosAccionista(null); setDatosGenerico(null)
     setTitulo(''); setDoneId(''); setErr('')
     if (fileRef.current) fileRef.current.value = ''
   }
@@ -224,7 +239,7 @@ export default function PortalSubirPage() {
         {step === 'parsing' && (
           <div style={{ padding: '56px 40px', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', marginBottom: 40 }}>
             <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>
-              Procesando {tipo === 'ingresos' ? 'Excel' : 'PowerPoint'}…
+              Procesando {tipo === 'accionista' ? 'PowerPoint' : 'Excel'}…
             </div>
             <div style={{ fontSize: 15, color: 'var(--fg)', fontWeight: 500 }}>{file?.name}</div>
           </div>
@@ -253,6 +268,12 @@ export default function PortalSubirPage() {
                   {kv('Precio neto oil', `U$S ${datosAccionista.areas.consolidado.precio_mes.toFixed(2)}/bbl`)}
                   {kv('Deuda total', `US$ ${datosAccionista.deuda_total_MMUS.toFixed(2)} MM`)}
                   {kv('Meses de facturación', `${datosAccionista.facturacion.length}`)}
+                </>}
+                {(tipo === 'produccion' || tipo === 'financiero') && datosGenerico && <>
+                  {kv('Período', datosGenerico.periodo)}
+                  {kv('Archivo', datosGenerico.titulo_archivo)}
+                  {kv('Hojas encontradas', `${datosGenerico.hojas.length}`)}
+                  {kv('Total filas', `${datosGenerico.hojas.reduce((s, h) => s + h.filas.length, 0)}`)}
                 </>}
               </div>
             </div>

@@ -16,7 +16,7 @@ type CultureCard = { id: string; title_es: string; title_en: string; desc_es: st
 type EsgPillar = { pilar: string; color: string; lede_es: string; lede_en: string; metrics: unknown; initiatives_es: string[]; initiatives_en: string[] }
 type CmsField = { key: string; value_es: string; value_en: string }
 
-type Tab = 'inversores' | 'operaciones' | 'compannia' | 'esg' | 'carreras' | 'hero'
+type Tab = 'inversores' | 'operaciones' | 'compannia' | 'esg' | 'carreras' | 'hero' | 'historial'
 
 const TAB_LABELS: Record<Tab, string> = {
   inversores:  'Inversores',
@@ -25,6 +25,7 @@ const TAB_LABELS: Record<Tab, string> = {
   esg:         'ESG',
   carreras:    'Carreras',
   hero:        'Textos hero',
+  historial:   'Historial',
 }
 
 const HERO_KEYS = [
@@ -1028,6 +1029,151 @@ function HeroSection() {
   )
 }
 
+// ─── History section ─────────────────────────────────────────────────────────
+
+type HistoryEntry = { id: number; label: string | null; created_by: string | null; created_at: string }
+
+function HistorySection() {
+  const [entries, setEntries]     = useState<HistoryEntry[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [restoring, setRestoring] = useState<number | null>(null)
+  const [snapshotting, setSnapshotting] = useState(false)
+  const [label, setLabel]         = useState('')
+  const [msg, setMsg]             = useState('')
+  const [err, setErr]             = useState('')
+  const [confirmId, setConfirmId] = useState<number | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const res = await fetch('/api/cms/history', { cache: 'no-store' })
+    if (res.ok) setEntries(await res.json())
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  function flash(m: string, e = '') { setMsg(m); setErr(e); setTimeout(() => { setMsg(''); setErr('') }, 3000) }
+
+  async function handleSnapshot() {
+    setSnapshotting(true)
+    const res = await fetch('/api/cms/history', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'snapshot', label: label.trim() || null }),
+    })
+    setSnapshotting(false)
+    if (res.ok) { flash('Snapshot guardado'); setLabel(''); load() }
+    else flash('', (await res.json()).error ?? 'Error')
+  }
+
+  async function handleRestore(id: number) {
+    setRestoring(id)
+    const res = await fetch('/api/cms/history', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'restore', id }),
+    })
+    setRestoring(null)
+    setConfirmId(null)
+    if (res.ok) { flash('Versión restaurada — recargá la página para verificar'); load() }
+    else flash('', (await res.json()).error ?? 'Error al restaurar')
+  }
+
+  function fmtDate(iso: string) {
+    return new Date(iso).toLocaleString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, margin: '0 0 4px' }}>Historial de versiones</h3>
+          <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: 0 }}>Cada guardado crea una versión automática. Podés restaurar cualquier versión anterior.</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="Etiqueta opcional…"
+            value={label}
+            onChange={e => setLabel(e.target.value)}
+            style={{ fontSize: 12, padding: '7px 12px', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', background: 'var(--surface)', color: 'var(--fg)', width: 180 }}
+          />
+          <button
+            className="btn btn-primary"
+            onClick={handleSnapshot}
+            disabled={snapshotting}
+            style={{ fontSize: 12, padding: '8px 16px', opacity: snapshotting ? 0.7 : 1 }}
+          >
+            {snapshotting ? '…' : '+ Guardar snapshot'}
+          </button>
+        </div>
+      </div>
+
+      {(msg || err) && (
+        <div style={{ fontSize: 12, padding: '8px 14px', borderRadius: 'var(--r-sm)', marginBottom: 16, background: err ? 'rgba(179,59,46,.08)' : 'var(--surface)', border: '1px solid var(--rule)', color: err ? 'var(--cp-negative)' : 'var(--fg-soft)', display: 'inline-block' }}>
+          {err || `✓ ${msg}`}
+        </div>
+      )}
+
+      {loading ? (
+        <p style={{ fontSize: 13, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>Cargando…</p>
+      ) : entries.length === 0 ? (
+        <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin versiones guardadas aún. Las versiones se crean automáticamente al guardar.</p>
+      ) : (
+        <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--surface)' }}>
+          {entries.map((e, i) => (
+            <div
+              key={e.id}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 16,
+                padding: '12px 18px', flexWrap: 'wrap',
+                borderBottom: i < entries.length - 1 ? '1px solid var(--rule)' : 'none',
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg)', marginBottom: 2 }}>
+                  {e.label ?? <span style={{ color: 'var(--fg-muted)', fontStyle: 'italic' }}>Auto</span>}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
+                  {fmtDate(e.created_at)}
+                  {e.created_by ? ` · ${e.created_by}` : ''}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                {confirmId === e.id ? (
+                  <>
+                    <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>¿Restaurar esta versión?</span>
+                    <button
+                      onClick={() => handleRestore(e.id)}
+                      disabled={restoring === e.id}
+                      style={{ fontSize: 11, padding: '5px 12px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-sm)', cursor: 'pointer', opacity: restoring === e.id ? 0.6 : 1 }}
+                    >
+                      {restoring === e.id ? '…' : 'Confirmar'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmId(null)}
+                      style={{ fontSize: 11, padding: '5px 10px', background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', cursor: 'pointer', color: 'var(--fg-muted)' }}
+                    >
+                      Cancelar
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setConfirmId(e.id)}
+                    style={{ fontSize: 11, padding: '5px 14px', background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', cursor: 'pointer', color: 'var(--fg-soft)' }}
+                  >
+                    Restaurar
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Table style helpers ─────────────────────────────────────────────────────
 
 const th: React.CSSProperties = { textAlign: 'left', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', padding: '8px 10px' }
@@ -1105,6 +1251,8 @@ export default function CmsAdminPage() {
         )}
 
         {tab === 'hero' && <HeroSection />}
+
+        {tab === 'historial' && <HistorySection />}
 
       </div>
     </div>
