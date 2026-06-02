@@ -3,70 +3,62 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Macro Preview — Henry Hub + Brent</title>
+<title>Macro Preview — Henry Hub + ICE Brent</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'DM Sans',sans-serif;background:#f4f4f0;color:#1a1a2e;padding:40px 24px;font-size:14px}
   .page{max-width:820px;margin:0 auto}
-
-  /* Portal header mock */
   .portal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px}
   .portal-header h1{font-family:'Lora',serif;font-size:26px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
   .portal-header p{font-size:13px;color:#666}
   .btn-primary{background:#1f2566;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
 
-  /* Section title */
-  .section-title{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
-  .section-title h2{font-family:'Lora',serif;font-size:17px;font-weight:600;letter-spacing:-.01em}
-  .section-title .meta{font-size:11px;color:#888;font-family:'DM Mono',monospace}
+  .section-header{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .section-header h2{font-family:'Lora',serif;font-size:17px;font-weight:600;letter-spacing:-.01em}
+  .meta{font-size:11px;color:#888;font-family:'DM Mono',monospace}
 
-  /* Card */
-  .card{background:#fff;border:1px solid #e0e0d8;border-radius:12px;padding:20px 20px 16px;margin-bottom:40px}
+  .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px}
+  @media(max-width:600px){.charts-grid{grid-template-columns:1fr}}
 
-  /* Chart area */
-  .chart-wrap{height:260px;position:relative}
+  .card{background:#fff;border:1px solid #e0e0d8;border-radius:12px;padding:18px 18px 14px}
+  .card-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:6px}
+  .card-title{font-family:'Lora',serif;font-size:15px;font-weight:600;margin-bottom:2px}
+  .card-title.brent{color:#1f2566}
+  .card-title.hh{color:#b56a0a}
+  .chart-wrap{height:180px;position:relative;margin:12px 0 10px}
 
-  /* KPI row */
-  .kpi-row{display:flex;gap:32px;margin-top:16px;padding-top:14px;border-top:1px solid #eee;flex-wrap:wrap;align-items:flex-end}
-  .kpi{min-width:140px}
-  .kpi-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:3px}
-  .kpi-val{font-family:'Lora',serif;font-size:22px;font-weight:700}
-  .kpi-val .unit{font-size:12px;font-weight:400;font-family:'DM Sans',sans-serif}
-  .kpi-delta{font-size:11px;font-family:'DM Mono',monospace;margin-top:2px}
-  .kpi-brent .kpi-val{color:#1f2566}
-  .kpi-hh    .kpi-val{color:#b56a0a}
-  .pos{color:#2a6e3f}
-  .neg{color:#b33b2e}
-  .source{margin-left:auto;font-size:10px;color:#aaa;font-family:'DM Mono',monospace;line-height:1.5}
+  .kpi-row{display:flex;gap:20px;padding-top:10px;border-top:1px solid #eee;align-items:flex-end;flex-wrap:wrap}
+  .kpi .label{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:2px}
+  .kpi .val{font-family:'Lora',serif;font-size:19px;font-weight:700}
+  .kpi .unit{font-size:11px;font-weight:400;font-family:'DM Sans',sans-serif}
+  .kpi .delta{font-size:10px;font-family:'DM Mono',monospace;margin-top:1px}
+  .kpi.brent .val{color:#1f2566}
+  .kpi.hh    .val{color:#b56a0a}
+  .pos{color:#2a6e3f} .neg{color:#b33b2e}
+  .src{margin-left:auto;font-size:9px;color:#ccc;font-family:'DM Mono',monospace;line-height:1.5;text-align:right}
 
-  /* Placeholder for Brent */
-  .brent-pending{background:#f8f7f4;border:1px dashed #ccc;border-radius:8px;padding:14px 16px;margin-bottom:12px;font-size:12px;color:#888;font-family:'DM Mono',monospace}
-
-  /* Table */
-  .table-section{margin-top:8px}
-  .table-section h3{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:10px}
-  .data-table{width:100%;border-collapse:collapse;font-size:13px}
-  .data-table th{padding:7px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#888;border-bottom:2px solid #eee}
-  .data-table td{padding:7px 12px;border-bottom:1px solid #f0f0ee;font-variant-numeric:tabular-nums}
-  .data-table td:first-child{font-weight:600;color:#1a1a2e}
-  .data-table td:not(:first-child){text-align:right;color:#444}
-  .data-table tr:last-child td{border-bottom:none}
-  .hh-col{color:#b56a0a !important;font-weight:600 !important}
-  .chip{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;font-family:'DM Mono',monospace}
-  .chip-up{background:#e8f5e9;color:#2a6e3f}
-  .chip-down{background:#fdecea;color:#b33b2e}
-  .chip-flat{background:#f0f0ee;color:#888}
-
-  /* Divider before reports */
-  .divider{height:1px;background:#e0e0d8;margin-bottom:32px}
+  details{margin-bottom:40px}
+  summary{font-size:12px;color:#888;cursor:pointer;font-family:'DM Mono',monospace;padding:6px 0;user-select:none}
+  .table-card{background:#fff;border:1px solid #e0e0d8;border-radius:12px;overflow:hidden;margin-top:8px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  thead{background:#fafaf8}
+  th{padding:7px 10px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#888;border-bottom:2px solid #eee;white-space:nowrap}
+  td{padding:6px 10px;border-bottom:1px solid #f0f0ee;font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:none}
+  td:first-child{font-weight:600}
+  td:not(:first-child){text-align:right;color:#555}
+  .brent-col{color:#1f2566!important;font-weight:600!important}
+  .hh-col{color:#b56a0a!important;font-weight:600!important}
+  .chip{display:inline-block;font-size:9px;padding:1px 7px;border-radius:20px;font-family:'DM Mono',monospace}
+  .up{background:#e8f5e9;color:#2a6e3f} .dn{background:#fdecea;color:#b33b2e} .flat{background:#f0f0ee;color:#888}
+  .divider{height:1px;background:#e0e0d8;margin:32px 0}
 </style>
 </head>
 <body>
 <div class="page">
 
-  <!-- Portal header mock -->
   <div class="portal-header">
     <div>
       <h1>Portal de reportes</h1>
@@ -75,182 +67,191 @@
     <button class="btn-primary">Subir reporte</button>
   </div>
 
-  <!-- ══ MACRO WIDGET ══════════════════════════════════════════ -->
-  <div class="section-title">
+  <div class="section-header">
     <h2>Macro — próximos 12 meses</h2>
-    <span class="meta">actualizado 02/06/2026 · 15 min delay</span>
+    <span class="meta">02/06/2026 · delayed 10–15 min</span>
   </div>
 
-  <div class="brent-pending">⏳ ICE Brent — pegá los datos y se agrega automáticamente</div>
+  <div class="charts-grid">
 
-  <div class="card">
-    <div class="chart-wrap">
-      <canvas id="macroChart"></canvas>
+    <!-- ICE Brent -->
+    <div class="card">
+      <div class="card-label">ICE Futures Europe</div>
+      <div class="card-title brent">ICE Brent Crude</div>
+      <div class="chart-wrap"><canvas id="brentChart"></canvas></div>
+      <div class="kpi-row">
+        <div class="kpi brent">
+          <div class="label">M+1</div>
+          <div class="val" id="bM1">96.00 <span class="unit">USD/bbl</span></div>
+          <div class="delta neg" id="bDelta">−15.20 vs M+12</div>
+        </div>
+        <div class="src">Last price<br>ICE.com</div>
+      </div>
     </div>
 
-    <!-- KPI row -->
-    <div class="kpi-row">
-      <div class="kpi kpi-hh">
-        <div class="kpi-label">Henry Hub M+1</div>
-        <div class="kpi-val">3.179 <span class="unit">USD/MMBtu</span></div>
-        <div class="kpi-delta neg">−0.106 vs M+12</div>
-      </div>
-      <div class="kpi kpi-brent" style="opacity:.4">
-        <div class="kpi-label">Brent M+1</div>
-        <div class="kpi-val" style="color:#ccc">— <span class="unit">USD/bbl</span></div>
-        <div class="kpi-delta" style="color:#ccc">pendiente</div>
-      </div>
-      <div class="source">
-        CME · Prior Settle<br>
-        ICE · Last (pendiente)
+    <!-- Henry Hub -->
+    <div class="card">
+      <div class="card-label">CME · NYMEX</div>
+      <div class="card-title hh">Henry Hub Natural Gas</div>
+      <div class="chart-wrap"><canvas id="hhChart"></canvas></div>
+      <div class="kpi-row">
+        <div class="kpi hh">
+          <div class="label">M+1</div>
+          <div class="val" id="hM1">3.211 <span class="unit">USD/MMBtu</span></div>
+          <div class="delta pos" id="hDelta">+0.063 vs M+12</div>
+        </div>
+        <div class="src">Prior Settle<br>CME Group</div>
       </div>
     </div>
+
   </div>
 
-  <!-- Data table (collapsible in prod) -->
-  <details style="margin-bottom:40px">
-    <summary style="font-size:12px;color:#888;cursor:pointer;font-family:'DM Mono',monospace;margin-bottom:10px">Ver datos completos ▾</summary>
-    <div class="card" style="padding:16px;margin-top:8px">
-      <table class="data-table">
+  <details>
+    <summary>Ver tabla completa ▾</summary>
+    <div class="table-card">
+      <table>
         <thead>
           <tr>
             <th>Mes</th>
-            <th>Código</th>
-            <th>Last</th>
-            <th class="hh-col">Prior Settle ★</th>
-            <th>High</th>
-            <th>Low</th>
-            <th>Var.</th>
+            <th class="brent-col">Brent Last (USD/bbl)</th>
+            <th class="hh-col">HH Prior Settle (USD/MMBtu)</th>
+            <th>Brent Δ%</th>
+            <th>HH Δ</th>
           </tr>
         </thead>
-        <tbody id="hhTableBody">
-        </tbody>
+        <tbody id="tableBody"></tbody>
       </table>
     </div>
   </details>
 
-  <!-- Divider before reports list -->
   <div class="divider"></div>
-  <div style="font-size:13px;color:#aaa;font-family:'DM Mono',monospace;text-align:center;padding:40px 0">
-    ↓ Lista de reportes (debajo del widget en el portal real)
-  </div>
+  <p style="font-size:12px;color:#bbb;font-family:'DM Mono',monospace;text-align:center;padding:20px 0">
+    ↓ Reportes (debajo del widget en el portal real)
+  </p>
 
 </div>
 
 <script>
-// ── Data ─────────────────────────────────────────────────────────────────────
-const HH_DATA = [
-  { mes:'Jul-26', code:'NGN26', last:3.160, priorSettle:3.179, high:3.228, low:3.099, change:-0.019 },
-  { mes:'Ago-26', code:'NGQ26', last:3.187, priorSettle:3.211, high:3.258, low:3.133, change:-0.024 },
-  { mes:'Sep-26', code:'NGU26', last:3.151, priorSettle:3.177, high:3.223, low:3.102, change:-0.026 },
-  { mes:'Oct-26', code:'NGV26', last:3.206, priorSettle:3.232, high:3.277, low:3.158, change:-0.026 },
-  { mes:'Nov-26', code:'NGX26', last:3.461, priorSettle:3.493, high:3.530, low:3.415, change:-0.032 },
-  { mes:'Dic-26', code:'NGZ26', last:4.084, priorSettle:4.111, high:4.134, low:4.036, change:-0.027 },
-  { mes:'Ene-27', code:'NGF27', last:4.492, priorSettle:4.520, high:4.550, low:4.444, change:-0.028 },
-  { mes:'Feb-27', code:'NGG27', last:4.062, priorSettle:4.080, high:4.104, low:4.014, change:-0.018 },
-  { mes:'Mar-27', code:'NGH27', last:3.223, priorSettle:3.222, high:3.243, low:3.169, change:+0.001 },
-  { mes:'Abr-27', code:'NGJ27', last:2.973, priorSettle:2.969, high:2.993, low:2.925, change:+0.004 },
-  { mes:'May-27', code:'NGK27', last:2.939, priorSettle:2.939, high:2.956, low:2.900, change: 0     },
-  { mes:'Jun-27', code:'NGM27', last:3.072, priorSettle:3.073, high:3.089, low:3.037, change:-0.001 },
+const BRENT = [
+  { mes:'Ago-26', last:96.000, pct:1.074 },
+  { mes:'Sep-26', last:93.440, pct:1.082 },
+  { mes:'Oct-26', last:90.980, pct:1.055 },
+  { mes:'Nov-26', last:88.990, pct:1.091 },
+  { mes:'Dic-26', last:87.330, pct:1.158 },
+  { mes:'Ene-27', last:85.940, pct:1.249 },
+  { mes:'Feb-27', last:84.790, pct:1.375 },
+  { mes:'Mar-27', last:83.660, pct:1.296 },
+  { mes:'Abr-27', last:82.760, pct:1.297 },
+  { mes:'May-27', last:82.000, pct:1.297 },
+  { mes:'Jun-27', last:81.320, pct:1.270 },
+  { mes:'Jul-27', last:80.800, pct:1.355 },
+]
+const HH = [
+  { mes:'Ago-26', ps:3.211, ch:-0.024 },
+  { mes:'Sep-26', ps:3.177, ch:-0.026 },
+  { mes:'Oct-26', ps:3.232, ch:-0.026 },
+  { mes:'Nov-26', ps:3.493, ch:-0.032 },
+  { mes:'Dic-26', ps:4.111, ch:-0.027 },
+  { mes:'Ene-27', ps:4.520, ch:-0.028 },
+  { mes:'Feb-27', ps:4.080, ch:-0.018 },
+  { mes:'Mar-27', ps:3.222, ch:+0.001 },
+  { mes:'Abr-27', ps:2.969, ch:+0.004 },
+  { mes:'May-27', ps:2.939, ch: 0     },
+  { mes:'Jun-27', ps:3.073, ch:-0.001 },
+  { mes:'Jul-27', ps:3.274, ch:+0.004 },
 ]
 
-// Placeholder Brent (will be filled when user pastes ICE data)
-const BRENT_DATA = []  // empty until ICE data is pasted
+const labels = BRENT.map(d => d.mes)
 
-// ── Table ────────────────────────────────────────────────────────────────────
-const tbody = document.getElementById('hhTableBody')
-HH_DATA.forEach(r => {
-  const chipClass = r.change > 0 ? 'chip-up' : r.change < 0 ? 'chip-down' : 'chip-flat'
-  const chipSign  = r.change > 0 ? '+' : ''
-  tbody.innerHTML += `
-    <tr>
-      <td>${r.mes}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;color:#888">${r.code}</td>
-      <td>${r.last.toFixed(3)}</td>
-      <td class="hh-col">${r.priorSettle.toFixed(3)}</td>
-      <td style="color:#aaa">${r.high.toFixed(3)}</td>
-      <td style="color:#aaa">${r.low.toFixed(3)}</td>
-      <td><span class="chip ${chipClass}">${chipSign}${r.change.toFixed(3)}</span></td>
-    </tr>`
+// KPIs
+const bDiff = BRENT[BRENT.length-1].last - BRENT[0].last
+const hDiff = HH[HH.length-1].ps - HH[0].ps
+document.getElementById('bM1').innerHTML    = `${BRENT[0].last.toFixed(2)} <span class="unit">USD/bbl</span>`
+document.getElementById('hM1').innerHTML    = `${HH[0].ps.toFixed(3)} <span class="unit">USD/MMBtu</span>`
+document.getElementById('bDelta').innerHTML = `<span class="${bDiff>=0?'pos':'neg'}">${bDiff>=0?'+':''}${bDiff.toFixed(2)} vs M+12</span>`
+document.getElementById('hDelta').innerHTML = `<span class="${hDiff>=0?'pos':'neg'}">${hDiff>=0?'+':''}${hDiff.toFixed(3)} vs M+12</span>`
+
+// Table
+const tbody = document.getElementById('tableBody')
+BRENT.forEach((b,i) => {
+  const h = HH[i]
+  const bc = b.pct>0?'up':'dn', hc = h.ch>0?'up':h.ch<0?'dn':'flat'
+  tbody.innerHTML += `<tr>
+    <td>${b.mes}</td>
+    <td class="brent-col">${b.last.toFixed(2)}</td>
+    <td class="hh-col">${h.ps.toFixed(3)}</td>
+    <td><span class="chip ${bc}">${b.pct>0?'+':''}${b.pct.toFixed(3)}%</span></td>
+    <td><span class="chip ${hc}">${h.ch>0?'+':''}${h.ch.toFixed(3)}</span></td>
+  </tr>`
 })
 
-// ── Chart ────────────────────────────────────────────────────────────────────
-const labels = HH_DATA.map(d => d.mes)
-
-const datasets = [
-  {
-    label: 'Henry Hub — Prior Settle (USD/MMBtu)',
-    data: HH_DATA.map(d => d.priorSettle),
-    borderColor: '#b56a0a',
-    backgroundColor: 'rgba(181,106,10,.08)',
-    tension: 0.35,
-    pointRadius: 4,
-    pointHoverRadius: 6,
-    borderWidth: 2.5,
-    yAxisID: 'yHH',
-  }
-]
-
-// Add Brent dataset if available
-if (BRENT_DATA.length > 0) {
-  datasets.unshift({
-    label: 'ICE Brent — Last (USD/bbl)',
-    data: BRENT_DATA.map(d => d.last),
-    borderColor: '#1f2566',
-    backgroundColor: 'rgba(31,37,102,.08)',
-    tension: 0.35,
-    pointRadius: 4,
-    pointHoverRadius: 6,
-    borderWidth: 2.5,
-    yAxisID: 'yBrent',
-  })
-}
-
-const scales = {
-  x: {
-    grid: { color: 'rgba(0,0,0,.05)' },
-    ticks: { font: { family: "'DM Sans', sans-serif", size: 11 }, color: '#888' },
-  },
-  yHH: {
-    position: BRENT_DATA.length > 0 ? 'right' : 'left',
-    title: { display: true, text: 'HH USD/MMBtu', font: { size: 10 }, color: '#b56a0a' },
-    grid:  { color: 'rgba(0,0,0,.05)', drawOnChartArea: BRENT_DATA.length === 0 },
-    ticks: { font: { size: 11 }, color: '#b56a0a' },
-  },
-}
-
-if (BRENT_DATA.length > 0) {
-  scales['yBrent'] = {
-    position: 'left',
-    title: { display: true, text: 'Brent USD/bbl', font: { size: 10 }, color: '#1f2566' },
-    grid:  { color: 'rgba(0,0,0,.05)' },
-    ticks: { font: { size: 11 }, color: '#1f2566' },
-  }
-}
-
-new Chart(document.getElementById('macroChart'), {
-  type: 'line',
-  data: { labels, datasets },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top',
-        labels: { font: { family: "'DM Sans', sans-serif", size: 12 }, boxWidth: 20, padding: 16 },
-      },
-      tooltip: {
-        callbacks: {
-          label: ctx => {
-            const v = ctx.parsed.y
-            const isBrent = ctx.dataset.label.includes('Brent')
-            return `  ${isBrent ? 'Brent' : 'Henry Hub'}: ${v.toFixed(3)} ${isBrent ? 'USD/bbl' : 'USD/MMBtu'}`
-          }
-        }
+const CHART_OPTS = (color, yLabel, isMoney) => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: { mode: 'index', intersect: false },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: 'rgba(26,26,46,.92)',
+      padding: 10,
+      bodyFont: { family: "'DM Mono',monospace", size: 12 },
+      callbacks: {
+        label: ctx => `  ${ctx.parsed.y.toFixed(isMoney?2:3)} ${yLabel}`
       }
     },
-    scales,
-  }
+  },
+  scales: {
+    x: {
+      grid: { color: 'rgba(0,0,0,.05)' },
+      ticks: { font: { family: "'DM Sans',sans-serif", size: 10 }, color: '#888', maxRotation: 45 },
+    },
+    y: {
+      grid: { color: 'rgba(0,0,0,.05)' },
+      ticks: { font: { size: 10 }, color, callback: v => `$${Number(v).toFixed(isMoney?0:2)}` },
+    },
+  },
+})
+
+// Brent chart
+new Chart(document.getElementById('brentChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      data: BRENT.map(d => d.last),
+      borderColor: '#1f2566',
+      backgroundColor: ctx => {
+        const g = ctx.chart.ctx.createLinearGradient(0,0,0,180)
+        g.addColorStop(0,'rgba(31,37,102,.18)')
+        g.addColorStop(1,'rgba(31,37,102,.01)')
+        return g
+      },
+      tension: 0.35, pointRadius: 3, pointHoverRadius: 5,
+      borderWidth: 2.5, fill: true,
+    }],
+  },
+  options: CHART_OPTS('#1f2566', 'USD/bbl', true),
+})
+
+// Henry Hub chart
+new Chart(document.getElementById('hhChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      data: HH.map(d => d.ps),
+      borderColor: '#b56a0a',
+      backgroundColor: ctx => {
+        const g = ctx.chart.ctx.createLinearGradient(0,0,0,180)
+        g.addColorStop(0,'rgba(181,106,10,.16)')
+        g.addColorStop(1,'rgba(181,106,10,.01)')
+        return g
+      },
+      tension: 0.35, pointRadius: 3, pointHoverRadius: 5,
+      borderWidth: 2.5, fill: true,
+    }],
+  },
+  options: CHART_OPTS('#b56a0a', 'USD/MMBtu', false),
 })
 </script>
 </body>

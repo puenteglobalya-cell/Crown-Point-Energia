@@ -36,10 +36,23 @@ const MES_ABREV: Record<string, string> = {
   JANUARY: 'Ene', FEBRUARY: 'Feb', MARCH: 'Mar', APRIL: 'Abr',
   MAY: 'May', JUNE: 'Jun', JULY: 'Jul', AUGUST: 'Ago',
   SEPTEMBER: 'Sep', OCTOBER: 'Oct', NOVEMBER: 'Nov', DECEMBER: 'Dic',
+  // 3-letter abbreviations (ICE format: Aug26, Sep26, …)
+  JAN: 'Ene', FEB: 'Feb', MAR: 'Mar', APR: 'Abr',
+  JUN: 'Jun', JUL: 'Jul', AUG: 'Ago',
+  SEP: 'Sep', OCT: 'Oct', NOV: 'Nov', DEC: 'Dic',
 }
 
+// Handles both "JULY 2025" (CME) and "Aug26" / "Aug 2026" (ICE)
 function shortLabel(monthYear: string): string {
-  const [mon, yr] = monthYear.trim().toUpperCase().split(/\s+/)
+  const s = monthYear.trim().toUpperCase()
+  // "Aug26" or "AUG26"
+  const compact = s.match(/^([A-Z]{3})(\d{2})$/)
+  if (compact) {
+    const abbr = MES_ABREV[compact[1]] ?? compact[1].slice(0, 3)
+    return `${abbr}-${compact[2]}`
+  }
+  // "AUGUST 2026" or "Aug 2026"
+  const [mon, yr] = s.split(/\s+/)
   const abbr = MES_ABREV[mon] ?? mon.slice(0, 3)
   const yy   = (yr ?? '').slice(-2)
   return `${abbr}-${yy}`
@@ -69,12 +82,15 @@ async function fetchBrent(): Promise<Map<string, number>> {
   try {
     const res = await fetch(ICE_URL, { headers: ICE_HEADERS, next: { revalidate: 86400 } })
     if (!res.ok) return map
-    const json = await res.json() as Array<{ marketStrip?: string; lastPrice?: string; settlementPrice?: string }>
+    // ICE can return JSON array with various field names — try all known variants
+    const json = await res.json() as Array<Record<string, string>>
     for (const row of json) {
-      const strip = row.marketStrip
-      const raw   = row.lastPrice ?? row.settlementPrice
+      // Strip / contract identifier: strip | marketStrip | contract | contractName
+      const strip = row.strip ?? row.marketStrip ?? row.contract ?? row.contractName
+      // Price: last | lastPrice | Last | price
+      const raw   = row.last ?? row.lastPrice ?? row.Last ?? row.price
       if (!strip || !raw) continue
-      const price = parseFloat(raw.replace(',', '.'))
+      const price = parseFloat(String(raw).replace(',', '.'))
       if (isNaN(price) || price <= 0) continue
       map.set(shortLabel(strip), price)
     }
