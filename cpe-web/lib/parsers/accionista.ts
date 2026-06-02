@@ -77,8 +77,9 @@ function getSlideShapes(xml: string): string[] {
 
 // ── cash-flow slide parser ─────────────────────────────────────
 
-const MES_RE = /^(?:ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\s+\d{4}\s+([\d.,]+)\s+(M3\/DÍA|U\$S\/BBL)/i
-const PROM_RE = /^PROM\s+\S+\s+\d+\s+([\d.,]+)\s+(M3\/DÍA|U\$S\/BBL)/i
+// Unit suffix is optional — context (ctx) tells us which field to fill
+const MES_RE = /^(?:ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\s+\d{4}\s+([\d.,]+)/i
+const PROM_RE = /^PROM\s+\S+\s+\d+\s+([\d.,]+)/i
 
 function parseCashFlowShapes(shapes: string[]): Omit<AreaCashFlow, 'nombre'> {
   type Ctx = 'prod' | 'opex' | 'precio'

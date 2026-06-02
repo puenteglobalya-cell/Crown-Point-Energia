@@ -99,8 +99,9 @@ export default function PortalSubirPage() {
       const path = `reportes/${tipo}-${periodo}-${Date.now()}.${ext}`
       const { error: storageErr } = await supabase.storage
         .from('documents')
-        .upload(path, file!, { upsert: false })
-      if (storageErr) throw new Error(storageErr.message)
+        .upload(path, file!, { upsert: false, contentType: file!.type || 'application/octet-stream' })
+      // Storage upload is best-effort — report is still saved via the HTML in the DB
+      const storedPath = storageErr ? null : path
 
       const res = await fetch('/api/admin/reportes', {
         method: 'POST',
@@ -111,7 +112,7 @@ export default function PortalSubirPage() {
           periodo,
           datos,
           html,
-          storage_path: path,
+          storage_path: storedPath,
           file_name:    file!.name,
           file_size:    file!.size,
           estado,
