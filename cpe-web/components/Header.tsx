@@ -103,7 +103,7 @@ export default function Header({ fields, show, lang }: Props) {
             <div className="ticker-spacer"></div>
             <span className="ticker-cell" style={{ opacity: 0.6 }}>
               <span className="key"><span className="lang-es">Actualizado</span><span className="lang-en">Updated</span></span>
-              <span className="val"><span className="lang-es">15&nbsp;min&nbsp;de&nbsp;demora</span><span className="lang-en">15&nbsp;min&nbsp;delay</span></span>
+              <span className="val"><span className="lang-es">Cierre&nbsp;anterior</span><span className="lang-en">Prior&nbsp;close</span></span>
             </span>
           </div>
         </div>

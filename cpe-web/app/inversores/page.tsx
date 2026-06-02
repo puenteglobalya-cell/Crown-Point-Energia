@@ -91,7 +91,7 @@ export default async function InversoresPage() {
                 <span className="num" data-cpe-field="stock.price">{price}</span>
                 <span className={`num delta pos`} data-cpe-field="stock.delta">{delta}</span>
               </div>
-              <span className="qb-meta"><span className="lang-es">Última cotización · 15 min de demora</span><span className="lang-en">Last quote · 15-min delayed</span></span>
+              <span className="qb-meta"><span className="lang-es">Cotización al cierre anterior · TSXV</span><span className="lang-en">Prior close price · TSXV</span></span>
             </div>
             <div className="qb-cell"><span>Beta</span><strong className="num" data-cpe-field="stock.beta">{beta}</strong></div>
             <div className="qb-cell"><span>52w high</span><strong className="num" data-cpe-field="stock.high52">{high52}</strong></div>

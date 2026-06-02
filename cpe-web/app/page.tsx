@@ -127,7 +127,7 @@ export default async function HomePage() {
                 <span><span className="lang-es">Beta</span><span className="lang-en">Beta</span> · <span data-cpe-field="stock.beta">{beta}</span></span>
                 <span><span className="lang-es">Vol.</span><span className="lang-en">Vol.</span> <span data-cpe-field="stock.vol30">{vol30}</span></span>
                 <span><span className="lang-es">Cap.</span><span className="lang-en">Mkt&nbsp;cap</span> <span data-cpe-field="stock.cap">{cap}</span></span>
-                <span className="hq-stale"><span className="lang-es">15&nbsp;min de demora</span><span className="lang-en">15&nbsp;min delayed</span></span>
+                <span className="hq-stale"><span className="lang-es">Actualizado al cierre anterior</span><span className="lang-en">Updated at prior close</span></span>
               </div>
             </div>
           </div>
