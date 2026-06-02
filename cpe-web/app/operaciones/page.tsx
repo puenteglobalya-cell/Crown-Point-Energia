@@ -98,6 +98,10 @@ export default async function OperacionesPage() {
           <div className="two-col">
             <aside className="left-rail">
               <h4><span className="lang-es">Bloques</span><span className="lang-en">Blocks</span></h4>
+              <p style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.5, margin: '4px 0 12px' }}>
+                <span className="lang-es">{blocks.length} bloques · {blocks.reduce((acc, b) => acc + (Array.isArray((b as any).concesiones) ? (b as any).concesiones.length : 1), 0) || 9} concesiones agrupadas</span>
+                <span className="lang-en">{blocks.length} blocks · 9 grouped concessions</span>
+              </p>
               <nav>
                 <a href="#mapa" className="active"><span className="lang-es">Mapa general</span><span className="lang-en">Map overview</span></a>
                 {blocks.map(b => <a href={`#${b.slug}`} key={b.slug}>{b.titulo}</a>)}

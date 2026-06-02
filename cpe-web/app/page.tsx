@@ -406,7 +406,7 @@ export default async function HomePage() {
                       <path d="M0 55 L20 50 L40 53 L60 48 L80 45 L100 50 L120 40 L140 38 L160 42 L180 30 L200 32 L220 25 L240 28 L260 18 L280 22 L280 80 L0 80 Z" fill="url(#sparkFill)"/>
                       <path d="M0 55 L20 50 L40 53 L60 48 L80 45 L100 50 L120 40 L140 38 L160 42 L180 30 L200 32 L220 25 L240 28 L260 18 L280 22" fill="none" stroke="var(--accent2)" strokeWidth="1.5"/>
                     </svg>
-                    <span className="ip-spark-meta"><span className="lang-es">12 meses</span><span className="lang-en">12 months</span> · +28.1%</span>
+                    <span className="ip-spark-meta"><span className="lang-es">12 meses</span><span className="lang-en">12 months</span>{f['stock.delta'] && f['stock.delta'] !== '+0.00%' ? ` · ${f['stock.delta']}` : ''}</span>
                   </div>
                 )}
                 <footer>

@@ -8,8 +8,8 @@ export default function Footer() {
           {/* Brand */}
           <div className="footer-brand">
             <strong>Crown Point Energía S.A.</strong>
-            <p className="lang-es">Empresa argentina de petróleo y gas con casa matriz internacional. Operamos en las cuencas Austral (Tierra del Fuego), Neuquina y Cuyana (Mendoza). Holding Crown Point Energy Inc. cotiza en TSXV: CWV.</p>
-            <p className="lang-en">Argentine oil &amp; gas company with international headquarters. We operate in the Austral (Tierra del Fuego), Neuquén and Cuyana (Mendoza) basins. Holding Crown Point Energy Inc. is listed on TSXV: CWV.</p>
+            <p className="lang-es">Empresa argentina de petróleo y gas con casa matriz internacional. Operamos en las cuencas Austral (Tierra del Fuego), Neuquina, Cuyana (Mendoza) y Golfo San Jorge (Chubut – Santa Cruz). Holding Crown Point Energy Inc. cotiza en TSXV: CWV.</p>
+            <p className="lang-en">Argentine oil &amp; gas company with international headquarters. We operate in the Austral (Tierra del Fuego), Neuquén, Cuyana (Mendoza) and San Jorge Gulf (Chubut – Santa Cruz) basins. Holding Crown Point Energy Inc. is listed on TSXV: CWV.</p>
             <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
               <a
                 href="https://www.linkedin.com/company/crown-point-energy"

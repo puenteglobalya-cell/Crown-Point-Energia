@@ -153,7 +153,7 @@ export default async function InversoresPage() {
             <main>
               <div className="section-block" id="porque">
                 <span className="eyebrow"><span className="lang-es">Tesis de inversión</span><span className="lang-en">Investment thesis</span></span>
-                <h2 style={{ marginTop: 8 }}><span className="lang-es">Tres motivos para mirar Crown Point.</span><span className="lang-en">Three reasons to look at Crown Point.</span></h2>
+                <h2 style={{ marginTop: 8 }}><span className="lang-es">Cuatro motivos para mirar Crown Point.</span><span className="lang-en">Four reasons to look at Crown Point.</span></h2>
                 <div className="kpi-grid" style={{ marginTop: 'var(--s-6)' }}>
                   {[
                     { n: '01', labelEs: 'Producción', labelEn: 'Production',

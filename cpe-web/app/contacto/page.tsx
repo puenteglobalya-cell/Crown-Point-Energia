@@ -265,8 +265,8 @@ export default async function ContactoPage() {
                 <span className="lang-en">Ethics hotline</span>
               </h3>
               <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)', lineHeight: 1.65, marginBottom: 'var(--s-6)' }}>
-                <span className="lang-es">Canal confidencial para reportar conductas contrarias al Código de Ética. Todas las denuncias son tratadas con absoluta reserva.</span>
-                <span className="lang-en">Confidential channel to report conduct contrary to the Code of Ethics. All reports are handled with complete confidentiality.</span>
+                <span className="lang-es">Canal confidencial para reportar conductas contrarias al Código de Ética. Las denuncias pueden realizarse de forma anónima. Todas son tratadas con absoluta reserva.</span>
+                <span className="lang-en">Confidential channel to report conduct contrary to the Code of Ethics. Reports may be submitted anonymously. All are handled with complete confidentiality.</span>
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
                 <a href={`tel:${ethicsPhone.replace(/\s/g,'')}`} style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#fff', fontSize: 15, fontWeight: 600 }}>
