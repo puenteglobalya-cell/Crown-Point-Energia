@@ -51,7 +51,7 @@ export default async function ContactoPage() {
       {/* Offices grid */}
       <section className="section-tight" style={{ borderBottom: '1px solid var(--rule)' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: 'var(--rule)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
+          <div className="offices-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: 'var(--rule)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
             {/* Argentina */}
             <div style={{ background: 'var(--surface)', padding: 'var(--s-8) var(--s-6)', display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
               <span style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 700, color: 'var(--cp-green)' }}>
@@ -226,30 +226,30 @@ export default async function ContactoPage() {
               </h2>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 'var(--s-2)' }}>
                 {[
-                  { es: 'Política anticorrupción', en: 'Anti-corruption policy' },
-                  { es: 'Código de conducta y ética empresarial', en: 'Code of conduct & business ethics' },
-                  { es: 'Política de uso de información privilegiada', en: 'Insider trading policy' },
-                  { es: 'Política de denuncia de irregularidades', en: 'Whistleblower policy' },
-                  { es: 'Formulario de denuncias e irregularidades', en: 'Reporting form', link: true },
+                  { es: 'Política anticorrupción', en: 'Anti-corruption policy', href: '/biblioteca?cat=gobierno-corporativo' },
+                  { es: 'Código de conducta y ética empresarial', en: 'Code of conduct & business ethics', href: '/biblioteca?cat=gobierno-corporativo' },
+                  { es: 'Política de uso de información privilegiada', en: 'Insider trading policy', href: '/biblioteca?cat=gobierno-corporativo' },
+                  { es: 'Política de denuncia de irregularidades', en: 'Whistleblower policy', href: '/biblioteca?cat=gobierno-corporativo' },
+                  { es: 'Formulario de denuncias e irregularidades', en: 'Reporting form', href: '/biblioteca?cat=gobierno-corporativo', isLink: true },
                 ].map((doc, i) => (
                   <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--rule)', fontSize: 14 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: 'var(--cp-green)' }}>
                       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="currentColor" strokeWidth="1.8"/>
                       <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
                     </svg>
-                    <span style={{ color: 'var(--fg)' }}>
+                    <Link href={doc.href} style={{ color: 'var(--fg)', textDecoration: 'none', flex: 1 }}>
                       <span className="lang-es">{doc.es}</span>
                       <span className="lang-en">{doc.en}</span>
-                    </span>
-                    <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                      {doc.link ? 'link' : 'PDF'}
+                    </Link>
+                    <span style={{ fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>
+                      {doc.isLink ? 'enlace' : 'PDF'}
                     </span>
                   </li>
                 ))}
               </ul>
               <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 'var(--s-4)', fontStyle: 'italic' }}>
-                <span className="lang-es">Documentos disponibles en la sección de Documentos del inversor.</span>
-                <span className="lang-en">Documents available in the investor documents section.</span>
+                <span className="lang-es">Los documentos se descargan desde la Biblioteca de inversores.</span>
+                <span className="lang-en">Documents are available in the Investor library section.</span>
               </p>
             </div>
 
