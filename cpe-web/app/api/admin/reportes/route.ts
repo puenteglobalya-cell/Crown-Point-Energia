@@ -44,19 +44,39 @@ async function getUserWithRole(): Promise<UserWithRole | null> {
 export async function GET() {
   const userWithRole = await getUserWithRole()
 
-  // Any active internal role can view reports
   if (!userWithRole?.activo) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const db = createSupabaseServerAdminClient()
   const permissions = await getPermissionsForRole(userWithRole.role!)
+
+  // Determine which report types this role can view
+  // Admin emails bypass type-level access control
+  let visibleTypes: string[] | null = null
+  if (!isAdminEmail(userWithRole.email)) {
+    const { data: typeAccess } = await db
+      .from('report_type_access')
+      .select('type_id')
+      .eq('role', userWithRole.role!)
+      .eq('can_view', true)
+    // If table doesn't exist yet (migration not run), fall back to allow all
+    visibleTypes = typeAccess ? typeAccess.map(r => r.type_id) : null
+  }
+
   let q = db.from('reportes')
-    .select('id, titulo, periodo, estado, file_name, file_size, created_at')
+    .select('id, type_id, titulo, periodo, estado, file_name, file_size, created_at')
     .order('created_at', { ascending: false })
 
   if (!permissions.has('view_drafts')) {
     q = q.eq('estado', 'publicado')
+  }
+
+  if (visibleTypes !== null && visibleTypes.length > 0) {
+    q = q.in('type_id', visibleTypes)
+  } else if (visibleTypes !== null && visibleTypes.length === 0) {
+    // Role has no access to any type
+    return NextResponse.json([])
   }
 
   const { data, error } = await q
