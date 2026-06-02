@@ -43,14 +43,21 @@ function isContractCode(s: string): boolean {
 }
 
 // ── CME / ICE multi-line format ───────────────────────────────────────────────
-// When copying from the CME website each cell lands on its own line:
-//   JUL 2026        ← month label
-//   NGN26           ← contract code
-//   Opt             ← options link
-//   3.166           ← Last
-//   -0.013 (-0.41%) ← Change
-//   3.179           ← Prior Settle   ← HH uses this (offset 5)
-//   3.194           ← Open
+// When copying from either website each cell lands on its own line.
+//
+// CME Henry Hub structure:
+//   JUL 2026        [+0] month label
+//   NGN26           [+1] contract code  ← detection trigger
+//   Opt             [+2] options link
+//   3.166           [+3] Last
+//   -0.013 (-0.41%) [+4] Change
+//   3.179           [+5] Prior Settle   ← HH target
+//
+// ICE Brent structure:
+//   AUG 26          [+0] month label  (also matches "Aug26" or "AUG 2026")
+//   BRNQ26          [+1] contract code ← detection trigger
+//   66.29           [+2] Last          ← Brent target (no Opt link)
+//   -0.76           [+3] Change
 //   …
 //
 // Detection: month label on its own line + next line is a contract code.
@@ -60,19 +67,20 @@ function parseCMEMultiLine(
 ): Array<{ label: string; price: number }> {
   const points: Array<{ label: string; price: number }> = []
 
-  for (let i = 0; i < lines.length - 5; i++) {
+  for (let i = 0; i < lines.length - 3; i++) {
     const label = toLabel(lines[i])
     if (!label) continue
     if (!isContractCode(lines[i + 1] ?? '')) continue
 
-    // Offsets from month line:
-    //  +1 contract, +2 Opt/link, +3 Last, +4 Change, +5 Prior Settle
-    const offset = source === 'hh' ? 5 : 3   // HH → Prior Settle, Brent → Last
-    const raw = String(lines[i + offset] ?? '').replace(/,/g, '.')
-    const price = parseFloat(raw)
-    if (!isNaN(price) && price > 0) {
-      points.push({ label, price })
+    // Try the most likely offset for this source, then fall back
+    const candidates = source === 'hh' ? [5, 3] : [2, 3]
+    let price = 0
+    for (const offset of candidates) {
+      const raw = String(lines[i + offset] ?? '').replace(/,/g, '.')
+      const v = parseFloat(raw)
+      if (!isNaN(v) && v > 0) { price = v; break }
     }
+    if (price > 0) points.push({ label, price })
   }
   return points
 }

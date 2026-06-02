@@ -32,9 +32,9 @@ const MACRO_HINTS: Record<string, { url: string; col: string; placeholder: strin
     placeholder: 'Product\tGlobex\tOpen\tHigh\tLow\tLast\tChange\tPrior Settle\tVolume\t…\nJUL 2025\tNG\t2.856\t2.921\t2.781\t2.813\t-0.028\t2.841\t85174\t…\nAUG 2025\tNG\t2.898\t2.964\t2.826\t2.859\t-0.030\t2.889\t45231\t…',
   },
   ice_brent: {
-    url: 'theice.com → Brent Crude Futures → Quotes',
+    url: 'theice.com → Brent Crude Futures → Quotes (tab "Settlement Prices")',
     col: 'Columna usada: Last',
-    placeholder: 'Aug26\t66.29\t-0.76\t66.98\t65.71\t1,295\t15:43:39\nSep26\t65.83\t-0.67\t66.48\t65.45\t3,042\t15:44:23\nOct26\t65.38\t-0.65\t66.07\t65.09\t4,040\t15:44:01',
+    placeholder: 'AUG 26\nBRNQ26\n66.29\n-0.76\n66.98\n65.71\n1,295\n15:43:39\nSEP 26\nBRNV26\n65.83\n-0.67\n66.48\n65.45\n3,042\n15:44:23',
   },
 }
 
