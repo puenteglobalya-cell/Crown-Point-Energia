@@ -111,15 +111,31 @@ function next12Labels(): string[] {
   return labels
 }
 
+async function findLatestMacro(
+  db: ReturnType<typeof createSupabaseServerAdminClient>,
+  typeId: string,
+  source: string,
+) {
+  // Primary: look by type_id (correct uploads)
+  const { data: byType } = await db.from('reportes')
+    .select('datos, created_at').eq('type_id', typeId)
+    .order('created_at', { ascending: false }).limit(1).maybeSingle()
+  if (byType?.datos) return byType
+
+  // Fallback: find by datos.source field (records saved before the allowlist fix)
+  const { data: bySource } = await db.from('reportes')
+    .select('datos, created_at').eq('datos->>source', source)
+    .order('created_at', { ascending: false }).limit(1).maybeSingle()
+  return bySource ?? null
+}
+
 export async function GET() {
   // ── 1. Try manual uploads stored in DB ───────────────────────
   try {
     const db = createSupabaseServerAdminClient()
-    const [{ data: hhRec }, { data: brentRec }] = await Promise.all([
-      db.from('reportes').select('datos, created_at').eq('type_id', 'henry_hub').eq('estado', 'publicado')
-        .order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      db.from('reportes').select('datos, created_at').eq('type_id', 'ice_brent').eq('estado', 'publicado')
-        .order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    const [hhRec, brentRec] = await Promise.all([
+      findLatestMacro(db, 'henry_hub', 'hh'),
+      findLatestMacro(db, 'ice_brent', 'brent'),
     ])
 
     if (hhRec?.datos || brentRec?.datos) {
