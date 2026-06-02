@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
 
   // Explicit allowlist — subido_por comes from session, not from request body
-  const { titulo, periodo, datos, html, storage_path, file_name, file_size, estado } = body
+  const { type_id, titulo, periodo, datos, html, storage_path, file_name, file_size, estado } = body
 
   if (!titulo || !periodo || !datos || !html) {
     return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
@@ -97,17 +97,21 @@ export async function POST(req: NextRequest) {
     ? storage_path.replace(/\.\.\//g, '').replace(/^\/+/, '')
     : null
 
+  const VALID_TYPES = ['ingresos', 'produccion', 'financiero', 'accionista']
+  const typeIdFinal = typeof type_id === 'string' && VALID_TYPES.includes(type_id) ? type_id : 'ingresos'
+
   const db = createSupabaseServerAdminClient()
   const { data, error } = await db.from('reportes').insert({
-    titulo: String(titulo).slice(0, 500),
-    periodo: String(periodo).slice(0, 20),
+    type_id:      typeIdFinal,
+    titulo:       String(titulo).slice(0, 500),
+    periodo:      String(periodo).slice(0, 40),
     datos,
     html,
-    estado: estadoFinal,
+    estado:       estadoFinal,
     storage_path: safePath,
-    file_name: file_name ? String(file_name).slice(0, 255) : null,
-    file_size: file_size ?? null,
-    subido_por: userWithRole.id,  // always from session — never from body
+    file_name:    file_name ? String(file_name).slice(0, 255) : null,
+    file_size:    file_size ?? null,
+    subido_por:   userWithRole.id,  // always from session — never from body
   }).select('id').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
