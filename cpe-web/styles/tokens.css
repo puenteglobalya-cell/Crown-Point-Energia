@@ -34,6 +34,10 @@
   --cp-copper-soft:  #E0B98E;
   --cp-positive:     #2C7A5B;
   --cp-negative:     #B33B2E;
+  --cp-bordeaux:     #8B1A2A;
+  --cp-bordeaux-fill:#A8253A;
+  --cp-blue:         #4E7EC4;
+  --cp-blue-rgb:     78, 126, 196;
 
   /* Defaults: Corporativo + Light (matches current brand: navy + green) */
   --bg:        var(--cp-white);
@@ -50,6 +54,11 @@
   --on-accent: #FFFFFF;
   --accent2:   var(--cp-green);
   --accent2-deep: var(--cp-green-deep);
+
+  /* Info / alert panel */
+  --cp-info-bg:     #EEF4FF;
+  --cp-info-border: var(--cp-blue);
+  --cp-info-text:   #2E4F8A;
 
   /* Type stacks — font vars injected by next/font on <html> element */
   --font-display: var(--font-nf-montserrat), 'Montserrat', system-ui, sans-serif;
@@ -163,6 +172,9 @@ html:has(.page-hero.has-photo) .site-header .lang-toggle button.active { backgro
   --sh-sm: 0 1px 2px rgba(0,0,0,.4);
   --sh-md: 0 4px 16px rgba(0,0,0,.4);
   --sh-lg: 0 16px 48px rgba(0,0,0,.55);
+  --cp-info-bg:     #1A2540;
+  --cp-info-border: #6B9BE0;
+  --cp-info-text:   #A8C4F0;
 }
 [data-theme="dark"][data-direction="corporativo"] {
   --accent: var(--cp-green);
@@ -325,6 +337,7 @@ h1, h2, h3, h4 {
 /* ---------- Header / nav ---------- */
 .site-header {
   position: sticky; top: 0; z-index: 50;
+  background: rgba(255,255,255,.92);
   background: color-mix(in oklab, var(--bg), transparent 8%);
   backdrop-filter: saturate(140%) blur(14px);
   -webkit-backdrop-filter: saturate(140%) blur(14px);
@@ -398,7 +411,7 @@ h1, h2, h3, h4 {
   cursor: pointer;
   user-select: none;
 }
-.nav-item:hover { background: color-mix(in oklab, var(--fg) 6%, transparent); }
+.nav-item:hover { background: rgba(20,23,46,.06); background: color-mix(in oklab, var(--fg) 6%, transparent); }
 .nav-item.has-menu::after {
   content: ""; display: inline-block;
   width: 6px; height: 6px;
@@ -644,6 +657,7 @@ h1, h2, h3, h4 {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: var(--r-pill);
+  background: rgba(26,43,76,.16);
   background: color-mix(in oklab, var(--accent) 16%, transparent);
   color: var(--accent-deep);
 }
@@ -662,6 +676,7 @@ h1, h2, h3, h4 {
 .card:hover {
   box-shadow: var(--sh-md);
   transform: translateY(-2px);
+  border-color: #B8C2D8;
   border-color: color-mix(in oklab, var(--accent) 40%, var(--rule));
 }
 
@@ -711,6 +726,19 @@ h1, h2, h3, h4 {
 .reveal-d2 { --reveal-delay: 160ms; }
 .reveal-d3 { --reveal-delay: 240ms; }
 .reveal-d4 { --reveal-delay: 320ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .reveal, .reveal-left, .reveal-right, .reveal-scale {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
 
 /* ---------- Argentina map ---------- */
 :root {
