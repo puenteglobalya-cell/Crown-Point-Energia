@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { logActivity } from '@/lib/roles'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +33,8 @@ export async function PATCH(req: NextRequest) {
     activo, updated_at: new Date().toISOString(),
   }).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logActivity({ userId: user.id, userEmail: user.email ?? null, action: activo ? 'activate_subscriber' : 'deactivate_subscriber', resourceType: 'suscriptor', resourceId: id })
   return NextResponse.json({ ok: true })
 }
 
@@ -46,5 +49,7 @@ export async function DELETE(req: NextRequest) {
   const db = createSupabaseServerAdminClient()
   const { error } = await db.from('ir_subscribers').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logActivity({ userId: user.id, userEmail: user.email ?? null, action: 'delete_subscriber', resourceType: 'suscriptor', resourceId: id })
   return NextResponse.json({ ok: true })
 }

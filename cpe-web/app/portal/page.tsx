@@ -14,15 +14,6 @@ type ReporteItem = {
   created_at: string
 }
 
-type ActivityEntry = {
-  id: string
-  user_email: string | null
-  action: string
-  resource_type: string | null
-  resource_id: string | null
-  metadata: Record<string, unknown> | null
-  created_at: string
-}
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleString('es-AR', {
@@ -58,18 +49,6 @@ export default async function PortalPage() {
 
   const { data: reportes } = await reportQuery
   const items: ReporteItem[] = reportes ?? []
-
-  // Activity log for admins
-  let activityLog: ActivityEntry[] = []
-  if (isAdminRole(permissions)) {
-    const { data } = await db
-      .from('activity_log')
-      .select('id, user_email, action, resource_type, resource_id, metadata, created_at')
-      .gte('created_at', new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString())
-      .order('created_at', { ascending: false })
-      .limit(200)
-    activityLog = (data ?? []) as ActivityEntry[]
-  }
 
   const userCanUpload = canUpload(permissions)
   const userIsAdmin = isAdminRole(permissions)
@@ -186,51 +165,12 @@ export default async function PortalPage() {
         )}
       </section>
 
-      {/* Activity log — admin only */}
       {userIsAdmin && (
-        <section>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-0.01em' }}>
-            Actividad reciente
-          </h2>
-
-          {activityLog.length === 0 ? (
-            <p style={{ color: 'var(--fg-muted)', fontSize: 14 }}>Sin actividad registrada.</p>
-          ) : (
-            <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--surface)' }}>
-              {activityLog.map((entry, i) => (
-                <div
-                  key={entry.id}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto',
-                    gap: 12,
-                    alignItems: 'center',
-                    padding: '12px 16px',
-                    borderBottom: i < activityLog.length - 1 ? '1px solid var(--rule)' : 'none',
-                  }}
-                >
-                  <div>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}>
-                      {entry.action}
-                    </span>
-                    {entry.resource_type && (
-                      <span style={{ fontSize: 11, color: 'var(--fg-muted)', marginLeft: 8 }}>
-                        {entry.resource_type}
-                        {entry.resource_id ? ` #${entry.resource_id.slice(0, 8)}` : ''}
-                      </span>
-                    )}
-                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>
-                      {entry.user_email ?? 'sistema'}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
-                    {fmtDate(entry.created_at)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        <div style={{ marginTop: 8, textAlign: 'right' }}>
+          <Link href="/admin/logs" style={{ fontSize: 12, color: 'var(--fg-muted)', textDecoration: 'none' }}>
+            Ver log de actividad →
+          </Link>
+        </div>
       )}
     </div>
   )
