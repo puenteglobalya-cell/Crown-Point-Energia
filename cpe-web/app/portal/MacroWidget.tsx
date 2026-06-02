@@ -11,19 +11,25 @@ type MacroData = {
   source?: 'manual' | 'live'
 }
 
-// Design tokens (brand colors)
-const C_BRENT  = '#5C8700'   // cp-green-deep
-const C_BRENT_FILL = '#82BC00'
-const C_HH     = '#8B1A2A'   // bordeaux
-const C_HH_FILL = '#A8253A'
+// Brand color CSS vars — resolved to hex at runtime for Chart.js canvas API
+const C_BRENT      = 'var(--cp-green-deep)'
+const C_BRENT_FILL = 'var(--cp-green)'
+const C_HH         = 'var(--cp-bordeaux)'
+const C_HH_FILL    = 'var(--cp-bordeaux-fill)'
 
-// Months considered US winter season
+// Resolve a CSS var string like "var(--cp-foo)" to its computed hex value
+function resolveCSSVar(varStr: string): string {
+  if (typeof document === 'undefined') return varStr
+  const m = varStr.match(/^var\((--[^)]+)\)$/)
+  if (!m) return varStr
+  return getComputedStyle(document.documentElement).getPropertyValue(m[1]).trim() || varStr
+}
+
 const WINTER_LABELS = ['Dic', 'Ene', 'Feb']
 function isWinter(label: string) {
   return WINTER_LABELS.some(m => label.startsWith(m))
 }
 
-// Chart.js winter-band plugin
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function winterBandPlugin(labels: string[]): any {
   return {
@@ -35,8 +41,10 @@ function winterBandPlugin(labels: string[]): any {
       if (!winterIdx.length) return
       const step = x.getPixelForValue(1) - x.getPixelForValue(0)
       const half = step / 2
+      const blueRgb = getComputedStyle(document.documentElement)
+        .getPropertyValue('--cp-blue-rgb').trim() || '78, 126, 196'
       ctx.save()
-      ctx.fillStyle = 'rgba(78,126,196,.07)'
+      ctx.fillStyle = `rgba(${blueRgb},.07)`
       winterIdx.forEach((i: number) => {
         const x1 = x.getPixelForValue(i) - half
         ctx.fillRect(x1, chartArea.top, step, chartArea.bottom - chartArea.top)
@@ -44,7 +52,7 @@ function winterBandPlugin(labels: string[]): any {
       if (winterIdx.length) {
         const mid = x.getPixelForValue(winterIdx[Math.floor(winterIdx.length / 2)])
         ctx.font = '600 9px var(--font-body,Inter,sans-serif)'
-        ctx.fillStyle = 'rgba(78,126,196,.45)'
+        ctx.fillStyle = `rgba(${blueRgb},.45)`
         ctx.textAlign = 'center'
         ctx.fillText('❄ invierno', mid, chartArea.top + 11)
       }
@@ -114,6 +122,11 @@ function MacroCard({
     if (!canvasRef.current || !points.length) return
     import('chart.js/auto').then(({ default: Chart }) => {
       if (inst.current) { inst.current.destroy(); inst.current = null }
+
+      // Resolve CSS vars to actual values for the canvas API
+      const rc = resolveCSSVar(color)
+      const rf = resolveCSSVar(fillColor)
+
       const labels = points.map(p => p.label)
       const data   = points.map(p => p[valueKey] || null)
 
@@ -124,63 +137,56 @@ function MacroCard({
           labels,
           datasets: [{
             data,
-            borderColor: fillColor,
+            borderColor: rf,
             backgroundColor: (ctx: any) => {  // eslint-disable-line @typescript-eslint/no-explicit-any
               const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 185)
-              g.addColorStop(0, fillColor + '28')
-              g.addColorStop(1, fillColor + '04')
+              g.addColorStop(0, rf + '28')
+              g.addColorStop(1, rf + '04')
               return g
             },
             tension: 0.35,
             pointRadius: 3.5,
             pointHoverRadius: 5.5,
-            pointBackgroundColor: fillColor,
+            pointBackgroundColor: rf,
             borderWidth: 2.5,
             fill: true,
           }],
         },
-        options: buildChartOptions(color, yLabel, decimals),
+        options: buildChartOptions(rc, yLabel, decimals),
       })
     })
     return () => { if (inst.current) { inst.current.destroy(); inst.current = null } }
   }, [points, valueKey, color, fillColor, yLabel, decimals, extraPlugins])
 
-  const valid = points.filter(p => p[valueKey] > 0)
-  const m1    = valid[0]?.[valueKey] ?? 0
-  const mN    = valid[valid.length - 1]?.[valueKey] ?? 0
-  const diff  = mN - m1
+  const valid   = points.filter(p => p[valueKey] > 0)
+  const m1      = valid[0]?.[valueKey] ?? 0
+  const mN      = valid[valid.length - 1]?.[valueKey] ?? 0
+  const diff    = mN - m1
   const m1Label = valid[0]?.label ?? ''
+  const rc      = resolveCSSVar(color)
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: '18px 18px 14px' }}>
-      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', marginBottom: 4 }}>
-        {eyebrow}
-      </div>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color, marginBottom: 0, letterSpacing: '-.01em' }}>
+    <div className="macro-card">
+      <div className="macro-card__eyebrow">{eyebrow}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: rc, letterSpacing: '-.01em' }}>
         {title}
       </div>
-      <div style={{ height: 185, position: 'relative', margin: '12px 0 10px' }}>
+      <div className="macro-card__chart">
         <canvas ref={canvasRef} />
       </div>
-      <div style={{ display: 'flex', gap: 16, paddingTop: 10, borderTop: '1px solid var(--rule)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+      <div className="macro-card__footer">
         <div>
-          <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', marginBottom: 3 }}>
-            M+1 ({m1Label})
-          </div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color }}>
+          <div className="macro-card__m1-label">M+1 ({m1Label})</div>
+          <div className="macro-card__m1-value" style={{ color: rc }}>
             {m1.toFixed(decimals)}{' '}
-            <span style={{ fontSize: 11, fontWeight: 400, fontFamily: 'var(--font-body)' }}>{yLabel}</span>
+            <span className="macro-card__m1-unit">{yLabel}</span>
           </div>
-          <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', marginTop: 2, color: diff >= 0 ? 'var(--cp-positive,#2C7A5B)' : 'var(--cp-negative,#B33B2E)' }}>
+          <div className={`macro-card__delta ${diff >= 0 ? 'macro-card__delta--pos' : 'macro-card__delta--neg'}`}>
             {diff >= 0 ? '+' : ''}{diff.toFixed(decimals)} vs M+12
           </div>
         </div>
-        {note && (
-          <div style={{ fontSize: 10, color: 'var(--fg-soft)', padding: '4px 10px', background: '#EEF4FF', borderLeft: '2px solid #4E7EC4', borderRadius: '0 4px 4px 0', lineHeight: 1.4 }}>
-            {note}
-          </div>
-        )}
-        <div style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', textAlign: 'right', lineHeight: 1.5 }}>
+        {note && <div className="macro-card__note">{note}</div>}
+        <div className="macro-card__source">
           {valueKey === 'brent' ? 'Last price' : 'Prior Settle'}<br />
           {valueKey === 'brent' ? 'ICE.com' : 'CME Group'}
         </div>
@@ -242,14 +248,12 @@ td{padding:6px 12px;border-bottom:1px solid #eee}
   const points = data?.points ?? []
 
   return (
-    <section style={{ marginBottom: 40 }}>
+    <section className="macro-section">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, margin: 0, letterSpacing: '-.01em' }}>
-          Macro — próximos 12 meses
-        </h2>
+      <div className="macro-header">
+        <h2 className="macro-header__title">Macro — próximos 12 meses</h2>
         {data?.updatedAt && (
-          <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
+          <span className="macro-header__meta">
             {new Date(data.updatedAt).toLocaleDateString('es-AR')}
             {data.source === 'manual' ? ' · carga manual' : ' · 10–15 min delay'}
           </span>
@@ -258,15 +262,15 @@ td{padding:6px 12px;border-bottom:1px solid #eee}
 
       {/* Loading */}
       {!data && (
-        <div style={{ height: 200, background: 'var(--surface)', borderRadius: 'var(--r-lg)', border: '1px solid var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: 12, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>Cargando precios de mercado…</span>
+        <div className="macro-loading">
+          <span className="macro-loading__text">Cargando precios de mercado…</span>
         </div>
       )}
 
       {/* No data fallback */}
       {noData && (
-        <div style={{ padding: '16px 18px', background: 'var(--surface)', borderRadius: 'var(--r-lg)', border: '1px solid var(--rule)' }}>
-          <p style={{ fontSize: 13, color: 'var(--fg-muted)', margin: 0 }}>
+        <div className="macro-nodata">
+          <p className="macro-nodata__text">
             No se pudieron obtener los precios de futuros en este momento.
           </p>
         </div>
@@ -275,7 +279,7 @@ td{padding:6px 12px;border-bottom:1px solid #eee}
       {/* Charts */}
       {data && (data.hasBrent || data.hasHH) && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 10 }}>
+          <div className="macro-grid">
             {data.hasBrent && (
               <MacroCard
                 eyebrow="ICE Futures Europe"
@@ -305,18 +309,18 @@ td{padding:6px 12px;border-bottom:1px solid #eee}
           </div>
 
           {/* Export / share */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+          <div className="macro-actions">
             <button
               onClick={handleExport}
               className="btn"
-              style={{ fontSize: 12, padding: '6px 16px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              style={{ fontSize: 12, padding: '6px 16px' }}
             >
               ↓ Exportar
             </button>
             <button
               onClick={handleCopy}
               className="btn"
-              style={{ fontSize: 12, padding: '6px 16px', display: 'inline-flex', alignItems: 'center', gap: 6, color: copied ? 'var(--cp-positive)' : undefined }}
+              style={{ fontSize: 12, padding: '6px 16px', color: copied ? 'var(--cp-positive)' : undefined }}
             >
               {copied ? '✓ Copiado' : '🔗 Copiar enlace'}
             </button>

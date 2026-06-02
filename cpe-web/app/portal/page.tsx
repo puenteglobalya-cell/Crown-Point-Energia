@@ -47,17 +47,13 @@ export default async function PortalPage() {
   const userIsAdmin   = isAdminRole(permissions)
 
   return (
-    <div style={{ maxWidth: 820, margin: '0 auto' }}>
+    <div className="portal-page">
 
       {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
+      <div className="portal-header">
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: '0 0 4px' }}>
-            Portal de reportes
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: 0 }}>
-            Bienvenido, {user.email}
-          </p>
+          <h1 className="portal-header__title">Portal de reportes</h1>
+          <p className="portal-header__subtitle">Bienvenido, {user.email}</p>
         </div>
         {userCanUpload && (
           <Link
@@ -74,13 +70,11 @@ export default async function PortalPage() {
       <MacroWidget />
 
       {/* Reports list */}
-      <section style={{ marginBottom: 48 }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-0.01em' }}>
+      <section className="portal-section">
+        <h2 className="portal-section__title">
           Reportes
           {!permissions.has('view_drafts') && (
-            <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--fg-muted)', fontWeight: 400, fontFamily: 'var(--font-mono)' }}>
-              — solo publicados
-            </span>
+            <span className="portal-section__badge">— solo publicados</span>
           )}
         </h2>
         <ReportesLista items={items} userCanUpload={userCanUpload} />
