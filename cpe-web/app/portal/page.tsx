@@ -6,12 +6,20 @@ import { CopyLinkBtn } from './ReporteActions'
 
 type ReporteItem = {
   id: string
+  type_id: string | null
   titulo: string
   periodo: string
   estado: string
   file_name: string | null
   file_size: number | null
   created_at: string
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  ingresos:   'Ingresos',
+  accionista: 'Seguimiento',
+  produccion: 'Producción',
+  financiero: 'Financiero',
 }
 
 
@@ -40,7 +48,7 @@ export default async function PortalPage() {
   // Fetch reports based on permissions
   let reportQuery = db
     .from('reportes')
-    .select('id, titulo, periodo, estado, file_name, file_size, created_at')
+    .select('id, type_id, titulo, periodo, estado, file_name, file_size, created_at')
     .order('created_at', { ascending: false })
 
   if (!permissions.has('view_drafts')) {
@@ -125,6 +133,16 @@ export default async function PortalPage() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {/* Tipo badge */}
+                  {item.type_id && item.type_id !== 'ingresos' && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                      padding: '3px 8px', borderRadius: 'var(--r-pill)',
+                      background: 'rgba(31,37,102,0.08)', color: 'var(--accent)',
+                    }}>
+                      {TYPE_LABELS[item.type_id] ?? item.type_id}
+                    </span>
+                  )}
                   {/* Estado badge */}
                   <span style={{
                     fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
