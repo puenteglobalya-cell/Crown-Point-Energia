@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
+import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import type { DatosMacro } from '@/lib/parsers/macro'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 86400  // cache 24 h
 
 export interface MacroPoint {
   label: string    // "Jul-26"
@@ -111,6 +112,42 @@ function next12Labels(): string[] {
 }
 
 export async function GET() {
+  // ── 1. Try manual uploads stored in DB ───────────────────────
+  try {
+    const db = createSupabaseServerAdminClient()
+    const [{ data: hhRec }, { data: brentRec }] = await Promise.all([
+      db.from('reportes').select('datos, created_at').eq('type_id', 'henry_hub').eq('estado', 'publicado')
+        .order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      db.from('reportes').select('datos, created_at').eq('type_id', 'ice_brent').eq('estado', 'publicado')
+        .order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    ])
+
+    if (hhRec?.datos || brentRec?.datos) {
+      const hhMap  = new Map<string, number>(
+        ((hhRec?.datos as DatosMacro)?.points ?? []).map(p => [p.label, p.price])
+      )
+      const brentMap = new Map<string, number>(
+        ((brentRec?.datos as DatosMacro)?.points ?? []).map(p => [p.label, p.price])
+      )
+      const labels = next12Labels()
+      const points: MacroPoint[] = labels.map(label => ({
+        label,
+        hh:    hhMap.get(label) ?? 0,
+        brent: brentMap.get(label) ?? 0,
+      }))
+      const updatedAt = [hhRec?.created_at, brentRec?.created_at]
+        .filter(Boolean).sort().reverse()[0] ?? new Date().toISOString()
+      return NextResponse.json({
+        points,
+        hasHH:    points.some(p => p.hh > 0),
+        hasBrent: points.some(p => p.brent > 0),
+        updatedAt,
+        source: 'manual',
+      })
+    }
+  } catch { /* DB unavailable — fall through to live fetch */ }
+
+  // ── 2. Fall back to live API fetch ────────────────────────────
   const [hhMap, brentMap] = await Promise.all([fetchHH(), fetchBrent()])
   const labels = next12Labels()
 
@@ -120,13 +157,11 @@ export async function GET() {
     brent: brentMap.get(label) ?? 0,
   }))
 
-  const hasHH    = points.some(p => p.hh > 0)
-  const hasBrent = points.some(p => p.brent > 0)
-
   return NextResponse.json({
     points,
-    hasHH,
-    hasBrent,
+    hasHH:    points.some(p => p.hh > 0),
+    hasBrent: points.some(p => p.brent > 0),
     updatedAt: new Date().toISOString(),
+    source: 'live',
   })
 }

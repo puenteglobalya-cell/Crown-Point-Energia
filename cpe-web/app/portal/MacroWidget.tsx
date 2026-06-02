@@ -8,6 +8,7 @@ type MacroData = {
   hasHH: boolean
   hasBrent: boolean
   updatedAt: string
+  source?: 'manual' | 'live'
 }
 
 // Design tokens (brand colors)
@@ -249,7 +250,8 @@ td{padding:6px 12px;border-bottom:1px solid #eee}
         </h2>
         {data?.updatedAt && (
           <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
-            {new Date(data.updatedAt).toLocaleDateString('es-AR')} · 10–15 min delay
+            {new Date(data.updatedAt).toLocaleDateString('es-AR')}
+            {data.source === 'manual' ? ' · carga manual' : ' · 10–15 min delay'}
           </span>
         )}
       </div>
