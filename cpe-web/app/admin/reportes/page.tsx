@@ -40,6 +40,7 @@ export default function ReportesAdminPage() {
   const [items, setItems] = useState<ReporteItem[]>([])
   const [loadingList, setLoadingList] = useState(true)
   const [listMsg, setListMsg] = useState('')
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const loadList = useCallback(async () => {
     const res = await fetch('/api/admin/reportes')
@@ -319,14 +320,37 @@ export default function ReportesAdminPage() {
                     <div style={{ position: 'absolute', top: 2, left: item.estado === 'publicado' ? 17 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
                   </div>
 
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/api/admin/reportes/${item.id}`
+                      navigator.clipboard.writeText(url)
+                      setCopiedId(item.id)
+                      setTimeout(() => setCopiedId(null), 2000)
+                    }}
+                    className="btn"
+                    style={{ fontSize: 12, padding: '6px 12px' }}
+                    title="Copiar enlace"
+                  >
+                    {copiedId === item.id ? '✓' : '🔗'}
+                  </button>
+
+                  <a
+                    href={`/api/admin/reportes/${item.id}/excel`}
+                    className="btn"
+                    style={{ fontSize: 12, padding: '6px 12px', textDecoration: 'none' }}
+                    title="Descargar Excel"
+                  >
+                    Excel
+                  </a>
+
                   <a
                     href={`/api/admin/reportes/${item.id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn"
+                    className="btn btn-primary"
                     style={{ fontSize: 12, padding: '6px 12px', textDecoration: 'none' }}
                   >
-                    Ver
+                    Ver / PDF
                   </a>
 
                   <button
