@@ -210,10 +210,30 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
   .kpi-row{grid-template-columns:1fr;}
   .areas{grid-template-columns:1fr;}
 }
+@media print{
+  .no-print{display:none!important;}
+  body::before{display:none;}
+  body{background:#fff;}
+  .wrap{padding:0 16px;}
+  .card{box-shadow:none;border:1px solid #ddd;}
+}
+#print-btn{
+  position:fixed;bottom:28px;right:28px;z-index:9999;
+  display:flex;align-items:center;gap:8px;
+  background:#1F2566;color:#fff;border:none;border-radius:40px;
+  padding:12px 22px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;
+  cursor:pointer;box-shadow:0 4px 20px rgba(31,37,102,.35);
+  transition:transform .15s,box-shadow .15s;
+}
+#print-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(31,37,102,.45);}
 </style>
 </head>
 <body>
 <div class="wrap">
+<button id="print-btn" class="no-print" onclick="window.print()">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+  Imprimir / Guardar PDF
+</button>
 
 <!-- HEADER -->
 <header>

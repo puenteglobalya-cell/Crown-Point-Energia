@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentUserAndRole, canUpload, isAdminRole } from '@/lib/roles'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { CopyLinkBtn } from './ReporteActions'
 
 type ReporteItem = {
   id: string
@@ -143,7 +144,7 @@ export default async function PortalPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {/* Estado badge */}
                   <span style={{
                     fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
@@ -154,6 +155,20 @@ export default async function PortalPage() {
                     {item.estado}
                   </span>
 
+                  <CopyLinkBtn id={item.id} />
+
+                  <a
+                    href={`/api/admin/reportes/${item.id}/excel`}
+                    className="btn"
+                    style={{ fontSize: 12, padding: '7px 14px', textDecoration: 'none' }}
+                    title="Descargar Excel"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', marginRight: 5 }}>
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Excel
+                  </a>
+
                   <a
                     href={`/api/admin/reportes/${item.id}`}
                     target="_blank"
@@ -161,7 +176,7 @@ export default async function PortalPage() {
                     className="btn btn-primary"
                     style={{ fontSize: 13, padding: '8px 18px', textDecoration: 'none' }}
                   >
-                    Ver informe
+                    Ver / PDF
                   </a>
                 </div>
               </div>
