@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireHrUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { logActivity } from '@/lib/roles'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,8 +35,9 @@ export async function PATCH(req: NextRequest) {
 
   const db = createSupabaseServerAdminClient()
   const { error } = await db.from('job_applications').update(update).eq('id', id)
-
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logActivity({ userId: user.id, userEmail: user.email ?? null, action: 'update_postulacion', resourceType: 'postulacion', resourceId: id, metadata: { estado, notas: notas != null } })
   return NextResponse.json({ ok: true })
 }
 
@@ -47,14 +49,15 @@ export async function DELETE(req: NextRequest) {
   const { id } = await req.json()
   if (!id) return NextResponse.json({ error: 'Falta id' }, { status: 400 })
 
-  // Also delete CV from storage if exists
   const db = createSupabaseServerAdminClient()
-  const { data: app } = await db.from('job_applications').select('cv_path').eq('id', id).single()
+  const { data: app } = await db.from('job_applications').select('cv_path, nombre').eq('id', id).single()
   if (app?.cv_path) {
     await db.storage.from('documents').remove([app.cv_path])
   }
 
   const { error } = await db.from('job_applications').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logActivity({ userId: user.id, userEmail: user.email ?? null, action: 'delete_postulacion', resourceType: 'postulacion', resourceId: id, metadata: { nombre: app?.nombre } })
   return NextResponse.json({ ok: true })
 }

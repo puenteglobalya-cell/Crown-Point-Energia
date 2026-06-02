@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireHrUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { logActivity } from '@/lib/roles'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,7 +30,6 @@ export async function POST(req: NextRequest) {
   if (!area) return NextResponse.json({ error: 'El campo "área" es requerido' }, { status: 400 })
 
   const db = createSupabaseServerAdminClient()
-
   const { data: maxRow } = await db.from('open_positions').select('orden').order('orden', { ascending: false }).limit(1).single()
   const nextOrden = (maxRow?.orden ?? 0) + 1
 
@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
   }).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logActivity({ userId: user.id, userEmail: user.email ?? null, action: 'create_posicion', resourceType: 'posicion', resourceId: data.id, metadata: { area, location, tipo } })
   return NextResponse.json(data, { status: 201 })
 }
 
@@ -61,6 +63,8 @@ export async function PATCH(req: NextRequest) {
   }).eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logActivity({ userId: user.id, userEmail: user.email ?? null, action: 'update_posicion', resourceType: 'posicion', resourceId: id, metadata: fields })
   return NextResponse.json({ ok: true })
 }
 
@@ -74,7 +78,8 @@ export async function DELETE(req: NextRequest) {
 
   const db = createSupabaseServerAdminClient()
   const { error } = await db.from('open_positions').delete().eq('id', id)
-
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logActivity({ userId: user.id, userEmail: user.email ?? null, action: 'delete_posicion', resourceType: 'posicion', resourceId: id })
   return NextResponse.json({ ok: true })
 }
