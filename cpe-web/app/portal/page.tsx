@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getCurrentUserAndRole, canUpload, isAdminRole } from '@/lib/roles'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { ReportesLista } from './ReportesLista'
+import { MacroWidget } from './MacroWidget'
 
 export default async function PortalPage() {
   const { user, role, permissions } = await getCurrentUserAndRole()
@@ -65,6 +66,9 @@ export default async function PortalPage() {
           </Link>
         )}
       </div>
+
+      {/* Macro forward curve */}
+      <MacroWidget />
 
       {/* Reports list */}
       <section style={{ marginBottom: 48 }}>
