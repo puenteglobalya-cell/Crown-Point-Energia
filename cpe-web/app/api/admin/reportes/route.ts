@@ -52,9 +52,10 @@ export async function GET() {
   const permissions = await getPermissionsForRole(userWithRole.role!)
 
   // Determine which report types this role can view
-  // Admin emails bypass type-level access control
+  // Admin role and admin emails bypass type-level access control
   let visibleTypes: string[] | null = null
-  if (!isAdminEmail(userWithRole.email)) {
+  const isAdmin = isAdminEmail(userWithRole.email) || userWithRole.role === 'admin'
+  if (!isAdmin) {
     const { data: typeAccess } = await db
       .from('report_type_access')
       .select('type_id')

@@ -32,9 +32,9 @@ ALTER TABLE cms_sections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cms_fields   ENABLE ROW LEVEL SECURITY;
 
 -- Public can read
-DROP POLICY IF EXISTS "public select settings"      ON cms_settings;
-DROP POLICY IF EXISTS "public select sections"      ON cms_sections;
-DROP POLICY IF EXISTS "public select fields"        ON cms_fields;
+DROP POLICY IF EXISTS "public select settings" ON cms_settings;
+DROP POLICY IF EXISTS "public select sections" ON cms_sections;
+DROP POLICY IF EXISTS "public select fields"   ON cms_fields;
 CREATE POLICY "public select settings" ON cms_settings FOR SELECT USING (true);
 CREATE POLICY "public select sections" ON cms_sections FOR SELECT USING (true);
 CREATE POLICY "public select fields"   ON cms_fields   FOR SELECT USING (true);
