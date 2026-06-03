@@ -110,11 +110,13 @@ UPDATE operations_blocks SET
 WHERE slug = 'tordillo';
 
 -- Chañares Herrados (slug = 'chanares')
--- WI corregido: 75.8% → 50% | Operador: Tango Energy Argentina S.A.
+-- WI corregido: 75.8% → 50% | Operador: Tango Energy Argentina S.A. | card_title → Crudo pesado
 UPDATE operations_blocks SET
   lede_es      = 'Concesión productiva en el centro de Mendoza, con crudo liviano (38° API). Crown Point participa con el 50% del working interest; el operador es Tango Energy Argentina S.A.',
   lede_en      = 'Producing concession in central Mendoza, light crude (38° API). Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A.',
-  chips        = '["50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb,
+  card_title_es = 'Crudo pesado',
+  card_title_en = 'Heavy crude',
+  chips        = '["Crudo pesado", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb,
   body_es      = ARRAY[
     'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza. El operador es Tango Energy Argentina S.A. El bloque produce crudo liviano de 38° API con infraestructura conectada al oleoducto Allanito–Luján de Cuyo.',
     'El programa de workover 2026 contempla la intervención de pozos productores con un objetivo de incremento de producción.'
@@ -126,3 +128,79 @@ UPDATE operations_blocks SET
   stats        = '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"38° API"},{"label_es":"Superficie","label_en":"Acreage","val":"5,040 acres · 21 km²"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]'::jsonb,
   map_stats    = '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Calidad","label_en":"Quality","val":"38° API"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'::jsonb
 WHERE slug = 'chanares';
+
+-- ── Bloques adicionales — correcciones oficiales ─────────────────────────────
+
+-- Puesto Pozo Cercado Oriental (slug = 'ppc')
+-- Cambia de exploratorio a productivo | 50% WI | JV Tango Energy | Cuyana | Crudo pesado
+UPDATE operations_blocks SET
+  eyebrow      = '01 · Cuenca Cuyana',
+  orden        = 1,
+  lede_es      = 'Concesión productiva contigua a Chañares Herrados, en el centro de Mendoza. Crown Point participa con el 50% del working interest; el operador es Tango Energy Argentina S.A.',
+  lede_en      = 'Producing concession adjacent to Chañares Herrados, in central Mendoza. Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A.',
+  card_title_es = 'Crudo pesado',
+  card_title_en = 'Heavy crude',
+  chips        = '["Crudo pesado", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb,
+  body_es      = ARRAY[
+    'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza, colindante con la concesión Chañares Herrados. El operador es Tango Energy Argentina S.A. El bloque produce crudo pesado con infraestructura integrada en la zona.',
+    'El programa de workover 2026 contempla la intervención de pozos productores para incrementar la producción del área.'
+  ],
+  body_en      = ARRAY[
+    'Crown Point holds a 50% working interest in this block in the Cuyana Basin, Mendoza province, adjacent to the Chañares Herrados concession. Operator is Tango Energy Argentina S.A. The block produces heavy crude with integrated area infrastructure.',
+    'The 2026 workover program targets well interventions to increase production across the area.'
+  ],
+  stats        = '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"Crudo pesado / Heavy crude"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]'::jsonb,
+  map_stats    = '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Tipo","label_en":"Type","val":"Crudo pesado"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'::jsonb
+WHERE slug = 'ppc';
+
+-- El Tordillo (slug = 'tordillo')
+-- card_title: quitar 'con waterflood' | reorden: 3
+UPDATE operations_blocks SET
+  card_title_es = 'Producción consolidada',
+  card_title_en = 'Consolidated production',
+  orden         = 3,
+  eyebrow       = '03 · Golfo San Jorge · Chubut'
+WHERE slug = 'tordillo';
+
+-- Piedra Clavada (slug = 'piedra')
+-- body_es oficial | reorden: 4
+UPDATE operations_blocks SET
+  orden        = 4,
+  eyebrow      = '04 · Golfo San Jorge · Santa Cruz',
+  lede_es      = 'Concesión de explotación operada al 100% en la Cuenca San Jorge, provincia de Santa Cruz. Crown Point busca aumentar la producción mediante perforaciones, workovers y optimización de instalaciones.',
+  lede_en      = '100%-operated exploitation concession in the San Jorge Basin, Santa Cruz province. Crown Point targets production growth through drilling, workovers and facilities optimisation.',
+  body_es      = ARRAY[
+    'Crown Point tiene una participación operada del 100% en la Concesión de Explotación Piedra Clavada Koluel Kaike, que representa un total de 71.660 acres netos en la Cuenca San Jorge. La estrategia de Crown Point es aumentar la producción a través de perforaciones y workovers de pozos, y optimización de instalaciones.',
+    'El crudo se entrega a compradores locales conectados a la infraestructura de la Cuenca San Jorge en la provincia de Santa Cruz.'
+  ],
+  body_en      = ARRAY[
+    'Crown Point holds a 100% operated working interest in the Piedra Clavada Koluel Kaike Exploitation Concession, representing a total of 71,660 net acres in the San Jorge Basin. Crown Point''s strategy is to increase production through well drilling and workovers, and facilities optimisation.',
+    'Crude is delivered to local buyers connected to the San Jorge Basin infrastructure in Santa Cruz province.'
+  ]
+WHERE slug = 'piedra';
+
+-- Río Cullen · Las Violetas · La Angostura (slug = 'tdf')
+-- commodity: gas → mixed | body_es oficial | reorden: 5
+UPDATE operations_blocks SET
+  commodity    = 'mixed',
+  orden        = 5,
+  eyebrow      = '05 · Cuenca Austral · Tierra del Fuego',
+  lede_es      = 'Tres concesiones de explotación en la Cuenca Austral de Tierra del Fuego. Crown Point tiene una participación no operada del 48.3%, con producción de petróleo y gas.',
+  lede_en      = 'Three exploitation concessions in the Austral Basin of Tierra del Fuego. Crown Point holds a 48.3% non-operated working interest, producing oil and gas.',
+  chips        = '["48.3% WI", "Participación / Working interest", "Petróleo & Gas / Oil & Gas"]'::jsonb,
+  body_es      = ARRAY[
+    'Crown Point tiene una participación no operada del 48.3% en las 3 concesiones de explotación de Río Cullen, La Angostura y Las Violetas en la Cuenca Austral de Tierra del Fuego, lo que representa un total de 489,000 acres brutos (169,880 acres netos). La estrategia de Crown Point es aumentar la producción de sus activos en Tierra del Fuego mediante perforación de exploración y desarrollo, respaldada por una amplia cobertura sísmica 3D.',
+    'Las plantas de tratamiento están conectadas al sistema TGS para entrega de gas, y al oleoducto regional para crudo y condensado.'
+  ],
+  body_en      = ARRAY[
+    'Crown Point holds a 48.3% non-operated working interest in the 3 exploitation concessions of Río Cullen, La Angostura and Las Violetas in the Austral Basin of Tierra del Fuego, representing a total of 489,000 gross acres (169,880 net acres). Crown Point''s strategy is to grow production from its Tierra del Fuego assets through exploration and development drilling, supported by extensive 3D seismic coverage.',
+    'The processing plants are connected to the TGS gas pipeline system and to the regional crude and condensate pipeline.'
+  ]
+WHERE slug = 'tdf';
+
+-- Cerro de Los Leones (slug = 'cerro')
+-- Mover al final: orden 3 → 6
+UPDATE operations_blocks SET
+  orden   = 6,
+  eyebrow = '06 · Cuenca Neuquina · Exploratorio'
+WHERE slug = 'cerro';
