@@ -13,14 +13,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { nombre, email } = body
 
-    if (!email?.trim()) {
-      return NextResponse.json({ error: 'Email requerido' }, { status: 400 })
+    const emailVal = email?.trim().toLowerCase() ?? ''
+    if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+      return NextResponse.json({ error: 'Email inválido' }, { status: 400 })
     }
 
     const db = createSupabaseServerAdminClient()
     const { error } = await db.from('ir_subscribers').upsert({
-      nombre: (nombre ?? '').trim(),
-      email: email.trim().toLowerCase(),
+      nombre: (nombre ?? '').trim().slice(0, 200),
+      email: emailVal,
       activo: true,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'email' })
