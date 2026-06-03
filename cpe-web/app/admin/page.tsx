@@ -870,6 +870,7 @@ export default function AdminPage() {
               key={iframeKey}
               src="/"
               title="Vista previa del sitio"
+              sandbox="allow-scripts allow-same-origin allow-forms"
               style={{
                 width: '100%',
                 height: 'calc(100vh - 220px)',

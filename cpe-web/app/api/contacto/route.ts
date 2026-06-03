@@ -13,18 +13,22 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { tipo, nombre, organizacion, email, telefono, mensaje } = body
 
-    if (!nombre?.trim() || !email?.trim() || !mensaje?.trim()) {
+    const emailVal = email?.trim().toLowerCase() ?? ''
+    if (!nombre?.trim() || !emailVal || !mensaje?.trim()) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+      return NextResponse.json({ error: 'Email inválido' }, { status: 400 })
     }
 
     const db = createSupabaseServerAdminClient()
     const { error } = await db.from('contact_submissions').insert({
-      tipo: (tipo ?? '').trim(),
-      nombre: nombre.trim(),
-      organizacion: (organizacion ?? '').trim(),
-      email: email.trim(),
-      telefono: (telefono ?? '').trim(),
-      mensaje: mensaje.trim(),
+      tipo: (tipo ?? '').trim().slice(0, 50),
+      nombre: nombre.trim().slice(0, 200),
+      organizacion: (organizacion ?? '').trim().slice(0, 200),
+      email: emailVal,
+      telefono: (telefono ?? '').trim().slice(0, 50),
+      mensaje: mensaje.trim().slice(0, 5000),
     })
 
     if (error) {
