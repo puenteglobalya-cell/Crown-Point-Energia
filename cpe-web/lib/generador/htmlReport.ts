@@ -1,5 +1,14 @@
 import type { DatosIngresos } from '@/lib/parsers/ingresos'
 
+export interface MacroSnapshot {
+  points:     Array<{ label: string; hh: number; brent: number }>
+  prevPoints?: Array<{ label: string; hh: number; brent: number }>
+  hasHH:      boolean
+  hasBrent:   boolean
+  updatedAt:  string
+  prevUpdatedAt?: string
+}
+
 function f(n: number | null | undefined, d = 2): string {
   if (n == null || isNaN(n as number)) return '—'
   return (n as number).toFixed(d).replace('.', ',')
@@ -14,7 +23,7 @@ function j(v: number[], d = 4): string {
   return JSON.stringify(v.map(x => parseFloat(x.toFixed(d))))
 }
 
-export function generarReporteHTML(datos: DatosIngresos): string {
+export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot): string {
   const { areas, gas, mensual_historico } = datos
 
   const ingOilET   = areas.ET.ingreso
@@ -57,6 +66,36 @@ export function generarReporteHTML(datos: DatosIngresos): string {
   const fechaGen = new Date().toLocaleDateString('es-AR', {
     day: '2-digit', month: 'long', year: 'numeric'
   })
+
+  // ── Macro price projections (optional) ────────────────────────────────────
+  const hasMacro     = !!macro && (macro.hasHH || macro.hasBrent)
+  const macroLabels  = hasMacro ? JSON.stringify(macro!.points.map(p => p.label)) : '[]'
+  const macroBrentData = (hasMacro && macro!.hasBrent)
+    ? JSON.stringify(macro!.points.map(p => p.brent > 0 ? +p.brent.toFixed(2) : null)) : '[]'
+  const macroHHData  = (hasMacro && macro!.hasHH)
+    ? JSON.stringify(macro!.points.map(p => p.hh > 0 ? +p.hh.toFixed(3) : null)) : '[]'
+  const macroDate    = hasMacro
+    ? new Date(macro!.updatedAt).toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' })
+    : ''
+  const hasMacroPrev  = hasMacro && !!macro!.prevPoints?.some(p => p.hh > 0 || p.brent > 0)
+  const macroPrevDate = (hasMacroPrev && macro!.prevUpdatedAt)
+    ? new Date(macro!.prevUpdatedAt).toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' })
+    : ''
+  const macroPrevBrent = (hasMacroPrev && macro!.hasBrent)
+    ? JSON.stringify(macro!.prevPoints!.map(p => p.brent > 0 ? +p.brent.toFixed(2) : null)) : ''
+  const macroPrevHH  = (hasMacroPrev && macro!.hasHH)
+    ? JSON.stringify(macro!.prevPoints!.map(p => p.hh > 0 ? +p.hh.toFixed(3) : null)) : ''
+  const macroGridCols = (macro?.hasHH && macro?.hasBrent) ? '1fr 1fr' : '1fr'
+  const macroPrevNote = macroPrevDate ? ` · comparado con ${macroPrevDate}` : ''
+  // Pre-built prev dataset strings to avoid deep template literal nesting
+  const brentPrevDs  = macroPrevBrent
+    ? `,{label:'Anterior (${macroPrevDate})',data:${macroPrevBrent},borderColor:'rgba(130,188,0,.45)',backgroundColor:'transparent',borderDash:[5,4],tension:.35,pointRadius:0,borderWidth:1.5,fill:false}`
+    : ''
+  const hhPrevDs     = macroPrevHH
+    ? `,{label:'Anterior (${macroPrevDate})',data:${macroPrevHH},borderColor:'rgba(139,26,42,.40)',backgroundColor:'transparent',borderDash:[5,4],tension:.35,pointRadius:0,borderWidth:1.5,fill:false}`
+    : ''
+  const brentLegend  = macroPrevBrent ? 'true' : 'false'
+  const hhLegend     = macroPrevHH    ? 'true' : 'false'
 
   const oilProd = datos.oil_pct_prod > 0 ? datos.oil_pct_prod.toFixed(1) : null
   const gasProd = datos.gas_pct_prod > 0 ? datos.gas_pct_prod.toFixed(1) : null
@@ -412,6 +451,15 @@ ${hasPriceHistory ? `
 </div>
 ` : ''}
 
+${hasMacro ? `
+<div class="sec">Proyecciones de Precios — Próximos 12 Meses</div>
+<div style="display:grid;grid-template-columns:${macroGridCols};gap:20px;margin-bottom:8px">
+  ${macro!.hasBrent ? `<div class="card" style="padding:22px 20px"><div class="card-hdr">ICE Brent Crude <span class="card-hdr-val">USD/bbl · Last</span></div><div class="ch" style="height:200px"><canvas id="cMacroBrent"></canvas></div></div>` : ''}
+  ${macro!.hasHH ? `<div class="card" style="padding:22px 20px"><div class="card-hdr">Henry Hub Natural Gas <span class="card-hdr-val">USD/MMBtu · Prior Settle</span></div><div class="ch" style="height:200px"><canvas id="cMacroHH"></canvas></div></div>` : ''}
+</div>
+<p style="font-size:10px;color:var(--muted2);text-align:right;margin-bottom:32px">Futuros próximos 12 meses · ${macroDate}${macroPrevNote} · ICE Futures Europe + CME Group</p>
+` : ''}
+
 <div class="footer">Crown Point Energía &middot; Generado ${fechaGen}</div>
 </div><!-- /wrap -->
 
@@ -634,6 +682,12 @@ new Chart(document.getElementById('cPrecios'),{
     }
   }]
 });
+` : ''}
+
+${hasMacro ? `
+const _mL=${macroLabels};
+${macro!.hasBrent ? `new Chart(document.getElementById('cMacroBrent'),{type:'line',data:{labels:_mL,datasets:[{label:'Actual',data:${macroBrentData},borderColor:'#82BC00',backgroundColor:'rgba(130,188,0,.12)',tension:.35,pointRadius:3.5,pointHoverRadius:5.5,pointBackgroundColor:'#82BC00',borderWidth:2.5,fill:true}${brentPrevDs}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:${brentLegend},labels:{font:{size:10},usePointStyle:true,color:C.muted}},tooltip:{...tip,callbacks:{label:c=>\`  \${c.dataset.label}: \${c.parsed.y?.toFixed(2)} USD/bbl\`}}},scales:{x:{grid:{color:C.bg2},ticks:{font:{family:"'JetBrains Mono'",size:10.5},color:C.muted,maxRotation:40}},y:{grid:{color:C.bg2},ticks:{callback:v=>\`\$\${Number(v).toFixed(0)}\`,font:{family:"'JetBrains Mono'",size:10.5},color:C.muted}}}}});` : ''}
+${macro!.hasHH ? `new Chart(document.getElementById('cMacroHH'),{type:'line',data:{labels:_mL,datasets:[{label:'Actual',data:${macroHHData},borderColor:'#8B1A2A',backgroundColor:'rgba(139,26,42,.08)',tension:.35,pointRadius:3.5,pointHoverRadius:5.5,pointBackgroundColor:'#8B1A2A',borderWidth:2.5,fill:true}${hhPrevDs}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:${hhLegend},labels:{font:{size:10},usePointStyle:true,color:C.muted}},tooltip:{...tip,callbacks:{label:c=>\`  \${c.dataset.label}: \${c.parsed.y?.toFixed(3)} USD/MMBtu\`}}},scales:{x:{grid:{color:C.bg2},ticks:{font:{family:"'JetBrains Mono'",size:10.5},color:C.muted,maxRotation:40}},y:{grid:{color:C.bg2},ticks:{callback:v=>\`\$\${Number(v).toFixed(2)}\`,font:{family:"'JetBrains Mono'",size:10.5},color:C.muted}}}}});` : ''}
 ` : ''}
 
 </script>

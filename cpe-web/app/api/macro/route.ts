@@ -111,54 +111,78 @@ function next12Labels(): string[] {
   return labels
 }
 
-async function findLatestMacro(
+type MacroRow = { datos: unknown; created_at: string }
+
+async function findMacroRecords(
   db: ReturnType<typeof createSupabaseServerAdminClient>,
   typeId: string,
   source: string,
-) {
-  // Primary: look by type_id (new uploads)
+): Promise<MacroRow[]> {
+  // Primary: look by type_id — fetch up to 2 for comparison support
   const { data: byType } = await db.from('reportes')
     .select('datos, created_at').eq('type_id', typeId)
-    .order('created_at', { ascending: false }).limit(1).maybeSingle()
-  if (byType?.datos) return byType
+    .order('created_at', { ascending: false }).limit(2)
+  if (byType?.length) return byType as MacroRow[]
 
   // Fallback: look by datos.source JSONB field (old uploads saved as type 'ingresos')
   const { data: bySource } = await db.from('reportes')
     .select('datos, created_at').eq('datos->>source', source)
-    .order('created_at', { ascending: false }).limit(1).maybeSingle()
-  return bySource ?? null
+    .order('created_at', { ascending: false }).limit(2)
+  return (bySource ?? []) as MacroRow[]
+}
+
+function buildPointMap(row: MacroRow | undefined): Map<string, number> {
+  return new Map(
+    ((row?.datos as DatosMacro)?.points ?? []).map(p => [p.label, p.price])
+  )
 }
 
 export async function GET() {
   // ── 1. Try manual uploads stored in DB ───────────────────────
   try {
     const db = createSupabaseServerAdminClient()
-    const [hhRec, brentRec] = await Promise.all([
-      findLatestMacro(db, 'henry_hub', 'hh'),
-      findLatestMacro(db, 'ice_brent', 'brent'),
+    const [hhRecs, brentRecs] = await Promise.all([
+      findMacroRecords(db, 'henry_hub', 'hh'),
+      findMacroRecords(db, 'ice_brent', 'brent'),
     ])
 
+    const hhRec    = hhRecs[0]
+    const hhPrev   = hhRecs[1]
+    const brentRec = brentRecs[0]
+    const brentPrev= brentRecs[1]
+
     if (hhRec?.datos || brentRec?.datos) {
-      const hhMap  = new Map<string, number>(
-        ((hhRec?.datos as DatosMacro)?.points ?? []).map(p => [p.label, p.price])
-      )
-      const brentMap = new Map<string, number>(
-        ((brentRec?.datos as DatosMacro)?.points ?? []).map(p => [p.label, p.price])
-      )
-      const labels = next12Labels()
+      const hhMap    = buildPointMap(hhRec)
+      const brentMap = buildPointMap(brentRec)
+      const labels   = next12Labels()
       const points: MacroPoint[] = labels.map(label => ({
         label,
         hh:    hhMap.get(label) ?? 0,
         brent: brentMap.get(label) ?? 0,
       }))
+
+      // Build previous-upload points for comparison
+      const hhPrevMap    = buildPointMap(hhPrev)
+      const brentPrevMap = buildPointMap(brentPrev)
+      const prevPoints: MacroPoint[] = labels.map(label => ({
+        label,
+        hh:    hhPrevMap.get(label) ?? 0,
+        brent: brentPrevMap.get(label) ?? 0,
+      }))
+      const hasPrev = prevPoints.some(p => p.hh > 0 || p.brent > 0)
+
       const updatedAt = [hhRec?.created_at, brentRec?.created_at]
         .filter(Boolean).sort().reverse()[0] ?? new Date().toISOString()
+      const prevUpdatedAt = [hhPrev?.created_at, brentPrev?.created_at]
+        .filter(Boolean).sort().reverse()[0]
+
       return NextResponse.json({
         points,
         hasHH:    points.some(p => p.hh > 0),
         hasBrent: points.some(p => p.brent > 0),
         updatedAt,
         source: 'manual',
+        ...(hasPrev ? { prevPoints, prevUpdatedAt } : {}),
       })
     }
   } catch { /* DB unavailable — fall through to live fetch */ }

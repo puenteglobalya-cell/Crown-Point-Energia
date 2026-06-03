@@ -5,9 +5,11 @@ import type { MacroPoint } from '@/app/api/macro/route'
 
 type MacroData = {
   points: MacroPoint[]
+  prevPoints?: MacroPoint[]
   hasHH: boolean
   hasBrent: boolean
   updatedAt: string
+  prevUpdatedAt?: string
   source?: 'manual' | 'live'
 }
 
@@ -53,13 +55,16 @@ function winterBandPlugin(labels: string[]): any {
   }
 }
 
-function buildChartOptions(color: string, yLabel: string, decimals: number) {
+function buildChartOptions(color: string, yLabel: string, decimals: number, showLegend = false) {
   return {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: showLegend,
+        labels: { font: { size: 10 }, usePointStyle: true, color: '#9490A8' },
+      },
       tooltip: {
         backgroundColor: 'rgba(20,23,46,.93)',
         padding: 10,
@@ -92,7 +97,7 @@ function buildChartOptions(color: string, yLabel: string, decimals: number) {
 // ── Sub-component: single chart card ──────────────────────────────────────────
 function MacroCard({
   eyebrow, title, points, valueKey, color, fillColor, yLabel, decimals,
-  extraPlugins = [], note,
+  extraPlugins = [], note, prevPoints, prevDate,
 }: {
   eyebrow: string
   title: string
@@ -105,6 +110,8 @@ function MacroCard({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   extraPlugins?: any[]
   note?: React.ReactNode
+  prevPoints?: MacroPoint[]
+  prevDate?: string
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -114,36 +121,52 @@ function MacroCard({
     if (!canvasRef.current || !points.length) return
     import('chart.js/auto').then(({ default: Chart }) => {
       if (inst.current) { inst.current.destroy(); inst.current = null }
-      const labels = points.map(p => p.label)
-      const data   = points.map(p => p[valueKey] || null)
+      const labels   = points.map(p => p.label)
+      const data     = points.map(p => p[valueKey] || null)
+      const prevData = prevPoints?.map(p => p[valueKey] > 0 ? p[valueKey] : null) ?? []
+      const hasPrev  = prevData.some(v => v != null)
 
       inst.current = new Chart(canvasRef.current!, {
         type: 'line',
         plugins: extraPlugins,
         data: {
           labels,
-          datasets: [{
-            data,
-            borderColor: fillColor,
-            backgroundColor: (ctx: any) => {  // eslint-disable-line @typescript-eslint/no-explicit-any
-              const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 185)
-              g.addColorStop(0, fillColor + '28')
-              g.addColorStop(1, fillColor + '04')
-              return g
+          datasets: [
+            {
+              label: 'Actual',
+              data,
+              borderColor: fillColor,
+              backgroundColor: (ctx: any) => {  // eslint-disable-line @typescript-eslint/no-explicit-any
+                const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 185)
+                g.addColorStop(0, fillColor + '28')
+                g.addColorStop(1, fillColor + '04')
+                return g
+              },
+              tension: 0.35,
+              pointRadius: 3.5,
+              pointHoverRadius: 5.5,
+              pointBackgroundColor: fillColor,
+              borderWidth: 2.5,
+              fill: true,
             },
-            tension: 0.35,
-            pointRadius: 3.5,
-            pointHoverRadius: 5.5,
-            pointBackgroundColor: fillColor,
-            borderWidth: 2.5,
-            fill: true,
-          }],
+            ...(hasPrev ? [{
+              label: prevDate ?? 'Anterior',
+              data: prevData,
+              borderColor: fillColor + '60',
+              backgroundColor: 'transparent',
+              borderDash: [5, 4],
+              tension: 0.35,
+              pointRadius: 0,
+              borderWidth: 1.5,
+              fill: false,
+            }] : []),
+          ],
         },
-        options: buildChartOptions(color, yLabel, decimals),
+        options: buildChartOptions(color, yLabel, decimals, hasPrev),
       })
     })
     return () => { if (inst.current) { inst.current.destroy(); inst.current = null } }
-  }, [points, valueKey, color, fillColor, yLabel, decimals, extraPlugins])
+  }, [points, prevPoints, prevDate, valueKey, color, fillColor, yLabel, decimals, extraPlugins])
 
   const valid = points.filter(p => p[valueKey] > 0)
   const m1    = valid[0]?.[valueKey] ?? 0
@@ -191,9 +214,10 @@ function MacroCard({
 
 // ── Main widget ───────────────────────────────────────────────────────────────
 export function MacroWidget() {
-  const [data, setData] = useState<MacroData | null>(null)
-  const [err,  setErr]  = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [data, setData]       = useState<MacroData | null>(null)
+  const [err,  setErr]        = useState(false)
+  const [copied, setCopied]   = useState(false)
+  const [showPrev, setShowPrev] = useState(false)
 
   useEffect(() => {
     fetch('/api/macro', { cache: 'no-store' })
@@ -254,6 +278,15 @@ td{padding:6px 12px;border-bottom:1px solid #eee}
             {data.source === 'manual' ? ' · carga manual' : ' · 10–15 min delay'}
           </span>
         )}
+        {data?.prevPoints?.some(p => p.hh > 0 || p.brent > 0) && (
+          <button
+            onClick={() => setShowPrev(v => !v)}
+            className="btn"
+            style={{ fontSize: 11, padding: '3px 10px', marginLeft: 4, color: showPrev ? 'var(--cp-positive,#2C7A5B)' : undefined }}
+          >
+            {showPrev ? '✓ ' : ''}vs anterior
+          </button>
+        )}
       </div>
 
       {/* Loading */}
@@ -286,6 +319,10 @@ td{padding:6px 12px;border-bottom:1px solid #eee}
                 fillColor={C_BRENT_FILL}
                 yLabel="USD/bbl"
                 decimals={2}
+                prevPoints={showPrev ? (data.prevPoints ?? []) : []}
+                prevDate={showPrev && data.prevUpdatedAt
+                  ? new Date(data.prevUpdatedAt).toLocaleDateString('es-AR')
+                  : undefined}
               />
             )}
             {data.hasHH && (
@@ -300,6 +337,10 @@ td{padding:6px 12px;border-bottom:1px solid #eee}
                 decimals={3}
                 extraPlugins={[winterBandPlugin(points.map(p => p.label))]}
                 note={<>❄ Dic–Feb: precio de invierno<br />(demanda estacional EEUU)</>}
+                prevPoints={showPrev ? (data.prevPoints ?? []) : []}
+                prevDate={showPrev && data.prevUpdatedAt
+                  ? new Date(data.prevUpdatedAt).toLocaleDateString('es-AR')
+                  : undefined}
               />
             )}
           </div>
