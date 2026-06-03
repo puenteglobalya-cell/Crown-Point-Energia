@@ -9,12 +9,12 @@ INSERT INTO team_members
 VALUES
   -- ── Management ─────────────────────────────────────────────────────────────
   (
-    'Brian Moss',
-    'Presidente – CEO Interino',
-    'President – Interim CEO',
-    'Dr. Moss tiene más de 20 años de experiencia en la industria argentina del petróleo y gas, ocupando puestos de alto nivel centrados en América Latina en Alberta Energy Company, Rio Alto y Antrim Energy antes de unirse a Crown Point. En total, Brian cuenta con más de 35 años de experiencia en la industria del petróleo y el gas en empresas públicas y privadas. El Dr. Moss cuenta con un conjunto de habilidades comerciales, en exploración y desarrollo y ha construido y administrado exitosamente operaciones en las cuencas San Jorge, Austral, Neuquén y Noroeste. El Dr. Moss tiene un Doctorado en Geología del Petróleo de la Royal School of Mines, Universidad de Londres, Reino Unido y es miembro de la Asociación Profesional de Ingenieros, Geólogos y Geofísicos de Alberta.',
-    'Dr. Moss has over 20 years of experience in the Argentine oil and gas industry, holding senior Latin America-focused positions at Alberta Energy Company, Rio Alto and Antrim Energy before joining Crown Point. In total, Brian has over 35 years of experience in the oil and gas industry across public and private companies. Dr. Moss brings a commercial, exploration and development skill set and has successfully built and managed operations in the San Jorge, Austral, Neuquén and Northwest basins. Dr. Moss holds a PhD in Petroleum Geology from the Royal School of Mines, University of London, UK, and is a member of the Professional Association of Engineers, Geologists and Geophysicists of Alberta.',
-    'BM',
+    'Mauricio Orue',
+    'Gerente General',
+    'General Manager',
+    'Ingeniero Industrial con sólida trayectoria en la industria petrolera y gasífera, especializado en gestión de operaciones, proyectos y liderazgo de equipos. Cuenta con más de 20 años de experiencia en compañías líderes del sector (YPF y PAE), ocupando posiciones gerenciales en áreas de Upstream, Ingeniería, Construcciones y Operaciones. Reside en Comodoro Rivadavia, Provincia de Chubut.',
+    'Industrial Engineer with a strong track record in the oil and gas industry, specializing in operations management, projects and team leadership. He has over 20 years of experience at leading sector companies (YPF and PAE), holding management positions in Upstream, Engineering, Construction and Operations. Based in Comodoro Rivadavia, Chubut Province.',
+    'MO',
     'linear-gradient(135deg,#1A2B4C,#2E4878)',
     'management',
     '',

@@ -194,8 +194,8 @@ export default async function HomePage() {
                 </div>
                 <span className="kpi-meta">
                   <span className="badge" data-cpe-field="kpi.production.delta">{kpiProdDelta}</span>
-                  <span className="lang-es">incluye El Tordillo</span>
-                  <span className="lang-en">incl. El Tordillo</span>
+                  <span className="lang-es">86% petróleo · 14% gas</span>
+                  <span className="lang-en">86% oil · 14% gas</span>
                 </span>
               </div>
               <div className="kpi">

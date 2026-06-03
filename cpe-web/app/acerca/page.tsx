@@ -63,6 +63,21 @@ export default async function AcercaPage() {
         .director-list li:last-child { border-bottom: 0; }
         .director-list strong { font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--fg); letter-spacing: -0.01em; }
         .director-list span { font-size: 12px; color: var(--fg-muted); letter-spacing: 0.06em; text-transform: uppercase; }
+        .mvp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4); margin-top: var(--s-6); }
+        @media (max-width: 720px) { .mvp-grid { grid-template-columns: 1fr; } }
+        .mvp-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-lg); padding: var(--s-5) var(--s-6); }
+        .mvp-card h4 { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin: 0 0 var(--s-3); }
+        .mvp-card p, .mvp-card ul { font-size: 14px; line-height: 1.65; color: var(--fg-soft); margin: 0; padding: 0; list-style: none; }
+        .mvp-card ul li { padding: 4px 0; border-bottom: 1px solid var(--rule); }
+        .mvp-card ul li:last-child { border-bottom: 0; }
+        .advantages-list { list-style: none; padding: 0; margin: var(--s-5) 0 0; display: flex; flex-direction: column; gap: 0; }
+        .advantages-list li { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; color: var(--fg-soft); padding: 12px 0; border-bottom: 1px solid var(--rule); }
+        .advantages-list li:last-child { border-bottom: 0; }
+        .advantages-list li::before { content: '→'; color: var(--accent); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+        .timeline { list-style: none; padding: 0; margin: var(--s-6) 0 0; }
+        .timeline li { display: flex; gap: var(--s-5); padding: 12px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--fg-soft); line-height: 1.5; }
+        .timeline li:last-child { border-bottom: 0; }
+        .timeline__year { font-family: var(--font-mono); font-size: 13px; color: var(--accent); font-weight: 600; min-width: 72px; flex-shrink: 0; padding-top: 1px; }
       `}</style>
 
       <section
@@ -93,13 +108,77 @@ export default async function AcercaPage() {
             <aside className="left-rail">
               <h4><span className="lang-es">En esta página</span><span className="lang-en">On this page</span></h4>
               <nav>
-                <a href="#estrategia" className="active"><span className="lang-es">Estrategia</span><span className="lang-en">Strategy</span></a>
+                <a href="#nosotros" className="active"><span className="lang-es">Quiénes somos</span><span className="lang-en">Who we are</span></a>
+                <a href="#estrategia"><span className="lang-es">Estrategia</span><span className="lang-en">Strategy</span></a>
+                <a href="#evolucion"><span className="lang-es">Evolución</span><span className="lang-en">History</span></a>
                 <a href="#management">Management</a>
                 <a href="#directorio"><span className="lang-es">Directorio CPE Inc.</span><span className="lang-en">CPE Inc. Board</span></a>
                 <Link href="/esg"><span className="lang-es">ESG &amp; Responsabilidad corporativa</span><span className="lang-en">ESG &amp; Corporate responsibility</span></Link>
               </nav>
             </aside>
             <main>
+              {/* ── Quiénes somos ── */}
+              <div className="section-block" id="nosotros">
+                <span className="eyebrow">Crown Point Energy</span>
+                <h2 style={{ marginTop: 8 }}>
+                  <span className="lang-es">Quiénes somos</span>
+                  <span className="lang-en">Who we are</span>
+                </h2>
+                <p className="lede">
+                  <span className="lang-es">
+                    Crown Point Energía S.A. es una empresa dedicada a la exploración y explotación de hidrocarburos en territorio argentino, 100% propiedad de Crown Point Energy Inc. (listada en el TSXV bajo el símbolo CWV), cuyo accionista controlante es de capitales argentinos.
+                  </span>
+                  <span className="lang-en">
+                    Crown Point Energía S.A. is a company dedicated to the exploration and production of hydrocarbons in Argentina, 100% owned by Crown Point Energy Inc. (listed on the TSXV under the symbol CWV), whose controlling shareholder is Argentine capital.
+                  </span>
+                </p>
+                <div className="mvp-grid">
+                  <div className="mvp-card">
+                    <h4><span className="lang-es">Misión</span><span className="lang-en">Mission</span></h4>
+                    <p>
+                      <span className="lang-es">Generar valor para los accionistas haciendo un uso racional de los recursos, estableciendo relaciones a largo plazo y contribuyendo a mejorar la calidad de vida de las comunidades donde operamos y nuestros socios estratégicos.</span>
+                      <span className="lang-en">Generate value for shareholders through the rational use of resources, building long-term relationships and contributing to improve the quality of life of the communities where we operate and our strategic partners.</span>
+                    </p>
+                  </div>
+                  <div className="mvp-card">
+                    <h4><span className="lang-es">Visión</span><span className="lang-en">Vision</span></h4>
+                    <p>
+                      <span className="lang-es">Ser una compañía del sector energético, reconocida por su calidad de gestión y el respeto y cuidado del medio ambiente.</span>
+                      <span className="lang-en">Be an energy sector company recognized for its management quality and its respect and care for the environment.</span>
+                    </p>
+                  </div>
+                  <div className="mvp-card">
+                    <h4><span className="lang-es">Principios</span><span className="lang-en">Principles</span></h4>
+                    <ul>
+                      <li><span className="lang-es">Ética y responsabilidad en las decisiones</span><span className="lang-en">Ethics and responsibility in decisions</span></li>
+                      <li><span className="lang-es">Transparencia y acceso a la información</span><span className="lang-en">Transparency and access to information</span></li>
+                      <li><span className="lang-es">Trabajo en equipo</span><span className="lang-en">Teamwork</span></li>
+                    </ul>
+                  </div>
+                </div>
+                <div style={{ marginTop: 'var(--s-6)' }}>
+                  <span style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: 'var(--fg-muted)' }}>
+                    <span className="lang-es">Ventajas competitivas</span>
+                    <span className="lang-en">Competitive advantages</span>
+                  </span>
+                  <ul className="advantages-list">
+                    <li>
+                      <span className="lang-es">Fuerte compromiso del accionista controlante</span>
+                      <span className="lang-en">Strong commitment from the controlling shareholder</span>
+                    </li>
+                    <li>
+                      <span className="lang-es">Alto conocimiento y experiencia en Argentina del accionista y management</span>
+                      <span className="lang-en">Deep knowledge and experience in Argentina from both shareholders and management</span>
+                    </li>
+                    <li>
+                      <span className="lang-es">Rápida capacidad de respuesta</span>
+                      <span className="lang-en">Fast response capacity</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* ── Estrategia ── */}
               <div className="section-block" id="estrategia">
                 <span className="eyebrow"><span className="lang-es">Estrategia</span><span className="lang-en">Strategy</span></span>
                 <h2 style={{ marginTop: 8 }}>
@@ -107,8 +186,8 @@ export default async function AcercaPage() {
                   <span className="lang-en">Disciplined growth<br/>with real assets.</span>
                 </h2>
                 <p className="lede">
-                  <span className="lang-es">La estrategia de Crown Point se centra en establecer una cartera de activos en producción, además de oportunidades de exploración y mejora de la producción actual en sus yacimientos.</span>
-                  <span className="lang-en">Crown Point&apos;s strategy focuses on building a portfolio of production assets, along with exploration opportunities and improvement of current production at its fields.</span>
+                  <span className="lang-es">Establecer una cartera de activos de bajo riesgo generadores de un flujo de caja positivo con el fin de garantizar un crecimiento orgánico que facilite y se complemente con un crecimiento inorgánico.</span>
+                  <span className="lang-en">Build a portfolio of low-risk assets that generate positive cash flow in order to guarantee organic growth that facilitates and complements inorganic growth.</span>
                 </p>
                 <div className="strat-grid">
                   {strategyCards.map(c => (
@@ -127,12 +206,42 @@ export default async function AcercaPage() {
                 </div>
               </div>
 
+              {/* ── Evolución de la Compañía ── */}
+              <div className="section-block" id="evolucion">
+                <span className="eyebrow"><span className="lang-es">Historia</span><span className="lang-en">History</span></span>
+                <h2 style={{ marginTop: 8 }}>
+                  <span className="lang-es">Evolución de la Compañía</span>
+                  <span className="lang-en">Company milestones</span>
+                </h2>
+                <ol className="timeline">
+                  {[
+                    { year: '2005',      es: 'Creación de Crown Point Energía',                                                                        en: 'Crown Point Energía founded' },
+                    { year: '2010',      es: 'Adquisición de Antrim Energy Ltd.',                                                                      en: 'Acquisition of Antrim Energy Ltd.' },
+                    { year: '2014–2015', es: 'Ingreso de Liminar Energía S.A. como accionista mayoritario en Crown Point Energy Inc.',                 en: 'Liminar Energía S.A. joins as majority shareholder of Crown Point Energy Inc.' },
+                    { year: '2014–2017', es: 'Puesta en valor: evaluación, cambio de management, reducción de costos y nuevo modelo de negocio',       en: 'Value creation: evaluation, management change, cost reduction and new business model' },
+                    { year: '2017–2019', es: 'Incremento al 34,74% de la participación en la UTE RCLV — Provincia de Tierra del Fuego',               en: 'Increase to 34.74% in the RCLV JV — Tierra del Fuego Province' },
+                    { year: '2021',      es: 'Adquisición del 50% de participación en la UTE Chañares Herrados — Provincia de Mendoza',               en: 'Acquisition of 50% stake in Chañares Herrados JV — Mendoza Province' },
+                    { year: '2021',      es: 'Ingreso al régimen de oferta pública CNV',                                                              en: 'Listed on the CNV public offering regime' },
+                    { year: '2022',      es: 'Adquisición del 50% de participación en Puesto Pozo Cercado Oriental — Provincia de Mendoza',           en: 'Acquisition of 50% stake in Puesto Pozo Cercado Oriental — Mendoza Province' },
+                    { year: '2024',      es: 'Adquisición del 100% de Piedra Clavada y Koluel Kaike — Provincia de Santa Cruz',                      en: 'Acquisition of 100% of Piedra Clavada and Koluel Kaike — Santa Cruz Province' },
+                    { year: '2024',      es: 'Incremento al 48,33% de la participación en la UTE RCLV — Provincia de Tierra del Fuego',               en: 'Increase to 48.33% in the RCLV JV — Tierra del Fuego Province' },
+                    { year: '2025',      es: 'Adquisición del 95% de El Tordillo, La Tapera y Puesto Quiroga — Provincia de Chubut',                 en: 'Acquisition of 95% of El Tordillo, La Tapera and Puesto Quiroga — Chubut Province' },
+                  ].map((e, i) => (
+                    <li key={i}>
+                      <span className="timeline__year">{e.year}</span>
+                      <span><span className="lang-es">{e.es}</span><span className="lang-en">{e.en}</span></span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              {/* ── Management ── */}
               <div className="section-block" id="management">
                 <span className="eyebrow">Management</span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Equipo ejecutivo</span><span className="lang-en">Executive team</span></h2>
                 <p className="lede">
-                  <span className="lang-es">Profesionales con más de 25 años de experiencia en upstream argentino y mercados de capitales canadienses.</span>
-                  <span className="lang-en">Professionals with over 25 years of experience in Argentine upstream and Canadian capital markets.</span>
+                  <span className="lang-es">Profesionales con más de 20 años de experiencia en upstream argentino y mercados de capitales canadienses.</span>
+                  <span className="lang-en">Professionals with over 20 years of experience in Argentine upstream and Canadian capital markets.</span>
                 </p>
                 <ul className="people-grid">
                   {management.map(p => (

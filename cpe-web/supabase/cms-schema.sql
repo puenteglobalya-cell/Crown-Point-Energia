@@ -72,9 +72,9 @@ INSERT INTO cms_sections (key, visible) VALUES
 ON CONFLICT (key) DO NOTHING;
 
 INSERT INTO cms_fields (key, value_es, value_en) VALUES
-  ('kpi.production.value', '3,090',   '3,090'),
+  ('kpi.production.value', '8,672',   '8,672'),
   ('kpi.production.unit',  'boe/d',   'boe/d'),
-  ('kpi.production.delta', '+8% YoY', '+8% YoY'),
+  ('kpi.production.delta', '1Q 2026', '1Q 2026'),
   ('kpi.reserves.value',   '36.996',       '36.996'),
   ('kpi.reserves.unit',    'MMboe',        'MMboe'),
   ('kpi.reserves.delta',   'P1 Sproule',   'P1 Sproule'),
