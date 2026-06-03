@@ -26,6 +26,9 @@ export function toLabel(raw: unknown): string | null {
   if (c) { const a = MES_EN[c[1]] ?? MES_ES[c[1]]; return a ? `${a}-${c[2]}` : null }
   const l = s.match(/^([A-Z]+)\s+(\d{4})$/)
   if (l) { const a = MES_EN[l[1]] ?? MES_ES[l[1]]; return a ? `${a}-${l[2].slice(-2)}` : null }
+  // ICE Brent format: "AUG 26" (3-letter month + space + 2-digit year)
+  const s2 = s.match(/^([A-Z]{3})\s+(\d{2})$/)
+  if (s2) { const a = MES_EN[s2[1]] ?? MES_ES[s2[1]]; return a ? `${a}-${s2[2]}` : null }
   const f = s.match(/^([A-Z]{3})-(\d{2})$/)
   if (f) { const a = MES_EN[f[1]] ?? MES_ES[f[1]]; return a ? `${a}-${f[2]}` : null }
   return null
