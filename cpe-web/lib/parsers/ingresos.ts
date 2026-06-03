@@ -39,6 +39,9 @@ export interface AreaOil {
   stock_m3?: number
   stock_dias?: number
   stock_us?: number
+  in_kind_bbl?: number
+  in_kind_pct?: number
+  in_kind_us?: number
   brent_ref?: number
   brent_1q?: number
   brent_2q?: number
@@ -216,6 +219,10 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   const stockUs    = buscarFila(detalle, /^us\$/)
   const stockDias  = buscarFila(detalle, 'Stock en días')
 
+  const inkindBbl = buscarFila(detalle, 'In kind en bbl mes')
+  const inkindPct = buscarFila(detalle, 'In kind / producción')
+  const inkindUs  = buscarFila(detalle, 'In kind valorizado')
+
   const gasProd = buscarFila(detalle, /Neto.*Gas|Gas.*Neto/, true)
   const gasPrec = buscarFila(detalle, /us.*mcf|mcf.*us/, true)
 
@@ -344,6 +351,9 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
         stock_m3:      stockM3?.[3]    ?? 0,
         stock_dias:    stockDias?.[3]  ?? 0,
         stock_us:      stockUs?.[3]    ?? 0,
+        in_kind_bbl:   inkindBbl?.[3]  ?? undefined,
+        in_kind_pct:   inkindPct?.[3]  ?? undefined,
+        in_kind_us:    inkindUs?.[3]   ?? undefined,
       },
       CH: {
         prod_100_m3d:  prod100?.[4]    ?? 0,

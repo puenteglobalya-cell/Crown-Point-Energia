@@ -378,6 +378,10 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     ${areas.PCKK.stock_m3 ? `
     <div class="arow"><span class="albl">Stock mes siguiente (m³)</span><span class="aval mu">${fN(areas.PCKK.stock_m3)} / ${f(areas.PCKK.stock_dias ?? 0, 1)}d</span></div>
     <div class="arow"><span class="albl">Stock valorizado (us$)</span><span class="aval mu">${fN(areas.PCKK.stock_us ?? 0)}</span></div>` : ''}
+    ${areas.PCKK.in_kind_bbl != null ? `
+    <div class="arow" style="margin-top:6px"><span class="albl">In kind (bbl/mes)</span><span class="aval mu">${fN(Math.abs(areas.PCKK.in_kind_bbl))}</span></div>
+    <div class="arow"><span class="albl">In kind / producción</span><span class="aval mu">${f(Math.abs(areas.PCKK.in_kind_pct ?? 0) * 100, 2)}%</span></div>
+    <div class="arow"><span class="albl">In kind valorizado (us$)</span><span class="aval mu">${fN(Math.abs(areas.PCKK.in_kind_us ?? 0))}</span></div>` : ''}
     <div class="abr"><div class="abr-f" style="width:${pct(ingOilPCKK)}%"></div></div>
   </div>
 
