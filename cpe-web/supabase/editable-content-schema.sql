@@ -130,20 +130,20 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
   'chanares', 2, 'oil',
   '02 · Cuenca Cuyana',
   'Chañares Herrados',
-  'Concesión productiva en el centro de Mendoza, con crudo liviano (38° API) e infraestructura propia conectada al oleoducto Allanito–Luján de Cuyo.',
-  'Producing concession in central Mendoza, light crude (38° API) with proprietary infrastructure connected to the Allanito–Luján de Cuyo oil pipeline.',
+  'Concesión productiva en el centro de Mendoza, con crudo liviano (38° API). Crown Point participa con el 50% del working interest; el operador es Tango Energy Argentina S.A.',
+  'Producing concession in central Mendoza, light crude (38° API). Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A.',
   'Crudo liviano premium', 'Premium light crude',
-  '["75.8% WI", "Operador / Operator", "38° API"]',
+  '["50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]',
   ARRAY[
-    'Crown Point opera el bloque desde 2014 con una participación del 75,8%. El bloque ha mantenido una producción promedio de 380 boe/d con un declino natural anual menor al 8%.',
-    'El programa de workover 2026 contempla la intervención de 6 pozos productores y la perforación de 2 pozos infill, con un objetivo de incremento de 180 boe/d.'
+    'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza. El operador es Tango Energy Argentina S.A. El bloque produce crudo liviano de 38° API con infraestructura conectada al oleoducto Allanito–Luján de Cuyo.',
+    'El programa de workover 2026 contempla la intervención de pozos productores con un objetivo de incremento de producción.'
   ],
   ARRAY[
-    'Crown Point has operated the block since 2014 with a 75.8% interest. Average production of 380 boe/d with an annual natural decline below 8%.',
-    'The 2026 workover program plans 6 well interventions and 2 infill wells, with a 180 boe/d uplift target.'
+    'Crown Point holds a 50% working interest in this block located in the Cuyana Basin, Mendoza province. Operator is Tango Energy Argentina S.A. The block produces 38° API light crude with infrastructure connected to the Allanito–Luján de Cuyo pipeline.',
+    'The 2026 workover program targets well interventions for production uplift.'
   ],
-  '[{"label_es":"Pozos productores","label_en":"Producing wells","val":"14"},{"label_es":"Producción neta","label_en":"Net production","val":"288 boe/d"},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"38° API"},{"label_es":"Punto de equilibrio","label_en":"Breakeven","val":"US$32/bbl"},{"label_es":"Vencimiento","label_en":"Expiry","val":"2037"}]',
-  '[{"label_es":"WI","label_en":"WI","val":"75.8%"},{"label_es":"Producción neta","label_en":"Net production","val":"288 boe/d"},{"label_es":"Calidad","label_en":"Quality","val":"38° API"},{"label_es":"Vencimiento","label_en":"Expiry","val":"2037"}]'
+  '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"38° API"},{"label_es":"Superficie","label_en":"Acreage","val":"5,040 acres · 21 km²"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]',
+  '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Calidad","label_en":"Quality","val":"38° API"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'
 ),
 (
   'cerro', 3, 'oil',
@@ -168,20 +168,20 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
   'tordillo', 4, 'mixed',
   '04 · Golfo San Jorge · Chubut',
   'El Tordillo · La Tapera · Puesto Quiroga',
-  'Tres concesiones contiguas en el flanco norte de la Cuenca del Golfo San Jorge, provincia de Chubut. El bloque productivo más grande de Crown Point por volumen.',
-  'Three contiguous concessions on the northern flank of the San Jorge Gulf Basin, Chubut province. Crown Point''s largest producing block by volume.',
+  'Tres concesiones contiguas en el flanco norte de la Cuenca del Golfo San Jorge, provincia de Chubut. Crown Point opera con el 95% del working interest. El bloque productivo más grande de la compañía.',
+  'Three contiguous concessions on the northern flank of the San Jorge Gulf Basin, Chubut province. Crown Point operates with a 95% working interest. The company''s largest producing block.',
   'Producción consolidada con waterflood', 'Consolidated production with waterflood',
-  '["22.5% WI", "Operador / Operator", "Crudo & Gas / Oil & Gas"]',
+  '["95% WI", "Operador / Operator", "Crudo & Gas / Oil & Gas"]',
   ARRAY[
-    'Tres áreas operadas conjuntamente — El Tordillo, La Tapera y Puesto Quiroga — que totalizan 453 km² en la provincia de Chubut. Crown Point mantiene una participación del 22,5% del net working interest.',
-    'El bloque produce 4.557 bbl/d de petróleo y 6.843 Mcf/d de gas natural (5.698 boe/d brutos). Cuenta con un programa de recuperación secundaria con 83 pozos inyectores activos.'
+    'Tres concesiones operadas por Crown Point Energía S.A. con el 95% del working interest: El Tordillo, La Tapera y Puesto Quiroga, en la provincia de Chubut, flanco norte de la Cuenca del Golfo San Jorge. Área total de 430 km² netos.',
+    'Producción 1Q 2026: 4.382 Bbl/d de petróleo y 6.880 Mcf/d de gas natural (5.529 boe/d totales). Cuenta con 283 pozos activos y 88 pozos inyectores. La concesión vence el 14/11/2027 con extensión acordada por 20 años (hasta noviembre de 2047).'
   ],
   ARRAY[
-    'Three jointly-operated areas — El Tordillo, La Tapera and Puesto Quiroga — totaling 453 km² in Chubut province. Crown Point holds a 22.5% net working interest.',
-    'The block produces 4,557 bbl/d of oil and 6,843 Mcf/d of natural gas (5,698 boe/d gross) with a secondary recovery program running 83 active injectors.'
+    'Three concessions operated by Crown Point Energía S.A. with a 95% working interest: El Tordillo, La Tapera and Puesto Quiroga, in Chubut province, northern flank of the San Jorge Gulf Basin. Total net area of 430 km².',
+    'Q1 2026 production: 4,382 Bbl/d of oil and 6,880 Mcf/d of natural gas (5,529 boe/d total). The block has 283 active producers and 88 injector wells. Concession expires 14/11/2027 with an agreed 20-year extension (to November 2047).'
   ],
-  '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"4,557 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"6,843 Mcf/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"269"},{"label_es":"Pozos inyectores","label_en":"Injector wells","val":"83"},{"label_es":"Superficie","label_en":"Acreage","val":"113,325 acres · 453 km²"},{"label_es":"Vencimiento","label_en":"Expiry","val":"14/11/2027 (+ext.)"}]',
-  '[{"label_es":"WI","label_en":"WI","val":"22.5%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"4,557 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"6,843 Mcf/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"269"}]'
+  '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"4,382 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"6,880 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"5,529 Boe/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"283"},{"label_es":"Pozos inyectores","label_en":"Injector wells","val":"88"},{"label_es":"Superficie","label_en":"Acreage","val":"113,325 acres · 430 km²"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Nov 2047 (ext.)"}]',
+  '[{"label_es":"WI","label_en":"WI","val":"95%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"4,382 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"6,880 Mcf/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"283"}]'
 ),
 (
   'piedra', 5, 'oil',
