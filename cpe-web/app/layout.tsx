@@ -65,6 +65,27 @@ const fontClasses = [
 export const metadata: Metadata = {
   title: 'Crown Point Energy — TSXV: CWV',
   description: 'Empresa argentina de petróleo y gas. Operamos en cuatro cuencas con producción propia, listada en TSXV: CWV.',
+  alternates: {
+    canonical: 'https://crownpointenergy.com',
+  },
+}
+
+const orgJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Crown Point Energy Inc.',
+  alternateName: 'Crown Point Energía S.A.',
+  url: 'https://crownpointenergy.com',
+  tickerSymbol: 'CWV',
+  exchange: 'TSXV',
+  logo: 'https://crownpointenergy.com/logo.png',
+  sameAs: ['https://www.sedarplus.ca'],
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'investor relations',
+    email: 'ir@crownpointenergy.com',
+    name: 'María Teresa Zappino',
+  },
 }
 
 export const revalidate = 60
@@ -88,6 +109,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       data-lang={lang}
       className={fontClasses}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+        />
+      </head>
       <body>
         {showSiteChrome && (
           <a className="skip-nav" href="#main-content">

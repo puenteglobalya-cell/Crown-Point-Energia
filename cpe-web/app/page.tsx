@@ -194,12 +194,12 @@ export default async function HomePage() {
                 </div>
                 <span className="kpi-meta">
                   <span className="badge" data-cpe-field="kpi.production.delta">{kpiProdDelta}</span>
-                  <span className="lang-es">incluye El Tordillo</span>
-                  <span className="lang-en">incl. El Tordillo</span>
+                  <span className="lang-es">86% petróleo · 14% gas</span>
+                  <span className="lang-en">86% oil · 14% gas</span>
                 </span>
               </div>
               <div className="kpi">
-                <span className="kpi-label"><span className="lang-es">Reservas 2P</span><span className="lang-en">2P reserves</span></span>
+                <span className="kpi-label"><span className="lang-es">Reservas P1</span><span className="lang-en">P1 reserves</span></span>
                 <div>
                   <span className="kpi-value num" data-cpe-field="kpi.reserves.value">{kpiResVal}</span>
                   <span className="kpi-unit" data-cpe-field="kpi.reserves.unit">{kpiResUnit}</span>

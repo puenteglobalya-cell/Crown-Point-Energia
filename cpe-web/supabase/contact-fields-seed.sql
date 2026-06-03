@@ -43,6 +43,8 @@ ON CONFLICT (key) DO UPDATE SET
 
 -- IR y Ética
 INSERT INTO cms_fields (key, value_es, value_en) VALUES
+  ('contact.ir.name',      'María Teresa Zappino',      'María Teresa Zappino'),
+  ('contact.ir.role',      'Responsable de Relaciones con el Mercado', 'Investor Relations Officer'),
   ('contact.ir.email',     'ir@crownpointenergy.com',   'ir@crownpointenergy.com'),
   ('contact.ethics.phone', '+54 9 11 5263-0361',        '+54 9 11 5263-0361'),
   ('contact.ethics.email', 'etica@crownpointenergy.com','etica@crownpointenergy.com')

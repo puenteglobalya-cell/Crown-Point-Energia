@@ -40,6 +40,7 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot):
   const pct = (v: number) => totalUS > 0 ? ((v / totalUS) * 100).toFixed(1) : '0.0'
 
   const hasHistorico = !!(mensual_historico && mensual_historico.length >= 2)
+  const hasVentas    = !!(mensual_historico && mensual_historico.length >= 1)
 
   // Only show price chart when prices actually vary across months.
   // When all months use currentPrices (no historical price table in the Excel),
@@ -57,6 +58,14 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot):
   const mensualRCLV   = hasHistorico ? j(mensual_historico!.map(h => h.RCLV_MM)) : '[]'
   const mensualCH     = hasHistorico ? j(mensual_historico!.map(h => h.CH_MM))   : '[]'
   const mensualGas    = hasHistorico ? j(mensual_historico!.map(h => h.gas_MM))  : '[]'
+
+  // Ventas YTD — works with 1+ months (for the macro context section)
+  const ventasLabels = hasVentas ? JSON.stringify(mensual_historico!.map(h => h.mes)) : '[]'
+  const ventasPCKK   = hasVentas ? j(mensual_historico!.map(h => h.PCKK_MM)) : '[]'
+  const ventasET     = hasVentas ? j(mensual_historico!.map(h => h.ET_MM))   : '[]'
+  const ventasRCLV   = hasVentas ? j(mensual_historico!.map(h => h.RCLV_MM)) : '[]'
+  const ventasCH     = hasVentas ? j(mensual_historico!.map(h => h.CH_MM))   : '[]'
+  const ventasGas    = hasVentas ? j(mensual_historico!.map(h => h.gas_MM))  : '[]'
 
   const precioETArr   = hasPriceHistory ? j(mensual_historico!.map(h => h.precio_ET))   : '[]'
   const precioPCKKArr = hasPriceHistory ? j(mensual_historico!.map(h => h.precio_PCKK)) : '[]'
@@ -451,13 +460,17 @@ ${hasPriceHistory ? `
 </div>
 ` : ''}
 
-${hasMacro ? `
-<div class="sec">Proyecciones de Precios — Próximos 12 Meses</div>
-<div style="display:grid;grid-template-columns:${macroGridCols};gap:20px;margin-bottom:8px">
-  ${macro!.hasBrent ? `<div class="card" style="padding:22px 20px"><div class="card-hdr">ICE Brent Crude <span class="card-hdr-val">USD/bbl · Last</span></div><div class="ch" style="height:200px"><canvas id="cMacroBrent"></canvas></div></div>` : ''}
-  ${macro!.hasHH ? `<div class="card" style="padding:22px 20px"><div class="card-hdr">Henry Hub Natural Gas <span class="card-hdr-val">USD/MMBtu · Prior Settle</span></div><div class="ch" style="height:200px"><canvas id="cMacroHH"></canvas></div></div>` : ''}
+${(hasMacro || hasVentas) ? `
+<div class="sec">Contexto de Mercado</div>
+${hasVentas ? `<div class="card-full" style="padding:22px 20px;margin-bottom:16px">
+  <div class="card-hdr">Ingresos Reales YTD <span class="card-hdr-val">MM us$</span></div>
+  <div class="ch" style="height:180px"><canvas id="cVentasYTD"></canvas></div>
+</div>` : ''}
+${hasMacro ? `<div style="display:grid;grid-template-columns:${macroGridCols};gap:20px;margin-bottom:8px">
+  ${macro!.hasBrent ? `<div class="card" style="padding:22px 20px"><div class="card-hdr">ICE Brent Crude <span class="card-hdr-val">USD/bbl · proyección</span></div><div class="ch" style="height:200px"><canvas id="cMacroBrent"></canvas></div></div>` : ''}
+  ${macro!.hasHH ? `<div class="card" style="padding:22px 20px"><div class="card-hdr">Henry Hub Natural Gas <span class="card-hdr-val">USD/MMBtu · proyección</span></div><div class="ch" style="height:200px"><canvas id="cMacroHH"></canvas></div></div>` : ''}
 </div>
-<p style="font-size:10px;color:var(--muted2);text-align:right;margin-bottom:32px">Futuros próximos 12 meses · ${macroDate}${macroPrevNote} · ICE Futures Europe + CME Group</p>
+<p style="font-size:10px;color:var(--muted2);text-align:right;margin-bottom:32px">Futuros próximos 12 meses · ${macroDate}${macroPrevNote} · ICE Futures Europe + CME Group</p>` : ''}
 ` : ''}
 
 <div class="footer">Crown Point Energía &middot; Generado ${fechaGen}</div>
@@ -684,6 +697,33 @@ new Chart(document.getElementById('cPrecios'),{
 });
 ` : ''}
 
+${hasVentas ? `
+new Chart(document.getElementById('cVentasYTD'),{
+  type:'bar',
+  data:{
+    labels:${ventasLabels},
+    datasets:[
+      {label:'PC-KK',    data:${ventasPCKK}, backgroundColor:C.azul,   borderRadius:3,stack:'s'},
+      {label:'ET/LT-PQ', data:${ventasET},   backgroundColor:C.naranja, borderRadius:3,stack:'s'},
+      {label:'RCLV',     data:${ventasRCLV}, backgroundColor:C.violeta, borderRadius:3,stack:'s'},
+      {label:'CH/PPC',   data:${ventasCH},   backgroundColor:C.verde,   borderRadius:3,stack:'s'},
+      {label:'Gas',      data:${ventasGas},  backgroundColor:C.warm,    borderRadius:3,stack:'s'},
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{labels:{font:{size:10},usePointStyle:true,pointStyleWidth:7,color:C.muted}},
+      tooltip:{...tip,callbacks:{label:c=>\` \${c.dataset.label}: us$ \${c.raw?.toFixed(2)} MM\`}}
+    },
+    scales:{
+      x:{stacked:true,grid:{color:C.bg2},ticks:{font:{family:"'JetBrains Mono'",size:11},color:C.muted}},
+      y:{stacked:true,grid:{color:C.bg2},ticks:{callback:v=>\`\${v.toFixed(0)}MM\`,font:{family:"'JetBrains Mono'",size:11},color:C.muted}}
+    }
+  }
+});
+` : ''}
 ${hasMacro ? `
 const _mL=${macroLabels};
 ${macro!.hasBrent ? `new Chart(document.getElementById('cMacroBrent'),{type:'line',data:{labels:_mL,datasets:[{label:'Actual',data:${macroBrentData},borderColor:'#82BC00',backgroundColor:'rgba(130,188,0,.12)',tension:.35,pointRadius:3.5,pointHoverRadius:5.5,pointBackgroundColor:'#82BC00',borderWidth:2.5,fill:true}${brentPrevDs}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:${brentLegend},labels:{font:{size:10},usePointStyle:true,color:C.muted}},tooltip:{...tip,callbacks:{label:c=>\`  \${c.dataset.label}: \${c.parsed.y?.toFixed(2)} USD/bbl\`}}},scales:{x:{grid:{color:C.bg2},ticks:{font:{family:"'JetBrains Mono'",size:10.5},color:C.muted,maxRotation:40}},y:{grid:{color:C.bg2},ticks:{callback:v=>\`\$\${Number(v).toFixed(0)}\`,font:{family:"'JetBrains Mono'",size:10.5},color:C.muted}}}}});` : ''}

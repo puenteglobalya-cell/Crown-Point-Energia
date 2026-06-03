@@ -4,6 +4,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { fetchIrEvents, fetchIrAnalysts, fetchObligaciones } from '@/lib/content-fetch'
 import InversoresDocsTabs from './InversoresDocsTabs'
 import IrSubscribeForm from './IrSubscribeForm'
+import ReservesTable from './ReservesTable'
 
 export const revalidate = 60
 
@@ -157,10 +158,10 @@ export default async function InversoresPage() {
                 <div className="kpi-grid" style={{ marginTop: 'var(--s-6)' }}>
                   {[
                     { n: '01', labelEs: 'Producción', labelEn: 'Production',
-                      val: f['inv.thesis.1.val'] || '1,840',
+                      val: f['inv.thesis.1.val'] || '8,672',
                       unit: f['inv.thesis.1.unit'] || 'boe/d',
-                      metaEs: f['inv.thesis.1.meta'] || 'Mix 68% gas / 32% líquidos',
-                      metaEn: fe['inv.thesis.1.meta'] || '68% gas / 32% liquids mix' },
+                      metaEs: f['inv.thesis.1.meta'] || '86% petróleo · 14% gas · 1Q 2026',
+                      metaEn: fe['inv.thesis.1.meta'] || '86% oil · 14% gas · 1Q 2026' },
                     { n: '02', labelEs: 'Costos', labelEn: 'Costs',
                       val: f['inv.thesis.2.val'] || 'US$14.2',
                       unit: f['inv.thesis.2.unit'] || '/boe',
@@ -185,6 +186,7 @@ export default async function InversoresPage() {
                     </div>
                   ))}
                 </div>
+                <ReservesTable />
                 <p className="pull">
                   <span className="lang-es">&ldquo;Operamos seis bloques en cuatro cuencas — diversificación geológica real con un solo país.&rdquo;</span>
                   <span className="lang-en">&ldquo;We operate six blocks across four basins — real geological diversification within a single country.&rdquo;</span>
