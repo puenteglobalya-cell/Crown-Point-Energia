@@ -6,7 +6,7 @@ import { parsearIngresosExcel, type DatosIngresos } from '@/lib/parsers/ingresos
 import { parsearAccionistaPPTX, type DatosAccionista } from '@/lib/parsers/accionista'
 import { parsearExcelGenerico, type DatosGenerico } from '@/lib/parsers/generico'
 import { parsearTextoMacro, type DatosMacro } from '@/lib/parsers/macro'
-import { generarReporteHTML } from '@/lib/generador/htmlReport'
+import { generarReporteHTML, type MacroSnapshot } from '@/lib/generador/htmlReport'
 import { generarReporteAccionistaHTML } from '@/lib/generador/htmlReportAccionista'
 import { generarReporteGenericoHTML } from '@/lib/generador/htmlReportGenerico'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
@@ -49,6 +49,8 @@ export default function PortalSubirPage() {
   const [datosAccionista, setDatosAccionista] = useState<DatosAccionista | null>(null)
   const [datosGenerico, setDatosGenerico] = useState<DatosGenerico | null>(null)
   const [datosMacro, setDatosMacro] = useState<DatosMacro | null>(null)
+  const [macroSnap, setMacroSnap]   = useState<MacroSnapshot | null>(null)
+  const [includeMacro, setIncludeMacro] = useState(true)
   const [titulo, setTitulo] = useState('')
   const [doneId, setDoneId] = useState('')
 
@@ -63,6 +65,10 @@ export default function PortalSubirPage() {
         const parsed = await parsearIngresosExcel(f)
         setDatosIngresos(parsed)
         setTitulo(`Ingresos Estimados — ${parsed.mes}`)
+        // Fetch current macro snapshot for optional inclusion in the report
+        fetch('/api/macro').then(r => r.ok ? r.json() : null).then(m => {
+          if (m && (m.hasHH || m.hasBrent)) setMacroSnap(m as MacroSnapshot)
+        }).catch(() => {})
       } else if (tipo === 'accionista') {
         const parsed = await parsearAccionistaPPTX(f)
         setDatosAccionista(parsed)
@@ -106,7 +112,7 @@ export default function PortalSubirPage() {
 
       if (tipo === 'ingresos' && datosIngresos) {
         datos   = datosIngresos
-        html    = generarReporteHTML(datosIngresos)
+        html    = generarReporteHTML(datosIngresos, includeMacro && macroSnap ? macroSnap : undefined)
         periodo = datosIngresos.periodo
       } else if (tipo === 'accionista' && datosAccionista) {
         datos   = datosAccionista
@@ -163,6 +169,7 @@ export default function PortalSubirPage() {
   function reset() {
     setStep('type'); setFile(null); setMacroText('')
     setDatosIngresos(null); setDatosAccionista(null); setDatosGenerico(null); setDatosMacro(null)
+    setMacroSnap(null); setIncludeMacro(true)
     setTitulo(''); setDoneId(''); setErr('')
     if (fileRef.current) fileRef.current.value = ''
   }
@@ -372,6 +379,24 @@ td{padding:6px 12px;border-bottom:1px solid #eee;font-family:monospace}</style><
                   {kv('Precio neto oil', `us$ ${datosIngresos.precio_neto_oil.toFixed(2)}/bbl`)}
                   {kv('Precio neto gas', `us$ ${datosIngresos.precio_neto_gas.toFixed(2)}/mcf`)}
                 </>}
+                {tipo === 'ingresos' && macroSnap && (
+                  <div style={{ gridColumn: '1 / -1', marginTop: 8, paddingTop: 10, borderTop: '1px solid var(--rule)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <input
+                      id="include-macro"
+                      type="checkbox"
+                      checked={includeMacro}
+                      onChange={e => setIncludeMacro(e.target.checked)}
+                      style={{ width: 15, height: 15, cursor: 'pointer' }}
+                    />
+                    <label htmlFor="include-macro" style={{ fontSize: 13, color: 'var(--fg)', cursor: 'pointer' }}>
+                      Incluir proyecciones de precios (Brent + Henry Hub)
+                    </label>
+                    <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
+                      {macroSnap.hasBrent && macroSnap.hasHH ? 'ICE Brent + Henry Hub'
+                       : macroSnap.hasBrent ? 'ICE Brent' : 'Henry Hub'} · {new Date(macroSnap.updatedAt).toLocaleDateString('es-AR')}
+                    </span>
+                  </div>
+                )}
                 {tipo === 'accionista' && datosAccionista && <>
                   {kv('Período', datosAccionista.periodo)}
                   {kv('Producción consolidada', `${Math.round(datosAccionista.areas.consolidado.prod_mes).toLocaleString('es-AR')} M³/d`)}
