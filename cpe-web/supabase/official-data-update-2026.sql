@@ -6,9 +6,12 @@
 -- Total 8,672 BOE/d (Petróleo 7,456 / Gas 1,214 — 86% / 14%)
 
 INSERT INTO cms_fields (key, value_es, value_en) VALUES
-  ('kpi.production.value', '8,672',   '8,672'),
-  ('kpi.production.unit',  'boe/d',   'boe/d'),
-  ('kpi.production.delta', '1Q 2026', '1Q 2026')
+  ('kpi.production.value',  '8,672',                         '8,672'),
+  ('kpi.production.unit',   'boe/d',                         'boe/d'),
+  ('kpi.production.delta',  '1Q 2026',                       '1Q 2026'),
+  ('inv.thesis.1.val',      '8,672',                         '8,672'),
+  ('inv.thesis.1.unit',     'boe/d',                         'boe/d'),
+  ('inv.thesis.1.meta',     '86% petróleo · 14% gas · 1Q 2026', '86% oil · 14% gas · 1Q 2026')
 ON CONFLICT (key) DO UPDATE SET
   value_es   = EXCLUDED.value_es,
   value_en   = EXCLUDED.value_en,
