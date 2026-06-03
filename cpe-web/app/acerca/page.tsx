@@ -17,8 +17,32 @@ export default async function AcercaPage() {
   const fe = s.fieldsEn
   const heroImg = f['hero.acerca.img'] || ''
 
+  const BOARD_CATEGORIES = ['Director Titular', 'Director Suplente', 'Síndico Titular', 'Síndico Suplente']
+  const dirTitulares  = board.filter(d => d.cargo_board === 'Director Titular')
+  const dirSuplentes  = board.filter(d => d.cargo_board === 'Director Suplente')
+  const sindTitulares = board.filter(d => d.cargo_board === 'Síndico Titular')
+  const sindSuplentes = board.filter(d => d.cargo_board === 'Síndico Suplente')
+  const boardOther    = board.filter(d => !BOARD_CATEGORIES.includes(d.cargo_board))
+
+  const boardJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Crown Point Energy Inc.',
+    url: 'https://crownpointenergy.com',
+    member: board.map(d => ({
+      '@type': 'Person',
+      name: d.name,
+      jobTitle: d.role_es,
+      worksFor: { '@type': 'Organization', name: 'Crown Point Energy Inc.' },
+    })),
+  }
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(boardJsonLd) }}
+      />
       <style>{`
         .strat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-4); margin-top: var(--s-6); }
         .strat-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-lg); padding: var(--s-6); }
@@ -138,13 +162,69 @@ export default async function AcercaPage() {
                   <span className="lang-en">We comply with NI 58-101 on corporate governance practices.</span>
                 </p>
                 <ul className="director-list">
-                  {board.map(d => (
+                  {dirTitulares.length > 0 && (
+                    <li style={{ padding: '14px 0 2px', borderBottom: 'none', display: 'block' }}>
+                      <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 700 }}>
+                        <span className="lang-es">Directorio Titular</span>
+                        <span className="lang-en">Board of Directors</span>
+                      </span>
+                    </li>
+                  )}
+                  {dirTitulares.map(d => (
+                    <li key={d.id}>
+                      <strong>{d.name}</strong>
+                      {d.independiente === true && <span><span className="lang-es">Independiente</span><span className="lang-en">Independent</span></span>}
+                    </li>
+                  ))}
+                  {dirSuplentes.length > 0 && (
+                    <li style={{ padding: '14px 0 2px', borderBottom: 'none', display: 'block' }}>
+                      <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 700 }}>
+                        <span className="lang-es">Directorio Suplente</span>
+                        <span className="lang-en">Alternate Directors</span>
+                      </span>
+                    </li>
+                  )}
+                  {dirSuplentes.map(d => (
+                    <li key={d.id}>
+                      <strong>{d.name}</strong>
+                      {d.independiente === true && <span><span className="lang-es">Independiente</span><span className="lang-en">Independent</span></span>}
+                    </li>
+                  ))}
+                  {(sindTitulares.length > 0 || sindSuplentes.length > 0) && (
+                    <li style={{ padding: '20px 0 2px', borderBottom: 'none', display: 'block' }}>
+                      <span style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent-deep)', fontWeight: 700 }}>
+                        <span className="lang-es">Comisión Fiscalizadora</span>
+                        <span className="lang-en">Statutory Audit Committee</span>
+                      </span>
+                    </li>
+                  )}
+                  {sindTitulares.length > 0 && (
+                    <li style={{ padding: '8px 0 2px', borderBottom: 'none', display: 'block' }}>
+                      <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 700 }}>
+                        <span className="lang-es">Síndicos Titulares</span>
+                        <span className="lang-en">Statutory Auditors</span>
+                      </span>
+                    </li>
+                  )}
+                  {sindTitulares.map(d => (
+                    <li key={d.id}><strong>{d.name}</strong></li>
+                  ))}
+                  {sindSuplentes.length > 0 && (
+                    <li style={{ padding: '8px 0 2px', borderBottom: 'none', display: 'block' }}>
+                      <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 700 }}>
+                        <span className="lang-es">Síndicos Suplentes</span>
+                        <span className="lang-en">Alternate Statutory Auditors</span>
+                      </span>
+                    </li>
+                  )}
+                  {sindSuplentes.map(d => (
+                    <li key={d.id}><strong>{d.name}</strong></li>
+                  ))}
+                  {boardOther.map(d => (
                     <li key={d.id}>
                       <strong>{d.name}</strong>
                       {d.cargo_board && <> · {d.cargo_board}</>}
-                      {d.independiente === true && (
-                        <span><span className="lang-es">Independiente</span><span className="lang-en">Independent</span></span>
-                      )}
+                      {d.independiente === true && <span><span className="lang-es">Independiente</span><span className="lang-en">Independent</span></span>}
                     </li>
                   ))}
                 </ul>

@@ -199,7 +199,7 @@ export default async function HomePage() {
                 </span>
               </div>
               <div className="kpi">
-                <span className="kpi-label"><span className="lang-es">Reservas 2P</span><span className="lang-en">2P reserves</span></span>
+                <span className="kpi-label"><span className="lang-es">Reservas P1</span><span className="lang-en">P1 reserves</span></span>
                 <div>
                   <span className="kpi-value num" data-cpe-field="kpi.reserves.value">{kpiResVal}</span>
                   <span className="kpi-unit" data-cpe-field="kpi.reserves.unit">{kpiResUnit}</span>

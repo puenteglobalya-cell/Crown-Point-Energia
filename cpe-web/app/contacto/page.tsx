@@ -9,6 +9,8 @@ export default async function ContactoPage() {
   const f = s.fields
   const heroImg = f['hero.contacto.img'] || ''
 
+  const irName      = f['contact.ir.name']      || 'María Teresa Zappino'
+  const irRole      = f['contact.ir.role']      || 'Responsable de Relaciones con el Mercado'
   const irEmail     = f['contact.ir.email']     || 'ir@crownpointenergy.com'
   const arAddress   = f['contact.ar.address']   || 'Godoy Cruz 2769, Piso 4\nC1425FQK, Buenos Aires'
   const arPhone     = f['contact.ar.phone']     || '+54 11-5032-5600'
@@ -119,12 +121,16 @@ export default async function ContactoPage() {
                 <span className="lang-en">Investor relations</span>
               </span>
               <div>
-                <strong style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
-                  TSXV: CWV
+                <strong style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
+                  {irName}
                 </strong>
+                <span style={{ display: 'block', fontSize: 12, color: 'var(--accent-deep)', letterSpacing: '0.04em', fontWeight: 600, marginBottom: 8 }}>
+                  <span className="lang-es">{irRole}</span>
+                  <span className="lang-en">{f['contact.ir.role_en'] || 'Investor Relations Officer'}</span>
+                </span>
                 <p style={{ fontSize: 13, color: 'var(--fg-soft)', lineHeight: 1.6, margin: 0 }}>
-                  <span className="lang-es">Para consultas sobre relaciones con inversores, contáctenos en:</span>
-                  <span className="lang-en">For investor relations enquiries, contact us at:</span>
+                  <span className="lang-es">TSXV: CWV</span>
+                  <span className="lang-en">TSXV: CWV</span>
                 </p>
               </div>
               <a href={`mailto:${irEmail}`} style={{ fontSize: 13, color: 'var(--accent)', wordBreak: 'break-all', marginTop: 4 }}>{irEmail}</a>
@@ -158,6 +164,7 @@ export default async function ContactoPage() {
               <div className="info-row">
                 <span className="info-key">Investor Relations</span>
                 <div className="info-val">
+                  <span style={{ display: 'block', fontWeight: 600, fontSize: 13 }}>{irName}</span>
                   <a href={`mailto:${irEmail}`}>{irEmail}</a>
                 </div>
               </div>

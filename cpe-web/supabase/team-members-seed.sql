@@ -7,7 +7,7 @@ TRUNCATE TABLE team_members RESTART IDENTITY CASCADE;
 INSERT INTO team_members
   (name, role_es, role_en, bio_es, bio_en, initials, bg, tipo, cargo_board, independiente, orden)
 VALUES
-  -- ── Management ─────────────────────────────────────────────────────────
+  -- ── Management ─────────────────────────────────────────────────────────────
   (
     'Brian Moss',
     'Presidente – CEO Interino',
@@ -34,43 +34,151 @@ VALUES
     NULL,
     2
   ),
-  -- ── Board ───────────────────────────────────────────────────────────────
+  -- ── Directorio Titular (Asamblea 29/04/2026) ────────────────────────────
   (
-    'Pablo Bernardo Peralta',
-    'Director No Independiente',
-    'Non-Independent Director',
-    'Pablo Peralta es el presidente y tiene el control y la dirección de Liminar Energía SA, accionista controlante de Crown Point Energía. El Sr. Peralta tiene más de 30 años de experiencia en servicios y actividades financieras, y es uno de los dos principales accionistas de un grupo de inversión diversificado argentino con intereses en los sectores bancario, financiero, asegurador, agrícola, inmobiliario y energético. Es Director y Vicepresidente del Banco de Servicios y Transacciones, SA, que está registrado en la Comisión Nacional de Valores. Residente en Buenos Aires, el Sr. Peralta obtuvo el título de Contador Público de la Universidad de Buenos Aires.',
-    'Pablo Peralta is the president and holds control and direction of Liminar Energía SA, the controlling shareholder of Crown Point Energía. Mr. Peralta has over 30 years of experience in financial services and activities, and is one of the two principal shareholders of a diversified Argentine investment group with interests in the banking, financial, insurance, agricultural, real estate and energy sectors. He is a Director and Vice-President of Banco de Servicios y Transacciones SA, which is registered with the Comisión Nacional de Valores. A Buenos Aires resident, Mr. Peralta holds a CPA degree from the University of Buenos Aires.',
-    'PP',
+    'Andrés Pedro Peralta',
+    'Director Titular',
+    'Director',
+    '', '',
+    'AP',
     'linear-gradient(135deg,#1A2B4C,#2E4878)',
     'board',
-    'Director',
-    false,
-    1
+    'Director Titular',
+    NULL,
+    3
   ),
   (
-    'Brian Moss',
-    'Director No Independiente',
-    'Non-Independent Director',
-    'Brian J. Moss es Director y Consultor de Crown Point Energy Inc., anteriormente Presidente y CEO de la compañía. El Dr. Moss tiene más de 20 años de experiencia en la industria argentina del petróleo y gas, ocupando puestos de alto nivel centrados en América Latina en Alberta Energy Company, Rio Alto y Antrim Energy antes de unirse a Crown Point. En total, Brian cuenta con más de 35 años de experiencia en la industria del petróleo y el gas en empresas públicas y privadas. El Dr. Moss cuenta con un conjunto de habilidades comerciales, en exploración y desarrollo y ha construido y administrado exitosamente operaciones en las cuencas San Jorge, Austral, Neuquén y Noroeste. El Dr. Moss tiene un Doctorado en Geología del Petróleo de la Royal School of Mines, Universidad de Londres, Reino Unido y es miembro de la Asociación Profesional de Ingenieros, Geólogos y Geofísicos de Alberta.',
-    'Brian J. Moss is a Director and Consultant of Crown Point Energy Inc., previously President and CEO of the company. Dr. Moss has over 20 years of experience in the Argentine oil and gas industry, holding senior Latin America-focused positions at Alberta Energy Company, Rio Alto and Antrim Energy before joining Crown Point. In total, Brian has over 35 years of experience in the oil and gas industry across public and private companies. Dr. Moss brings a commercial, exploration and development skill set and has successfully built and managed operations in the San Jorge, Austral, Neuquén and Northwest basins. Dr. Moss holds a PhD in Petroleum Geology from the Royal School of Mines, University of London, UK, and is a member of the Professional Association of Engineers, Geologists and Geophysicists of Alberta.',
-    'BM',
-    'linear-gradient(135deg,#1A2B4C,#2E4878)',
+    'Eduardo Ruben Oliver',
+    'Director Titular',
+    'Director',
+    '', '',
+    'EO',
+    'linear-gradient(135deg,#5C8700,#82BC00)',
     'board',
-    'Director',
-    false,
-    2
+    'Director Titular',
+    NULL,
+    4
   ),
   (
-    'Juan Llado',
-    'Director No Independiente',
-    'Non-Independent Director',
-    'Juan es abogado y ha tenido varios cargos durante su carrera en los sectores de servicios financieros, seguros y energía, incluyendo: CEO de Life Seguros de Personas y Patrimoniales S.A. (antes MetLife Argentina); CEO de Life Group Seguros S.A. (antes Prudential Argentina); Director Legales & Compliance en Grupo ST S.A.; Gerente Asuntos Legales y Gerente Banco Fiduciaria en Banco de Servicios y Transacciones S.A.; Gerente Asuntos Legales en Orígenes Seguros; y Gerente Asuntos Legales en Credilogros Compañía Financiera S.A. Se desempeña actualmente como miembro del Comité Ejecutivo en Grupo ST S.A. y en el Directorio de las siguientes compañías: Grupo ST S.A.; Banco de Servicios y Transacciones S.A.; ST Securities S.A.; Best Leasing S.A.; Life Seguros S.A.; Liminar Energía S.A. (accionista controlante); y Crown Point Energía S.A. Juan es abogado graduado en la Universidad de Buenos Aires y tiene un Master en Finanzas de la Universidad del CEMA.',
-    'Juan is a lawyer and has held various positions throughout his career in the financial services, insurance and energy sectors, including: CEO of Life Seguros de Personas y Patrimoniales S.A. (formerly MetLife Argentina); CEO of Life Group Seguros S.A. (formerly Prudential Argentina); Legal & Compliance Director at Grupo ST S.A.; Legal Affairs Manager and Trust Bank Manager at Banco de Servicios y Transacciones S.A.; Legal Affairs Manager at Orígenes Seguros; and Legal Affairs Manager at Credilogros Compañía Financiera S.A. He currently serves as a member of the Executive Committee at Grupo ST S.A. and on the Board of Directors of the following companies: Grupo ST S.A.; Banco de Servicios y Transacciones S.A.; ST Securities S.A.; Best Leasing S.A.; Life Seguros S.A.; Liminar Energía S.A. (controlling shareholder); and Crown Point Energía S.A. Juan holds a law degree from the University of Buenos Aires and a Master in Finance from CEMA University.',
+    'Isela Angélica Constantini',
+    'Director Titular',
+    'Director',
+    '', '',
+    'IC',
+    'linear-gradient(135deg,#1A5C5C,#2E8A7A)',
+    'board',
+    'Director Titular',
+    NULL,
+    5
+  ),
+  (
+    'Matías Agustín Peralta',
+    'Director Titular',
+    'Director',
+    '', '',
+    'MP',
+    'linear-gradient(135deg,#2A3A6C,#4A5A9C)',
+    'board',
+    'Director Titular',
+    NULL,
+    6
+  ),
+  (
+    'Juan Manuel Llado',
+    'Director Titular',
+    'Director',
+    '', '',
     'JL',
     'linear-gradient(135deg,#5C8700,#82BC00)',
     'board',
-    'Director',
-    false,
-    3
+    'Director Titular',
+    NULL,
+    7
+  ),
+  -- ── Directorio Suplente ──────────────────────────────────────────────────
+  (
+    'Julián Andrés Racauchi',
+    'Director Suplente',
+    'Alternate Director',
+    '', '',
+    'JR',
+    'linear-gradient(135deg,#4A4A6A,#6A6A8A)',
+    'board',
+    'Director Suplente',
+    NULL,
+    8
+  ),
+  -- ── Síndicos Titulares (Comisión Fiscalizadora) ──────────────────────────
+  (
+    'Rodolfo Eduardo Moresi',
+    'Síndico Titular',
+    'Statutory Auditor',
+    '', '',
+    'RM',
+    'linear-gradient(135deg,#2A2A3A,#4A4A5A)',
+    'board',
+    'Síndico Titular',
+    NULL,
+    9
+  ),
+  (
+    'Fabiana Lucía García',
+    'Síndico Titular',
+    'Statutory Auditor',
+    '', '',
+    'FG',
+    'linear-gradient(135deg,#6B1A2E,#9E2A45)',
+    'board',
+    'Síndico Titular',
+    NULL,
+    10
+  ),
+  (
+    'Raúl Alberto Muñoz',
+    'Síndico Titular',
+    'Statutory Auditor',
+    '', '',
+    'RA',
+    'linear-gradient(135deg,#5C4A3A,#7A6A5A)',
+    'board',
+    'Síndico Titular',
+    NULL,
+    11
+  ),
+  -- ── Síndicos Suplentes ───────────────────────────────────────────────────
+  (
+    'Pablo Gastón Muñoz',
+    'Síndico Suplente',
+    'Alternate Statutory Auditor',
+    '', '',
+    'PG',
+    'linear-gradient(135deg,#2A2A3A,#4A4A5A)',
+    'board',
+    'Síndico Suplente',
+    NULL,
+    12
+  ),
+  (
+    'Carlos Eduardo González',
+    'Síndico Suplente',
+    'Alternate Statutory Auditor',
+    '', '',
+    'CG',
+    'linear-gradient(135deg,#4A4A6A,#6A6A8A)',
+    'board',
+    'Síndico Suplente',
+    NULL,
+    13
+  ),
+  (
+    'Analía Silvia Padín',
+    'Síndico Suplente',
+    'Alternate Statutory Auditor',
+    '', '',
+    'AS',
+    'linear-gradient(135deg,#5C8700,#82BC00)',
+    'board',
+    'Síndico Suplente',
+    NULL,
+    14
   );

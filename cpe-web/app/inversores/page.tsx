@@ -4,6 +4,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { fetchIrEvents, fetchIrAnalysts, fetchObligaciones } from '@/lib/content-fetch'
 import InversoresDocsTabs from './InversoresDocsTabs'
 import IrSubscribeForm from './IrSubscribeForm'
+import ReservesTable from './ReservesTable'
 
 export const revalidate = 60
 
@@ -185,6 +186,7 @@ export default async function InversoresPage() {
                     </div>
                   ))}
                 </div>
+                <ReservesTable />
                 <p className="pull">
                   <span className="lang-es">&ldquo;Operamos seis bloques en cuatro cuencas — diversificación geológica real con un solo país.&rdquo;</span>
                   <span className="lang-en">&ldquo;We operate six blocks across four basins — real geological diversification within a single country.&rdquo;</span>
