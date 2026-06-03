@@ -328,14 +328,14 @@ export default function ReportesAdminPage() {
                           <td key={role} style={{ padding: '10px 16px', textAlign: 'center' }}>
                             <select
                               value={level}
-                              disabled={saving || role === 'admin'}
+                              disabled={saving}
                               onChange={e => handleAccessChange(t.id, role, e.target.value as Level)}
                               style={{
                                 fontSize: 12, padding: '5px 10px',
                                 border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)',
                                 background: level === 'none' ? 'var(--bg-alt)' : level === 'upload' ? 'rgba(108,174,82,.1)' : 'rgba(31,37,102,.06)',
                                 color: level === 'none' ? 'var(--fg-muted)' : 'var(--fg)',
-                                cursor: role === 'admin' ? 'not-allowed' : 'pointer',
+                                cursor: 'pointer',
                                 opacity: saving ? 0.5 : 1,
                               }}
                             >
@@ -353,7 +353,6 @@ export default function ReportesAdminPage() {
             </div>
             <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 10 }}>
               Los cambios aplican al siguiente login o recarga de sesión del usuario afectado.
-              Admin siempre tiene acceso completo.
             </p>
           </section>
         )}
