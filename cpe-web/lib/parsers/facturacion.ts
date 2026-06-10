@@ -1,20 +1,25 @@
 import * as XLSX from 'xlsx'
 
+// ─── Interfaces ───────────────────────────────────────────────────────────────
+
 export interface LineaFacturacion {
   fecha: string           // "YYYY-MM-DD"
   mes: string             // "YYYY-MM"
   mes_label: string       // "Ene-26"
-  tipo_comp: string       // "FC" | "NC" | "ND" etc.
-  nro_comp: string
+  tipo_comp: string       // "FA" | "CA" | "DA" | "FE" etc.
+  comprobante: string     // "FA 0009-00001204"
+  cliente_cod: string
   cliente: string
   art_codigo: string
-  art_desc: string
-  categoria: string       // Petróleo | Gas | Transporte | Ajuste/NC | Ajuste/ND | Otros
-  bloque: string          // ET | PCKK | CH | RCLV | TDF | CER | Varios
+  art_desc: string        // sa_descmed truncado
+  categoria: string       // Petróleo | Gas | Transporte/Logística | Recupero Regalías | Recupero Gastos | Financiero | Venta Materiales | Ajuste/NC | Ajuste/ND | Otros
+  bloque: string          // ET | PCKK | CH | PPC | ENA | Gas | Financiero | Admin | Varios
   cantidad: number
-  unidad: string
-  precio_unitario: number
-  importe: number         // negative for NCs
+  precio_neto_usd_u: number   // PcioNetoEU
+  importe_usd: number         // PcioNetoET  (main amount — pivot uses this)
+  importe_ars: number         // PcioNetoLT
+  tc: number                  // tipo de cambio derivado (ARS/USD)
+  es_petroleo: boolean
 }
 
 export interface PivotRow {
@@ -25,171 +30,113 @@ export interface PivotRow {
 }
 
 export interface ResumenFacturacion {
-  total_facturas: number   // sum of positive lines only
-  total_nc: number         // sum of NC/ND lines (negative)
-  neto: number             // total_facturas + total_nc
+  total_facturas: number
+  total_nc: number
+  neto: number
   por_mes: Record<string, number>
   por_bloque: Record<string, number>
   por_categoria: Record<string, number>
 }
 
 export interface DatosFacturacion {
-  periodo: string                       // "Ene-26 — May-26"
-  periodo_desde: string                 // "2026-01"
-  periodo_hasta: string                 // "2026-05"
-  meses: string[]                       // sorted ["2026-01", ...]
-  mes_labels: Record<string, string>    // "2026-01" → "Ene-26"
+  periodo: string
+  periodo_desde: string
+  periodo_hasta: string
+  meses: string[]
+  mes_labels: Record<string, string>
   lineas: LineaFacturacion[]
   pivot: PivotRow[]
   resumen: ResumenFacturacion
 }
 
-// ─── Column detection ────────────────────────────────────────────────────────
+// ─── Article → bloque mapping ─────────────────────────────────────────────────
 
-const COL_PATTERNS: Array<[string, RegExp]> = [
-  ['fecha',          /^fecha|^date|^f\.\s*comp|^fecha.*comp/i],
-  ['tipo_comp',      /^tipo|^t\.\s*comp|^tipo.*comp|^comprobante$/i],
-  ['nro_comp',       /^n[uú]m|^nro|^número|^n°|^comp.*n[uú]m|^nro.*comp/i],
-  ['cliente',        /^cliente|^raz[oó]n|^customer|^comprador/i],
-  ['art_codigo',     /^c[oó]d.*art|^art.*c[oó]d|^código$|^sku$|^cod\./i],
-  ['art_desc',       /^descripci[oó]n|^nombre.*art|^artículo|^articulo|^producto|^art\./i],
-  ['cantidad',       /^cantidad|^qty|^quantity|^volumen|^cant\./i],
-  ['unidad',         /^unidad|^unit$|^u\.m\.|^um$/i],
-  ['precio_unitario',/^precio.*u|^unit.*price|^p\.u\.|^precio$/i],
-  ['importe',        /^importe|^total$|^monto|^amount|^imp\./i],
-  ['moneda',         /^moneda|^currency|^mon\./i],
-  ['bloque',         /^bloque|^[aá]rea|^concesi[oó]n|^campo/i],
+const BLOQUE_MAP: Array<[RegExp, string]> = [
+  [/^VTA.PET.ET|^GAS.M3.ET|^PLAN.GAS.ET|^ALM\..ET|^CTROLCARGA.ET|^MATERIAL.ET|^TERMAP|^VTA.ET.AJUSTE|^REC.DESPA.NG|^REC.DESPACHANT/i, 'ET'],
+  [/^VTA.PET.KK|^IN.KIND.KK|^EYS.GAS.PCKK|^KK.RECUP/i, 'PCKK'],
+  [/^VTA.PET.PC|^IN.KIND$|^PC.RECUP/i, 'PCKK'],
+  [/^PETROLEO.CHA/i, 'CH'],
+  [/^PETROLEO.PPC/i, 'PPC'],
+  [/^PETROLEO.ENA/i, 'ENA'],
+  [/^GAS.M3$|^000000000003|^INTERESESGAS|^PLAN.GAS/i, 'Gas'],
+  [/^DIF_CAMBIO|^OTROS.INGRESOS/i, 'Financiero'],
+  [/^GTOS.ADMINISTR|^REC.SUELDOS|^RECUP\..GASTO|^RECUPERO.SUSE|^GO-/i, 'Admin'],
 ]
 
-function detectarColumnas(headers: (string | null)[]): Record<string, number> {
-  const map: Record<string, number> = {}
-  headers.forEach((h, i) => {
-    if (!h) return
-    const hn = String(h).trim()
-    for (const [key, pat] of COL_PATTERNS) {
-      if (!(key in map) && pat.test(hn)) {
-        map[key] = i
-        break
-      }
-    }
-  })
-  return map
-}
-
-// ─── Block derivation ────────────────────────────────────────────────────────
-
-function derivarBloque(artDesc: string, artCodigo: string, bloqueCol?: string): string {
-  if (bloqueCol?.trim()) {
-    const b = bloqueCol.trim().toUpperCase()
-    if (/TORDILLO|^ET$|ETLPP/.test(b)) return 'ET'
-    if (/KOLUEL|PC.?KK|PCKK|PIEDRA/.test(b)) return 'PCKK'
-    if (/CHA[NÑ]ARES|^CH$/.test(b)) return 'CH'
-    if (/CULLEN|VALINA|RCLV|TDF|TIERRA.*FUEGO/.test(b)) return 'RCLV'
-    if (/CERRO|^CER$/.test(b)) return 'CER'
-    return bloqueCol.trim()
+function derivarBloque(artCod: string): string {
+  const s = artCod.trim()
+  for (const [re, bloque] of BLOQUE_MAP) {
+    if (re.test(s)) return bloque
   }
-  const s = (artDesc + ' ' + artCodigo).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  if (/TORDILLO|[^A-Z]ET[^A-Z]|ETLPP/.test(' ' + s + ' ')) return 'ET'
-  if (/KOLUEL|PC.?KK|PCKK|PIEDRA.*CLAV/.test(s)) return 'PCKK'
-  if (/CHA[NÑ]ARES|CHANA/.test(s)) return 'CH'
-  if (/CULLEN|VALINA|RCLV|TIERRA.*FUEGO|TDF|AUSTRAL/.test(s)) return 'RCLV'
-  if (/CERRO|NEUQUIN/.test(s)) return 'CER'
   return 'Varios'
 }
 
-// ─── Category derivation ─────────────────────────────────────────────────────
+// ─── Article → categoria mapping ─────────────────────────────────────────────
 
-function derivarCategoria(artDesc: string, tipoComp: string): string {
-  const t = tipoComp.toUpperCase().trim()
-  if (/^NC|N\.C\.|NOTA.*CR[EÉ]D/.test(t)) return 'Ajuste/NC'
-  if (/^ND|N\.D\.|NOTA.*D[EÉ]B/.test(t)) return 'Ajuste/ND'
-  const s = artDesc.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  if (/PETROLEO|CRUDO|OIL/.test(s)) return 'Petróleo'
-  if (/GAS/.test(s)) return 'Gas'
-  if (/TRANSP/.test(s)) return 'Transporte'
-  if (/SERV/.test(s)) return 'Servicios'
+const CAT_MAP: Array<[RegExp, string]> = [
+  [/^VTA.PET|^PETROLEO|^VTA.ET.AJUSTE/i, 'Petróleo'],
+  [/^IN.KIND/i, 'Petróleo'],
+  [/^GAS|^000000000003|^PLAN.GAS|^EYS.GAS/i, 'Gas'],
+  [/^ALM\.|^CTROLCARGA|^TERMAP/i, 'Transporte/Logística'],
+  [/^REC.DESPA|^REC.DESPACHANT/i, 'Transporte/Logística'],
+  [/^KK.RECUP.REG|^PC.RECUP.REG/i, 'Recupero Regalías'],
+  [/^GTOS.ADMINISTR|^REC.SUELDOS|^RECUP\..GASTO|^RECUPERO.SUSE|^GO-/i, 'Recupero Gastos'],
+  [/^DIF_CAMBIO|^INTERESESGAS|^OTROS.INGRESOS/i, 'Financiero'],
+  [/^MATERIAL/i, 'Venta Materiales'],
+]
+
+function derivarCategoria(artCod: string, tipoComp: string): string {
+  const t = tipoComp.trim().toUpperCase()
+  // C* = Nota de Crédito, D* = Nota de Débito (any letter suffix)
+  if (t.startsWith('C')) return 'Ajuste/NC'
+  if (t.startsWith('D')) return 'Ajuste/ND'
+  const s = artCod.trim()
+  for (const [re, cat] of CAT_MAP) {
+    if (re.test(s)) return cat
+  }
   return 'Otros'
 }
 
-// ─── Date parsing ────────────────────────────────────────────────────────────
+// ─── Date parsing ─────────────────────────────────────────────────────────────
 
 const MES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
 function parsearFecha(v: any): { iso: string; mes: string; label: string } | null {
   let d: Date | null = null
-
   if (v instanceof Date) {
     d = v
+  } else if (typeof v === 'string') {
+    const parsed = Date.parse(v)
+    if (!isNaN(parsed)) d = new Date(parsed)
   } else if (typeof v === 'number' && v > 40000 && v < 60000) {
     d = new Date(Math.round((v - 25569) * 86400 * 1000))
-  } else if (typeof v === 'string') {
-    // Try DD/MM/YYYY or YYYY-MM-DD
-    const m1 = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/)
-    if (m1) {
-      const [, a, b, c] = m1
-      const yr = c.length === 2 ? '20' + c : c
-      // Detect DD/MM vs MM/DD by value: if first number > 12, it's DD
-      const day = parseInt(a) > 12 ? a : b
-      const mon = parseInt(a) > 12 ? b : a
-      d = new Date(`${yr}-${mon.padStart(2,'0')}-${day.padStart(2,'0')}`)
-    } else {
-      const parsed = Date.parse(v)
-      if (!isNaN(parsed)) d = new Date(parsed)
-    }
   }
-
   if (!d || isNaN(d.getTime())) return null
   const y = d.getUTCFullYear()
   const m = d.getUTCMonth()
   const dd = d.getUTCDate()
-  const mes = `${y}-${String(m + 1).padStart(2, '0')}`
   return {
-    iso: `${y}-${String(m + 1).padStart(2,'0')}-${String(dd).padStart(2,'0')}`,
-    mes,
+    iso:   `${y}-${String(m + 1).padStart(2,'0')}-${String(dd).padStart(2,'0')}`,
+    mes:   `${y}-${String(m + 1).padStart(2,'0')}`,
     label: `${MES_LABELS[m]}-${String(y).slice(2)}`,
   }
 }
 
-// ─── Sheet name detection ─────────────────────────────────────────────────────
+// ─── Comprobante formatter ────────────────────────────────────────────────────
 
-function encontrarHoja(wb: XLSX.WorkBook): string | null {
-  const candidates = [
-    'Detalle Ventas por Artículos',
-    'Detalle Ventas por Articulos',
-    'Detalle de Ventas',
-    'Ventas',
-    'Detalle',
-    'Facturación',
-    'Facturacion',
-  ]
-  for (const name of candidates) {
-    const match = wb.SheetNames.find(n => n.toLowerCase() === name.toLowerCase())
-    if (match) return match
-  }
-  // Fallback: first sheet with the most rows
-  return wb.SheetNames[0] ?? null
-}
-
-// ─── Header row detection ─────────────────────────────────────────────────────
-
-function encontrarHeaderRow(data: any[][]): { row: number; cols: Record<string, number> } | null {
-  for (let i = 0; i < Math.min(20, data.length); i++) {
-    const row = data[i]
-    if (!row) continue
-    const cols = detectarColumnas(row.map(c => c?.toString() ?? null))
-    // Need at least fecha + (importe or art_desc) to be a valid header
-    if ('fecha' in cols && ('importe' in cols || 'art_desc' in cols)) {
-      return { row: i, cols }
-    }
-  }
-  return null
+function formatComp(tipo: string, suc: number | string, nro: number | string): string {
+  const s = String(suc ?? '').padStart(4, '0')
+  const n = String(nro ?? '').padStart(8, '0')
+  return `${tipo.trim()} ${s}-${n}`
 }
 
 // ─── Pivot builder ────────────────────────────────────────────────────────────
 
+const CAT_ORDER = ['Petróleo','Gas','Transporte/Logística','Recupero Regalías','Venta Materiales','Recupero Gastos','Financiero','Otros','Ajuste/NC','Ajuste/ND']
+const BLOQUE_ORDER = ['ET','PCKK','CH','PPC','ENA','Gas','Financiero','Admin','Varios']
+
 function buildPivot(lineas: LineaFacturacion[], meses: string[]): PivotRow[] {
   const map = new Map<string, PivotRow>()
-
   for (const l of lineas) {
     const key = `${l.categoria}||${l.bloque}`
     if (!map.has(key)) {
@@ -198,20 +145,14 @@ function buildPivot(lineas: LineaFacturacion[], meses: string[]): PivotRow[] {
       map.set(key, { categoria: l.categoria, bloque: l.bloque, por_mes, total: 0 })
     }
     const row = map.get(key)!
-    row.por_mes[l.mes] = (row.por_mes[l.mes] ?? 0) + l.importe
-    row.total += l.importe
+    row.por_mes[l.mes] = (row.por_mes[l.mes] ?? 0) + l.importe_usd
+    row.total += l.importe_usd
   }
-
-  const CAT_ORDER = ['Petróleo', 'Gas', 'Transporte', 'Servicios', 'Otros', 'Ajuste/NC', 'Ajuste/ND']
-  const BLOQUE_ORDER = ['ET', 'PCKK', 'CH', 'RCLV', 'TDF', 'CER', 'Varios']
-
   return Array.from(map.values()).sort((a, b) => {
-    const ca = CAT_ORDER.indexOf(a.categoria)
-    const cb = CAT_ORDER.indexOf(b.categoria)
-    if (ca !== cb) return (ca === -1 ? 99 : ca) - (cb === -1 ? 99 : cb)
-    const ba = BLOQUE_ORDER.indexOf(a.bloque)
-    const bb = BLOQUE_ORDER.indexOf(b.bloque)
-    return (ba === -1 ? 99 : ba) - (bb === -1 ? 99 : bb)
+    const ca = CAT_ORDER.indexOf(a.categoria), cb = CAT_ORDER.indexOf(b.categoria)
+    if (ca !== cb) return (ca < 0 ? 99 : ca) - (cb < 0 ? 99 : cb)
+    const ba = BLOQUE_ORDER.indexOf(a.bloque), bb = BLOQUE_ORDER.indexOf(b.bloque)
+    return (ba < 0 ? 99 : ba) - (bb < 0 ? 99 : bb)
   })
 }
 
@@ -221,77 +162,108 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
   const buffer = await file.arrayBuffer()
   const wb = XLSX.read(buffer, { type: 'array', cellDates: true })
 
-  const sheetName = encontrarHoja(wb)
-  if (!sheetName) throw new Error('No se encontró la hoja de datos.')
+  // Book2 has one sheet (Sheet1); accept any single sheet
+  const sheetName = wb.SheetNames.find(n =>
+    /detalle.ventas|ventas|facturaci/i.test(n)
+  ) ?? wb.SheetNames[0]
+
+  if (!sheetName) throw new Error('No se encontró ninguna hoja en el archivo.')
 
   const ws = wb.Sheets[sheetName]
   const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }) as any[][]
 
-  const header = encontrarHeaderRow(raw)
-  if (!header) {
-    throw new Error(
-      `No se encontró la cabecera en la hoja "${sheetName}". ` +
-      'Verificá que el archivo tenga columnas de Fecha e Importe.'
-    )
+  // Find header row: look for "Articulo" in col 0
+  let headerIdx = -1
+  for (let i = 0; i < Math.min(10, raw.length); i++) {
+    if (String(raw[i]?.[0] ?? '').toLowerCase().includes('articulo')) {
+      headerIdx = i
+      break
+    }
   }
+  if (headerIdx < 0) throw new Error(
+    'No se encontró la cabecera. Verificá que el archivo sea una bajada del sistema "Detalle Ventas por Artículos".'
+  )
 
-  const { row: headerRow, cols } = header
+  // Column positions — derived from the known Book2 format
+  // If the system ever adds columns, fall back to name-based detection
+  const headers = raw[headerIdx] as string[]
+  const col = (name: string, fallback: number): number => {
+    const idx = headers.findIndex(h => String(h ?? '').toLowerCase().replace(/\s+/g,'') === name.toLowerCase().replace(/\s+/g,''))
+    return idx >= 0 ? idx : fallback
+  }
+  const C = {
+    art:      col('Articulo',    0),
+    desc:     col('Descripcion', 1),
+    cant:     col('Cantidad',    3),
+    nbLU:     col('PcioNetoLU',  6),
+    nbLT:     col('PcioNetoLT',  7),
+    nbEU:     col('PcioNetoEU',  10),
+    nbET:     col('PcioNetoET',  11),
+    tipo:     col('Tipo',        12),
+    suc:      col('Suc',         13),
+    nro:      col('Nro',         14),
+    cliCod:   col('Cliente',     15),
+    cliNom:   col('Nombre',      16),
+    fecha:    col('Fecha',       17),
+    descMed:  col('sa_descmed',  52),
+  }
 
   const lineas: LineaFacturacion[] = []
 
-  for (let i = headerRow + 1; i < raw.length; i++) {
-    const row = raw[i]
-    if (!row || row.every(c => c == null || c === '')) continue
+  for (let i = headerIdx + 1; i < raw.length; i++) {
+    const r = raw[i]
+    if (!r || r.every(c => c == null || c === '')) continue
 
-    const fechaRaw = cols.fecha != null ? row[cols.fecha] : null
-    const parsed = parsearFecha(fechaRaw)
-    if (!parsed) continue  // skip rows without a valid date (totals, blanks, etc.)
+    const fechaParsed = parsearFecha(r[C.fecha])
+    if (!fechaParsed) continue
 
-    const tipoComp = String(row[cols.tipo_comp ?? -1] ?? '').trim()
-    const nroComp  = String(row[cols.nro_comp ?? -1]  ?? '').trim()
-    const cliente  = String(row[cols.cliente ?? -1]   ?? '').trim()
-    const artCod   = String(row[cols.art_codigo ?? -1]?? '').trim()
-    const artDesc  = String(row[cols.art_desc ?? -1]  ?? '').trim()
-    const cantidad = Number(row[cols.cantidad ?? -1]  ?? 0)
-    const unidad   = String(row[cols.unidad ?? -1]    ?? '').trim()
-    const precioU  = Number(row[cols.precio_unitario ?? -1] ?? 0)
-    const importeV = Number(row[cols.importe ?? -1]   ?? 0)
-    const bloqueV  = cols.bloque != null ? String(row[cols.bloque] ?? '').trim() : undefined
+    const artCod  = String(r[C.art]     ?? '').trim()
+    const artDesc = String(r[C.descMed] ?? r[C.desc] ?? '').trim().replace(/\s+/g, ' ').slice(0, 80)
+    const tipo    = String(r[C.tipo]    ?? '').trim()
+    const suc     = r[C.suc]
+    const nro     = r[C.nro]
+    const cant    = Number(r[C.cant]  ?? 0)
+    const nbEU    = Number(r[C.nbEU]  ?? 0)   // precio neto USD / unidad
+    const nbET    = Number(r[C.nbET]  ?? 0)   // total neto USD
+    const nbLT    = Number(r[C.nbLT]  ?? 0)   // total neto ARS
 
-    if (importeV === 0 && cantidad === 0 && !artDesc && !cliente) continue
+    // Skip rows with no monetary value
+    if (nbET === 0 && nbLT === 0) continue
 
-    const categoria = derivarCategoria(artDesc || artCod, tipoComp)
-    const bloque    = derivarBloque(artDesc, artCod, bloqueV)
+    const tc = nbET !== 0 ? Math.round(nbLT / nbET) : 0
 
-    // NCs are negative by convention
-    const importe = (categoria === 'Ajuste/NC' || categoria === 'Ajuste/ND')
-      ? -Math.abs(importeV)
-      : importeV
+    const categoria  = derivarCategoria(artCod, tipo)
+    const bloque     = derivarBloque(artCod)
+    const esPetroleo = categoria === 'Petróleo'
+
+    // System already stores NCs as negative — use raw values directly
+    const importeUSD = nbET
+    const importeARS = nbLT
 
     lineas.push({
-      fecha:           parsed.iso,
-      mes:             parsed.mes,
-      mes_label:       parsed.label,
-      tipo_comp:       tipoComp,
-      nro_comp:        nroComp,
-      cliente,
-      art_codigo:      artCod,
-      art_desc:        artDesc,
+      fecha:            fechaParsed.iso,
+      mes:              fechaParsed.mes,
+      mes_label:        fechaParsed.label,
+      tipo_comp:        tipo,
+      comprobante:      formatComp(tipo, suc, nro),
+      cliente_cod:      String(r[C.cliCod] ?? '').trim(),
+      cliente:          String(r[C.cliNom] ?? '').trim(),
+      art_codigo:       artCod,
+      art_desc:         artDesc,
       categoria,
       bloque,
-      cantidad,
-      unidad,
-      precio_unitario: precioU,
-      importe,
+      cantidad:         cant,
+      precio_neto_usd_u: nbEU,
+      importe_usd:      importeUSD,
+      importe_ars:      importeARS,
+      tc,
+      es_petroleo:      esPetroleo,
     })
   }
 
-  if (lineas.length === 0) {
-    throw new Error(
-      'No se encontraron líneas de detalle. ' +
-      'Verificá que el archivo sea una bajada del sistema de Detalle de Ventas.'
-    )
-  }
+  if (lineas.length === 0) throw new Error(
+    'No se encontraron líneas de detalle. Verificá que sea una bajada "Detalle Ventas por Artículos".'
+  )
 
   // Build month index
   const mesSet = new Set<string>()
@@ -304,29 +276,25 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
 
   // Resumen
   let totalFact = 0, totalNC = 0
-  const porMes:      Record<string, number> = {}
-  const porBloque:   Record<string, number> = {}
+  const porMes: Record<string, number> = {}
+  const porBloque: Record<string, number> = {}
   const porCategoria: Record<string, number> = {}
-
   for (const l of lineas) {
-    if (l.importe < 0) totalNC += l.importe
-    else totalFact += l.importe
-
-    porMes[l.mes]           = (porMes[l.mes]           ?? 0) + l.importe
-    porBloque[l.bloque]     = (porBloque[l.bloque]     ?? 0) + l.importe
-    porCategoria[l.categoria] = (porCategoria[l.categoria] ?? 0) + l.importe
+    if (l.importe_usd < 0) totalNC += l.importe_usd
+    else totalFact += l.importe_usd
+    porMes[l.mes]              = (porMes[l.mes]              ?? 0) + l.importe_usd
+    porBloque[l.bloque]        = (porBloque[l.bloque]        ?? 0) + l.importe_usd
+    porCategoria[l.categoria]  = (porCategoria[l.categoria]  ?? 0) + l.importe_usd
   }
 
-  const desde = meses[0]
-  const hasta  = meses[meses.length - 1]
+  const desde = meses[0], hasta = meses[meses.length - 1]
   const [yd, md] = desde.split('-')
   const [yh, mh] = hasta.split('-')
-  const labelDesde = `${MES_LABELS[parseInt(md) - 1]}-${yd.slice(2)}`
-  const labelHasta = `${MES_LABELS[parseInt(mh) - 1]}-${yh.slice(2)}`
-  const periodo = desde === hasta ? labelDesde : `${labelDesde} — ${labelHasta}`
+  const lDesde = `${MES_LABELS[parseInt(md) - 1]}-${yd.slice(2)}`
+  const lHasta = `${MES_LABELS[parseInt(mh) - 1]}-${yh.slice(2)}`
 
   return {
-    periodo,
+    periodo:       desde === hasta ? lDesde : `${lDesde} — ${lHasta}`,
     periodo_desde: desde,
     periodo_hasta: hasta,
     meses,
@@ -335,11 +303,11 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
     pivot: buildPivot(lineas, meses),
     resumen: {
       total_facturas: totalFact,
-      total_nc: totalNC,
-      neto: totalFact + totalNC,
-      por_mes: porMes,
-      por_bloque: porBloque,
-      por_categoria: porCategoria,
+      total_nc:       totalNC,
+      neto:           totalFact + totalNC,
+      por_mes:        porMes,
+      por_bloque:     porBloque,
+      por_categoria:  porCategoria,
     },
   }
 }
