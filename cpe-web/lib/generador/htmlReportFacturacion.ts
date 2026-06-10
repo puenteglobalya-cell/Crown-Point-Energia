@@ -131,7 +131,7 @@ function buildFiscalTableHTML(
     const totalUSD = grupo.reduce((s, l) => s + l.importe_usd, 0)
     const totalARS = grupo.reduce((s, l) => s + l.importe_ars, 0)
 
-    html += `<tr class="fiscal-mes-header"><td colspan="16">${enc(label)}</td></tr>`
+    html += `<tr class="fiscal-mes-header"><td colspan="17">${enc(label)}</td></tr>`
 
     for (const l of grupo) {
       const idx = lineas.indexOf(l)
@@ -139,6 +139,7 @@ function buildFiscalTableHTML(
       const ncStyle = isNeg ? ' style="color:#C53030"' : ''
       const editAttr = ' class="editable-cell" contenteditable="true" data-placeholder="—"'
       const precio = precioDerivado(l)
+      const catColor = CAT_COLORS[l.categoria] ?? '#7A8099'
 
       html += `<tr class="fiscal-row" data-idx="${idx}"${ncStyle}>` +
         `<td class="dt">${fechaCorta(l.fecha)}</td>` +
@@ -146,6 +147,7 @@ function buildFiscalTableHTML(
         `<td class="cli" title="${enc(l.cliente)}">${enc(l.cliente)}</td>` +
         `<td class="art mono">${enc(l.art_codigo)}</td>` +
         `<td class="desc" title="${enc(l.art_desc)}">${enc(l.art_desc)}</td>` +
+        `<td class="tipo-col" style="color:${catColor}">${enc(l.categoria)}</td>` +
         `<td class="blq">${enc(l.bloque)}</td>` +
         `<td class="num">${fN(l.cantidad)}</td>` +
         `<td class="num">${fD(l.precio_neto_usd_u, 4)}</td>` +
@@ -161,7 +163,7 @@ function buildFiscalTableHTML(
     }
 
     html += `<tr class="fiscal-subtotal">` +
-      `<td colspan="8">Subtotal ${enc(label)}</td>` +
+      `<td colspan="9">Subtotal ${enc(label)}</td>` +
       `<td></td>` +
       `<td class="num">${fN(totalUSD)}</td>` +
       `<td class="num ars-col">${fN(totalARS)}</td>` +
@@ -215,9 +217,13 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
 
   const ncLineas = lineas.filter(l => l.importe_usd < 0)
 
-  // All unique clients, bloques and articles for datalist / selects
-  const allClientes  = [...new Set(lineas.map(l => l.cliente).filter(Boolean))].sort()
-  const allBloques   = [...new Set(lineas.map(l => l.bloque).filter(Boolean))].sort()
+  // All unique clients, bloques, articles and categories for datalist / selects
+  const allClientes   = [...new Set(lineas.map(l => l.cliente).filter(Boolean))].sort()
+  const allBloques    = [...new Set(lineas.map(l => l.bloque).filter(Boolean))].sort()
+  const allCategorias = [...new Set(lineas.map(l => l.categoria))].sort((a, b) => {
+    const ia = CAT_ORDER.indexOf(a), ib = CAT_ORDER.indexOf(b)
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib)
+  })
   const allArticulos = [...new Map(lineas.map(l => [l.art_codigo, l.art_desc])).entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
 
@@ -296,6 +302,7 @@ table.fiscal .dt{white-space:nowrap;color:#7A8099}
 table.fiscal .cli{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 table.fiscal .desc{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#4A5568}
 table.fiscal .blq{font-weight:600;font-size:11px;white-space:nowrap}
+table.fiscal .tipo-col{font-size:11px;font-weight:500;white-space:nowrap}
 table.fiscal .ars-col{color:#7A8099}
 table.fiscal .tc-col{color:#7A8099;font-size:11px}
 table.fiscal .precio-col{color:#2B6CB0;font-size:11px;white-space:nowrap}
@@ -426,6 +433,10 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
         <option value="">Todos los bloques</option>
         ${allBloques.map(b => `<option value="${enc(b)}">${enc(b)}</option>`).join('')}
       </select>
+      <select id="tipoSelect" onchange="renderFiscal()">
+        <option value="">Todos los tipos</option>
+        ${allCategorias.map(c => `<option value="${enc(c)}">${enc(c)}</option>`).join('')}
+      </select>
       <select id="articuloSelect" onchange="renderFiscal()">
         <option value="">Todos los artículos</option>
         ${allArticulos.map(([cod, desc]) => `<option value="${enc(cod)}">${enc(cod)}${desc ? ' — ' + enc(desc.slice(0,40)) : ''}</option>`).join('')}
@@ -447,6 +458,7 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
             <th class="sortable" data-col="cliente" style="min-width:150px">Cliente<span class="sort-icon"></span></th>
             <th style="min-width:85px">Artículo</th>
             <th style="min-width:200px">Descripción</th>
+            <th style="min-width:100px">Tipo</th>
             <th style="min-width:50px">Bloque</th>
             <th class="num-h sortable" data-col="cantidad" style="min-width:80px">Cantidad<span class="sort-icon"></span></th>
             <th class="num-h" style="min-width:80px">P.Neto USD/u</th>
@@ -600,6 +612,7 @@ function saveManualData() {
 function clearFiscalFilters() {
   document.getElementById('clienteSearch').value = '';
   document.getElementById('bloqueSelect').value = '';
+  document.getElementById('tipoSelect').value = '';
   document.getElementById('articuloSelect').value = '';
   document.getElementById('mesSelect').value = '';
   sortState = { col: null, dir: 1 };
@@ -635,6 +648,7 @@ function renderFiscal() {
 
   var clienteQ  = (document.getElementById('clienteSearch').value || '').toLowerCase().trim();
   var bloqueQ   = document.getElementById('bloqueSelect').value || '';
+  var tipoQ     = document.getElementById('tipoSelect').value || '';
   var articuloQ = document.getElementById('articuloSelect').value || '';
   var mesQ      = document.getElementById('mesSelect').value || '';
 
@@ -650,6 +664,7 @@ function renderFiscal() {
     if (mesesActivos.indexOf(l.mes) < 0) return false;
     if (clienteQ && l.cliente.toLowerCase().indexOf(clienteQ) < 0) return false;
     if (bloqueQ && l.bloque !== bloqueQ) return false;
+    if (tipoQ && l.categoria !== tipoQ) return false;
     if (articuloQ && l.art_codigo !== articuloQ) return false;
     return true;
   });
@@ -684,7 +699,7 @@ function renderFiscal() {
       html += rowHTML(l, idx, ncS, saved);
     });
     if (lineas.length > 0) {
-      html += '<tr class="fiscal-subtotal"><td colspan="8">Total filtrado</td>' +
+      html += '<tr class="fiscal-subtotal"><td colspan="9">Total filtrado</td>' +
         '<td></td>' +
         '<td class="num">'+fN(totalUSD)+'</td>' +
         '<td class="num ars-col">'+fN(totalARS)+'</td>' +
@@ -701,7 +716,7 @@ function renderFiscal() {
       var label = MES_LABELS[mes]||mes;
       var totalUSD = grupo.reduce(function(s,l){return s+l.importe_usd;},0);
       var totalARS = grupo.reduce(function(s,l){return s+l.importe_ars;},0);
-      html += '<tr class="fiscal-mes-header"><td colspan="16">'+enc(label)+'</td></tr>';
+      html += '<tr class="fiscal-mes-header"><td colspan="17">'+enc(label)+'</td></tr>';
       grupo.forEach(function(l) {
         var idx = LINEAS.indexOf(l);
         var isNeg = l.importe_usd < 0;
@@ -709,7 +724,7 @@ function renderFiscal() {
         var saved = manualData[idx]||{};
         html += rowHTML(l, idx, ncS, saved);
       });
-      html += '<tr class="fiscal-subtotal"><td colspan="8">Subtotal '+enc(label)+'</td>' +
+      html += '<tr class="fiscal-subtotal"><td colspan="9">Subtotal '+enc(label)+'</td>' +
         '<td></td>' +
         '<td class="num">'+fN(totalUSD)+'</td>' +
         '<td class="num ars-col">'+fN(totalARS)+'</td>' +
@@ -722,12 +737,14 @@ function renderFiscal() {
 
 function rowHTML(l, idx, ncS, saved) {
   var precio = computarPrecio(l);
+  var catColor = CAT_COLORS[l.categoria] || '#7A8099';
   return '<tr class="fiscal-row" data-idx="'+idx+'"'+ncS+'>'+
     '<td class="dt">'+fechaCorta(l.fecha)+'</td>'+
     '<td class="comp mono">'+enc(l.comprobante)+'</td>'+
     '<td class="cli" title="'+enc(l.cliente)+'">'+enc(l.cliente)+'</td>'+
     '<td class="art mono">'+enc(l.art_codigo)+'</td>'+
     '<td class="desc" title="'+enc(l.art_desc)+'">'+enc(l.art_desc)+'</td>'+
+    '<td class="tipo-col" style="color:'+catColor+'">'+enc(l.categoria)+'</td>'+
     '<td class="blq">'+enc(l.bloque)+'</td>'+
     '<td class="num">'+fN(l.cantidad)+'</td>'+
     '<td class="num">'+fD(l.precio_neto_usd_u,4)+'</td>'+
@@ -824,11 +841,13 @@ function exportarExcel() {
   var detRows = [detHdr];
   var clienteQx  = (document.getElementById('clienteSearch').value||'').toLowerCase().trim();
   var bloqueQx   = document.getElementById('bloqueSelect').value||'';
+  var tipoQx     = document.getElementById('tipoSelect').value||'';
   var articuloQx = document.getElementById('articuloSelect').value||'';
   LINEAS.filter(function(l){
     if (!filtered.has(l.mes)) return false;
     if (clienteQx && l.cliente.toLowerCase().indexOf(clienteQx)<0) return false;
     if (bloqueQx && l.bloque !== bloqueQx) return false;
+    if (tipoQx && l.categoria !== tipoQx) return false;
     if (articuloQx && l.art_codigo !== articuloQx) return false;
     return true;
   }).forEach(function(l){
