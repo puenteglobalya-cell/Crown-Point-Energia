@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
     ? storage_path.replace(/\.\.\//g, '').replace(/^\/+/, '')
     : null
 
-  const VALID_TYPES = ['ingresos', 'produccion', 'financiero', 'accionista', 'henry_hub', 'ice_brent']
+  const VALID_TYPES = ['ingresos', 'produccion', 'financiero', 'accionista', 'henry_hub', 'ice_brent', 'facturacion']
   const typeIdFinal = typeof type_id === 'string' && VALID_TYPES.includes(type_id) ? type_id : 'ingresos'
 
   const db = createSupabaseServerAdminClient()
