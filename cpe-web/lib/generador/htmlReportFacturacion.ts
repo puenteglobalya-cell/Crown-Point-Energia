@@ -216,9 +216,11 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
 
   const ncLineas = lineas.filter(l => l.categoria === 'Ajuste/NC' || l.categoria === 'Ajuste/ND')
 
-  // All unique clients and bloques for datalist / selects
-  const allClientes = [...new Set(lineas.map(l => l.cliente).filter(Boolean))].sort()
-  const allBloques  = [...new Set(lineas.map(l => l.bloque).filter(Boolean))].sort()
+  // All unique clients, bloques and articles for datalist / selects
+  const allClientes  = [...new Set(lineas.map(l => l.cliente).filter(Boolean))].sort()
+  const allBloques   = [...new Set(lineas.map(l => l.bloque).filter(Boolean))].sort()
+  const allArticulos = [...new Map(lineas.map(l => [l.art_codigo, l.art_desc])).entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -425,6 +427,10 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
         <option value="">Todos los bloques</option>
         ${allBloques.map(b => `<option value="${enc(b)}">${enc(b)}</option>`).join('')}
       </select>
+      <select id="articuloSelect" onchange="renderFiscal()">
+        <option value="">Todos los artículos</option>
+        ${allArticulos.map(([cod, desc]) => `<option value="${enc(cod)}">${enc(cod)}${desc ? ' — ' + enc(desc.slice(0,40)) : ''}</option>`).join('')}
+      </select>
       <select id="mesSelect" onchange="renderFiscal()">
         <option value="">Todos los meses</option>
         ${meses.map(m => `<option value="${m}">${enc(mes_labels[m] ?? m)}</option>`).join('')}
@@ -595,6 +601,7 @@ function saveManualData() {
 function clearFiscalFilters() {
   document.getElementById('clienteSearch').value = '';
   document.getElementById('bloqueSelect').value = '';
+  document.getElementById('articuloSelect').value = '';
   document.getElementById('mesSelect').value = '';
   sortState = { col: null, dir: 1 };
   document.querySelectorAll('#fiscal-table th.sortable').forEach(function(th){
@@ -627,9 +634,10 @@ document.addEventListener('DOMContentLoaded', function() {
 function renderFiscal() {
   saveManualData();
 
-  var clienteQ = (document.getElementById('clienteSearch').value || '').toLowerCase().trim();
-  var bloqueQ  = document.getElementById('bloqueSelect').value || '';
-  var mesQ     = document.getElementById('mesSelect').value || '';
+  var clienteQ  = (document.getElementById('clienteSearch').value || '').toLowerCase().trim();
+  var bloqueQ   = document.getElementById('bloqueSelect').value || '';
+  var articuloQ = document.getElementById('articuloSelect').value || '';
+  var mesQ      = document.getElementById('mesSelect').value || '';
 
   // Determine active months: both global chips AND local dropdown
   var mesesActivos = MESES.filter(function(m){
@@ -643,6 +651,7 @@ function renderFiscal() {
     if (mesesActivos.indexOf(l.mes) < 0) return false;
     if (clienteQ && l.cliente.toLowerCase().indexOf(clienteQ) < 0) return false;
     if (bloqueQ && l.bloque !== bloqueQ) return false;
+    if (articuloQ && l.art_codigo !== articuloQ) return false;
     return true;
   });
 
@@ -814,12 +823,14 @@ function exportarExcel() {
   // Sheet 2: Detalle fiscal
   var detHdr = ['Fecha','Mes','Comprobante','Cliente','Artículo','Descripción','Bloque','Categoría','Cantidad','P.Neto USD/u','Precio','Total Neto USD','Total Neto ARS','TC','Certificado','°API','Buque','Fecha emb.'];
   var detRows = [detHdr];
-  var clienteQx = (document.getElementById('clienteSearch').value||'').toLowerCase().trim();
-  var bloqueQx  = document.getElementById('bloqueSelect').value||'';
+  var clienteQx  = (document.getElementById('clienteSearch').value||'').toLowerCase().trim();
+  var bloqueQx   = document.getElementById('bloqueSelect').value||'';
+  var articuloQx = document.getElementById('articuloSelect').value||'';
   LINEAS.filter(function(l){
     if (!filtered.has(l.mes)) return false;
     if (clienteQx && l.cliente.toLowerCase().indexOf(clienteQx)<0) return false;
     if (bloqueQx && l.bloque !== bloqueQx) return false;
+    if (articuloQx && l.art_codigo !== articuloQx) return false;
     return true;
   }).forEach(function(l){
     var idx = LINEAS.indexOf(l);
