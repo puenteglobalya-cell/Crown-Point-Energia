@@ -6,23 +6,26 @@ import { parsearIngresosExcel, type DatosIngresos } from '@/lib/parsers/ingresos
 import { parsearAccionistaPPTX, type DatosAccionista } from '@/lib/parsers/accionista'
 import { parsearExcelGenerico, type DatosGenerico } from '@/lib/parsers/generico'
 import { parsearTextoMacro, type DatosMacro } from '@/lib/parsers/macro'
+import { parsearFacturacionExcel, type DatosFacturacion } from '@/lib/parsers/facturacion'
 import { generarReporteHTML, type MacroSnapshot } from '@/lib/generador/htmlReport'
 import { generarReporteAccionistaHTML } from '@/lib/generador/htmlReportAccionista'
 import { generarReporteGenericoHTML } from '@/lib/generador/htmlReportGenerico'
+import { generarReporteFacturacionHTML } from '@/lib/generador/htmlReportFacturacion'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-type ReportType = 'ingresos' | 'accionista' | 'produccion' | 'financiero' | 'henry_hub' | 'ice_brent'
+type ReportType = 'ingresos' | 'accionista' | 'produccion' | 'financiero' | 'henry_hub' | 'ice_brent' | 'facturacion'
 type Step = 'type' | 'select' | 'parsing' | 'preview' | 'uploading' | 'done'
 
 const isMacroType = (t: ReportType) => t === 'henry_hub' || t === 'ice_brent'
 
 const TYPES: { id: ReportType; label: string; desc: string; ext: string; icon: string }[] = [
-  { id: 'ingresos',   label: 'Ingresos Estimados',    desc: 'Revenue mensual petróleo & gas',     ext: '.xlsx,.xls', icon: '📊' },
-  { id: 'accionista', label: 'Informe de Seguimiento', desc: 'Cash flow operativo + comercial',    ext: '.pptx',      icon: '📋' },
-  { id: 'produccion', label: 'Reporte de Producción', desc: 'Volúmenes y pozos por área',           ext: '.xlsx,.xls', icon: '⛽' },
-  { id: 'financiero', label: 'Reporte Financiero',    desc: 'Estados financieros (P&L, balance)',  ext: '.xlsx,.xls', icon: '💰' },
-  { id: 'henry_hub',  label: 'Henry Hub (Gas)',        desc: 'Pegar tabla de CME Group',            ext: 'pegar texto', icon: '🔵' },
-  { id: 'ice_brent',  label: 'ICE Brent (Petróleo)',  desc: 'Pegar tabla de ICE Futures Europe',   ext: 'pegar texto', icon: '🟢' },
+  { id: 'ingresos',    label: 'Ingresos Estimados',    desc: 'Revenue mensual petróleo & gas',          ext: '.xlsx,.xls',  icon: '📊' },
+  { id: 'facturacion', label: 'Reporte de Facturación', desc: 'Detalle de ventas por artículo y bloque', ext: '.xlsx,.xls', icon: '🧾' },
+  { id: 'accionista',  label: 'Informe de Seguimiento', desc: 'Cash flow operativo + comercial',         ext: '.pptx',       icon: '📋' },
+  { id: 'produccion',  label: 'Reporte de Producción',  desc: 'Volúmenes y pozos por área',              ext: '.xlsx,.xls',  icon: '⛽' },
+  { id: 'financiero',  label: 'Reporte Financiero',     desc: 'Estados financieros (P&L, balance)',      ext: '.xlsx,.xls',  icon: '💰' },
+  { id: 'henry_hub',   label: 'Henry Hub (Gas)',         desc: 'Pegar tabla de CME Group',                ext: 'pegar texto', icon: '🔵' },
+  { id: 'ice_brent',   label: 'ICE Brent (Petróleo)',   desc: 'Pegar tabla de ICE Futures Europe',       ext: 'pegar texto', icon: '🟢' },
 ]
 
 const MACRO_HINTS: Record<string, { url: string; col: string; placeholder: string }> = {
@@ -49,6 +52,7 @@ export default function PortalSubirPage() {
   const [datosAccionista, setDatosAccionista] = useState<DatosAccionista | null>(null)
   const [datosGenerico, setDatosGenerico] = useState<DatosGenerico | null>(null)
   const [datosMacro, setDatosMacro] = useState<DatosMacro | null>(null)
+  const [datosFacturacion, setDatosFacturacion] = useState<DatosFacturacion | null>(null)
   const [macroSnap, setMacroSnap]   = useState<MacroSnapshot | null>(null)
   const [includeMacro, setIncludeMacro] = useState(true)
   const [titulo, setTitulo] = useState('')
@@ -69,6 +73,10 @@ export default function PortalSubirPage() {
         fetch('/api/macro').then(r => r.ok ? r.json() : null).then(m => {
           if (m && (m.hasHH || m.hasBrent)) setMacroSnap(m as MacroSnapshot)
         }).catch(() => {})
+      } else if (tipo === 'facturacion') {
+        const parsed = await parsearFacturacionExcel(f)
+        setDatosFacturacion(parsed)
+        setTitulo(`Facturación — ${parsed.periodo}`)
       } else if (tipo === 'accionista') {
         const parsed = await parsearAccionistaPPTX(f)
         setDatosAccionista(parsed)
@@ -114,6 +122,10 @@ export default function PortalSubirPage() {
         datos   = datosIngresos
         html    = generarReporteHTML(datosIngresos, includeMacro && macroSnap ? macroSnap : undefined)
         periodo = datosIngresos.periodo
+      } else if (tipo === 'facturacion' && datosFacturacion) {
+        datos   = datosFacturacion
+        html    = generarReporteFacturacionHTML(datosFacturacion)
+        periodo = `${datosFacturacion.periodo_desde}_${datosFacturacion.periodo_hasta}`
       } else if (tipo === 'accionista' && datosAccionista) {
         datos   = datosAccionista
         html    = generarReporteAccionistaHTML(datosAccionista)
@@ -168,7 +180,7 @@ export default function PortalSubirPage() {
 
   function reset() {
     setStep('type'); setFile(null); setMacroText('')
-    setDatosIngresos(null); setDatosAccionista(null); setDatosGenerico(null); setDatosMacro(null)
+    setDatosIngresos(null); setDatosAccionista(null); setDatosGenerico(null); setDatosMacro(null); setDatosFacturacion(null)
     setMacroSnap(null); setIncludeMacro(true)
     setTitulo(''); setDoneId(''); setErr('')
     if (fileRef.current) fileRef.current.value = ''
@@ -378,6 +390,14 @@ td{padding:6px 12px;border-bottom:1px solid #eee;font-family:monospace}</style><
                   {kv('Vol. producido', `${Math.round(datosIngresos.vol_producido_boed).toLocaleString('es-AR')} BOE/d`)}
                   {kv('Precio neto oil', `us$ ${datosIngresos.precio_neto_oil.toFixed(2)}/bbl`)}
                   {kv('Precio neto gas', `us$ ${datosIngresos.precio_neto_gas.toFixed(2)}/mcf`)}
+                </>}
+                {tipo === 'facturacion' && datosFacturacion && <>
+                  {kv('Período', datosFacturacion.periodo)}
+                  {kv('Meses cubiertos', `${datosFacturacion.meses.length}`)}
+                  {kv('Total facturado', `us$ ${(datosFacturacion.resumen.total_facturas / 1_000_000).toFixed(3)} MM`)}
+                  {kv('Notas de crédito', `(us$ ${(Math.abs(datosFacturacion.resumen.total_nc) / 1_000_000).toFixed(3)} MM)`)}
+                  {kv('Neto facturado', `us$ ${(datosFacturacion.resumen.neto / 1_000_000).toFixed(3)} MM`)}
+                  {kv('Líneas de detalle', `${datosFacturacion.lineas.length}`)}
                 </>}
                 {tipo === 'ingresos' && macroSnap && (
                   <div style={{ gridColumn: '1 / -1', marginTop: 8, paddingTop: 10, borderTop: '1px solid var(--rule)', display: 'flex', alignItems: 'center', gap: 10 }}>
