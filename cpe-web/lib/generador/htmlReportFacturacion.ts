@@ -20,7 +20,7 @@ type Linea = DatosFacturacion['lineas'][number]
 function precioDerivado(l: Linea): string {
   if (l.es_petroleo && l.cantidad !== 0)
     return fD(l.importe_usd / (l.cantidad * 6.28981), 2) + ' $/bbl'
-  if (l.categoria === 'Gas' && l.cantidad !== 0)
+  if (l.es_gas && l.cantidad !== 0)
     return fD(l.importe_usd / (l.cantidad / 1000 * 35.314), 2) + ' $/MMBTU'
   return ''
 }
@@ -41,19 +41,18 @@ function fechaCorta(iso: string): string {
 // ─── Color palette ────────────────────────────────────────────────────────────
 
 const CAT_COLORS: Record<string, string> = {
-  'Petróleo':             '#2B6CB0',
-  'Gas':                  '#38A169',
-  'Transporte/Logística': '#D69E2E',
-  'Recupero Regalías':    '#805AD5',
-  'Recupero Gastos':      '#718096',
-  'Venta Materiales':     '#9F7AEA',
-  'Financiero':           '#A0AEC0',
-  'Otros':                '#CBD5E0',
-  'Ajuste/NC':            '#E53E3E',
-  'Ajuste/ND':            '#DD6B20',
+  'Petróleo':              '#2B6CB0',
+  'Gas':                   '#38A169',
+  'Impuestos':             '#D69E2E',
+  'Ajuste de precio área': '#805AD5',
+  'Diferencia de Cambio':  '#A0AEC0',
+  'Intereses':             '#DD6B20',
+  'Venta de materiales':   '#9F7AEA',
+  'Recupero de gastos':    '#718096',
+  'Otros':                 '#CBD5E0',
 }
 
-const CAT_ORDER  = ['Petróleo','Gas','Transporte/Logística','Recupero Regalías','Venta Materiales','Recupero Gastos','Financiero','Otros','Ajuste/NC','Ajuste/ND']
+const CAT_ORDER  = ['Petróleo','Gas','Impuestos','Ajuste de precio área','Diferencia de Cambio','Intereses','Venta de materiales','Recupero de gastos','Otros']
 const BLOQUE_ORDER = ['ET','PCKK','CH','PPC','ENA','Gas','Financiero','Admin','Varios']
 
 // ─── Pivot HTML builder (SSR) ─────────────────────────────────────────────────
@@ -83,8 +82,8 @@ function buildPivotHTML(meses: string[], mes_labels: Record<string, string>, piv
     }
     const catTotal = rows.reduce((s, r) => s + r.total, 0)
     grandTotal += catTotal
-    const isNC = cat === 'Ajuste/NC' || cat === 'Ajuste/ND'
-    const color = isNC ? ' style="color:#C53030"' : ''
+    const isNeg = catTotal < 0
+    const color = isNeg ? ' style="color:#C53030"' : ''
 
     html += `<tr class="cat-header"${color}>` +
       `<td class="cat-label" colspan="2">${enc(cat)}</td>` +
@@ -136,8 +135,8 @@ function buildFiscalTableHTML(
 
     for (const l of grupo) {
       const idx = lineas.indexOf(l)
-      const isNC = l.categoria === 'Ajuste/NC' || l.categoria === 'Ajuste/ND'
-      const ncStyle = isNC ? ' style="color:#C53030"' : ''
+      const isNeg = l.importe_usd < 0
+      const ncStyle = isNeg ? ' style="color:#C53030"' : ''
       const editAttr = ' class="editable-cell" contenteditable="true" data-placeholder="—"'
       const precio = precioDerivado(l)
 
@@ -151,7 +150,7 @@ function buildFiscalTableHTML(
         `<td class="num">${fN(l.cantidad)}</td>` +
         `<td class="num">${fD(l.precio_neto_usd_u, 4)}</td>` +
         `<td class="num precio-col">${enc(precio)}</td>` +
-        `<td class="num${isNC ? ' nc-val' : ''}">${fN(l.importe_usd)}</td>` +
+        `<td class="num${isNeg ? ' nc-val' : ''}">${fN(l.importe_usd)}</td>` +
         `<td class="num ars-col">${fN(l.importe_ars)}</td>` +
         `<td class="num tc-col">${l.tc > 0 ? fN(l.tc) : ''}</td>` +
         (l.es_petroleo
@@ -214,7 +213,7 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
   const donutData   = donutLabels.map(c => Math.abs(resumen.por_categoria[c] ?? 0))
   const donutColors = donutLabels.map(c => CAT_COLORS[c] ?? '#A0AEC0')
 
-  const ncLineas = lineas.filter(l => l.categoria === 'Ajuste/NC' || l.categoria === 'Ajuste/ND')
+  const ncLineas = lineas.filter(l => l.importe_usd < 0)
 
   // All unique clients, bloques and articles for datalist / selects
   const allClientes  = [...new Set(lineas.map(l => l.cliente).filter(Boolean))].sort()
@@ -513,7 +512,7 @@ function enc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 function computarPrecio(l) {
   if (l.es_petroleo && l.cantidad !== 0)
     return fD(l.importe_usd / (l.cantidad * 6.28981), 2) + ' $/bbl';
-  if (l.categoria === 'Gas' && l.cantidad !== 0)
+  if (l.es_gas && l.cantidad !== 0)
     return fD(l.importe_usd / (l.cantidad / 1000 * 35.314), 2) + ' $/MMBTU';
   return '';
 }
@@ -560,7 +559,7 @@ function renderPivot() {
     });
     catTotal=rows.reduce(function(s,r){return s+r.total;},0);
     gTotal+=catTotal;
-    var isNC=cat==='Ajuste/NC'||cat==='Ajuste/ND', col=isNC?' style="color:#C53030"':'';
+    var isNeg=catTotal<0, col=isNeg?' style="color:#C53030"':'';
     html+='<tr class="cat-header"'+col+'><td class="cat-label" colspan="2">'+cat+'</td>'+
       filtered.map(function(m){return '<td class="num subtotal">'+fN(catTotals[m])+'</td>';}).join('')+
       '<td class="num subtotal total-col">'+fN(catTotal)+'</td></tr>';
@@ -678,8 +677,8 @@ function renderFiscal() {
     var totalUSD = 0, totalARS = 0;
     lineas.forEach(function(l) {
       var idx = LINEAS.indexOf(l);
-      var isNC = l.categoria==='Ajuste/NC'||l.categoria==='Ajuste/ND';
-      var ncS  = isNC ? ' style="color:#C53030"' : '';
+      var isNeg = l.importe_usd < 0;
+      var ncS  = isNeg ? ' style="color:#C53030"' : '';
       var saved = manualData[idx]||{};
       totalUSD += l.importe_usd; totalARS += l.importe_ars;
       html += rowHTML(l, idx, ncS, saved);
@@ -705,8 +704,8 @@ function renderFiscal() {
       html += '<tr class="fiscal-mes-header"><td colspan="16">'+enc(label)+'</td></tr>';
       grupo.forEach(function(l) {
         var idx = LINEAS.indexOf(l);
-        var isNC = l.categoria==='Ajuste/NC'||l.categoria==='Ajuste/ND';
-        var ncS  = isNC ? ' style="color:#C53030"' : '';
+        var isNeg = l.importe_usd < 0;
+        var ncS  = isNeg ? ' style="color:#C53030"' : '';
         var saved = manualData[idx]||{};
         html += rowHTML(l, idx, ncS, saved);
       });
@@ -733,7 +732,7 @@ function rowHTML(l, idx, ncS, saved) {
     '<td class="num">'+fN(l.cantidad)+'</td>'+
     '<td class="num">'+fD(l.precio_neto_usd_u,4)+'</td>'+
     '<td class="num precio-col">'+enc(precio)+'</td>'+
-    '<td class="num'+(l.categoria==='Ajuste/NC'||l.categoria==='Ajuste/ND'?' nc-val':'')+'">'+fN(l.importe_usd)+'</td>'+
+    '<td class="num'+(l.importe_usd<0?' nc-val':'')+'">'+fN(l.importe_usd)+'</td>'+
     '<td class="num ars-col">'+fN(l.importe_ars)+'</td>'+
     '<td class="num tc-col">'+(l.tc>0?fN(l.tc):'')+'</td>'+
     (l.es_petroleo

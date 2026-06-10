@@ -12,7 +12,7 @@ export interface LineaFacturacion {
   cliente: string
   art_codigo: string
   art_desc: string        // sa_descmed truncado
-  categoria: string       // Petróleo | Gas | Transporte/Logística | Recupero Regalías | Recupero Gastos | Financiero | Venta Materiales | Ajuste/NC | Ajuste/ND | Otros
+  categoria: string       // Petróleo | Gas | Impuestos | Ajuste de precio área | Diferencia de Cambio | Intereses | Venta de materiales | Recupero de gastos | Otros
   bloque: string          // ET | PCKK | CH | PPC | ENA | Gas | Financiero | Admin | Varios
   cantidad: number
   precio_neto_usd_u: number   // PcioNetoEU
@@ -20,6 +20,7 @@ export interface LineaFacturacion {
   importe_ars: number         // PcioNetoLT
   tc: number                  // tipo de cambio derivado (ARS/USD)
   es_petroleo: boolean
+  es_gas: boolean
 }
 
 export interface PivotRow {
@@ -75,21 +76,16 @@ function derivarBloque(artCod: string): string {
 
 const CAT_MAP: Array<[RegExp, string]> = [
   [/^VTA.PET|^PETROLEO|^VTA.ET.AJUSTE/i, 'Petróleo'],
-  [/^IN.KIND/i, 'Petróleo'],
-  [/^GAS|^000000000003|^PLAN.GAS|^EYS.GAS/i, 'Gas'],
-  [/^ALM\.|^CTROLCARGA|^TERMAP/i, 'Transporte/Logística'],
-  [/^REC.DESPA|^REC.DESPACHANT/i, 'Transporte/Logística'],
-  [/^KK.RECUP.REG|^PC.RECUP.REG/i, 'Recupero Regalías'],
-  [/^GTOS.ADMINISTR|^REC.SUELDOS|^RECUP\..GASTO|^RECUPERO.SUSE|^GO-/i, 'Recupero Gastos'],
-  [/^DIF_CAMBIO|^INTERESESGAS|^OTROS.INGRESOS/i, 'Financiero'],
-  [/^MATERIAL/i, 'Venta Materiales'],
+  [/^GAS|^PLAN.GAS|^EYS.GAS/i, 'Gas'],
+  [/^000000000003/i, 'Impuestos'],
+  [/^IN.KIND/i, 'Ajuste de precio área'],
+  [/^DIF_CAMBIO/i, 'Diferencia de Cambio'],
+  [/^INTERESESGAS|^OTROS.INGRESOS/i, 'Intereses'],
+  [/^MATERIAL/i, 'Venta de materiales'],
+  [/^ALM\.|^CTROLCARGA|^TERMAP|^REC.DESPA|^REC.DESPACHANT|^KK.RECUP|^PC.RECUP|^GTOS.ADMINISTR|^REC.SUELDOS|^RECUP\..GASTO|^RECUPERO.SUSE|^GO-/i, 'Recupero de gastos'],
 ]
 
-function derivarCategoria(artCod: string, tipoComp: string): string {
-  const t = tipoComp.trim().toUpperCase()
-  // C* = Nota de Crédito, D* = Nota de Débito (any letter suffix)
-  if (t.startsWith('C')) return 'Ajuste/NC'
-  if (t.startsWith('D')) return 'Ajuste/ND'
+function derivarCategoria(artCod: string): string {
   const s = artCod.trim()
   for (const [re, cat] of CAT_MAP) {
     if (re.test(s)) return cat
@@ -132,7 +128,7 @@ function formatComp(tipo: string, suc: number | string, nro: number | string): s
 
 // ─── Pivot builder ────────────────────────────────────────────────────────────
 
-const CAT_ORDER = ['Petróleo','Gas','Transporte/Logística','Recupero Regalías','Venta Materiales','Recupero Gastos','Financiero','Otros','Ajuste/NC','Ajuste/ND']
+const CAT_ORDER = ['Petróleo','Gas','Impuestos','Ajuste de precio área','Diferencia de Cambio','Intereses','Venta de materiales','Recupero de gastos','Otros']
 const BLOQUE_ORDER = ['ET','PCKK','CH','PPC','ENA','Gas','Financiero','Admin','Varios']
 
 function buildPivot(lineas: LineaFacturacion[], meses: string[]): PivotRow[] {
@@ -232,9 +228,10 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
 
     const tc = nbET !== 0 ? Math.round(nbLT / nbET) : 0
 
-    const categoria  = derivarCategoria(artCod, tipo)
+    const categoria  = derivarCategoria(artCod)
     const bloque     = derivarBloque(artCod)
     const esPetroleo = categoria === 'Petróleo'
+    const esGas      = categoria === 'Gas'
 
     // System already stores NCs as negative — use raw values directly
     const importeUSD = nbET
@@ -258,6 +255,7 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
       importe_ars:      importeARS,
       tc,
       es_petroleo:      esPetroleo,
+      es_gas:           esGas,
     })
   }
 
