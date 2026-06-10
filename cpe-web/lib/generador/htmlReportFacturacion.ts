@@ -16,6 +16,15 @@ function fD(n: number, d = 2): string {
   return n.toFixed(d).replace('.', ',')
 }
 
+type Linea = DatosFacturacion['lineas'][number]
+function precioDerivado(l: Linea): string {
+  if (l.es_petroleo && l.cantidad !== 0)
+    return fD(l.importe_usd / (l.cantidad * 6.28981), 2) + ' $/bbl'
+  if (l.categoria === 'Gas' && l.cantidad !== 0)
+    return fD(l.importe_usd / (l.cantidad / 1000 * 35.314), 2) + ' $/MMBTU'
+  return ''
+}
+
 function enc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
@@ -123,13 +132,14 @@ function buildFiscalTableHTML(
     const totalUSD = grupo.reduce((s, l) => s + l.importe_usd, 0)
     const totalARS = grupo.reduce((s, l) => s + l.importe_ars, 0)
 
-    html += `<tr class="fiscal-mes-header"><td colspan="14">${enc(label)}</td></tr>`
+    html += `<tr class="fiscal-mes-header"><td colspan="16">${enc(label)}</td></tr>`
 
     for (const l of grupo) {
       const idx = lineas.indexOf(l)
       const isNC = l.categoria === 'Ajuste/NC' || l.categoria === 'Ajuste/ND'
       const ncStyle = isNC ? ' style="color:#C53030"' : ''
       const editAttr = ' class="editable-cell" contenteditable="true" data-placeholder="—"'
+      const precio = precioDerivado(l)
 
       html += `<tr class="fiscal-row" data-idx="${idx}"${ncStyle}>` +
         `<td class="dt">${fechaCorta(l.fecha)}</td>` +
@@ -140,21 +150,23 @@ function buildFiscalTableHTML(
         `<td class="blq">${enc(l.bloque)}</td>` +
         `<td class="num">${fN(l.cantidad)}</td>` +
         `<td class="num">${fD(l.precio_neto_usd_u, 4)}</td>` +
+        `<td class="num precio-col">${enc(precio)}</td>` +
         `<td class="num${isNC ? ' nc-val' : ''}">${fN(l.importe_usd)}</td>` +
         `<td class="num ars-col">${fN(l.importe_ars)}</td>` +
         `<td class="num tc-col">${l.tc > 0 ? fN(l.tc) : ''}</td>` +
         (l.es_petroleo
-          ? `<td${editAttr}></td><td${editAttr}></td><td${editAttr}></td>`
-          : `<td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td>`) +
+          ? `<td${editAttr}></td><td${editAttr}></td><td${editAttr}></td><td${editAttr}></td>`
+          : `<td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td>`) +
         `</tr>`
       globalIdx++
     }
 
     html += `<tr class="fiscal-subtotal">` +
       `<td colspan="8">Subtotal ${enc(label)}</td>` +
+      `<td></td>` +
       `<td class="num">${fN(totalUSD)}</td>` +
       `<td class="num ars-col">${fN(totalARS)}</td>` +
-      `<td colspan="4"></td>` +
+      `<td colspan="5"></td>` +
       `</tr>`
   }
 
@@ -204,8 +216,9 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
 
   const ncLineas = lineas.filter(l => l.categoria === 'Ajuste/NC' || l.categoria === 'Ajuste/ND')
 
-  // All unique clients for datalist
+  // All unique clients and bloques for datalist / selects
   const allClientes = [...new Set(lineas.map(l => l.cliente).filter(Boolean))].sort()
+  const allBloques  = [...new Set(lineas.map(l => l.bloque).filter(Boolean))].sort()
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -284,6 +297,7 @@ table.fiscal .desc{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-
 table.fiscal .blq{font-weight:600;font-size:11px;white-space:nowrap}
 table.fiscal .ars-col{color:#7A8099}
 table.fiscal .tc-col{color:#7A8099;font-size:11px}
+table.fiscal .precio-col{color:#2B6CB0;font-size:11px;white-space:nowrap}
 table.fiscal .nc-val{color:#C53030}
 table.fiscal .editable-cell{background:#FFFBEB;border:1px dashed #D69E2E;border-radius:3px;min-width:70px;cursor:text;color:#744210}
 table.fiscal .editable-cell:empty::before{content:attr(data-placeholder);color:#C8CCDA;font-style:italic}
@@ -407,6 +421,10 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
       <datalist id="clientes-list">
         ${allClientes.map(c => `<option value="${enc(c)}">`).join('')}
       </datalist>
+      <select id="bloqueSelect" onchange="renderFiscal()">
+        <option value="">Todos los bloques</option>
+        ${allBloques.map(b => `<option value="${enc(b)}">${enc(b)}</option>`).join('')}
+      </select>
       <select id="mesSelect" onchange="renderFiscal()">
         <option value="">Todos los meses</option>
         ${meses.map(m => `<option value="${m}">${enc(mes_labels[m] ?? m)}</option>`).join('')}
@@ -427,12 +445,14 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
             <th style="min-width:50px">Bloque</th>
             <th class="num-h sortable" data-col="cantidad" style="min-width:80px">Cantidad<span class="sort-icon"></span></th>
             <th class="num-h" style="min-width:80px">P.Neto USD/u</th>
+            <th class="num-h" style="min-width:95px">Precio</th>
             <th class="num-h sortable" data-col="importe_usd" style="min-width:115px">Total Neto USD<span class="sort-icon"></span></th>
             <th class="num-h ars-col sortable" data-col="importe_ars" style="min-width:125px">Total Neto ARS<span class="sort-icon"></span></th>
             <th class="num-h tc-col sortable" data-col="tc" style="min-width:60px">TC<span class="sort-icon"></span></th>
             <th style="min-width:90px;background:#FFFBEB">Certificado</th>
             <th style="min-width:55px;background:#FFFBEB">°API</th>
             <th style="min-width:120px;background:#FFFBEB">Buque</th>
+            <th style="min-width:100px;background:#FFFBEB">Fecha emb.</th>
           </tr>
         </thead>
         <tbody id="fiscal-body">${fiscalRows}</tbody>
@@ -472,7 +492,7 @@ var CAT_COLORS = ${j(CAT_COLORS)};
 
 var activeMeses = new Set(MESES);
 var sortState   = { col: null, dir: 1 }; // dir: 1=asc, -1=desc
-var manualData  = {}; // idx → {cert, api, buque}
+var manualData  = {}; // idx → {cert, api, buque, fecha_emb}
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 function fN(n) {
@@ -484,6 +504,13 @@ function fN(n) {
 function fD(n, d) { return n.toFixed(d||2).replace('.',','); }
 function fechaCorta(iso) { var p=iso.split('-'); return p[2]+'/'+p[1]; }
 function enc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function computarPrecio(l) {
+  if (l.es_petroleo && l.cantidad !== 0)
+    return fD(l.importe_usd / (l.cantidad * 6.28981), 2) + ' $/bbl';
+  if (l.categoria === 'Gas' && l.cantidad !== 0)
+    return fD(l.importe_usd / (l.cantidad / 1000 * 35.314), 2) + ' $/MMBTU';
+  return '';
+}
 
 // ── Month filter (global chips) ───────────────────────────────────────────────
 function toggleMes(mes, btn) {
@@ -553,11 +580,12 @@ function saveManualData() {
     var idx = tr.getAttribute('data-idx');
     if (idx === null) return;
     var cells = tr.querySelectorAll('.editable-cell');
-    if (cells.length === 3) {
+    if (cells.length === 4) {
       manualData[idx] = {
-        cert:  cells[0].textContent.trim(),
-        api:   cells[1].textContent.trim(),
-        buque: cells[2].textContent.trim(),
+        cert:      cells[0].textContent.trim(),
+        api:       cells[1].textContent.trim(),
+        buque:     cells[2].textContent.trim(),
+        fecha_emb: cells[3].textContent.trim(),
       };
     }
   });
@@ -566,6 +594,7 @@ function saveManualData() {
 // ── Fiscal table filters ──────────────────────────────────────────────────────
 function clearFiscalFilters() {
   document.getElementById('clienteSearch').value = '';
+  document.getElementById('bloqueSelect').value = '';
   document.getElementById('mesSelect').value = '';
   sortState = { col: null, dir: 1 };
   document.querySelectorAll('#fiscal-table th.sortable').forEach(function(th){
@@ -599,6 +628,7 @@ function renderFiscal() {
   saveManualData();
 
   var clienteQ = (document.getElementById('clienteSearch').value || '').toLowerCase().trim();
+  var bloqueQ  = document.getElementById('bloqueSelect').value || '';
   var mesQ     = document.getElementById('mesSelect').value || '';
 
   // Determine active months: both global chips AND local dropdown
@@ -609,9 +639,10 @@ function renderFiscal() {
   });
 
   // Gather matching lines
-  var lineas = LINEAS.filter(function(l, idx) {
+  var lineas = LINEAS.filter(function(l) {
     if (mesesActivos.indexOf(l.mes) < 0) return false;
     if (clienteQ && l.cliente.toLowerCase().indexOf(clienteQ) < 0) return false;
+    if (bloqueQ && l.bloque !== bloqueQ) return false;
     return true;
   });
 
@@ -646,9 +677,10 @@ function renderFiscal() {
     });
     if (lineas.length > 0) {
       html += '<tr class="fiscal-subtotal"><td colspan="8">Total filtrado</td>' +
+        '<td></td>' +
         '<td class="num">'+fN(totalUSD)+'</td>' +
         '<td class="num ars-col">'+fN(totalARS)+'</td>' +
-        '<td colspan="4"></td></tr>';
+        '<td colspan="5"></td></tr>';
     }
   } else {
     // Grouped by month
@@ -661,7 +693,7 @@ function renderFiscal() {
       var label = MES_LABELS[mes]||mes;
       var totalUSD = grupo.reduce(function(s,l){return s+l.importe_usd;},0);
       var totalARS = grupo.reduce(function(s,l){return s+l.importe_ars;},0);
-      html += '<tr class="fiscal-mes-header"><td colspan="14">'+enc(label)+'</td></tr>';
+      html += '<tr class="fiscal-mes-header"><td colspan="16">'+enc(label)+'</td></tr>';
       grupo.forEach(function(l) {
         var idx = LINEAS.indexOf(l);
         var isNC = l.categoria==='Ajuste/NC'||l.categoria==='Ajuste/ND';
@@ -670,9 +702,10 @@ function renderFiscal() {
         html += rowHTML(l, idx, ncS, saved);
       });
       html += '<tr class="fiscal-subtotal"><td colspan="8">Subtotal '+enc(label)+'</td>' +
+        '<td></td>' +
         '<td class="num">'+fN(totalUSD)+'</td>' +
         '<td class="num ars-col">'+fN(totalARS)+'</td>' +
-        '<td colspan="4"></td></tr>';
+        '<td colspan="5"></td></tr>';
     });
   }
 
@@ -680,6 +713,7 @@ function renderFiscal() {
 }
 
 function rowHTML(l, idx, ncS, saved) {
+  var precio = computarPrecio(l);
   return '<tr class="fiscal-row" data-idx="'+idx+'"'+ncS+'>'+
     '<td class="dt">'+fechaCorta(l.fecha)+'</td>'+
     '<td class="comp mono">'+enc(l.comprobante)+'</td>'+
@@ -689,14 +723,16 @@ function rowHTML(l, idx, ncS, saved) {
     '<td class="blq">'+enc(l.bloque)+'</td>'+
     '<td class="num">'+fN(l.cantidad)+'</td>'+
     '<td class="num">'+fD(l.precio_neto_usd_u,4)+'</td>'+
+    '<td class="num precio-col">'+enc(precio)+'</td>'+
     '<td class="num'+(l.categoria==='Ajuste/NC'||l.categoria==='Ajuste/ND'?' nc-val':'')+'">'+fN(l.importe_usd)+'</td>'+
     '<td class="num ars-col">'+fN(l.importe_ars)+'</td>'+
     '<td class="num tc-col">'+(l.tc>0?fN(l.tc):'')+'</td>'+
     (l.es_petroleo
       ? '<td class="editable-cell" contenteditable="true" data-placeholder="—">'+(saved.cert||'')+'</td>'+
         '<td class="editable-cell" contenteditable="true" data-placeholder="—">'+(saved.api||'')+'</td>'+
-        '<td class="editable-cell" contenteditable="true" data-placeholder="—">'+(saved.buque||'')+'</td>'
-      : '<td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td>')+
+        '<td class="editable-cell" contenteditable="true" data-placeholder="—">'+(saved.buque||'')+'</td>'+
+        '<td class="editable-cell" contenteditable="true" data-placeholder="—">'+(saved.fecha_emb||'')+'</td>'
+      : '<td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td>')+
     '</tr>';
 }
 
@@ -776,17 +812,19 @@ function exportarExcel() {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pivRows), 'Resumen');
 
   // Sheet 2: Detalle fiscal
-  var detHdr = ['Fecha','Mes','Comprobante','Cliente','Artículo','Descripción','Bloque','Categoría','Cantidad','P.Neto USD/u','Total Neto USD','Total Neto ARS','TC','Certificado','°API','Buque'];
+  var detHdr = ['Fecha','Mes','Comprobante','Cliente','Artículo','Descripción','Bloque','Categoría','Cantidad','P.Neto USD/u','Precio','Total Neto USD','Total Neto ARS','TC','Certificado','°API','Buque','Fecha emb.'];
   var detRows = [detHdr];
-  LINEAS.filter(function(l,idx){
+  var clienteQx = (document.getElementById('clienteSearch').value||'').toLowerCase().trim();
+  var bloqueQx  = document.getElementById('bloqueSelect').value||'';
+  LINEAS.filter(function(l){
     if (!filtered.has(l.mes)) return false;
-    var clienteQ = (document.getElementById('clienteSearch').value||'').toLowerCase().trim();
-    if (clienteQ && l.cliente.toLowerCase().indexOf(clienteQ)<0) return false;
+    if (clienteQx && l.cliente.toLowerCase().indexOf(clienteQx)<0) return false;
+    if (bloqueQx && l.bloque !== bloqueQx) return false;
     return true;
-  }).forEach(function(l,_,arr){
+  }).forEach(function(l){
     var idx = LINEAS.indexOf(l);
     var saved = manualData[idx]||{};
-    detRows.push([l.fecha,MES_LABELS[l.mes]||l.mes,l.comprobante,l.cliente,l.art_codigo,l.art_desc,l.bloque,l.categoria,l.cantidad,l.precio_neto_usd_u,l.importe_usd,l.importe_ars,l.tc>0?l.tc:'',saved.cert||'',saved.api||'',saved.buque||'']);
+    detRows.push([l.fecha,MES_LABELS[l.mes]||l.mes,l.comprobante,l.cliente,l.art_codigo,l.art_desc,l.bloque,l.categoria,l.cantidad,l.precio_neto_usd_u,computarPrecio(l),l.importe_usd,l.importe_ars,l.tc>0?l.tc:'',saved.cert||'',saved.api||'',saved.buque||'',saved.fecha_emb||'']);
   });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detRows), 'Detalle Fiscal');
 
