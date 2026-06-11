@@ -362,6 +362,11 @@ table.fiscal .na-cell{color:#C8CCDA;text-align:center}
 .aplica-tag{font-size:10px;color:#7A8099;background:#F0F2F6;border-radius:3px;padding:1px 5px;margin-left:4px;white-space:nowrap}
 .manual-section-header{cursor:pointer;user-select:none}
 .manual-section-header:hover{opacity:.85}
+.m-row-done{background:rgba(72,187,120,.07)!important;border-left:3px solid #48BB78}
+.m-row-hidden{display:none!important}
+.m-hide-btn{font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid #C6F6D5;background:#F0FFF4;color:#276749;cursor:pointer;white-space:nowrap}
+.m-hide-btn:hover{background:#C6F6D5}
+.m-done-badge{font-size:11px;color:#48BB78;font-weight:600;margin-left:8px}
 table.fiscal .fiscal-mes-header td{background:#14172E;color:#fff;font-weight:700;font-size:12px;letter-spacing:.04em;padding:8px 10px;text-transform:uppercase}
 table.fiscal .fiscal-subtotal td{background:#F8F9FB;font-weight:700;font-size:12px;border-top:2px solid #E8EAEF;border-bottom:2px solid #E8EAEF}
 table.fiscal .fiscal-subtotal .num{color:#14172E}
@@ -476,7 +481,12 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
     <div id="manual-body" style="display:${defaultManualOpen ? 'block' : 'none'}">
       ${petManualHTML.length > 0 ? `
       <div style="margin-bottom:18px">
-        <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Embarques (Petróleo)</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em">
+            Embarques (Petróleo)<span class="m-done-badge" id="pet-done-badge"></span>
+          </div>
+          <button class="m-hide-btn" id="pet-hide-btn" data-hiding="0" onclick="toggleHideDone('manual-pet-table','pet-hide-btn')">Ocultar completados</button>
+        </div>
         <div style="overflow-x:auto">
           <table class="fiscal" id="manual-pet-table">
             <thead><tr>
@@ -495,7 +505,12 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
       </div>` : ''}
       ${ncManualHTML.length > 0 ? `
       <div style="margin-bottom:18px">
-        <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Notas de Crédito / Débito</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em">
+            Notas de Crédito / Débito<span class="m-done-badge" id="nc-done-badge"></span>
+          </div>
+          <button class="m-hide-btn" id="nc-hide-btn" data-hiding="0" onclick="toggleHideDone('manual-nc-table','nc-hide-btn')">Ocultar completados</button>
+        </div>
         <div style="overflow-x:auto">
           <table class="fiscal" id="manual-nc-table">
             <thead><tr>
@@ -787,6 +802,7 @@ function guardarManual() {
   collectManualFromForm();
   try { localStorage.setItem(MANUAL_KEY, JSON.stringify(manualData)); } catch(e) {}
   renderFiscal();
+  updateManualCompletedState();
   var btn = document.getElementById('save-manual-btn');
   if (btn) {
     btn.textContent = '✓ Guardado';
@@ -825,6 +841,7 @@ function loadManualFromStorage() {
         (inp as HTMLInputElement).checked = true;
       }
     });
+    updateManualCompletedState();
   } catch(e) {}
 }
 
@@ -835,6 +852,41 @@ function toggleManualSection() {
   var open = body.style.display !== 'none';
   body.style.display = open ? 'none' : 'block';
   if (badge) badge.textContent = open ? '▶ expandir' : '▼ colapsar';
+}
+
+function updateManualCompletedState() {
+  function scanTable(tableId, badgeId, isDone) {
+    var tbl = document.getElementById(tableId);
+    var badge = document.getElementById(badgeId);
+    if (!tbl) return;
+    var done = 0, total = 0;
+    tbl.querySelectorAll('tbody tr').forEach(function(tr) {
+      var inp = tr.querySelector('[data-mkey]');
+      if (!inp) return;
+      total++;
+      var key = inp.getAttribute('data-mkey');
+      var d = manualData[key] || {};
+      var complete = isDone(d);
+      tr.setAttribute('data-done', complete ? '1' : '0');
+      tr.classList.toggle('m-row-done', complete);
+      if (complete) done++;
+    });
+    if (badge) badge.textContent = total > 0 ? ' · ' + done + '/' + total : '';
+  }
+  scanTable('manual-pet-table', 'pet-done-badge', function(d){ return !!(d.cert || d.buque); });
+  scanTable('manual-nc-table',  'nc-done-badge',  function(d){ return !!(d.aplica_a || d.sin_volumen); });
+}
+
+function toggleHideDone(tableId, btnId) {
+  var tbl = document.getElementById(tableId);
+  var btn = document.getElementById(btnId);
+  if (!tbl || !btn) return;
+  var hiding = btn.getAttribute('data-hiding') !== '1';
+  btn.setAttribute('data-hiding', hiding ? '1' : '0');
+  btn.textContent = hiding ? 'Mostrar todos' : 'Ocultar completados';
+  tbl.querySelectorAll('tr[data-done="1"]').forEach(function(tr) {
+    tr.classList.toggle('m-row-hidden', hiding);
+  });
 }
 
 // ── Fiscal table filters ──────────────────────────────────────────────────────
