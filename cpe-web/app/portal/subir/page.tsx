@@ -6,7 +6,8 @@ import { parsearIngresosExcel, type DatosIngresos } from '@/lib/parsers/ingresos
 import { parsearAccionistaPPTX, type DatosAccionista } from '@/lib/parsers/accionista'
 import { parsearExcelGenerico, type DatosGenerico } from '@/lib/parsers/generico'
 import { parsearTextoMacro, type DatosMacro } from '@/lib/parsers/macro'
-import { parsearFacturacionExcel, type DatosFacturacion } from '@/lib/parsers/facturacion'
+import { parsearFacturacionExcel, type DatosFacturacion, dedupKey, reconstruirDatosFacturacion } from '@/lib/parsers/facturacion'
+import type { LineaFacturacion } from '@/lib/parsers/facturacion'
 import { generarReporteHTML, type MacroSnapshot } from '@/lib/generador/htmlReport'
 import { generarReporteAccionistaHTML } from '@/lib/generador/htmlReportAccionista'
 import { generarReporteGenericoHTML } from '@/lib/generador/htmlReportGenerico'
@@ -57,6 +58,9 @@ export default function PortalSubirPage() {
   const [includeMacro, setIncludeMacro] = useState(true)
   const [titulo, setTitulo] = useState('')
   const [doneId, setDoneId] = useState('')
+  const [existingFactId, setExistingFactId] = useState<string | null>(null)
+  const [existingLineas, setExistingLineas] = useState<LineaFacturacion[] | null>(null)
+  const [mergeStats, setMergeStats] = useState<{ added: number; skipped: number } | null>(null)
 
   const tipoMeta = TYPES.find(t => t.id === tipo)!
 
@@ -77,6 +81,28 @@ export default function PortalSubirPage() {
         const parsed = await parsearFacturacionExcel(f)
         setDatosFacturacion(parsed)
         setTitulo(`Facturación — ${parsed.periodo}`)
+        // Try to find existing published facturación report for dedup
+        try {
+          const listRes = await fetch('/api/admin/reportes')
+          if (listRes.ok) {
+            const list = await listRes.json() as Array<{ id: string; type_id: string; estado: string }>
+            const found = list.find(r => r.type_id === 'facturacion' && r.estado === 'publicado')
+            if (found) {
+              const detailRes = await fetch(`/api/admin/reportes/${found.id}?format=json`)
+              if (detailRes.ok) {
+                const detail = await detailRes.json()
+                const existLines: LineaFacturacion[] = detail.datos?.lineas ?? []
+                if (existLines.length > 0) {
+                  const existKeys = new Set(existLines.map(dedupKey))
+                  const newOnly = parsed.lineas.filter(l => !existKeys.has(dedupKey(l)))
+                  setExistingFactId(found.id)
+                  setExistingLineas(existLines)
+                  setMergeStats({ added: newOnly.length, skipped: parsed.lineas.length - newOnly.length })
+                }
+              }
+            }
+          }
+        } catch { /* best-effort */ }
       } else if (tipo === 'accionista') {
         const parsed = await parsearAccionistaPPTX(f)
         setDatosAccionista(parsed)
@@ -123,9 +149,21 @@ export default function PortalSubirPage() {
         html    = generarReporteHTML(datosIngresos, includeMacro && macroSnap ? macroSnap : undefined)
         periodo = datosIngresos.periodo
       } else if (tipo === 'facturacion' && datosFacturacion) {
-        datos   = datosFacturacion
-        html    = generarReporteFacturacionHTML(datosFacturacion)
-        periodo = `${datosFacturacion.periodo_desde}_${datosFacturacion.periodo_hasta}`
+        let mergedDatos = datosFacturacion
+
+        if (existingLineas && existingLineas.length > 0) {
+          const existKeys = new Set(existingLineas.map(dedupKey))
+          const newOnly = datosFacturacion.lineas.filter(l => !existKeys.has(dedupKey(l)))
+          if (newOnly.length === 0) {
+            throw new Error('No hay líneas nuevas — todas las líneas del archivo ya están en el reporte publicado.')
+          }
+          const allLineas = [...existingLineas, ...newOnly].sort((a, b) => a.fecha.localeCompare(b.fecha))
+          mergedDatos = reconstruirDatosFacturacion(allLineas)
+        }
+
+        datos   = mergedDatos
+        html    = generarReporteFacturacionHTML(mergedDatos)
+        periodo = `${mergedDatos.periodo_desde}_${mergedDatos.periodo_hasta}`
       } else if (tipo === 'accionista' && datosAccionista) {
         datos   = datosAccionista
         html    = generarReporteAccionistaHTML(datosAccionista)
@@ -151,6 +189,19 @@ export default function PortalSubirPage() {
           .upload(`reportes/${tipo}-${periodo}-${Date.now()}.${ext}`, file,
             { upsert: false, contentType: file.type || 'application/octet-stream' })
         if (!storageErr) storedPath = `reportes/${tipo}-${periodo}-${Date.now()}.${ext}`
+      }
+
+      // For cumulative facturación: PATCH existing report instead of creating new
+      if (existingFactId && tipo === 'facturacion') {
+        const res = await fetch(`/api/admin/reportes/${existingFactId}`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ datos, html, titulo: titulo.trim(), periodo, estado }),
+        })
+        if (!res.ok) throw new Error((await res.json() as { error?: string }).error ?? 'Error al actualizar')
+        setDoneId(existingFactId)
+        setStep('done')
+        return  // skip normal POST
       }
 
       const res = await fetch('/api/admin/reportes', {
@@ -183,6 +234,7 @@ export default function PortalSubirPage() {
     setDatosIngresos(null); setDatosAccionista(null); setDatosGenerico(null); setDatosMacro(null); setDatosFacturacion(null)
     setMacroSnap(null); setIncludeMacro(true)
     setTitulo(''); setDoneId(''); setErr('')
+    setExistingFactId(null); setExistingLineas(null); setMergeStats(null)
     if (fileRef.current) fileRef.current.value = ''
   }
 
@@ -398,6 +450,16 @@ td{padding:6px 12px;border-bottom:1px solid #eee;font-family:monospace}</style><
                   {kv('Notas de crédito', `(us$ ${(Math.abs(datosFacturacion.resumen.total_nc) / 1_000_000).toFixed(3)} MM)`)}
                   {kv('Neto facturado', `us$ ${(datosFacturacion.resumen.neto / 1_000_000).toFixed(3)} MM`)}
                   {kv('Líneas de detalle', `${datosFacturacion.lineas.length}`)}
+                  {mergeStats && (
+                    <div style={{ gridColumn: '1 / -1', marginTop: 8 }}>
+                      <div style={{ background: mergeStats.added > 0 ? '#EBF8FF' : '#FFF5F5', border: `1px solid ${mergeStats.added > 0 ? '#BEE3F8' : '#FED7D7'}`, borderRadius: 8, padding: '10px 14px', fontSize: 13 }}>
+                        {mergeStats.added > 0
+                          ? <><strong>{mergeStats.added} líneas nuevas</strong> · {mergeStats.skipped} duplicadas omitidas — se actualizará el reporte publicado existente</>
+                          : <span style={{ color: '#C53030' }}>⚠ Todas las líneas ya están en el reporte publicado ({mergeStats.skipped} duplicadas)</span>
+                        }
+                      </div>
+                    </div>
+                  )}
                 </>}
                 {tipo === 'ingresos' && macroSnap && (
                   <div style={{ gridColumn: '1 / -1', marginTop: 8, paddingTop: 10, borderTop: '1px solid var(--rule)', display: 'flex', alignItems: 'center', gap: 10 }}>
