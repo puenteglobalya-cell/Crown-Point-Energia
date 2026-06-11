@@ -17,12 +17,12 @@ function fD(n: number, d = 2): string {
 }
 
 type Linea = DatosFacturacion['lineas'][number]
-function precioDerivado(l: Linea): string {
+function precioDerivado(l: Linea): { val: string; unit: string } {
   if (l.es_petroleo && l.cantidad !== 0)
-    return fD(l.importe_usd / (l.cantidad * 6.28981), 2) + ' $/bbl'
+    return { val: fD(l.importe_usd / (l.cantidad * 6.28981), 2), unit: '$/bbl' }
   if (l.es_gas && l.cantidad !== 0)
-    return fD(l.importe_usd / (l.cantidad / 1000 * 35.314), 2) + ' $/MMBTU'
-  return ''
+    return { val: fD(l.importe_usd / (l.cantidad / 1000 * 35.314), 2), unit: '$/MMBTU' }
+  return { val: '', unit: '' }
 }
 
 function enc(s: string): string {
@@ -137,7 +137,8 @@ function buildFiscalTableHTML(
       const idx = lineas.indexOf(l)
       const isNeg = l.importe_usd < 0
       const ncStyle = isNeg ? ' style="color:#C53030"' : ''
-      const precio = precioDerivado(l)
+      const pc = precioDerivado(l)
+      const precioHTML = pc.val ? `<span class="pv">${pc.val}</span> <small class="pu">${enc(pc.unit)}</small>` : ''
       const catColor = CAT_COLORS[l.categoria] ?? '#7A8099'
 
       html += `<tr class="fiscal-row" data-idx="${idx}"${ncStyle}>` +
@@ -150,7 +151,7 @@ function buildFiscalTableHTML(
         `<td class="blq">${enc(l.bloque)}</td>` +
         `<td class="num">${fN(l.cantidad)}</td>` +
         `<td class="num">${fD(l.precio_neto_usd_u, 4)}</td>` +
-        `<td class="num precio-col">${enc(precio)}</td>` +
+        `<td class="num precio-col">${precioHTML}</td>` +
         `<td class="num${isNeg ? ' nc-val' : ''}">${fN(l.importe_usd)}</td>` +
         `<td class="num ars-col">${fN(l.importe_ars)}</td>` +
         `<td class="num tc-col">${l.tc > 0 ? fN(l.tc) : ''}</td>` +
@@ -229,6 +230,7 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
   // Pre-compute manual data rows
   const petManualRows = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.es_petroleo)
   const ncManualRows  = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.importe_usd < 0)
+  const defaultManualOpen = petManualRows.length > 0 || ncManualRows.length > 0
 
   const petManualHTML = petManualRows.map(({ l, i }) =>
     `<tr>` +
@@ -250,6 +252,7 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
     `<td class="manual-info mono">${enc(l.art_codigo)}</td>` +
     `<td class="manual-info num">${fN(l.importe_usd)}</td>` +
     `<td><input class="m-input" type="text" data-idx="${i}" data-field="aplica_a" placeholder="FA 0009-…"></td>` +
+    `<td style="text-align:center"><input type="checkbox" class="m-check" data-idx="${i}" data-field="sin_volumen"></td>` +
     `</tr>`
   ).join('')
 
@@ -373,6 +376,8 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
 .btn-secondary{background:#fff;color:#14172E;border:1.5px solid #E8EAEF}
 /* Footer */
 .report-footer{margin-top:24px;padding:16px 0;border-top:1px solid #E8EAEF;display:flex;justify-content:space-between;font-size:11px;color:#A0A8C0}
+.pv{font-variant-numeric:tabular-nums}
+.pu{font-size:10px;color:#7A8099;letter-spacing:.02em}
 /* Print */
 @media print{
   body{background:#fff}
@@ -400,22 +405,22 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
   <div class="kpi-strip">
     <div class="kpi">
       <div class="kpi-label">Total Facturado</div>
-      <div class="kpi-value">${fMM(resumen.total_facturas)}</div>
+      <div class="kpi-value" id="kpi-total-fact">${fMM(resumen.total_facturas)}</div>
       <div class="kpi-sub">Facturas acumuladas</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">Notas de Crédito</div>
-      <div class="kpi-value negative">(${fMM(Math.abs(resumen.total_nc))})</div>
-      <div class="kpi-sub">${ncLineas.length} ajuste${ncLineas.length !== 1 ? 's' : ''}</div>
+      <div class="kpi-value negative" id="kpi-total-nc">(${fMM(Math.abs(resumen.total_nc))})</div>
+      <div class="kpi-sub" id="kpi-nc-sub">${ncLineas.length} ajuste${ncLineas.length !== 1 ? 's' : ''}</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">Neto Facturado</div>
-      <div class="kpi-value">${fMM(resumen.neto)}</div>
+      <div class="kpi-value" id="kpi-neto">${fMM(resumen.neto)}</div>
       <div class="kpi-sub">Acumulado ${enc(periodo)}</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">Meses cubiertos</div>
-      <div class="kpi-value">${meses.length}</div>
+      <div class="kpi-value" id="kpi-meses">${meses.length}</div>
       <div class="kpi-sub">${enc(periodo)}</div>
     </div>
   </div>
@@ -431,7 +436,7 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
   <div class="section">
     <div class="section-title">
       Resumen por Categoría y Bloque · us$
-      <span class="section-badge">responde al filtro de mes</span>
+      <span class="section-badge">responde a todos los filtros</span>
     </div>
     <div style="overflow-x:auto">
       <table class="pivot" id="pivot-table">
@@ -464,9 +469,9 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
   <div class="section" id="manual-section">
     <div class="section-title manual-section-header" onclick="toggleManualSection()">
       Datos Manuales
-      <span class="section-badge" id="manual-toggle-badge">▶ expandir</span>
+      <span class="section-badge" id="manual-toggle-badge">${defaultManualOpen ? '▼ colapsar' : '▶ expandir'}</span>
     </div>
-    <div id="manual-body" style="display:none">
+    <div id="manual-body" style="display:${defaultManualOpen ? 'block' : 'none'}">
       ${petManualHTML.length > 0 ? `
       <div style="margin-bottom:18px">
         <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Embarques (Petróleo)</div>
@@ -497,6 +502,7 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
               <th style="min-width:85px">Artículo</th>
               <th class="num-h" style="min-width:115px">Importe USD</th>
               <th style="min-width:180px;background:#FFFBEB">Aplica a</th>
+              <th style="min-width:60px;background:#FFF5F5;text-align:center">Sin vol.</th>
             </tr></thead>
             <tbody>${ncManualHTML}</tbody>
           </table>
@@ -581,7 +587,7 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
     <div class="section-title">Resumen por Cliente · us$</div>
     <table class="detail">
       <thead><tr><th>Cliente</th><th class="num">Importe neto us$</th></tr></thead>
-      <tbody>${clienteRows}</tbody>
+      <tbody id="cliente-tbody">${clienteRows}</tbody>
     </table>
   </div>` : ''}
 
@@ -626,10 +632,10 @@ function fechaCorta(iso) { var p=iso.split('-'); return p[2]+'/'+p[1]; }
 function enc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function computarPrecio(l) {
   if (l.es_petroleo && l.cantidad !== 0)
-    return fD(l.importe_usd / (l.cantidad * 6.28981), 2) + ' $/bbl';
+    return { val: fD(l.importe_usd / (l.cantidad * 6.28981), 2), unit: '$/bbl' };
   if (l.es_gas && l.cantidad !== 0)
-    return fD(l.importe_usd / (l.cantidad / 1000 * 35.314), 2) + ' $/MMBTU';
-  return '';
+    return { val: fD(l.importe_usd / (l.cantidad / 1000 * 35.314), 2), unit: '$/MMBTU' };
+  return { val: '', unit: '' };
 }
 
 // ── Tipo multi-select dropdown ────────────────────────────────────────────────
@@ -652,14 +658,12 @@ function onTipoCbChange() {
   document.querySelectorAll('.tipo-cb:checked').forEach(function(cb){ activeTipos.add(cb.value); });
   updateTipoBtn();
   renderFiscal();
-  updateDonutChart();
 }
 function toggleAllTipos(checked) {
   document.querySelectorAll('.tipo-cb').forEach(function(cb){ cb.checked = checked; });
   activeTipos = checked ? new Set(ALL_CATEGORIAS) : new Set();
   updateTipoBtn();
   renderFiscal();
-  updateDonutChart();
 }
 function updateTipoBtn() {
   var btn = document.getElementById('tipoBtn');
@@ -672,19 +676,25 @@ function updateTipoBtn() {
 function toggleMes(mes, btn) {
   if (activeMeses.has(mes)) { activeMeses.delete(mes); btn.classList.remove('active'); }
   else                      { activeMeses.add(mes);    btn.classList.add('active'); }
-  renderPivot(); renderFiscal(); updateBarChart(); updateDonutChart();
+  renderFiscal();
 }
 function toggleAll(show) {
   MESES.forEach(function(m){ show ? activeMeses.add(m) : activeMeses.delete(m); });
   document.querySelectorAll('.chip[data-mes]').forEach(function(c){
     show ? c.classList.add('active') : c.classList.remove('active');
   });
-  renderPivot(); renderFiscal(); updateBarChart(); updateDonutChart();
+  renderFiscal();
 }
 
 // ── Pivot re-render ───────────────────────────────────────────────────────────
-function renderPivot() {
-  var filtered = MESES.filter(function(m){ return activeMeses.has(m); });
+function renderPivotFromLineas(lineas) {
+  var mesQ = document.getElementById('mesSelect').value || '';
+  var filtered = MESES.filter(function(m){
+    if (!activeMeses.has(m)) return false;
+    if (mesQ && m !== mesQ) return false;
+    return true;
+  });
+  // Update header columns
   var tbl = document.getElementById('pivot-table');
   var thead = tbl.querySelector('thead tr');
   Array.from(thead.querySelectorAll('th.mes-col')).forEach(function(th){ th.remove(); });
@@ -695,36 +705,46 @@ function renderPivot() {
     th.textContent = MES_LABELS[m]||m;
     thead.insertBefore(th, totalTh);
   });
-  var byCat={};
-  PIVOT_DATA.forEach(function(r){ if(!byCat[r.categoria]) byCat[r.categoria]=[]; byCat[r.categoria].push(r); });
+  // Build from lineas
+  var BLOQUE_ORD = ['ET','PCKK','CH','PPC','ENA','Gas','Financiero','Admin','Varios'];
+  var byCat = {};
+  lineas.forEach(function(l) {
+    if (!byCat[l.categoria]) byCat[l.categoria] = {};
+    if (!byCat[l.categoria][l.bloque]) byCat[l.categoria][l.bloque] = {};
+    byCat[l.categoria][l.bloque][l.mes] = (byCat[l.categoria][l.bloque][l.mes]||0) + l.importe_usd;
+  });
   var cats = Object.keys(byCat).sort(function(a,b){
     return (CAT_ORDER.indexOf(a)<0?99:CAT_ORDER.indexOf(a))-(CAT_ORDER.indexOf(b)<0?99:CAT_ORDER.indexOf(b));
   });
-  var html='', gTotals={}, gTotal=0;
+  var html = '', gTotals = {}, gTotal = 0;
   filtered.forEach(function(m){ gTotals[m]=0; });
-  cats.forEach(function(cat){
-    var rows=byCat[cat], catTotals={}, catTotal=0;
+  cats.forEach(function(cat) {
+    var bloques = byCat[cat];
+    var catTotals = {}, catTotal = 0;
     filtered.forEach(function(m){
-      catTotals[m]=rows.reduce(function(s,r){return s+(r.por_mes[m]||0);},0);
-      gTotals[m]+=catTotals[m];
+      catTotals[m] = Object.keys(bloques).reduce(function(s,blq){return s+(bloques[blq][m]||0);},0);
+      gTotals[m] += catTotals[m];
     });
-    catTotal=rows.reduce(function(s,r){return s+r.total;},0);
-    gTotal+=catTotal;
-    var isNeg=catTotal<0, col=isNeg?' style="color:#C53030"':'';
-    html+='<tr class="cat-header"'+col+'><td class="cat-label" colspan="2">'+cat+'</td>'+
+    catTotal = Object.keys(bloques).reduce(function(s,blq){
+      return s + filtered.reduce(function(ss,m){return ss+(bloques[blq][m]||0);},0);
+    },0);
+    gTotal += catTotal;
+    var isNeg = catTotal<0, col = isNeg?' style="color:#C53030"':'';
+    html += '<tr class="cat-header"'+col+'><td class="cat-label" colspan="2">'+enc(cat)+'</td>'+
       filtered.map(function(m){return '<td class="num subtotal">'+fN(catTotals[m])+'</td>';}).join('')+
       '<td class="num subtotal total-col">'+fN(catTotal)+'</td></tr>';
-    if(rows.length>1||rows[0].bloque!=='Varios'){
-      rows.forEach(function(r){
-        var rTotal=filtered.reduce(function(s,m){return s+(r.por_mes[m]||0);},0);
-        if(!rTotal) return;
-        html+='<tr class="detail-row"'+col+'><td></td><td class="bloque-label">'+r.bloque+'</td>'+
-          filtered.map(function(m){return '<td class="num">'+(r.por_mes[m]?fN(r.por_mes[m]):'')+'</td>';}).join('')+
+    var bList = Object.keys(bloques).sort(function(a,b){return (BLOQUE_ORD.indexOf(a)<0?99:BLOQUE_ORD.indexOf(a))-(BLOQUE_ORD.indexOf(b)<0?99:BLOQUE_ORD.indexOf(b));});
+    if (bList.length>1||bList[0]!=='Varios') {
+      bList.forEach(function(blq){
+        var rTotal = filtered.reduce(function(s,m){return s+(bloques[blq][m]||0);},0);
+        if (!rTotal) return;
+        html += '<tr class="detail-row"'+col+'><td></td><td class="bloque-label">'+enc(blq)+'</td>'+
+          filtered.map(function(m){return '<td class="num">'+(bloques[blq][m]?fN(bloques[blq][m]):'')+'</td>';}).join('')+
           '<td class="num total-col">'+fN(rTotal)+'</td></tr>';
       });
     }
   });
-  html+='<tr class="grand-total"><td colspan="2">TOTAL NETO</td>'+
+  html += '<tr class="grand-total"><td colspan="2">TOTAL NETO</td>'+
     filtered.map(function(m){return '<td class="num">'+fN(gTotals[m])+'</td>';}).join('')+
     '<td class="num total-col">'+fN(gTotal)+'</td></tr>';
   document.getElementById('pivot-body').innerHTML=html;
@@ -745,6 +765,13 @@ function collectManualFromForm() {
     if (idx === null || !field) return;
     if (!manualData[idx]) manualData[idx] = {};
     manualData[idx][field] = inp.value.trim();
+  });
+  document.querySelectorAll('#manual-nc-table .m-check').forEach(function(inp) {
+    var idx   = inp.getAttribute('data-idx');
+    var field = inp.getAttribute('data-field');
+    if (idx === null || !field) return;
+    if (!manualData[idx]) manualData[idx] = {};
+    manualData[idx][field] = (inp as HTMLInputElement).checked;
   });
 }
 
@@ -786,6 +813,14 @@ function loadManualFromStorage() {
         inp.value = manualData[idx][field];
       }
     });
+    // Pre-fill NC checkboxes
+    document.querySelectorAll('#manual-nc-table .m-check').forEach(function(inp) {
+      var idx   = inp.getAttribute('data-idx');
+      var field = inp.getAttribute('data-field');
+      if (idx && field && manualData[idx] && manualData[idx][field]) {
+        (inp as HTMLInputElement).checked = true;
+      }
+    });
   } catch(e) {}
 }
 
@@ -812,7 +847,6 @@ function clearFiscalFilters() {
     th.classList.remove('sort-asc','sort-desc');
   });
   renderFiscal();
-  updateDonutChart();
 }
 
 // ── Sorting ───────────────────────────────────────────────────────────────────
@@ -839,29 +873,22 @@ document.addEventListener('DOMContentLoaded', function() {
 function renderFiscal() {
   saveManualData();
 
-  var clienteQ  = (document.getElementById('clienteSearch').value || '').toLowerCase().trim();
-  var bloqueQ   = document.getElementById('bloqueSelect').value || '';
-  var articuloQ = document.getElementById('articuloSelect').value || '';
-  var mesQ      = document.getElementById('mesSelect').value || '';
+  var filteredLineas = getFilteredLineas();
+  renderPivotFromLineas(filteredLineas);
+  renderKPIs(filteredLineas);
+  renderClienteSummary(filteredLineas);
+  updateBarChartFromLineas(filteredLineas);
+  updateDonutChartFromLineas(filteredLineas);
 
-  // Determine active months: both global chips AND local dropdown
+  var mesQ      = document.getElementById('mesSelect').value || '';
   var mesesActivos = MESES.filter(function(m){
     if (!activeMeses.has(m)) return false;
     if (mesQ && m !== mesQ) return false;
     return true;
   });
 
-  // Gather matching lines
-  var lineas = LINEAS.filter(function(l) {
-    if (mesesActivos.indexOf(l.mes) < 0) return false;
-    if (!activeTipos.has(l.categoria)) return false;
-    if (clienteQ && l.cliente.toLowerCase().indexOf(clienteQ) < 0) return false;
-    if (bloqueQ && l.bloque !== bloqueQ) return false;
-    if (articuloQ && l.art_codigo !== articuloQ) return false;
-    return true;
-  });
-
   // Sort if needed
+  var lineas = filteredLineas;
   if (sortState.col) {
     lineas = lineas.slice().sort(function(a, b) {
       var va = a[sortState.col], vb = b[sortState.col];
@@ -928,7 +955,7 @@ function renderFiscal() {
 }
 
 function rowHTML(l, idx, ncS, saved) {
-  var precio = computarPrecio(l);
+  var pc = computarPrecio(l);
   var catColor = CAT_COLORS[l.categoria] || '#7A8099';
   var aplicaTag = (saved.aplica_a) ? '<small class="aplica-tag">→ '+enc(saved.aplica_a)+'</small>' : '';
   return '<tr class="fiscal-row" data-idx="'+idx+'"'+ncS+'>'+
@@ -939,9 +966,9 @@ function rowHTML(l, idx, ncS, saved) {
     '<td class="desc" title="'+enc(l.art_desc)+'">'+enc(l.art_desc)+'</td>'+
     '<td class="tipo-col" style="color:'+catColor+'">'+enc(l.categoria)+'</td>'+
     '<td class="blq">'+enc(l.bloque)+'</td>'+
-    '<td class="num">'+fN(l.cantidad)+'</td>'+
+    '<td class="num">'+(saved.sin_volumen?'<del style="color:#A0AEC0">'+fN(l.cantidad)+'</del>':fN(l.cantidad))+'</td>'+
     '<td class="num">'+fD(l.precio_neto_usd_u,4)+'</td>'+
-    '<td class="num precio-col">'+enc(precio)+'</td>'+
+    '<td class="num precio-col">'+(pc.val?'<span class="pv">'+pc.val+'</span> <small class="pu">'+pc.unit+'</small>':'')+'</td>'+
     '<td class="num'+(l.importe_usd<0?' nc-val':'')+'">'+fN(l.importe_usd)+'</td>'+
     '<td class="num ars-col">'+fN(l.importe_ars)+'</td>'+
     '<td class="num tc-col">'+(l.tc>0?fN(l.tc):'')+'</td>'+
@@ -976,16 +1003,22 @@ var barChart;
   });
 })();
 
-function updateBarChart() {
+function updateBarChartFromLineas(lineas) {
   if (!barChart) return;
-  var filtered = MESES.filter(function(m){ return activeMeses.has(m); });
-  barChart.data.labels = filtered.map(function(m){ return MES_LABELS[m]||m; });
-  var byCat={};
-  PIVOT_DATA.forEach(function(r){
-    if(!byCat[r.categoria]) byCat[r.categoria]={label:r.categoria,data:[],backgroundColor:CAT_COLORS[r.categoria]||'#A0AEC0',stack:'stack'};
-    filtered.forEach(function(m,i){ byCat[r.categoria].data[i]=(byCat[r.categoria].data[i]||0)+(r.por_mes[m]||0); });
+  var mesQ = document.getElementById('mesSelect').value || '';
+  var filtered = MESES.filter(function(m){
+    if (!activeMeses.has(m)) return false;
+    if (mesQ && m !== mesQ) return false;
+    return true;
   });
-  barChart.data.datasets = Object.values(byCat);
+  barChart.data.labels = filtered.map(function(m){ return MES_LABELS[m]||m; });
+  var byCat = {};
+  lineas.forEach(function(l){
+    if (!byCat[l.categoria]) byCat[l.categoria]={label:l.categoria,data:filtered.map(function(){return 0;}),backgroundColor:CAT_COLORS[l.categoria]||'#A0AEC0',stack:'stack'};
+    var i=filtered.indexOf(l.mes);
+    if(i>=0) byCat[l.categoria].data[i]+=l.importe_usd;
+  });
+  barChart.data.datasets=Object.values(byCat);
   barChart.update();
 }
 
@@ -1009,25 +1042,68 @@ var donutChart;
   });
 })();
 
-function updateDonutChart() {
+function updateDonutChartFromLineas(lineas) {
   if (!donutChart) return;
-  var filtered = MESES.filter(function(m){ return activeMeses.has(m); });
-  var labels = [], data = [], colors = [];
-  ALL_CATEGORIAS.forEach(function(cat) {
-    if (!activeTipos.has(cat)) return;
-    var val = 0;
-    LINEAS.forEach(function(l){
-      if (l.categoria === cat && filtered.indexOf(l.mes) >= 0) val += l.importe_usd;
-    });
-    if (val === 0) return;
-    labels.push(cat);
-    data.push(Math.abs(val));
-    colors.push(CAT_COLORS[cat] || '#A0AEC0');
+  var labels=[], data=[], colors=[];
+  ALL_CATEGORIAS.forEach(function(cat){
+    var val=lineas.filter(function(l){return l.categoria===cat;}).reduce(function(s,l){return s+l.importe_usd;},0);
+    if(!val) return;
+    labels.push(cat); data.push(Math.abs(val)); colors.push(CAT_COLORS[cat]||'#A0AEC0');
   });
-  donutChart.data.labels = labels;
-  donutChart.data.datasets[0].data = data;
-  donutChart.data.datasets[0].backgroundColor = colors;
+  donutChart.data.labels=labels;
+  donutChart.data.datasets[0].data=data;
+  donutChart.data.datasets[0].backgroundColor=colors;
   donutChart.update();
+}
+
+function renderKPIs(lineas) {
+  var totalFact=lineas.filter(function(l){return l.importe_usd>0;}).reduce(function(s,l){return s+l.importe_usd;},0);
+  var totalNC  =lineas.filter(function(l){return l.importe_usd<0;}).reduce(function(s,l){return s+l.importe_usd;},0);
+  var neto=lineas.reduce(function(s,l){return s+l.importe_usd;},0);
+  var ncCount=lineas.filter(function(l){return l.importe_usd<0;}).length;
+  var mesesUnic=new Set(lineas.map(function(l){return l.mes;})).size;
+  function _fMM(n){var s=n<0?'−':'';return s+'us$ '+(Math.abs(n)/1e6).toFixed(3).replace('.',',')+' MM';}
+  var e0=document.getElementById('kpi-total-fact');
+  var e1=document.getElementById('kpi-total-nc');
+  var e2=document.getElementById('kpi-neto');
+  var e3=document.getElementById('kpi-meses');
+  var es1=document.getElementById('kpi-nc-sub');
+  if(e0) e0.textContent=_fMM(totalFact);
+  if(e1) e1.textContent='('+_fMM(Math.abs(totalNC))+')';
+  if(e2) e2.textContent=_fMM(neto);
+  if(e3) e3.textContent=String(mesesUnic);
+  if(es1) es1.textContent=ncCount+' ajuste'+(ncCount!==1?'s':'');
+}
+
+function renderClienteSummary(lineas) {
+  var tbody=document.getElementById('cliente-tbody');
+  if(!tbody) return;
+  var cMap={};
+  lineas.forEach(function(l){cMap[l.cliente]=(cMap[l.cliente]||0)+l.importe_usd;});
+  var sorted=Object.keys(cMap).sort(function(a,b){return cMap[b]-cMap[a];});
+  tbody.innerHTML=sorted.length>0
+    ? sorted.map(function(c){return '<tr><td>'+enc(c||'—')+'</td><td class="num">'+fN(cMap[c])+'</td></tr>';}).join('')
+    : '<tr><td colspan="2" style="color:#A0AEC0;text-align:center">Sin datos</td></tr>';
+}
+
+function getFilteredLineas() {
+  var clienteQ =(document.getElementById('clienteSearch').value||'').toLowerCase().trim();
+  var bloqueQ  =document.getElementById('bloqueSelect').value||'';
+  var articuloQ=document.getElementById('articuloSelect').value||'';
+  var mesQ     =document.getElementById('mesSelect').value||'';
+  var mesesActivos=MESES.filter(function(m){
+    if(!activeMeses.has(m)) return false;
+    if(mesQ&&m!==mesQ) return false;
+    return true;
+  });
+  return LINEAS.filter(function(l){
+    if(mesesActivos.indexOf(l.mes)<0) return false;
+    if(!activeTipos.has(l.categoria)) return false;
+    if(clienteQ&&l.cliente.toLowerCase().indexOf(clienteQ)<0) return false;
+    if(bloqueQ&&l.bloque!==bloqueQ) return false;
+    if(articuloQ&&l.art_codigo!==articuloQ) return false;
+    return true;
+  });
 }
 
 // ── Excel export ──────────────────────────────────────────────────────────────
@@ -1052,7 +1128,7 @@ function exportarExcel() {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pivRows), 'Resumen');
 
   // Sheet 2: Detalle fiscal
-  var detHdr = ['Fecha','Mes','Comprobante','Cliente','Artículo','Descripción','Bloque','Categoría','Cantidad','P.Neto USD/u','Precio','Total Neto USD','Total Neto ARS','TC','Certificado','°API','Buque','Fecha emb.'];
+  var detHdr = ['Fecha','Mes','Comprobante','Cliente','Artículo','Descripción','Bloque','Categoría','Cantidad','P.Neto USD/u','Precio','Unidad','Total Neto USD','Total Neto ARS','TC','Certificado','°API','Buque','Fecha emb.'];
   var detRows = [detHdr];
   var clienteQx  = (document.getElementById('clienteSearch').value||'').toLowerCase().trim();
   var bloqueQx   = document.getElementById('bloqueSelect').value||'';
@@ -1067,7 +1143,7 @@ function exportarExcel() {
   }).forEach(function(l){
     var idx = LINEAS.indexOf(l);
     var saved = manualData[idx]||{};
-    detRows.push([l.fecha,MES_LABELS[l.mes]||l.mes,l.comprobante,l.cliente,l.art_codigo,l.art_desc,l.bloque,l.categoria,l.cantidad,l.precio_neto_usd_u,computarPrecio(l),l.importe_usd,l.importe_ars,l.tc>0?l.tc:'',saved.cert||'',saved.api||'',saved.buque||'',saved.fecha_emb||'']);
+    detRows.push([l.fecha,MES_LABELS[l.mes]||l.mes,l.comprobante,l.cliente,l.art_codigo,l.art_desc,l.bloque,l.categoria,l.cantidad,l.precio_neto_usd_u,computarPrecio(l).val,computarPrecio(l).unit,l.importe_usd,l.importe_ars,l.tc>0?l.tc:'',saved.cert||'',saved.api||'',saved.buque||'',saved.fecha_emb||'']);
   });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detRows), 'Detalle Fiscal');
 
@@ -1081,7 +1157,7 @@ function exportarExcel() {
   var c = document.getElementById('fiscal-count');
   if(c) c.textContent = LINEAS.length + ' líneas';
   loadManualFromStorage();
-  if (Object.keys(manualData).length > 0) renderFiscal();
+  renderFiscal();
 })();
 <\/script>
 </body>
