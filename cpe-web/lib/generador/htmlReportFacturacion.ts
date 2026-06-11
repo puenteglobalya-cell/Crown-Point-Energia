@@ -790,7 +790,7 @@ function collectManualFromForm() {
     var field = inp.getAttribute('data-field');
     if (!key || !field) return;
     if (!manualData[key]) manualData[key] = {};
-    manualData[key][field] = (inp as HTMLInputElement).checked;
+    manualData[key][field] = inp.checked;
   });
 }
 
@@ -838,7 +838,7 @@ function loadManualFromStorage() {
       var key   = inp.getAttribute('data-mkey');
       var field = inp.getAttribute('data-field');
       if (key && field && manualData[key] && manualData[key][field]) {
-        (inp as HTMLInputElement).checked = true;
+        inp.checked = true;
       }
     });
     updateManualCompletedState();
