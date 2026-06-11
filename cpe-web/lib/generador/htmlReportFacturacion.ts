@@ -228,7 +228,8 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
     .sort((a, b) => a[0].localeCompare(b[0]))
 
   // Pre-compute manual data rows
-  const petManualRows = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.es_petroleo)
+  // Only FA/FQ/F-type invoices — adjustments (CA, DA, etc.) are linked to the original doc
+  const petManualRows = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.es_petroleo && l.tipo_comp.startsWith('F'))
   const ncManualRows  = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.importe_usd < 0)
   const defaultManualOpen = petManualRows.length > 0 || ncManualRows.length > 0
 
