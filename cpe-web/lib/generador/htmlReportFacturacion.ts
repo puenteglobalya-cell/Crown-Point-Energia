@@ -246,7 +246,7 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
     `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="api" placeholder="°API"></td>` +
     `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="buque" placeholder="Nombre buque"${apiOnly ? ' tabindex="-1"' : ''}></td>` +
     `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="fecha_emb" placeholder="DD/MM/AAAA"${apiOnly ? ' tabindex="-1"' : ''}></td>` +
-    `<td style="text-align:center"><input type="checkbox" class="m-check" data-mkey="${mk}" data-field="completo"></td>` +
+    `<td style="text-align:center"><input type="checkbox" class="m-check" data-mkey="${mk}" data-field="completo" onchange="autoSaveManual()"></td>` +
     `</tr>`
   }).join('')
 
@@ -832,6 +832,19 @@ function guardarManual() {
   if (btn) {
     btn.textContent = '✓ Guardado';
     setTimeout(function(){ btn.textContent = 'Guardar y aplicar'; }, 2000);
+  }
+}
+
+function autoSaveManual() {
+  collectManualFromForm();
+  try { localStorage.setItem(MANUAL_KEY, JSON.stringify(manualData)); } catch(e) {}
+  updateManualCompletedState();
+  // Re-apply hide state so newly-completed rows disappear immediately if hiding is active
+  var btn = document.getElementById('pet-hide-btn');
+  if (btn && btn.getAttribute('data-hiding') === '1') {
+    document.querySelectorAll('#manual-pet-table tbody tr').forEach(function(tr) {
+      tr.classList.toggle('m-row-hidden', tr.getAttribute('data-done') === '1');
+    });
   }
 }
 
