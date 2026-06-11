@@ -389,7 +389,10 @@ table.fiscal .na-cell{color:#C8CCDA;text-align:center}
 .sort-arrow.desc{opacity:1}
 .fiscal-grouped{background:rgba(72,187,120,.06)!important;border-left:3px solid #48BB78}
 .adj-badge{font-size:9.5px;color:#7A8099;margin-top:2px;white-space:nowrap}
+table.fiscal .fiscal-mes-header{cursor:pointer;user-select:none}
+table.fiscal .fiscal-mes-header:hover td{background:#1e2340}
 table.fiscal .fiscal-mes-header td{background:#14172E;color:#fff;font-weight:700;font-size:12px;letter-spacing:.04em;padding:8px 10px;text-transform:uppercase}
+#fiscal-table.hide-manual-cols [data-mc]{display:none}
 table.fiscal .fiscal-subtotal td{background:#F8F9FB;font-weight:700;font-size:12px;border-top:2px solid #E8EAEF;border-bottom:2px solid #E8EAEF}
 table.fiscal .fiscal-subtotal .num{color:#14172E}
 /* Other tables */
@@ -562,7 +565,7 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
   <div class="section">
     <div class="section-title">
       Detalle Fiscal por Comprobante
-      <span class="section-badge">Certificado · °API · Buque editables en Datos Manuales</span>
+      <button id="manual-cols-btn" class="section-badge" style="cursor:pointer;border:none;background:#F0F2F6;padding:2px 10px;border-radius:10px;font-size:10px;color:#7A8099;font-weight:500" onclick="toggleManualCols()">Mostrar cert. ▾</button>
       <span class="section-badge">Un comprobante puede tener múltiples artículos</span>
     </div>
 
@@ -599,7 +602,7 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
     </div>
 
     <div style="overflow-x:auto">
-      <table class="fiscal" id="fiscal-table">
+      <table class="fiscal hide-manual-cols" id="fiscal-table">
         <thead>
           <tr>
             <th class="sortable" data-col="fecha" style="min-width:46px">Fecha<span class="sort-icon"></span></th>
@@ -615,10 +618,10 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
             <th class="num-h sortable" data-col="importe_usd" style="min-width:115px">Total Neto USD<span class="sort-icon"></span></th>
             <th class="num-h ars-col sortable" data-col="importe_ars" style="min-width:125px">Total Neto ARS<span class="sort-icon"></span></th>
             <th class="num-h tc-col sortable" data-col="tc" style="min-width:60px">TC<span class="sort-icon"></span></th>
-            <th style="min-width:90px;background:#FFFBEB">Certificado</th>
-            <th style="min-width:55px;background:#FFFBEB">°API</th>
-            <th style="min-width:120px;background:#FFFBEB">Buque</th>
-            <th style="min-width:100px;background:#FFFBEB">Fecha emb.</th>
+            <th data-mc style="min-width:90px;background:#FFFBEB">Certificado</th>
+            <th data-mc style="min-width:55px;background:#FFFBEB">°API</th>
+            <th data-mc style="min-width:120px;background:#FFFBEB">Buque</th>
+            <th data-mc style="min-width:100px;background:#FFFBEB">Fecha emb.</th>
           </tr>
         </thead>
         <tbody id="fiscal-body">${fiscalRows}</tbody>
@@ -657,10 +660,12 @@ var CAT_ORDER       = ${j(CAT_ORDER)};
 var CAT_COLORS      = ${j(CAT_COLORS)};
 var ALL_CATEGORIAS  = ${j(allCategorias)};
 
-var activeMeses = new Set(MESES);
-var activeTipos = new Set(ALL_CATEGORIAS);
-var sortState   = { col: null, dir: 1 };
-var manualData  = {};
+var activeMeses    = new Set(MESES);
+var activeTipos    = new Set(ALL_CATEGORIAS);
+var collapsedMeses = new Set(MESES);  // start all collapsed
+var showManualCols = false;
+var sortState      = { col: null, dir: 1 };
+var manualData     = {};
 var PERIODO_DESDE = '${periodo_desde}';
 var MANUAL_KEY    = 'cpe_fm_' + PERIODO_DESDE;
 
@@ -1035,6 +1040,18 @@ function clearFiscalFilters() {
   renderFiscal();
 }
 
+function toggleMesSection(mes) {
+  if (collapsedMeses.has(mes)) { collapsedMeses.delete(mes); } else { collapsedMeses.add(mes); }
+  renderFiscal();
+}
+
+function toggleManualCols() {
+  showManualCols = !showManualCols;
+  document.getElementById('fiscal-table').classList.toggle('hide-manual-cols', !showManualCols);
+  var btn = document.getElementById('manual-cols-btn');
+  if (btn) btn.textContent = showManualCols ? 'Ocultar cert. ▴' : 'Mostrar cert. ▾';
+}
+
 // ── Sorting ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('#fiscal-table th.sortable').forEach(function(th) {
@@ -1127,23 +1144,32 @@ function renderFiscal() {
       var label    = MES_LABELS[mes]||mes;
       var totalUSD = grupo.reduce(function(s,l){return s+l.importe_usd;},0);
       var totalARS = grupo.reduce(function(s,l){return s+l.importe_ars;},0);
-      html += '<tr class="fiscal-mes-header"><td colspan="17">'+enc(label)+'</td></tr>';
-      grupo.forEach(function(l) {
-        if (gm.absorbed.has(l.comprobante)) return;
-        var idx   = LINEAS.indexOf(l);
-        var saved = manualData[manualKey(l)]||{};
-        if (gm.groups[l.comprobante]) {
-          html += groupedRowHTML(l, gm.groups[l.comprobante], saved);
-        } else {
-          var ncS = l.importe_usd < 0 ? ' style="color:#C53030"' : '';
-          html += rowHTML(l, idx, ncS, saved);
-        }
-      });
-      html += '<tr class="fiscal-subtotal"><td colspan="9">Subtotal '+enc(label)+'</td>' +
-        '<td></td>' +
-        '<td class="num">'+fN(totalUSD)+'</td>' +
-        '<td class="num ars-col">'+fN(totalARS)+'</td>' +
-        '<td colspan="5"></td></tr>';
+      var isCol    = collapsedMeses.has(mes);
+      html += '<tr class="fiscal-mes-header" onclick="toggleMesSection(\''+mes+'\')">'+
+        '<td colspan="9">'+(isCol?'▶':'▼')+' '+enc(label)+'</td>'+
+        '<td></td>'+
+        '<td class="num">'+fN(totalUSD)+'</td>'+
+        '<td class="num ars-col">'+fN(totalARS)+'</td>'+
+        '<td colspan="5"></td>'+
+        '</tr>';
+      if (!isCol) {
+        grupo.forEach(function(l) {
+          if (gm.absorbed.has(l.comprobante)) return;
+          var idx   = LINEAS.indexOf(l);
+          var saved = manualData[manualKey(l)]||{};
+          if (gm.groups[l.comprobante]) {
+            html += groupedRowHTML(l, gm.groups[l.comprobante], saved);
+          } else {
+            var ncS = l.importe_usd < 0 ? ' style="color:#C53030"' : '';
+            html += rowHTML(l, idx, ncS, saved);
+          }
+        });
+        html += '<tr class="fiscal-subtotal"><td colspan="9">Subtotal '+enc(label)+'</td>' +
+          '<td></td>' +
+          '<td class="num">'+fN(totalUSD)+'</td>' +
+          '<td class="num ars-col">'+fN(totalARS)+'</td>' +
+          '<td colspan="5"></td></tr>';
+      }
     });
   }
 
@@ -1200,11 +1226,11 @@ function groupedRowHTML(l, adjLineas, saved) {
     '<td class="num ars-col">'+fN(netARS)+'</td>'+
     '<td class="num tc-col">'+(l.tc>0?fN(l.tc):'')+'</td>'+
     (l.es_petroleo
-      ? '<td class="manual-val">'+(saved.cert||'')+'</td>'+
-        '<td class="manual-val">'+(saved.api||'')+'</td>'+
-        '<td class="manual-val">'+(saved.buque||'')+'</td>'+
-        '<td class="manual-val">'+(saved.fecha_emb||'')+'</td>'
-      : '<td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td>')+
+      ? '<td class="manual-val" data-mc>'+(saved.cert||'')+'</td>'+
+        '<td class="manual-val" data-mc>'+(saved.api||'')+'</td>'+
+        '<td class="manual-val" data-mc>'+(saved.buque||'')+'</td>'+
+        '<td class="manual-val" data-mc>'+(saved.fecha_emb||'')+'</td>'
+      : '<td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td>')+
     '</tr>';
 }
 
@@ -1227,11 +1253,11 @@ function rowHTML(l, idx, ncS, saved) {
     '<td class="num ars-col">'+fN(l.importe_ars)+'</td>'+
     '<td class="num tc-col">'+(l.tc>0?fN(l.tc):'')+'</td>'+
     (l.es_petroleo
-      ? '<td class="manual-val">'+(saved.cert||'')+'</td>'+
-        '<td class="manual-val">'+(saved.api||'')+'</td>'+
-        '<td class="manual-val">'+(saved.buque||'')+'</td>'+
-        '<td class="manual-val">'+(saved.fecha_emb||'')+'</td>'
-      : '<td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td>')+
+      ? '<td class="manual-val" data-mc>'+(saved.cert||'')+'</td>'+
+        '<td class="manual-val" data-mc>'+(saved.api||'')+'</td>'+
+        '<td class="manual-val" data-mc>'+(saved.buque||'')+'</td>'+
+        '<td class="manual-val" data-mc>'+(saved.fecha_emb||'')+'</td>'
+      : '<td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td>')+
     '</tr>';
 }
 
