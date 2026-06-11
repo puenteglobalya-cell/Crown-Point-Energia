@@ -1070,6 +1070,11 @@ document.addEventListener('DOMContentLoaded', function() {
       renderFiscal();
     });
   });
+  // Month header collapse — event delegation so it survives renderFiscal re-renders
+  document.getElementById('fiscal-body').addEventListener('click', function(e) {
+    var hdr = e.target.closest('tr.fiscal-mes-header');
+    if (hdr) toggleMesSection(hdr.getAttribute('data-mes'));
+  });
 });
 
 // ── Fiscal render ─────────────────────────────────────────────────────────────
@@ -1145,7 +1150,7 @@ function renderFiscal() {
       var totalUSD = grupo.reduce(function(s,l){return s+l.importe_usd;},0);
       var totalARS = grupo.reduce(function(s,l){return s+l.importe_ars;},0);
       var isCol    = collapsedMeses.has(mes);
-      html += '<tr class="fiscal-mes-header" onclick="toggleMesSection(\''+mes+'\')">'+
+      html += '<tr class="fiscal-mes-header" data-mes="'+mes+'">'+
         '<td colspan="9">'+(isCol?'▶':'▼')+' '+enc(label)+'</td>'+
         '<td></td>'+
         '<td class="num">'+fN(totalUSD)+'</td>'+
