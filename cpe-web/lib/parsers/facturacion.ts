@@ -263,6 +263,7 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
     'No se encontraron líneas de detalle. Verificá que sea una bajada "Detalle Ventas por Artículos".'
   )
 
+
   // Build month index
   const mesSet = new Set<string>()
   const mesLabels: Record<string, string> = {}
@@ -299,6 +300,61 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
     mes_labels: mesLabels,
     lineas,
     pivot: buildPivot(lineas, meses),
+    resumen: {
+      total_facturas: totalFact,
+      total_nc:       totalNC,
+      neto:           totalFact + totalNC,
+      por_mes:        porMes,
+      por_bloque:     porBloque,
+      por_categoria:  porCategoria,
+    },
+  }
+}
+
+// ─── Helpers for cumulative merge ─────────────────────────────────────────────
+
+export function dedupKey(l: LineaFacturacion): string {
+  return `${l.art_codigo}|${l.cliente_cod || l.cliente}|${l.fecha}|${l.comprobante}|${Math.round(l.importe_usd * 100)}`
+}
+
+export function reconstruirDatosFacturacion(allLineas: LineaFacturacion[]): DatosFacturacion {
+  if (allLineas.length === 0) throw new Error('Sin líneas para reconstruir')
+
+  const mesSet = new Set<string>()
+  const mesLabels: Record<string, string> = {}
+  for (const l of allLineas) {
+    mesSet.add(l.mes)
+    mesLabels[l.mes] = l.mes_label
+  }
+  const meses = Array.from(mesSet).sort()
+
+  let totalFact = 0, totalNC = 0
+  const porMes: Record<string, number> = {}
+  const porBloque: Record<string, number> = {}
+  const porCategoria: Record<string, number> = {}
+  for (const l of allLineas) {
+    if (l.importe_usd < 0) totalNC += l.importe_usd
+    else totalFact += l.importe_usd
+    porMes[l.mes]             = (porMes[l.mes]             ?? 0) + l.importe_usd
+    porBloque[l.bloque]       = (porBloque[l.bloque]       ?? 0) + l.importe_usd
+    porCategoria[l.categoria] = (porCategoria[l.categoria] ?? 0) + l.importe_usd
+  }
+
+  const desde = meses[0], hasta = meses[meses.length - 1]
+  const [yd, md] = desde.split('-')
+  const [yh, mh] = hasta.split('-')
+  const MES_LABELS_LOCAL = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+  const lDesde = `${MES_LABELS_LOCAL[parseInt(md) - 1]}-${yd.slice(2)}`
+  const lHasta = `${MES_LABELS_LOCAL[parseInt(mh) - 1]}-${yh.slice(2)}`
+
+  return {
+    periodo:       desde === hasta ? lDesde : `${lDesde} — ${lHasta}`,
+    periodo_desde: desde,
+    periodo_hasta: hasta,
+    meses,
+    mes_labels:  mesLabels,
+    lineas:      allLineas,
+    pivot:       buildPivot(allLineas, meses),
     resumen: {
       total_facturas: totalFact,
       total_nc:       totalNC,

@@ -137,7 +137,6 @@ function buildFiscalTableHTML(
       const idx = lineas.indexOf(l)
       const isNeg = l.importe_usd < 0
       const ncStyle = isNeg ? ' style="color:#C53030"' : ''
-      const editAttr = ' class="editable-cell" contenteditable="true" data-placeholder="—"'
       const precio = precioDerivado(l)
       const catColor = CAT_COLORS[l.categoria] ?? '#7A8099'
 
@@ -156,7 +155,7 @@ function buildFiscalTableHTML(
         `<td class="num ars-col">${fN(l.importe_ars)}</td>` +
         `<td class="num tc-col">${l.tc > 0 ? fN(l.tc) : ''}</td>` +
         (l.es_petroleo
-          ? `<td${editAttr}></td><td${editAttr}></td><td${editAttr}></td><td${editAttr}></td>`
+          ? `<td class="manual-val"></td><td class="manual-val"></td><td class="manual-val"></td><td class="manual-val"></td>`
           : `<td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td>`) +
         `</tr>`
       globalIdx++
@@ -177,7 +176,7 @@ function buildFiscalTableHTML(
 // ─── Main generator ───────────────────────────────────────────────────────────
 
 export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
-  const { meses, mes_labels, pivot, resumen, periodo, lineas } = datos
+  const { meses, mes_labels, pivot, resumen, periodo, lineas, periodo_desde, periodo_hasta } = datos
 
   const fechaGen = new Date().toLocaleDateString('es-AR', {
     day: '2-digit', month: 'long', year: 'numeric',
@@ -226,6 +225,33 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
   })
   const allArticulos = [...new Map(lineas.map(l => [l.art_codigo, l.art_desc])).entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
+
+  // Pre-compute manual data rows
+  const petManualRows = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.es_petroleo)
+  const ncManualRows  = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.importe_usd < 0)
+
+  const petManualHTML = petManualRows.map(({ l, i }) =>
+    `<tr>` +
+    `<td class="manual-info">${fechaCorta(l.fecha)}</td>` +
+    `<td class="manual-info mono">${enc(l.comprobante)}</td>` +
+    `<td class="manual-info" title="${enc(l.cliente)}">${enc(l.cliente)}</td>` +
+    `<td class="manual-info mono">${enc(l.art_codigo)}</td>` +
+    `<td><input class="m-input" type="text" data-idx="${i}" data-field="cert" placeholder="Certificado"></td>` +
+    `<td><input class="m-input" type="text" data-idx="${i}" data-field="api" placeholder="°API"></td>` +
+    `<td><input class="m-input" type="text" data-idx="${i}" data-field="buque" placeholder="Nombre buque"></td>` +
+    `<td><input class="m-input" type="text" data-idx="${i}" data-field="fecha_emb" placeholder="DD/MM/AAAA"></td>` +
+    `</tr>`
+  ).join('')
+
+  const ncManualHTML = ncManualRows.map(({ l, i }) =>
+    `<tr>` +
+    `<td class="manual-info">${fechaCorta(l.fecha)}</td>` +
+    `<td class="manual-info mono">${enc(l.comprobante)}</td>` +
+    `<td class="manual-info mono">${enc(l.art_codigo)}</td>` +
+    `<td class="manual-info num">${fN(l.importe_usd)}</td>` +
+    `<td><input class="m-input" type="text" data-idx="${i}" data-field="aplica_a" placeholder="FA 0009-…"></td>` +
+    `</tr>`
+  ).join('')
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -323,6 +349,14 @@ table.fiscal .editable-cell{background:#FFFBEB;border:1px dashed #D69E2E;border-
 table.fiscal .editable-cell:empty::before{content:attr(data-placeholder);color:#C8CCDA;font-style:italic}
 table.fiscal .editable-cell:focus{outline:2px solid #D69E2E;background:#FFF9E6;border-color:transparent}
 table.fiscal .na-cell{color:#C8CCDA;text-align:center}
+/* Manual data section */
+.m-input{font-family:'DM Sans',sans-serif;font-size:11.5px;padding:4px 7px;border:1.5px solid #E8EAEF;border-radius:4px;width:100%;background:#FFFBEB;color:#744210}
+.m-input:focus{outline:none;border-color:#D69E2E;background:#FFF9E6}
+.manual-info{color:#4A5568;font-size:11.5px}
+.manual-val{color:#744210;font-size:11.5px;white-space:nowrap}
+.aplica-tag{font-size:10px;color:#7A8099;background:#F0F2F6;border-radius:3px;padding:1px 5px;margin-left:4px;white-space:nowrap}
+.manual-section-header{cursor:pointer;user-select:none}
+.manual-section-header:hover{opacity:.85}
 table.fiscal .fiscal-mes-header td{background:#14172E;color:#fff;font-weight:700;font-size:12px;letter-spacing:.04em;padding:8px 10px;text-transform:uppercase}
 table.fiscal .fiscal-subtotal td{background:#F8F9FB;font-weight:700;font-size:12px;border-top:2px solid #E8EAEF;border-bottom:2px solid #E8EAEF}
 table.fiscal .fiscal-subtotal .num{color:#14172E}
@@ -342,10 +376,9 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
 /* Print */
 @media print{
   body{background:#fff}
-  .filter-bar,.fiscal-filter-bar,.export-bar{display:none!important}
+  .filter-bar,.fiscal-filter-bar,.export-bar,.manual-section-header+*{display:none!important}
   .section,.kpi{break-inside:avoid}
   .charts-grid{break-inside:avoid}
-  table.fiscal .editable-cell{background:#FFFBEB!important;border:1px solid #D69E2E!important}
 }
 </style>
 </head>
@@ -427,11 +460,59 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
     </div>
   </div>
 
+  <!-- Datos Manuales -->
+  <div class="section" id="manual-section">
+    <div class="section-title manual-section-header" onclick="toggleManualSection()">
+      Datos Manuales
+      <span class="section-badge" id="manual-toggle-badge">▶ expandir</span>
+    </div>
+    <div id="manual-body" style="display:none">
+      ${petManualHTML.length > 0 ? `
+      <div style="margin-bottom:18px">
+        <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Embarques (Petróleo)</div>
+        <div style="overflow-x:auto">
+          <table class="fiscal" id="manual-pet-table">
+            <thead><tr>
+              <th style="min-width:46px">Fecha</th>
+              <th style="min-width:140px">Comprobante</th>
+              <th style="min-width:150px">Cliente</th>
+              <th style="min-width:85px">Artículo</th>
+              <th style="min-width:90px;background:#FFFBEB">Certificado</th>
+              <th style="min-width:55px;background:#FFFBEB">°API</th>
+              <th style="min-width:120px;background:#FFFBEB">Buque</th>
+              <th style="min-width:100px;background:#FFFBEB">Fecha Emb.</th>
+            </tr></thead>
+            <tbody>${petManualHTML}</tbody>
+          </table>
+        </div>
+      </div>` : ''}
+      ${ncManualHTML.length > 0 ? `
+      <div style="margin-bottom:18px">
+        <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Notas de Crédito / Débito</div>
+        <div style="overflow-x:auto">
+          <table class="fiscal" id="manual-nc-table">
+            <thead><tr>
+              <th style="min-width:46px">Fecha</th>
+              <th style="min-width:140px">Comprobante</th>
+              <th style="min-width:85px">Artículo</th>
+              <th class="num-h" style="min-width:115px">Importe USD</th>
+              <th style="min-width:180px;background:#FFFBEB">Aplica a</th>
+            </tr></thead>
+            <tbody>${ncManualHTML}</tbody>
+          </table>
+        </div>
+      </div>` : ''}
+      <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
+        <button id="save-manual-btn" class="btn-exp btn-primary" style="padding:8px 20px;font-size:13px" onclick="guardarManual()">Guardar y aplicar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Fiscal detail -->
   <div class="section">
     <div class="section-title">
       Detalle Fiscal por Comprobante
-      <span class="section-badge">Certificado · °API · Buque editables en filas de petróleo</span>
+      <span class="section-badge">Certificado · °API · Buque editables en Datos Manuales</span>
       <span class="section-badge">Un comprobante puede tener múltiples artículos</span>
     </div>
 
@@ -530,6 +611,8 @@ var activeMeses = new Set(MESES);
 var activeTipos = new Set(ALL_CATEGORIAS);
 var sortState   = { col: null, dir: 1 };
 var manualData  = {};
+var PERIODO_DESDE = '${periodo_desde}';
+var MANUAL_KEY    = 'cpe_fm_' + PERIODO_DESDE;
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 function fN(n) {
@@ -647,21 +730,72 @@ function renderPivot() {
   document.getElementById('pivot-body').innerHTML=html;
 }
 
-// ── Manual data save ──────────────────────────────────────────────────────────
-function saveManualData() {
-  document.querySelectorAll('#fiscal-body .fiscal-row').forEach(function(tr) {
-    var idx = tr.getAttribute('data-idx');
-    if (idx === null) return;
-    var cells = tr.querySelectorAll('.editable-cell');
-    if (cells.length === 4) {
-      manualData[idx] = {
-        cert:      cells[0].textContent.trim(),
-        api:       cells[1].textContent.trim(),
-        buque:     cells[2].textContent.trim(),
-        fecha_emb: cells[3].textContent.trim(),
-      };
-    }
+// ── Manual data helpers ───────────────────────────────────────────────────────
+function collectManualFromForm() {
+  document.querySelectorAll('#manual-pet-table .m-input').forEach(function(inp) {
+    var idx   = inp.getAttribute('data-idx');
+    var field = inp.getAttribute('data-field');
+    if (idx === null || !field) return;
+    if (!manualData[idx]) manualData[idx] = {};
+    manualData[idx][field] = inp.value.trim();
   });
+  document.querySelectorAll('#manual-nc-table .m-input').forEach(function(inp) {
+    var idx   = inp.getAttribute('data-idx');
+    var field = inp.getAttribute('data-field');
+    if (idx === null || !field) return;
+    if (!manualData[idx]) manualData[idx] = {};
+    manualData[idx][field] = inp.value.trim();
+  });
+}
+
+function saveManualData() {
+  collectManualFromForm();
+}
+
+function guardarManual() {
+  collectManualFromForm();
+  try { localStorage.setItem(MANUAL_KEY, JSON.stringify(manualData)); } catch(e) {}
+  renderFiscal();
+  var btn = document.getElementById('save-manual-btn');
+  if (btn) {
+    btn.textContent = '✓ Guardado';
+    setTimeout(function(){ btn.textContent = 'Guardar y aplicar'; }, 2000);
+  }
+}
+
+function loadManualFromStorage() {
+  try {
+    var raw = localStorage.getItem(MANUAL_KEY);
+    if (!raw) return;
+    var saved = JSON.parse(raw);
+    if (typeof saved !== 'object' || !saved) return;
+    manualData = saved;
+    // Pre-fill petroleum inputs
+    document.querySelectorAll('#manual-pet-table .m-input').forEach(function(inp) {
+      var idx   = inp.getAttribute('data-idx');
+      var field = inp.getAttribute('data-field');
+      if (idx && field && manualData[idx] && manualData[idx][field]) {
+        inp.value = manualData[idx][field];
+      }
+    });
+    // Pre-fill NC inputs
+    document.querySelectorAll('#manual-nc-table .m-input').forEach(function(inp) {
+      var idx   = inp.getAttribute('data-idx');
+      var field = inp.getAttribute('data-field');
+      if (idx && field && manualData[idx] && manualData[idx][field]) {
+        inp.value = manualData[idx][field];
+      }
+    });
+  } catch(e) {}
+}
+
+function toggleManualSection() {
+  var body  = document.getElementById('manual-body');
+  var badge = document.getElementById('manual-toggle-badge');
+  if (!body) return;
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (badge) badge.textContent = open ? '▶ expandir' : '▼ colapsar';
 }
 
 // ── Fiscal table filters ──────────────────────────────────────────────────────
@@ -796,9 +930,10 @@ function renderFiscal() {
 function rowHTML(l, idx, ncS, saved) {
   var precio = computarPrecio(l);
   var catColor = CAT_COLORS[l.categoria] || '#7A8099';
+  var aplicaTag = (saved.aplica_a) ? '<small class="aplica-tag">→ '+enc(saved.aplica_a)+'</small>' : '';
   return '<tr class="fiscal-row" data-idx="'+idx+'"'+ncS+'>'+
     '<td class="dt">'+fechaCorta(l.fecha)+'</td>'+
-    '<td class="comp mono">'+enc(l.comprobante)+'</td>'+
+    '<td class="comp mono">'+enc(l.comprobante)+aplicaTag+'</td>'+
     '<td class="cli" title="'+enc(l.cliente)+'">'+enc(l.cliente)+'</td>'+
     '<td class="art mono">'+enc(l.art_codigo)+'</td>'+
     '<td class="desc" title="'+enc(l.art_desc)+'">'+enc(l.art_desc)+'</td>'+
@@ -811,10 +946,10 @@ function rowHTML(l, idx, ncS, saved) {
     '<td class="num ars-col">'+fN(l.importe_ars)+'</td>'+
     '<td class="num tc-col">'+(l.tc>0?fN(l.tc):'')+'</td>'+
     (l.es_petroleo
-      ? '<td class="editable-cell" contenteditable="true" data-placeholder="—">'+(saved.cert||'')+'</td>'+
-        '<td class="editable-cell" contenteditable="true" data-placeholder="—">'+(saved.api||'')+'</td>'+
-        '<td class="editable-cell" contenteditable="true" data-placeholder="—">'+(saved.buque||'')+'</td>'+
-        '<td class="editable-cell" contenteditable="true" data-placeholder="—">'+(saved.fecha_emb||'')+'</td>'
+      ? '<td class="manual-val">'+(saved.cert||'')+'</td>'+
+        '<td class="manual-val">'+(saved.api||'')+'</td>'+
+        '<td class="manual-val">'+(saved.buque||'')+'</td>'+
+        '<td class="manual-val">'+(saved.fecha_emb||'')+'</td>'
       : '<td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td>')+
     '</tr>';
 }
@@ -941,10 +1076,12 @@ function exportarExcel() {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-// Show initial count
+// Show initial count + load manual data from localStorage
 (function(){
   var c = document.getElementById('fiscal-count');
   if(c) c.textContent = LINEAS.length + ' líneas';
+  loadManualFromStorage();
+  if (Object.keys(manualData).length > 0) renderFiscal();
 })();
 <\/script>
 </body>
