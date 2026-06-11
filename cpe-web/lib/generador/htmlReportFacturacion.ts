@@ -232,29 +232,31 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
   const ncManualRows  = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.importe_usd < 0)
   const defaultManualOpen = petManualRows.length > 0 || ncManualRows.length > 0
 
-  const petManualHTML = petManualRows.map(({ l, i }) =>
-    `<tr>` +
+  const petManualHTML = petManualRows.map(({ l }) => {
+    const mk = enc(l.art_codigo + '|' + l.comprobante)
+    return `<tr>` +
     `<td class="manual-info">${fechaCorta(l.fecha)}</td>` +
     `<td class="manual-info mono">${enc(l.comprobante)}</td>` +
     `<td class="manual-info" title="${enc(l.cliente)}">${enc(l.cliente)}</td>` +
     `<td class="manual-info mono">${enc(l.art_codigo)}</td>` +
-    `<td><input class="m-input" type="text" data-idx="${i}" data-field="cert" placeholder="Certificado"></td>` +
-    `<td><input class="m-input" type="text" data-idx="${i}" data-field="api" placeholder="°API"></td>` +
-    `<td><input class="m-input" type="text" data-idx="${i}" data-field="buque" placeholder="Nombre buque"></td>` +
-    `<td><input class="m-input" type="text" data-idx="${i}" data-field="fecha_emb" placeholder="DD/MM/AAAA"></td>` +
+    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="cert" placeholder="Certificado"></td>` +
+    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="api" placeholder="°API"></td>` +
+    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="buque" placeholder="Nombre buque"></td>` +
+    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="fecha_emb" placeholder="DD/MM/AAAA"></td>` +
     `</tr>`
-  ).join('')
+  }).join('')
 
-  const ncManualHTML = ncManualRows.map(({ l, i }) =>
-    `<tr>` +
+  const ncManualHTML = ncManualRows.map(({ l }) => {
+    const mk = enc(l.art_codigo + '|' + l.comprobante)
+    return `<tr>` +
     `<td class="manual-info">${fechaCorta(l.fecha)}</td>` +
     `<td class="manual-info mono">${enc(l.comprobante)}</td>` +
     `<td class="manual-info mono">${enc(l.art_codigo)}</td>` +
     `<td class="manual-info num">${fN(l.importe_usd)}</td>` +
-    `<td><input class="m-input" type="text" data-idx="${i}" data-field="aplica_a" placeholder="FA 0009-…"></td>` +
-    `<td style="text-align:center"><input type="checkbox" class="m-check" data-idx="${i}" data-field="sin_volumen"></td>` +
+    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="aplica_a" placeholder="FA 0009-…"></td>` +
+    `<td style="text-align:center"><input type="checkbox" class="m-check" data-mkey="${mk}" data-field="sin_volumen"></td>` +
     `</tr>`
-  ).join('')
+  }).join('')
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -751,27 +753,29 @@ function renderPivotFromLineas(lineas) {
 }
 
 // ── Manual data helpers ───────────────────────────────────────────────────────
+function manualKey(l) { return l.art_codigo + '|' + l.comprobante; }
+
 function collectManualFromForm() {
   document.querySelectorAll('#manual-pet-table .m-input').forEach(function(inp) {
-    var idx   = inp.getAttribute('data-idx');
+    var key   = inp.getAttribute('data-mkey');
     var field = inp.getAttribute('data-field');
-    if (idx === null || !field) return;
-    if (!manualData[idx]) manualData[idx] = {};
-    manualData[idx][field] = inp.value.trim();
+    if (!key || !field) return;
+    if (!manualData[key]) manualData[key] = {};
+    manualData[key][field] = inp.value.trim();
   });
   document.querySelectorAll('#manual-nc-table .m-input').forEach(function(inp) {
-    var idx   = inp.getAttribute('data-idx');
+    var key   = inp.getAttribute('data-mkey');
     var field = inp.getAttribute('data-field');
-    if (idx === null || !field) return;
-    if (!manualData[idx]) manualData[idx] = {};
-    manualData[idx][field] = inp.value.trim();
+    if (!key || !field) return;
+    if (!manualData[key]) manualData[key] = {};
+    manualData[key][field] = inp.value.trim();
   });
   document.querySelectorAll('#manual-nc-table .m-check').forEach(function(inp) {
-    var idx   = inp.getAttribute('data-idx');
+    var key   = inp.getAttribute('data-mkey');
     var field = inp.getAttribute('data-field');
-    if (idx === null || !field) return;
-    if (!manualData[idx]) manualData[idx] = {};
-    manualData[idx][field] = (inp as HTMLInputElement).checked;
+    if (!key || !field) return;
+    if (!manualData[key]) manualData[key] = {};
+    manualData[key][field] = (inp as HTMLInputElement).checked;
   });
 }
 
@@ -799,25 +803,25 @@ function loadManualFromStorage() {
     manualData = saved;
     // Pre-fill petroleum inputs
     document.querySelectorAll('#manual-pet-table .m-input').forEach(function(inp) {
-      var idx   = inp.getAttribute('data-idx');
+      var key   = inp.getAttribute('data-mkey');
       var field = inp.getAttribute('data-field');
-      if (idx && field && manualData[idx] && manualData[idx][field]) {
-        inp.value = manualData[idx][field];
+      if (key && field && manualData[key] && manualData[key][field]) {
+        inp.value = manualData[key][field];
       }
     });
     // Pre-fill NC inputs
     document.querySelectorAll('#manual-nc-table .m-input').forEach(function(inp) {
-      var idx   = inp.getAttribute('data-idx');
+      var key   = inp.getAttribute('data-mkey');
       var field = inp.getAttribute('data-field');
-      if (idx && field && manualData[idx] && manualData[idx][field]) {
-        inp.value = manualData[idx][field];
+      if (key && field && manualData[key] && manualData[key][field]) {
+        inp.value = manualData[key][field];
       }
     });
     // Pre-fill NC checkboxes
     document.querySelectorAll('#manual-nc-table .m-check').forEach(function(inp) {
-      var idx   = inp.getAttribute('data-idx');
+      var key   = inp.getAttribute('data-mkey');
       var field = inp.getAttribute('data-field');
-      if (idx && field && manualData[idx] && manualData[idx][field]) {
+      if (key && field && manualData[key] && manualData[key][field]) {
         (inp as HTMLInputElement).checked = true;
       }
     });
@@ -913,7 +917,7 @@ function renderFiscal() {
       var idx = LINEAS.indexOf(l);
       var isNeg = l.importe_usd < 0;
       var ncS  = isNeg ? ' style="color:#C53030"' : '';
-      var saved = manualData[idx]||{};
+      var saved = manualData[manualKey(l)]||{};
       totalUSD += l.importe_usd; totalARS += l.importe_ars;
       html += rowHTML(l, idx, ncS, saved);
     });
@@ -940,7 +944,7 @@ function renderFiscal() {
         var idx = LINEAS.indexOf(l);
         var isNeg = l.importe_usd < 0;
         var ncS  = isNeg ? ' style="color:#C53030"' : '';
-        var saved = manualData[idx]||{};
+        var saved = manualData[manualKey(l)]||{};
         html += rowHTML(l, idx, ncS, saved);
       });
       html += '<tr class="fiscal-subtotal"><td colspan="9">Subtotal '+enc(label)+'</td>' +
