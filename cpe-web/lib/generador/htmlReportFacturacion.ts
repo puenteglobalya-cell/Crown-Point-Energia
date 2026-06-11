@@ -387,6 +387,8 @@ table.fiscal .na-cell{color:#C8CCDA;text-align:center}
 .sort-arrow{display:inline-block;margin-left:3px;font-size:9px;opacity:.4}
 .sort-arrow.asc{opacity:1}
 .sort-arrow.desc{opacity:1}
+.fiscal-grouped{background:rgba(72,187,120,.06)!important;border-left:3px solid #48BB78}
+.adj-badge{font-size:9.5px;color:#7A8099;margin-top:2px;white-space:nowrap}
 table.fiscal .fiscal-mes-header td{background:#14172E;color:#fff;font-weight:700;font-size:12px;letter-spacing:.04em;padding:8px 10px;text-transform:uppercase}
 table.fiscal .fiscal-subtotal td{background:#F8F9FB;font-weight:700;font-size:12px;border-top:2px solid #E8EAEF;border-bottom:2px solid #E8EAEF}
 table.fiscal .fiscal-subtotal .num{color:#14172E}
@@ -1088,18 +1090,24 @@ function renderFiscal() {
   var countEl = document.getElementById('fiscal-count');
   if (countEl) countEl.textContent = lineas.length + ' línea' + (lineas.length!==1?'s':'');
 
+  var gm = buildGroupMap(lineas);
+
   // If sorting, render flat (no month groups); otherwise group by month
   var html = '';
   if (sortState.col) {
     // Flat sorted view
     var totalUSD = 0, totalARS = 0;
     lineas.forEach(function(l) {
-      var idx = LINEAS.indexOf(l);
-      var isNeg = l.importe_usd < 0;
-      var ncS  = isNeg ? ' style="color:#C53030"' : '';
-      var saved = manualData[manualKey(l)]||{};
       totalUSD += l.importe_usd; totalARS += l.importe_ars;
-      html += rowHTML(l, idx, ncS, saved);
+      if (gm.absorbed.has(l.comprobante)) return;
+      var idx   = LINEAS.indexOf(l);
+      var saved = manualData[manualKey(l)]||{};
+      if (gm.groups[l.comprobante]) {
+        html += groupedRowHTML(l, gm.groups[l.comprobante], saved);
+      } else {
+        var ncS = l.importe_usd < 0 ? ' style="color:#C53030"' : '';
+        html += rowHTML(l, idx, ncS, saved);
+      }
     });
     if (lineas.length > 0) {
       html += '<tr class="fiscal-subtotal"><td colspan="9">Total filtrado</td>' +
@@ -1116,16 +1124,20 @@ function renderFiscal() {
     mesesActivos.forEach(function(mes) {
       var grupo = byMes[mes];
       if (!grupo || !grupo.length) return;
-      var label = MES_LABELS[mes]||mes;
+      var label    = MES_LABELS[mes]||mes;
       var totalUSD = grupo.reduce(function(s,l){return s+l.importe_usd;},0);
       var totalARS = grupo.reduce(function(s,l){return s+l.importe_ars;},0);
       html += '<tr class="fiscal-mes-header"><td colspan="17">'+enc(label)+'</td></tr>';
       grupo.forEach(function(l) {
-        var idx = LINEAS.indexOf(l);
-        var isNeg = l.importe_usd < 0;
-        var ncS  = isNeg ? ' style="color:#C53030"' : '';
+        if (gm.absorbed.has(l.comprobante)) return;
+        var idx   = LINEAS.indexOf(l);
         var saved = manualData[manualKey(l)]||{};
-        html += rowHTML(l, idx, ncS, saved);
+        if (gm.groups[l.comprobante]) {
+          html += groupedRowHTML(l, gm.groups[l.comprobante], saved);
+        } else {
+          var ncS = l.importe_usd < 0 ? ' style="color:#C53030"' : '';
+          html += rowHTML(l, idx, ncS, saved);
+        }
       });
       html += '<tr class="fiscal-subtotal"><td colspan="9">Subtotal '+enc(label)+'</td>' +
         '<td></td>' +
@@ -1136,6 +1148,64 @@ function renderFiscal() {
   }
 
   document.getElementById('fiscal-body').innerHTML = html;
+}
+
+function buildGroupMap(lineas) {
+  // Index filtered lineas by comprobante for O(1) lookup
+  var lineasByComp = {};
+  lineas.forEach(function(l) {
+    if (!lineasByComp[l.comprobante]) lineasByComp[l.comprobante] = [];
+    lineasByComp[l.comprobante].push(l);
+  });
+  var groups = {}, absorbed = new Set();
+  lineas.forEach(function(l) {
+    var d = manualData[manualKey(l)] || {};
+    if (!d.ajustes) return;
+    var tipo = l.tipo_comp;
+    if (!tipo || (!tipo.startsWith('F') && tipo !== 'CL')) return;
+    var comps = d.ajustes.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    if (!comps.length) return;
+    var adj = [];
+    comps.forEach(function(comp) {
+      // Use ALL LINEAS for the amounts so the net is always correct
+      LINEAS.forEach(function(ll){ if (ll.comprobante === comp) adj.push(ll); });
+      // Only absorb if the row is currently visible
+      if (lineasByComp[comp]) absorbed.add(comp);
+    });
+    groups[l.comprobante] = adj;
+  });
+  return { groups: groups, absorbed: absorbed };
+}
+
+function groupedRowHTML(l, adjLineas, saved) {
+  var netImporte = adjLineas.reduce(function(s, a){ return s + a.importe_usd; }, l.importe_usd);
+  var netARS     = adjLineas.reduce(function(s, a){ return s + a.importe_ars; }, l.importe_ars);
+  // Price adjustment: volume = FQ's original qty; price reflects net importe
+  var pc = computarPrecio({ es_petroleo: l.es_petroleo, es_gas: l.es_gas, cantidad: l.cantidad, importe_usd: netImporte });
+  var catColor = CAT_COLORS[l.categoria] || '#7A8099';
+  var isNeg    = netImporte < 0;
+  var adjBadge = '<div class="adj-badge">' + adjLineas.map(function(a){ return enc(a.comprobante); }).join(' · ') + '</div>';
+  return '<tr class="fiscal-row fiscal-grouped">'+
+    '<td class="dt">'+fechaCorta(l.fecha)+'</td>'+
+    '<td class="comp mono">'+enc(l.comprobante)+adjBadge+'</td>'+
+    '<td class="cli" title="'+enc(l.cliente)+'">'+enc(l.cliente)+'</td>'+
+    '<td class="art mono">'+enc(l.art_codigo)+'</td>'+
+    '<td class="desc" title="'+enc(l.art_desc)+'">'+enc(l.art_desc)+'</td>'+
+    '<td class="tipo-col" style="color:'+catColor+'">'+enc(l.categoria)+'</td>'+
+    '<td class="blq">'+enc(l.bloque)+'</td>'+
+    '<td class="num">'+fN(l.cantidad)+'</td>'+
+    '<td class="num">—</td>'+
+    '<td class="num precio-col">'+(pc.val?'<span class="pv">'+pc.val+'</span> <small class="pu">'+pc.unit+'</small>':'')+'</td>'+
+    '<td class="num'+(isNeg?' nc-val':'')+'">'+fN(netImporte)+'</td>'+
+    '<td class="num ars-col">'+fN(netARS)+'</td>'+
+    '<td class="num tc-col">'+(l.tc>0?fN(l.tc):'')+'</td>'+
+    (l.es_petroleo
+      ? '<td class="manual-val">'+(saved.cert||'')+'</td>'+
+        '<td class="manual-val">'+(saved.api||'')+'</td>'+
+        '<td class="manual-val">'+(saved.buque||'')+'</td>'+
+        '<td class="manual-val">'+(saved.fecha_emb||'')+'</td>'
+      : '<td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td>')+
+    '</tr>';
 }
 
 function rowHTML(l, idx, ncS, saved) {
