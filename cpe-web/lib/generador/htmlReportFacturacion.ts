@@ -228,21 +228,29 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
     .sort((a, b) => a[0].localeCompare(b[0]))
 
   // Pre-compute manual data rows
-  const petManualRows = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.es_petroleo)
+  // FA/FQ/F-type invoices + CL (liquidaciones) + DQ (ajustes de precio) — CA/DA excluded
+  const petManualRows = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.es_petroleo && (l.tipo_comp.startsWith('F') || l.tipo_comp === 'CL' || l.tipo_comp === 'DQ'))
   const ncManualRows  = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.importe_usd < 0)
   const defaultManualOpen = petManualRows.length > 0 || ncManualRows.length > 0
 
   const petManualHTML = petManualRows.map(({ l }) => {
     const mk = enc(l.art_codigo + '|' + l.comprobante)
-    return `<tr>` +
+    const apiOnly = /YPF|PAN AMERICAN|PAE\b/i.test(l.cliente)
+    const isDQ    = l.tipo_comp === 'DQ'
+    const dimCls  = (apiOnly || isDQ) ? ' api-dim' : ''
+    const noTab   = (apiOnly || isDQ) ? ' tabindex="-1"' : ''
+    const adjPlaceholder = isDQ ? 'Ref. FQ/CL original…' : 'CQ, DQ vinculados (sep. coma)…'
+    return `<tr data-cliente="${enc(l.cliente)}" data-api-only="${apiOnly ? '1' : '0'}" data-tipo="${enc(l.tipo_comp)}" data-comprobante="${enc(l.comprobante)}">` +
     `<td class="manual-info">${fechaCorta(l.fecha)}</td>` +
-    `<td class="manual-info mono">${enc(l.comprobante)}</td>` +
-    `<td class="manual-info" title="${enc(l.cliente)}">${enc(l.cliente)}</td>` +
+    `<td class="manual-info mono">${enc(l.comprobante)}<div class="m-neto-cell"></div></td>` +
+    `<td class="manual-info cli" title="${enc(l.cliente)}">${enc(l.cliente)}</td>` +
     `<td class="manual-info mono">${enc(l.art_codigo)}</td>` +
-    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="cert" placeholder="Certificado"></td>` +
+    `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="cert" placeholder="Certificado"${noTab}></td>` +
     `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="api" placeholder="°API"></td>` +
-    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="buque" placeholder="Nombre buque"></td>` +
-    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="fecha_emb" placeholder="DD/MM/AAAA"></td>` +
+    `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="buque" placeholder="Nombre buque"${noTab}></td>` +
+    `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="fecha_emb" placeholder="DD/MM/AAAA"${noTab}></td>` +
+    `<td><input class="m-input${isDQ ? ' m-input-ref' : ''}" type="text" data-mkey="${mk}" data-field="ajustes" placeholder="${adjPlaceholder}"></td>` +
+    `<td style="text-align:center"><input type="checkbox" class="m-check" data-mkey="${mk}" data-field="completo" onchange="autoSaveManual()"></td>` +
     `</tr>`
   }).join('')
 
@@ -364,9 +372,21 @@ table.fiscal .na-cell{color:#C8CCDA;text-align:center}
 .manual-section-header:hover{opacity:.85}
 .m-row-done{background:rgba(72,187,120,.07)!important;border-left:3px solid #48BB78}
 .m-row-hidden{display:none!important}
+.m-row-filter{display:none!important}
 .m-hide-btn{font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid #C6F6D5;background:#F0FFF4;color:#276749;cursor:pointer;white-space:nowrap}
 .m-hide-btn:hover{background:#C6F6D5}
 .m-done-badge{font-size:11px;color:#48BB78;font-weight:600;margin-left:8px}
+.api-dim{opacity:.25;pointer-events:none}
+.m-neto-cell{font-size:10px;color:#276749;font-weight:600;margin-top:2px;white-space:nowrap}
+.m-input-ref{background:#EBF8FF!important;border-color:#BEE3F8!important;color:#2B6CB0!important}
+.pet-filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.pet-filter-bar input{font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 10px;border:1.5px solid #E8EAEF;border-radius:6px;width:220px;color:#14172E;outline:none;background:#fff}
+.pet-filter-bar input:focus{border-color:#14172E}
+.sort-th{cursor:pointer;user-select:none}
+.sort-th:hover{background:#EFF1F5!important;color:#14172E}
+.sort-arrow{display:inline-block;margin-left:3px;font-size:9px;opacity:.4}
+.sort-arrow.asc{opacity:1}
+.sort-arrow.desc{opacity:1}
 table.fiscal .fiscal-mes-header td{background:#14172E;color:#fff;font-weight:700;font-size:12px;letter-spacing:.04em;padding:8px 10px;text-transform:uppercase}
 table.fiscal .fiscal-subtotal td{background:#F8F9FB;font-weight:700;font-size:12px;border-top:2px solid #E8EAEF;border-bottom:2px solid #E8EAEF}
 table.fiscal .fiscal-subtotal .num{color:#14172E}
@@ -487,17 +507,22 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
           </div>
           <button class="m-hide-btn" id="pet-hide-btn" data-hiding="0" onclick="toggleHideDone('manual-pet-table','pet-hide-btn')">Ocultar completados</button>
         </div>
+        <div class="pet-filter-bar">
+          <input type="text" id="pet-filter" placeholder="Filtrar por cliente…" oninput="filterPetTable()">
+        </div>
         <div style="overflow-x:auto">
           <table class="fiscal" id="manual-pet-table">
             <thead><tr>
-              <th style="min-width:46px">Fecha</th>
+              <th class="sort-th" style="min-width:46px" onclick="sortPetTable(0)">Fecha<span class="sort-arrow" id="pet-sa-0"></span></th>
               <th style="min-width:140px">Comprobante</th>
-              <th style="min-width:150px">Cliente</th>
-              <th style="min-width:85px">Artículo</th>
+              <th class="sort-th" style="min-width:150px" onclick="sortPetTable(2)">Cliente<span class="sort-arrow" id="pet-sa-2"></span></th>
+              <th class="sort-th" style="min-width:85px" onclick="sortPetTable(3)">Artículo<span class="sort-arrow" id="pet-sa-3"></span></th>
               <th style="min-width:90px;background:#FFFBEB">Certificado</th>
               <th style="min-width:55px;background:#FFFBEB">°API</th>
               <th style="min-width:120px;background:#FFFBEB">Buque</th>
               <th style="min-width:100px;background:#FFFBEB">Fecha Emb.</th>
+              <th style="min-width:170px;background:#EBF8FF">Ajustes / Ref.</th>
+              <th style="min-width:52px;background:#F0FFF4;text-align:center">Completo</th>
             </tr></thead>
             <tbody>${petManualHTML}</tbody>
           </table>
@@ -778,6 +803,13 @@ function collectManualFromForm() {
     if (!manualData[key]) manualData[key] = {};
     manualData[key][field] = inp.value.trim();
   });
+  document.querySelectorAll('#manual-pet-table .m-check').forEach(function(inp) {
+    var key   = inp.getAttribute('data-mkey');
+    var field = inp.getAttribute('data-field');
+    if (!key || !field) return;
+    if (!manualData[key]) manualData[key] = {};
+    manualData[key][field] = inp.checked;
+  });
   document.querySelectorAll('#manual-nc-table .m-input').forEach(function(inp) {
     var key   = inp.getAttribute('data-mkey');
     var field = inp.getAttribute('data-field');
@@ -803,10 +835,25 @@ function guardarManual() {
   try { localStorage.setItem(MANUAL_KEY, JSON.stringify(manualData)); } catch(e) {}
   renderFiscal();
   updateManualCompletedState();
+  updateNetoDisplay();
   var btn = document.getElementById('save-manual-btn');
   if (btn) {
     btn.textContent = '✓ Guardado';
     setTimeout(function(){ btn.textContent = 'Guardar y aplicar'; }, 2000);
+  }
+}
+
+function autoSaveManual() {
+  collectManualFromForm();
+  try { localStorage.setItem(MANUAL_KEY, JSON.stringify(manualData)); } catch(e) {}
+  updateManualCompletedState();
+  updateNetoDisplay();
+  // Re-apply hide state so newly-completed rows disappear immediately if hiding is active
+  var btn = document.getElementById('pet-hide-btn');
+  if (btn && btn.getAttribute('data-hiding') === '1') {
+    document.querySelectorAll('#manual-pet-table tbody tr').forEach(function(tr) {
+      tr.classList.toggle('m-row-hidden', tr.getAttribute('data-done') === '1');
+    });
   }
 }
 
@@ -823,6 +870,14 @@ function loadManualFromStorage() {
       var field = inp.getAttribute('data-field');
       if (key && field && manualData[key] && manualData[key][field]) {
         inp.value = manualData[key][field];
+      }
+    });
+    // Pre-fill petroleum checkboxes
+    document.querySelectorAll('#manual-pet-table .m-check').forEach(function(inp) {
+      var key   = inp.getAttribute('data-mkey');
+      var field = inp.getAttribute('data-field');
+      if (key && field && manualData[key] && manualData[key][field]) {
+        inp.checked = true;
       }
     });
     // Pre-fill NC inputs
@@ -842,7 +897,26 @@ function loadManualFromStorage() {
       }
     });
     updateManualCompletedState();
+    updateNetoDisplay();
   } catch(e) {}
+}
+
+function updateNetoDisplay() {
+  document.querySelectorAll('#manual-pet-table tbody tr[data-comprobante]').forEach(function(tr) {
+    var inp = tr.querySelector('[data-mkey]');
+    var netoEl = tr.querySelector('.m-neto-cell');
+    if (!inp || !netoEl) return;
+    var key = inp.getAttribute('data-mkey');
+    var d = manualData[key] || {};
+    if (!d.ajustes) { netoEl.textContent = ''; return; }
+    var comp = tr.getAttribute('data-comprobante');
+    var comps = d.ajustes.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    var total = LINEAS.reduce(function(s, l){ return l.comprobante === comp ? s + l.importe_usd : s; }, 0);
+    comps.forEach(function(c) {
+      LINEAS.forEach(function(l){ if (l.comprobante === c) total += l.importe_usd; });
+    });
+    netoEl.textContent = 'neto: ' + fN(total);
+  });
 }
 
 function toggleManualSection() {
@@ -855,6 +929,30 @@ function toggleManualSection() {
 }
 
 function updateManualCompletedState() {
+  // Pet table: per-row criterion (api-only rows need only api; others need cert or buque); completo overrides
+  var petTbl = document.getElementById('manual-pet-table');
+  var petBadge = document.getElementById('pet-done-badge');
+  if (petTbl) {
+    var done = 0, total = 0;
+    petTbl.querySelectorAll('tbody tr').forEach(function(tr) {
+      var inp = tr.querySelector('[data-mkey]');
+      if (!inp) return;
+      total++;
+      var key = inp.getAttribute('data-mkey');
+      var d = manualData[key] || {};
+      var apiOnly = tr.getAttribute('data-api-only') === '1';
+      var isDQ    = tr.getAttribute('data-tipo') === 'DQ';
+      var complete = d.completo ||
+        (isDQ    ? !!d.ajustes :
+         apiOnly ? !!d.api :
+                   !!(d.cert || d.buque));
+      tr.setAttribute('data-done', complete ? '1' : '0');
+      tr.classList.toggle('m-row-done', complete);
+      if (complete) done++;
+    });
+    if (petBadge) petBadge.textContent = total > 0 ? ' · ' + done + '/' + total : '';
+  }
+  // NC table
   function scanTable(tableId, badgeId, isDone) {
     var tbl = document.getElementById(tableId);
     var badge = document.getElementById(badgeId);
@@ -873,8 +971,7 @@ function updateManualCompletedState() {
     });
     if (badge) badge.textContent = total > 0 ? ' · ' + done + '/' + total : '';
   }
-  scanTable('manual-pet-table', 'pet-done-badge', function(d){ return !!(d.cert || d.buque); });
-  scanTable('manual-nc-table',  'nc-done-badge',  function(d){ return !!(d.aplica_a || d.sin_volumen); });
+  scanTable('manual-nc-table', 'nc-done-badge', function(d){ return !!(d.aplica_a || d.sin_volumen); });
 }
 
 function toggleHideDone(tableId, btnId) {
@@ -887,6 +984,37 @@ function toggleHideDone(tableId, btnId) {
   tbl.querySelectorAll('tr[data-done="1"]').forEach(function(tr) {
     tr.classList.toggle('m-row-hidden', hiding);
   });
+}
+
+// ── Embarques table filter + sort ─────────────────────────────────────────────
+function filterPetTable() {
+  var q = (document.getElementById('pet-filter').value || '').toLowerCase().trim();
+  document.querySelectorAll('#manual-pet-table tbody tr').forEach(function(tr) {
+    var cli = (tr.getAttribute('data-cliente') || '').toLowerCase();
+    var hiddenByFilter = q !== '' && cli.indexOf(q) < 0;
+    tr.classList.toggle('m-row-filter', hiddenByFilter);
+  });
+}
+
+var petSortCol = -1, petSortAsc = true;
+function sortPetTable(col) {
+  if (petSortCol === col) { petSortAsc = !petSortAsc; } else { petSortCol = col; petSortAsc = true; }
+  [0, 2, 3].forEach(function(c) {
+    var el = document.getElementById('pet-sa-' + c);
+    if (!el) return;
+    el.className = 'sort-arrow' + (c === col ? (petSortAsc ? ' asc' : ' desc') : '');
+    el.textContent = c === col ? (petSortAsc ? ' ▲' : ' ▼') : '';
+  });
+  var tbl = document.getElementById('manual-pet-table');
+  if (!tbl) return;
+  var rows = Array.from(tbl.querySelectorAll('tbody tr'));
+  rows.sort(function(a, b) {
+    var av = (a.cells[col] ? a.cells[col].textContent : '').trim();
+    var bv = (b.cells[col] ? b.cells[col].textContent : '').trim();
+    return (petSortAsc ? 1 : -1) * av.localeCompare(bv, 'es', { numeric: true });
+  });
+  var tbody = tbl.querySelector('tbody');
+  rows.forEach(function(r) { tbody.appendChild(r); });
 }
 
 // ── Fiscal table filters ──────────────────────────────────────────────────────
