@@ -228,24 +228,28 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
     .sort((a, b) => a[0].localeCompare(b[0]))
 
   // Pre-compute manual data rows
-  // FA/FQ/F-type invoices + CL (liquidaciones de producto) — adjustments (CA, DA, etc.) excluded
-  const petManualRows = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.es_petroleo && (l.tipo_comp.startsWith('F') || l.tipo_comp === 'CL'))
+  // FA/FQ/F-type invoices + CL (liquidaciones) + DQ (ajustes de precio) — CA/DA excluded
+  const petManualRows = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.es_petroleo && (l.tipo_comp.startsWith('F') || l.tipo_comp === 'CL' || l.tipo_comp === 'DQ'))
   const ncManualRows  = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.importe_usd < 0)
   const defaultManualOpen = petManualRows.length > 0 || ncManualRows.length > 0
 
   const petManualHTML = petManualRows.map(({ l }) => {
     const mk = enc(l.art_codigo + '|' + l.comprobante)
     const apiOnly = /YPF|PAN AMERICAN|PAE\b/i.test(l.cliente)
-    const dimCls = apiOnly ? ' api-dim' : ''
-    return `<tr data-cliente="${enc(l.cliente)}" data-api-only="${apiOnly ? '1' : '0'}">` +
+    const isDQ    = l.tipo_comp === 'DQ'
+    const dimCls  = (apiOnly || isDQ) ? ' api-dim' : ''
+    const noTab   = (apiOnly || isDQ) ? ' tabindex="-1"' : ''
+    const adjPlaceholder = isDQ ? 'Ref. FQ/CL original…' : 'CQ, DQ vinculados (sep. coma)…'
+    return `<tr data-cliente="${enc(l.cliente)}" data-api-only="${apiOnly ? '1' : '0'}" data-tipo="${enc(l.tipo_comp)}" data-comprobante="${enc(l.comprobante)}">` +
     `<td class="manual-info">${fechaCorta(l.fecha)}</td>` +
-    `<td class="manual-info mono">${enc(l.comprobante)}</td>` +
+    `<td class="manual-info mono">${enc(l.comprobante)}<div class="m-neto-cell"></div></td>` +
     `<td class="manual-info cli" title="${enc(l.cliente)}">${enc(l.cliente)}</td>` +
     `<td class="manual-info mono">${enc(l.art_codigo)}</td>` +
-    `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="cert" placeholder="Certificado"${apiOnly ? ' tabindex="-1"' : ''}></td>` +
+    `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="cert" placeholder="Certificado"${noTab}></td>` +
     `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="api" placeholder="°API"></td>` +
-    `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="buque" placeholder="Nombre buque"${apiOnly ? ' tabindex="-1"' : ''}></td>` +
-    `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="fecha_emb" placeholder="DD/MM/AAAA"${apiOnly ? ' tabindex="-1"' : ''}></td>` +
+    `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="buque" placeholder="Nombre buque"${noTab}></td>` +
+    `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="fecha_emb" placeholder="DD/MM/AAAA"${noTab}></td>` +
+    `<td><input class="m-input${isDQ ? ' m-input-ref' : ''}" type="text" data-mkey="${mk}" data-field="ajustes" placeholder="${adjPlaceholder}"></td>` +
     `<td style="text-align:center"><input type="checkbox" class="m-check" data-mkey="${mk}" data-field="completo" onchange="autoSaveManual()"></td>` +
     `</tr>`
   }).join('')
@@ -373,6 +377,8 @@ table.fiscal .na-cell{color:#C8CCDA;text-align:center}
 .m-hide-btn:hover{background:#C6F6D5}
 .m-done-badge{font-size:11px;color:#48BB78;font-weight:600;margin-left:8px}
 .api-dim{opacity:.25;pointer-events:none}
+.m-neto-cell{font-size:10px;color:#276749;font-weight:600;margin-top:2px;white-space:nowrap}
+.m-input-ref{background:#EBF8FF!important;border-color:#BEE3F8!important;color:#2B6CB0!important}
 .pet-filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .pet-filter-bar input{font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 10px;border:1.5px solid #E8EAEF;border-radius:6px;width:220px;color:#14172E;outline:none;background:#fff}
 .pet-filter-bar input:focus{border-color:#14172E}
@@ -515,6 +521,7 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
               <th style="min-width:55px;background:#FFFBEB">°API</th>
               <th style="min-width:120px;background:#FFFBEB">Buque</th>
               <th style="min-width:100px;background:#FFFBEB">Fecha Emb.</th>
+              <th style="min-width:170px;background:#EBF8FF">Ajustes / Ref.</th>
               <th style="min-width:52px;background:#F0FFF4;text-align:center">Completo</th>
             </tr></thead>
             <tbody>${petManualHTML}</tbody>
@@ -828,6 +835,7 @@ function guardarManual() {
   try { localStorage.setItem(MANUAL_KEY, JSON.stringify(manualData)); } catch(e) {}
   renderFiscal();
   updateManualCompletedState();
+  updateNetoDisplay();
   var btn = document.getElementById('save-manual-btn');
   if (btn) {
     btn.textContent = '✓ Guardado';
@@ -839,6 +847,7 @@ function autoSaveManual() {
   collectManualFromForm();
   try { localStorage.setItem(MANUAL_KEY, JSON.stringify(manualData)); } catch(e) {}
   updateManualCompletedState();
+  updateNetoDisplay();
   // Re-apply hide state so newly-completed rows disappear immediately if hiding is active
   var btn = document.getElementById('pet-hide-btn');
   if (btn && btn.getAttribute('data-hiding') === '1') {
@@ -888,7 +897,26 @@ function loadManualFromStorage() {
       }
     });
     updateManualCompletedState();
+    updateNetoDisplay();
   } catch(e) {}
+}
+
+function updateNetoDisplay() {
+  document.querySelectorAll('#manual-pet-table tbody tr[data-comprobante]').forEach(function(tr) {
+    var inp = tr.querySelector('[data-mkey]');
+    var netoEl = tr.querySelector('.m-neto-cell');
+    if (!inp || !netoEl) return;
+    var key = inp.getAttribute('data-mkey');
+    var d = manualData[key] || {};
+    if (!d.ajustes) { netoEl.textContent = ''; return; }
+    var comp = tr.getAttribute('data-comprobante');
+    var comps = d.ajustes.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    var total = LINEAS.reduce(function(s, l){ return l.comprobante === comp ? s + l.importe_usd : s; }, 0);
+    comps.forEach(function(c) {
+      LINEAS.forEach(function(l){ if (l.comprobante === c) total += l.importe_usd; });
+    });
+    netoEl.textContent = 'neto: ' + fN(total);
+  });
 }
 
 function toggleManualSection() {
@@ -913,7 +941,11 @@ function updateManualCompletedState() {
       var key = inp.getAttribute('data-mkey');
       var d = manualData[key] || {};
       var apiOnly = tr.getAttribute('data-api-only') === '1';
-      var complete = d.completo || (apiOnly ? !!d.api : !!(d.cert || d.buque));
+      var isDQ    = tr.getAttribute('data-tipo') === 'DQ';
+      var complete = d.completo ||
+        (isDQ    ? !!d.ajustes :
+         apiOnly ? !!d.api :
+                   !!(d.cert || d.buque));
       tr.setAttribute('data-done', complete ? '1' : '0');
       tr.classList.toggle('m-row-done', complete);
       if (complete) done++;
