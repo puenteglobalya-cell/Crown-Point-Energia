@@ -286,6 +286,18 @@ table.pivot .grand-total .total-col{background:rgba(20,23,46,.08)}
 .fiscal-filter-bar select{font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1.5px solid #E8EAEF;border-radius:6px;color:#14172E;outline:none;background:#fff}
 .btn-clear{font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid #E8EAEF;background:#fff;color:#7A8099;cursor:pointer}
 .fiscal-count{font-size:11px;color:#7A8099;margin-left:auto}
+/* Tipo multi-select dropdown */
+.tipo-dd{position:relative;display:inline-block}
+.tipo-dd-btn{font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1.5px solid #E8EAEF;border-radius:6px;color:#14172E;background:#fff;cursor:pointer;white-space:nowrap;min-width:150px;text-align:left}
+.tipo-dd-btn:hover,.tipo-dd-btn.open{border-color:#14172E}
+.tipo-dd-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1.5px solid #E8EAEF;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;min-width:210px;padding:4px 0}
+.tipo-dd-panel.open{display:block}
+.tipo-dd-item{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:#14172E}
+.tipo-dd-item:hover{background:#F4F5F8}
+.tipo-dd-item input[type=checkbox]{width:13px;height:13px;cursor:pointer;accent-color:#14172E;flex-shrink:0}
+.tipo-dd-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.tipo-dd-footer{display:flex;gap:6px;padding:6px 12px;border-top:1px solid #E8EAEF;margin-top:2px}
+.tipo-dd-footer button{font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid #E8EAEF;background:#F4F5F8;color:#7A8099;cursor:pointer}
 /* Fiscal detail table */
 table.fiscal{border-collapse:collapse;width:100%;font-size:11.5px}
 table.fiscal th{padding:7px 8px;text-align:left;font-weight:600;font-size:10.5px;color:#7A8099;background:#F8F9FB;border-bottom:2px solid #E8EAEF;white-space:nowrap;position:sticky;top:0;z-index:1}
@@ -433,10 +445,16 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
         <option value="">Todos los bloques</option>
         ${allBloques.map(b => `<option value="${enc(b)}">${enc(b)}</option>`).join('')}
       </select>
-      <select id="tipoSelect" onchange="renderFiscal()">
-        <option value="">Todos los tipos</option>
-        ${allCategorias.map(c => `<option value="${enc(c)}">${enc(c)}</option>`).join('')}
-      </select>
+      <div class="tipo-dd" id="tipoDd">
+        <button class="tipo-dd-btn" id="tipoBtn" onclick="toggleTipoDd(event)">Todos los tipos ▾</button>
+        <div class="tipo-dd-panel" id="tipoDdPanel">
+          ${allCategorias.map(c => `<label class="tipo-dd-item"><input type="checkbox" class="tipo-cb" value="${enc(c)}" checked onchange="onTipoCbChange()"><span class="tipo-dd-dot" style="background:${CAT_COLORS[c] ?? '#CBD5E0'}"></span>${enc(c)}</label>`).join('')}
+          <div class="tipo-dd-footer">
+            <button onclick="toggleAllTipos(true)">Todos</button>
+            <button onclick="toggleAllTipos(false)">Ninguno</button>
+          </div>
+        </div>
+      </div>
       <select id="articuloSelect" onchange="renderFiscal()">
         <option value="">Todos los artículos</option>
         ${allArticulos.map(([cod, desc]) => `<option value="${enc(cod)}">${enc(cod)}${desc ? ' — ' + enc(desc.slice(0,40)) : ''}</option>`).join('')}
@@ -504,12 +522,14 @@ var MES_LABELS = ${j(mes_labels)};
 var PIVOT_DATA = ${j(pivot)};
 var LINEAS     = ${j(lineas)};
 var RESUMEN    = ${j(resumen)};
-var CAT_ORDER  = ${j(CAT_ORDER)};
-var CAT_COLORS = ${j(CAT_COLORS)};
+var CAT_ORDER       = ${j(CAT_ORDER)};
+var CAT_COLORS      = ${j(CAT_COLORS)};
+var ALL_CATEGORIAS  = ${j(allCategorias)};
 
 var activeMeses = new Set(MESES);
-var sortState   = { col: null, dir: 1 }; // dir: 1=asc, -1=desc
-var manualData  = {}; // idx → {cert, api, buque, fecha_emb}
+var activeTipos = new Set(ALL_CATEGORIAS);
+var sortState   = { col: null, dir: 1 };
+var manualData  = {};
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 function fN(n) {
@@ -529,18 +549,54 @@ function computarPrecio(l) {
   return '';
 }
 
+// ── Tipo multi-select dropdown ────────────────────────────────────────────────
+function toggleTipoDd(e) {
+  e.stopPropagation();
+  var panel = document.getElementById('tipoDdPanel');
+  var btn   = document.getElementById('tipoBtn');
+  var open  = panel.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+document.addEventListener('click', function(e) {
+  var dd = document.getElementById('tipoDd');
+  if (dd && !dd.contains(e.target)) {
+    document.getElementById('tipoDdPanel').classList.remove('open');
+    document.getElementById('tipoBtn').classList.remove('open');
+  }
+});
+function onTipoCbChange() {
+  activeTipos = new Set();
+  document.querySelectorAll('.tipo-cb:checked').forEach(function(cb){ activeTipos.add(cb.value); });
+  updateTipoBtn();
+  renderFiscal();
+  updateDonutChart();
+}
+function toggleAllTipos(checked) {
+  document.querySelectorAll('.tipo-cb').forEach(function(cb){ cb.checked = checked; });
+  activeTipos = checked ? new Set(ALL_CATEGORIAS) : new Set();
+  updateTipoBtn();
+  renderFiscal();
+  updateDonutChart();
+}
+function updateTipoBtn() {
+  var btn = document.getElementById('tipoBtn');
+  if (!btn) return;
+  var allChecked = activeTipos.size === ALL_CATEGORIAS.length;
+  btn.textContent = (allChecked ? 'Todos los tipos' : activeTipos.size + ' tipo' + (activeTipos.size !== 1 ? 's' : '')) + ' ▾';
+}
+
 // ── Month filter (global chips) ───────────────────────────────────────────────
 function toggleMes(mes, btn) {
   if (activeMeses.has(mes)) { activeMeses.delete(mes); btn.classList.remove('active'); }
   else                      { activeMeses.add(mes);    btn.classList.add('active'); }
-  renderPivot(); renderFiscal(); updateBarChart();
+  renderPivot(); renderFiscal(); updateBarChart(); updateDonutChart();
 }
 function toggleAll(show) {
   MESES.forEach(function(m){ show ? activeMeses.add(m) : activeMeses.delete(m); });
   document.querySelectorAll('.chip[data-mes]').forEach(function(c){
     show ? c.classList.add('active') : c.classList.remove('active');
   });
-  renderPivot(); renderFiscal(); updateBarChart();
+  renderPivot(); renderFiscal(); updateBarChart(); updateDonutChart();
 }
 
 // ── Pivot re-render ───────────────────────────────────────────────────────────
@@ -612,14 +668,17 @@ function saveManualData() {
 function clearFiscalFilters() {
   document.getElementById('clienteSearch').value = '';
   document.getElementById('bloqueSelect').value = '';
-  document.getElementById('tipoSelect').value = '';
   document.getElementById('articuloSelect').value = '';
   document.getElementById('mesSelect').value = '';
+  activeTipos = new Set(ALL_CATEGORIAS);
+  document.querySelectorAll('.tipo-cb').forEach(function(cb){ cb.checked = true; });
+  updateTipoBtn();
   sortState = { col: null, dir: 1 };
   document.querySelectorAll('#fiscal-table th.sortable').forEach(function(th){
     th.classList.remove('sort-asc','sort-desc');
   });
   renderFiscal();
+  updateDonutChart();
 }
 
 // ── Sorting ───────────────────────────────────────────────────────────────────
@@ -648,7 +707,6 @@ function renderFiscal() {
 
   var clienteQ  = (document.getElementById('clienteSearch').value || '').toLowerCase().trim();
   var bloqueQ   = document.getElementById('bloqueSelect').value || '';
-  var tipoQ     = document.getElementById('tipoSelect').value || '';
   var articuloQ = document.getElementById('articuloSelect').value || '';
   var mesQ      = document.getElementById('mesSelect').value || '';
 
@@ -662,9 +720,9 @@ function renderFiscal() {
   // Gather matching lines
   var lineas = LINEAS.filter(function(l) {
     if (mesesActivos.indexOf(l.mes) < 0) return false;
+    if (!activeTipos.has(l.categoria)) return false;
     if (clienteQ && l.cliente.toLowerCase().indexOf(clienteQ) < 0) return false;
     if (bloqueQ && l.bloque !== bloqueQ) return false;
-    if (tipoQ && l.categoria !== tipoQ) return false;
     if (articuloQ && l.art_codigo !== articuloQ) return false;
     return true;
   });
@@ -797,9 +855,10 @@ function updateBarChart() {
 }
 
 // ── Donut chart ───────────────────────────────────────────────────────────────
+var donutChart;
 (function(){
   var ctx = document.getElementById('donutChart').getContext('2d');
-  new Chart(ctx,{
+  donutChart = new Chart(ctx,{
     type:'doughnut',
     data:{ labels:${j(donutLabels)}, datasets:[{data:${j(donutData)},backgroundColor:${j(donutColors)},borderWidth:2,borderColor:'#fff'}] },
     options:{
@@ -814,6 +873,27 @@ function updateBarChart() {
     },
   });
 })();
+
+function updateDonutChart() {
+  if (!donutChart) return;
+  var filtered = MESES.filter(function(m){ return activeMeses.has(m); });
+  var labels = [], data = [], colors = [];
+  ALL_CATEGORIAS.forEach(function(cat) {
+    if (!activeTipos.has(cat)) return;
+    var val = 0;
+    LINEAS.forEach(function(l){
+      if (l.categoria === cat && filtered.indexOf(l.mes) >= 0) val += l.importe_usd;
+    });
+    if (val === 0) return;
+    labels.push(cat);
+    data.push(Math.abs(val));
+    colors.push(CAT_COLORS[cat] || '#A0AEC0');
+  });
+  donutChart.data.labels = labels;
+  donutChart.data.datasets[0].data = data;
+  donutChart.data.datasets[0].backgroundColor = colors;
+  donutChart.update();
+}
 
 // ── Excel export ──────────────────────────────────────────────────────────────
 function exportarExcel() {
@@ -841,13 +921,12 @@ function exportarExcel() {
   var detRows = [detHdr];
   var clienteQx  = (document.getElementById('clienteSearch').value||'').toLowerCase().trim();
   var bloqueQx   = document.getElementById('bloqueSelect').value||'';
-  var tipoQx     = document.getElementById('tipoSelect').value||'';
   var articuloQx = document.getElementById('articuloSelect').value||'';
   LINEAS.filter(function(l){
     if (!filtered.has(l.mes)) return false;
+    if (!activeTipos.has(l.categoria)) return false;
     if (clienteQx && l.cliente.toLowerCase().indexOf(clienteQx)<0) return false;
     if (bloqueQx && l.bloque !== bloqueQx) return false;
-    if (tipoQx && l.categoria !== tipoQx) return false;
     if (articuloQx && l.art_codigo !== articuloQx) return false;
     return true;
   }).forEach(function(l){
