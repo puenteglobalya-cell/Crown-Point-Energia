@@ -234,15 +234,18 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
 
   const petManualHTML = petManualRows.map(({ l }) => {
     const mk = enc(l.art_codigo + '|' + l.comprobante)
-    return `<tr>` +
+    const apiOnly = /YPF|PAN AMERICAN|PAE\b/i.test(l.cliente)
+    const dimCls = apiOnly ? ' api-dim' : ''
+    return `<tr data-cliente="${enc(l.cliente)}" data-api-only="${apiOnly ? '1' : '0'}">` +
     `<td class="manual-info">${fechaCorta(l.fecha)}</td>` +
     `<td class="manual-info mono">${enc(l.comprobante)}</td>` +
-    `<td class="manual-info" title="${enc(l.cliente)}">${enc(l.cliente)}</td>` +
+    `<td class="manual-info cli" title="${enc(l.cliente)}">${enc(l.cliente)}</td>` +
     `<td class="manual-info mono">${enc(l.art_codigo)}</td>` +
-    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="cert" placeholder="Certificado"></td>` +
+    `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="cert" placeholder="Certificado"${apiOnly ? ' tabindex="-1"' : ''}></td>` +
     `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="api" placeholder="°API"></td>` +
-    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="buque" placeholder="Nombre buque"></td>` +
-    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="fecha_emb" placeholder="DD/MM/AAAA"></td>` +
+    `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="buque" placeholder="Nombre buque"${apiOnly ? ' tabindex="-1"' : ''}></td>` +
+    `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="fecha_emb" placeholder="DD/MM/AAAA"${apiOnly ? ' tabindex="-1"' : ''}></td>` +
+    `<td style="text-align:center"><input type="checkbox" class="m-check" data-mkey="${mk}" data-field="completo"></td>` +
     `</tr>`
   }).join('')
 
@@ -364,9 +367,19 @@ table.fiscal .na-cell{color:#C8CCDA;text-align:center}
 .manual-section-header:hover{opacity:.85}
 .m-row-done{background:rgba(72,187,120,.07)!important;border-left:3px solid #48BB78}
 .m-row-hidden{display:none!important}
+.m-row-filter{display:none!important}
 .m-hide-btn{font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid #C6F6D5;background:#F0FFF4;color:#276749;cursor:pointer;white-space:nowrap}
 .m-hide-btn:hover{background:#C6F6D5}
 .m-done-badge{font-size:11px;color:#48BB78;font-weight:600;margin-left:8px}
+.api-dim{opacity:.25;pointer-events:none}
+.pet-filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.pet-filter-bar input{font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 10px;border:1.5px solid #E8EAEF;border-radius:6px;width:220px;color:#14172E;outline:none;background:#fff}
+.pet-filter-bar input:focus{border-color:#14172E}
+.sort-th{cursor:pointer;user-select:none}
+.sort-th:hover{background:#EFF1F5!important;color:#14172E}
+.sort-arrow{display:inline-block;margin-left:3px;font-size:9px;opacity:.4}
+.sort-arrow.asc{opacity:1}
+.sort-arrow.desc{opacity:1}
 table.fiscal .fiscal-mes-header td{background:#14172E;color:#fff;font-weight:700;font-size:12px;letter-spacing:.04em;padding:8px 10px;text-transform:uppercase}
 table.fiscal .fiscal-subtotal td{background:#F8F9FB;font-weight:700;font-size:12px;border-top:2px solid #E8EAEF;border-bottom:2px solid #E8EAEF}
 table.fiscal .fiscal-subtotal .num{color:#14172E}
@@ -487,17 +500,21 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
           </div>
           <button class="m-hide-btn" id="pet-hide-btn" data-hiding="0" onclick="toggleHideDone('manual-pet-table','pet-hide-btn')">Ocultar completados</button>
         </div>
+        <div class="pet-filter-bar">
+          <input type="text" id="pet-filter" placeholder="Filtrar por cliente…" oninput="filterPetTable()">
+        </div>
         <div style="overflow-x:auto">
           <table class="fiscal" id="manual-pet-table">
             <thead><tr>
-              <th style="min-width:46px">Fecha</th>
+              <th class="sort-th" style="min-width:46px" onclick="sortPetTable(0)">Fecha<span class="sort-arrow" id="pet-sa-0"></span></th>
               <th style="min-width:140px">Comprobante</th>
-              <th style="min-width:150px">Cliente</th>
-              <th style="min-width:85px">Artículo</th>
+              <th class="sort-th" style="min-width:150px" onclick="sortPetTable(2)">Cliente<span class="sort-arrow" id="pet-sa-2"></span></th>
+              <th class="sort-th" style="min-width:85px" onclick="sortPetTable(3)">Artículo<span class="sort-arrow" id="pet-sa-3"></span></th>
               <th style="min-width:90px;background:#FFFBEB">Certificado</th>
               <th style="min-width:55px;background:#FFFBEB">°API</th>
               <th style="min-width:120px;background:#FFFBEB">Buque</th>
               <th style="min-width:100px;background:#FFFBEB">Fecha Emb.</th>
+              <th style="min-width:52px;background:#F0FFF4;text-align:center">Completo</th>
             </tr></thead>
             <tbody>${petManualHTML}</tbody>
           </table>
@@ -778,6 +795,13 @@ function collectManualFromForm() {
     if (!manualData[key]) manualData[key] = {};
     manualData[key][field] = inp.value.trim();
   });
+  document.querySelectorAll('#manual-pet-table .m-check').forEach(function(inp) {
+    var key   = inp.getAttribute('data-mkey');
+    var field = inp.getAttribute('data-field');
+    if (!key || !field) return;
+    if (!manualData[key]) manualData[key] = {};
+    manualData[key][field] = inp.checked;
+  });
   document.querySelectorAll('#manual-nc-table .m-input').forEach(function(inp) {
     var key   = inp.getAttribute('data-mkey');
     var field = inp.getAttribute('data-field');
@@ -825,6 +849,14 @@ function loadManualFromStorage() {
         inp.value = manualData[key][field];
       }
     });
+    // Pre-fill petroleum checkboxes
+    document.querySelectorAll('#manual-pet-table .m-check').forEach(function(inp) {
+      var key   = inp.getAttribute('data-mkey');
+      var field = inp.getAttribute('data-field');
+      if (key && field && manualData[key] && manualData[key][field]) {
+        inp.checked = true;
+      }
+    });
     // Pre-fill NC inputs
     document.querySelectorAll('#manual-nc-table .m-input').forEach(function(inp) {
       var key   = inp.getAttribute('data-mkey');
@@ -855,6 +887,26 @@ function toggleManualSection() {
 }
 
 function updateManualCompletedState() {
+  // Pet table: per-row criterion (api-only rows need only api; others need cert or buque); completo overrides
+  var petTbl = document.getElementById('manual-pet-table');
+  var petBadge = document.getElementById('pet-done-badge');
+  if (petTbl) {
+    var done = 0, total = 0;
+    petTbl.querySelectorAll('tbody tr').forEach(function(tr) {
+      var inp = tr.querySelector('[data-mkey]');
+      if (!inp) return;
+      total++;
+      var key = inp.getAttribute('data-mkey');
+      var d = manualData[key] || {};
+      var apiOnly = tr.getAttribute('data-api-only') === '1';
+      var complete = d.completo || (apiOnly ? !!d.api : !!(d.cert || d.buque));
+      tr.setAttribute('data-done', complete ? '1' : '0');
+      tr.classList.toggle('m-row-done', complete);
+      if (complete) done++;
+    });
+    if (petBadge) petBadge.textContent = total > 0 ? ' · ' + done + '/' + total : '';
+  }
+  // NC table
   function scanTable(tableId, badgeId, isDone) {
     var tbl = document.getElementById(tableId);
     var badge = document.getElementById(badgeId);
@@ -873,8 +925,7 @@ function updateManualCompletedState() {
     });
     if (badge) badge.textContent = total > 0 ? ' · ' + done + '/' + total : '';
   }
-  scanTable('manual-pet-table', 'pet-done-badge', function(d){ return !!(d.cert || d.buque); });
-  scanTable('manual-nc-table',  'nc-done-badge',  function(d){ return !!(d.aplica_a || d.sin_volumen); });
+  scanTable('manual-nc-table', 'nc-done-badge', function(d){ return !!(d.aplica_a || d.sin_volumen); });
 }
 
 function toggleHideDone(tableId, btnId) {
@@ -887,6 +938,37 @@ function toggleHideDone(tableId, btnId) {
   tbl.querySelectorAll('tr[data-done="1"]').forEach(function(tr) {
     tr.classList.toggle('m-row-hidden', hiding);
   });
+}
+
+// ── Embarques table filter + sort ─────────────────────────────────────────────
+function filterPetTable() {
+  var q = (document.getElementById('pet-filter').value || '').toLowerCase().trim();
+  document.querySelectorAll('#manual-pet-table tbody tr').forEach(function(tr) {
+    var cli = (tr.getAttribute('data-cliente') || '').toLowerCase();
+    var hiddenByFilter = q !== '' && cli.indexOf(q) < 0;
+    tr.classList.toggle('m-row-filter', hiddenByFilter);
+  });
+}
+
+var petSortCol = -1, petSortAsc = true;
+function sortPetTable(col) {
+  if (petSortCol === col) { petSortAsc = !petSortAsc; } else { petSortCol = col; petSortAsc = true; }
+  [0, 2, 3].forEach(function(c) {
+    var el = document.getElementById('pet-sa-' + c);
+    if (!el) return;
+    el.className = 'sort-arrow' + (c === col ? (petSortAsc ? ' asc' : ' desc') : '');
+    el.textContent = c === col ? (petSortAsc ? ' ▲' : ' ▼') : '';
+  });
+  var tbl = document.getElementById('manual-pet-table');
+  if (!tbl) return;
+  var rows = Array.from(tbl.querySelectorAll('tbody tr'));
+  rows.sort(function(a, b) {
+    var av = (a.cells[col] ? a.cells[col].textContent : '').trim();
+    var bv = (b.cells[col] ? b.cells[col].textContent : '').trim();
+    return (petSortAsc ? 1 : -1) * av.localeCompare(bv, 'es', { numeric: true });
+  });
+  var tbody = tbl.querySelector('tbody');
+  rows.forEach(function(r) { tbody.appendChild(r); });
 }
 
 // ── Fiscal table filters ──────────────────────────────────────────────────────
