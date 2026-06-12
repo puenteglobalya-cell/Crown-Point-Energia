@@ -1100,13 +1100,26 @@ function renderPrecios(lineas) {
     return true;
   });
 
-  function buildTable(lines, prodLabel, unit, toVol, slug) {
+  // For oil: add amounts from user-linked ajuste comprobantes (manualData[key].ajustes)
+  function effectiveImp(l) {
+    var d = manualData[manualKey(l)] || {};
+    if (!d.ajustes) return l.importe_usd;
+    var extra = 0;
+    d.ajustes.split(',').forEach(function(c) {
+      c = c.trim(); if (!c) return;
+      LINEAS.forEach(function(ll){ if (ll.comprobante === c) extra += ll.importe_usd; });
+    });
+    return l.importe_usd + extra;
+  }
+
+  // impFn: optional override for the amount used in price = imp / vol (oil passes effectiveImp)
+  function buildTable(lines, prodLabel, unit, toVol, slug, impFn) {
     if (!lines.length) return '';
     var bloques = [], byBlq = {};
     lines.forEach(function(l) {
       if (!byBlq[l.bloque]) { byBlq[l.bloque] = {}; bloques.push(l.bloque); }
       if (!byBlq[l.bloque][l.mes]) byBlq[l.bloque][l.mes] = { imp: 0, vol: 0, items: [] };
-      byBlq[l.bloque][l.mes].imp += l.importe_usd;
+      byBlq[l.bloque][l.mes].imp += impFn ? impFn(l) : l.importe_usd;
       byBlq[l.bloque][l.mes].vol += toVol(l.cantidad);
       byBlq[l.bloque][l.mes].items.push(l);
     });
@@ -1180,14 +1193,16 @@ function renderPrecios(lineas) {
     html += '</tr></thead><tbody>';
     lines.forEach(function(l) {
       var v = toVol(l.cantidad);
-      var pr = v !== 0 ? fD(l.importe_usd/v,2) : '—';
+      var eff = impFn ? impFn(l) : l.importe_usd;
+      var pr = v !== 0 ? fD(eff/v,2) : '—';
+      var hasAdj = impFn && eff !== l.importe_usd;
       html += '<tr style="border-bottom:1px solid #F3F4F8">';
       html += '<td style="padding:3px 8px">'+enc(l.bloque)+'</td>';
       html += '<td style="padding:3px 8px;font-family:monospace;font-size:9px">'+enc(l.art_codigo)+'</td>';
       html += '<td style="padding:3px 8px">'+enc(MES_LABELS[l.mes]||l.mes)+'</td>';
       html += '<td style="padding:3px 8px;text-align:right;font-variant-numeric:tabular-nums">'+fD(l.cantidad,0)+'</td>';
       html += '<td style="padding:3px 8px;text-align:right;font-variant-numeric:tabular-nums">'+fD(v,1)+'</td>';
-      html += '<td style="padding:3px 8px;text-align:right;font-variant-numeric:tabular-nums">'+fD(l.importe_usd,2)+'</td>';
+      html += '<td style="padding:3px 8px;text-align:right;font-variant-numeric:tabular-nums"'+(hasAdj?' title="bruto: '+encA(fD(l.importe_usd,2))+'"':'')+'>'+fD(eff,2)+(hasAdj?' <small style="color:#48BB78">+aj</small>':'')+'</td>';
       html += '<td style="padding:3px 8px;text-align:right;font-weight:700;color:#2B6CB0">'+pr+'</td>';
       html += '</tr>';
     });
@@ -1198,7 +1213,7 @@ function renderPrecios(lineas) {
   var oilLines = lineas.filter(function(l){ return l.es_petroleo && !/AJUSTE/i.test(l.art_codigo||'') && l.cantidad !== 0; });
   var gasLines = lineas.filter(function(l){ return l.es_gas && l.cantidad !== 0; });
   var html = '';
-  if (oilLines.length) html += buildTable(oilLines, 'Petr\xf3leo', '$/bbl', function(q){ return q*6.28981; }, 'oil');
+  if (oilLines.length) html += buildTable(oilLines, 'Petr\xf3leo', '$/bbl', function(q){ return q*6.28981; }, 'oil', effectiveImp);
   if (gasLines.length) html += buildTable(gasLines, 'Gas', '$/MMBTU', function(q){ return q/1000*35.314; }, 'gas');
   body.innerHTML = html;
   var sec = document.getElementById('precios-section');
