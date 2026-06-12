@@ -18,6 +18,7 @@ function fD(n: number, d = 2): string {
 
 type Linea = DatosFacturacion['lineas'][number]
 function precioDerivado(l: Linea): { val: string; unit: string } {
+  if (/AJUSTE/i.test(l.art_codigo)) return { val: '', unit: '' }
   if (l.es_petroleo && l.cantidad !== 0)
     return { val: fD(l.importe_usd / (l.cantidad * 6.28981), 2), unit: '$/bbl' }
   if (l.es_gas && l.cantidad !== 0)
@@ -402,8 +403,12 @@ table.fiscal .na-cell{color:#C8CCDA;text-align:center}
 .sort-arrow{display:inline-block;margin-left:3px;font-size:9px;opacity:.4}
 .sort-arrow.asc{opacity:1}
 .sort-arrow.desc{opacity:1}
-.fiscal-grouped{background:rgba(72,187,120,.06)!important;border-left:3px solid #48BB78}
+.fiscal-grouped{background:rgba(72,187,120,.06)!important;border-left:3px solid #48BB78;cursor:pointer}
+.fiscal-grouped:hover td{background:rgba(72,187,120,.13)!important}
 .adj-badge{font-size:9.5px;color:#7A8099;margin-top:2px;white-space:nowrap}
+.group-toggle{font-size:9px;color:#48BB78;font-weight:700;margin-right:3px;vertical-align:middle;display:inline-block;width:8px}
+table.fiscal .fiscal-breakdown td{background:#F6F8FC;color:#7A8099;font-size:11px;padding:3px 8px;border-bottom:1px solid #F0F2F6}
+table.fiscal .fiscal-breakdown .nc-val{color:#C53030}
 table.fiscal .fiscal-mes-header{cursor:pointer;user-select:none}
 table.fiscal .fiscal-mes-header:hover td{background:#1e2340}
 table.fiscal .fiscal-mes-header td{background:#14172E;color:#fff;font-weight:700;font-size:12px;letter-spacing:.04em;padding:8px 10px;text-transform:uppercase}
@@ -611,7 +616,7 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
   <div class="section">
     <div class="section-title">
       Detalle Fiscal por Comprobante
-      <button id="manual-cols-btn" class="section-badge" style="cursor:pointer;border:none;background:#F0F2F6;padding:2px 10px;border-radius:10px;font-size:10px;color:#7A8099;font-weight:500" onclick="toggleManualCols()">Mostrar cert. ▾</button>
+      <button id="manual-cols-btn" class="section-badge" style="cursor:pointer;border:none;background:#F0F2F6;padding:2px 10px;border-radius:10px;font-size:10px;color:#7A8099;font-weight:500" onclick="toggleManualCols()">Ocultar emb. ▴</button>
       <span class="section-badge">Un comprobante puede tener múltiples artículos</span>
     </div>
 
@@ -648,7 +653,7 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
     </div>
 
     <div style="overflow-x:auto">
-      <table class="fiscal hide-manual-cols" id="fiscal-table">
+      <table class="fiscal" id="fiscal-table">
         <thead>
           <tr>
             <th class="sortable" data-col="fecha" style="min-width:46px">Fecha<span class="sort-icon"></span></th>
@@ -709,11 +714,13 @@ var ALL_CATEGORIAS  = ${j(allCategorias)};
 var activeMeses    = new Set(MESES);
 var activeTipos    = new Set(ALL_CATEGORIAS);
 var collapsedMeses = new Set(MESES);  // start all collapsed
-var showManualCols = false;
+var showManualCols = true;
 var sortState      = { col: null, dir: 1 };
 var manualData     = {};
 var PERIODO_DESDE = '${periodo_desde}';
 var MANUAL_KEY    = 'cpe_fm_' + PERIODO_DESDE;
+var REPORTE_ID   = '';
+var SAVED_MANUAL = {};
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 function fN(n) {
@@ -726,6 +733,7 @@ function fD(n, d) { return n.toFixed(d||2).replace('.',','); }
 function fechaCorta(iso) { var p=iso.split('-'); return p[2]+'/'+p[1]; }
 function enc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function computarPrecio(l) {
+  if (/AJUSTE/i.test(l.art_codigo || '')) return { val: '', unit: '' };
   if (l.es_petroleo && l.cantidad !== 0)
     return { val: fD(l.importe_usd / (l.cantidad * 6.28981), 2), unit: '$/bbl' };
   if (l.es_gas && l.cantidad !== 0)
@@ -904,7 +912,24 @@ function guardarManual() {
   updateManualCompletedState();
   updateNetoDisplay();
   var btn = document.getElementById('save-manual-btn');
-  if (btn) {
+  if (!btn) return;
+  if (REPORTE_ID) {
+    btn.textContent = 'Guardando…';
+    btn.disabled = true;
+    fetch('/api/admin/reportes/' + REPORTE_ID, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manual_data: manualData })
+    }).then(function(r) {
+      btn.disabled = false;
+      btn.textContent = r.ok ? '✓ Guardado en servidor' : '✓ Guardado local';
+      setTimeout(function(){ btn.textContent = 'Guardar y aplicar'; }, 2500);
+    }).catch(function() {
+      btn.disabled = false;
+      btn.textContent = '✓ Guardado local';
+      setTimeout(function(){ btn.textContent = 'Guardar y aplicar'; }, 2500);
+    });
+  } else {
     btn.textContent = '✓ Guardado';
     setTimeout(function(){ btn.textContent = 'Guardar y aplicar'; }, 2000);
   }
@@ -933,10 +958,14 @@ function autoSaveManual() {
 function loadManualFromStorage() {
   try {
     var raw = localStorage.getItem(MANUAL_KEY);
-    if (!raw) return;
-    var saved = JSON.parse(raw);
-    if (typeof saved !== 'object' || !saved) return;
-    manualData = saved;
+    var fromLocal = (raw ? JSON.parse(raw) : null) || {};
+    // Server-saved data (injected at serve time) takes precedence over localStorage
+    var fromServer = (typeof SAVED_MANUAL === 'object' && SAVED_MANUAL && Object.keys(SAVED_MANUAL).length > 0)
+      ? SAVED_MANUAL : null;
+    manualData = fromServer || fromLocal;
+    if (typeof manualData !== 'object' || !manualData) return;
+    // Keep localStorage in sync with server data
+    if (fromServer) { try { localStorage.setItem(MANUAL_KEY, JSON.stringify(manualData)); } catch(e) {} }
     // Pre-fill petroleum inputs
     document.querySelectorAll('#manual-pet-table .m-input').forEach(function(inp) {
       var key   = inp.getAttribute('data-mkey');
@@ -1160,11 +1189,26 @@ function toggleMesSection(mes) {
   renderFiscal();
 }
 
+function toggleGroupBreakdown(comp) {
+  if (!comp) return;
+  var rows = Array.from(document.querySelectorAll('tr.fiscal-breakdown'));
+  var matching = rows.filter(function(r){ return r.getAttribute('data-group') === comp; });
+  if (!matching.length) return;
+  var isHidden = matching[0].style.display === 'none';
+  matching.forEach(function(r){ r.style.display = isHidden ? '' : 'none'; });
+  var grpRows = Array.from(document.querySelectorAll('tr.fiscal-grouped'));
+  var grp = grpRows.filter(function(r){ return r.getAttribute('data-groupcomp') === comp; })[0];
+  if (grp) {
+    var tog = grp.querySelector('.group-toggle');
+    if (tog) tog.textContent = isHidden ? '▼' : '▶';
+  }
+}
+
 function toggleManualCols() {
   showManualCols = !showManualCols;
   document.getElementById('fiscal-table').classList.toggle('hide-manual-cols', !showManualCols);
   var btn = document.getElementById('manual-cols-btn');
-  if (btn) btn.textContent = showManualCols ? 'Ocultar cert. ▴' : 'Mostrar cert. ▾';
+  if (btn) btn.textContent = showManualCols ? 'Ocultar emb. ▴' : 'Mostrar emb. ▾';
 }
 
 // ── Sorting ───────────────────────────────────────────────────────────────────
@@ -1185,8 +1229,10 @@ document.addEventListener('DOMContentLoaded', function() {
       renderFiscal();
     });
   });
-  // Month header collapse — event delegation so it survives renderFiscal re-renders
+  // Month header collapse + grouped-row breakdown — event delegation survives renderFiscal re-renders
   document.getElementById('fiscal-body').addEventListener('click', function(e) {
+    var grp = e.target.closest('tr.fiscal-grouped');
+    if (grp) { toggleGroupBreakdown(grp.getAttribute('data-groupcomp')); return; }
     var hdr = e.target.closest('tr.fiscal-mes-header');
     if (hdr) toggleMesSection(hdr.getAttribute('data-mes'));
   });
@@ -1304,6 +1350,8 @@ function buildGroupMap(lineas) {
     lineasByComp[l.comprobante].push(l);
   });
   var groups = {}, absorbed = new Set();
+
+  // Pass 1: FQ/CL "ajustes" field — parent links to its children
   lineas.forEach(function(l) {
     var d = manualData[manualKey(l)] || {};
     if (!d.ajustes) return;
@@ -1320,6 +1368,26 @@ function buildGroupMap(lineas) {
     });
     groups[l.comprobante] = adj;
   });
+
+  // Pass 2: any row's "aplica_a" field — child points back to its parent invoice
+  var seenPairs = new Set();
+  lineas.forEach(function(l) {
+    var d = manualData[manualKey(l)] || {};
+    var targetComp = (d.aplica_a || '').trim();
+    if (!targetComp) return;
+    // Only group if the parent is also visible in this filtered view
+    if (!lineasByComp[targetComp]) return;
+    var pairKey = l.comprobante + '|' + targetComp;
+    if (seenPairs.has(pairKey)) return;
+    seenPairs.add(pairKey);
+    if (!groups[targetComp]) groups[targetComp] = [];
+    var alreadyAdj = groups[targetComp].some(function(a){ return a.comprobante === l.comprobante; });
+    if (!alreadyAdj) {
+      LINEAS.forEach(function(ll){ if (ll.comprobante === l.comprobante) groups[targetComp].push(ll); });
+    }
+    absorbed.add(l.comprobante);
+  });
+
   return { groups: groups, absorbed: absorbed };
 }
 
@@ -1331,8 +1399,9 @@ function groupedRowHTML(l, adjLineas, saved) {
   var catColor = CAT_COLORS[l.categoria] || '#7A8099';
   var isNeg    = netImporte < 0;
   var adjBadge = '<div class="adj-badge">' + adjLineas.map(function(a){ return enc(a.comprobante); }).join(' · ') + '</div>';
-  return '<tr class="fiscal-row fiscal-grouped">'+
-    '<td class="dt">'+fechaCorta(l.fecha)+'</td>'+
+  var gc = enc(l.comprobante);
+  var html = '<tr class="fiscal-row fiscal-grouped" data-groupcomp="'+gc+'">'+
+    '<td class="dt"><span class="group-toggle">▶</span> '+fechaCorta(l.fecha)+'</td>'+
     '<td class="comp mono">'+enc(l.comprobante)+adjBadge+'</td>'+
     '<td class="cli" title="'+enc(l.cliente)+'">'+enc(l.cliente)+'</td>'+
     '<td class="art mono">'+enc(l.art_codigo)+'</td>'+
@@ -1352,6 +1421,25 @@ function groupedRowHTML(l, adjLineas, saved) {
         '<td class="manual-val" data-mc>'+(saved.fecha_emb||'')+'</td>'
       : '<td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td>')+
     '</tr>';
+  // Breakdown sub-rows (all components, collapsed by default)
+  [l].concat(adjLineas).forEach(function(ll) {
+    var pc2 = computarPrecio(ll);
+    var isNeg2 = ll.importe_usd < 0;
+    html += '<tr class="fiscal-breakdown" data-group="'+gc+'" style="display:none">'+
+      '<td class="dt">'+fechaCorta(ll.fecha)+'</td>'+
+      '<td class="comp mono" style="padding-left:20px">'+enc(ll.comprobante)+'</td>'+
+      '<td></td><td class="art mono">'+enc(ll.art_codigo)+'</td>'+
+      '<td></td><td></td><td></td>'+
+      '<td class="num">'+fN(ll.cantidad)+'</td>'+
+      '<td class="num">'+fD(ll.precio_neto_usd_u,4)+'</td>'+
+      '<td class="num precio-col">'+(pc2.val?'<span class="pv">'+pc2.val+'</span> <small class="pu">'+pc2.unit+'</small>':'')+'</td>'+
+      '<td class="num'+(isNeg2?' nc-val':'')+'">'+fN(ll.importe_usd)+'</td>'+
+      '<td class="num ars-col">'+fN(ll.importe_ars)+'</td>'+
+      '<td class="num tc-col">'+(ll.tc>0?fN(ll.tc):'')+'</td>'+
+      '<td colspan="4"></td>'+
+      '</tr>';
+  });
+  return html;
 }
 
 function rowHTML(l, idx, ncS, saved) {
@@ -1541,8 +1629,7 @@ function exportarExcel() {
     if (articuloQx && l.art_codigo !== articuloQx) return false;
     return true;
   }).forEach(function(l){
-    var idx = LINEAS.indexOf(l);
-    var saved = manualData[idx]||{};
+    var saved = manualData[manualKey(l)]||{};
     detRows.push([l.fecha,MES_LABELS[l.mes]||l.mes,l.comprobante,l.cliente,l.art_codigo,l.art_desc,l.bloque,l.categoria,l.cantidad,l.precio_neto_usd_u,computarPrecio(l).val,computarPrecio(l).unit,l.importe_usd,l.importe_ars,l.tc>0?l.tc:'',saved.cert||'',saved.api||'',saved.buque||'',saved.fecha_emb||'']);
   });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detRows), 'Detalle Fiscal');

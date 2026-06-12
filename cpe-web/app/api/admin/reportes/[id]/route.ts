@@ -45,7 +45,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json(data)
   }
 
-  const { data, error } = await db.from('reportes').select('html, estado').eq('id', params.id).single()
+  const { data, error } = await db.from('reportes').select('html, estado, manual_data').eq('id', params.id).single()
   if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   // Drafts require view_drafts permission
@@ -56,7 +56,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
   }
 
-  return new NextResponse(data.html, {
+  // Inject server-side manual data so the report picks it up on load
+  const savedManualJson = JSON.stringify(data.manual_data ?? {})
+  const html = data.html
+    .replace("var REPORTE_ID   = '';", `var REPORTE_ID   = '${params.id}';`)
+    .replace('var SAVED_MANUAL = {};', `var SAVED_MANUAL = ${savedManualJson};`)
+
+  return new NextResponse(html, {
     headers: { 'Content-Type': 'text/html; charset=utf-8' }
   })
 }
@@ -72,6 +78,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json()
 
   const db = createSupabaseServerAdminClient()
+
+  // Branch: manual data save — any authenticated active user
+  if ('manual_data' in body) {
+    if (typeof body.manual_data !== 'object' || body.manual_data === null) {
+      return NextResponse.json({ error: 'manual_data must be an object' }, { status: 400 })
+    }
+    const { error } = await db.from('reportes')
+      .update({ manual_data: body.manual_data, updated_at: new Date().toISOString() })
+      .eq('id', params.id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ ok: true })
+  }
 
   // Branch: merge update (datos + html)
   if ('datos' in body || 'html' in body) {
