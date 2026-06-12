@@ -430,6 +430,19 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
 .report-footer{margin-top:24px;padding:16px 0;border-top:1px solid #E8EAEF;display:flex;justify-content:space-between;font-size:11px;color:#A0A8C0}
 .pv{font-variant-numeric:tabular-nums}
 .pu{font-size:10px;color:#7A8099;letter-spacing:.02em}
+/* Manual subsection collapse */
+.ms-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:4px 0}
+.ms-hdr:hover{opacity:.8}
+.ms-caret{font-size:9px;font-weight:700;margin-right:5px;display:inline-block;color:#48BB78}
+/* Price table */
+table.precios{border-collapse:collapse;width:100%;font-size:12px;margin-bottom:12px}
+table.precios th{padding:6px 10px;font-weight:600;font-size:11px;color:#7A8099;background:#F8F9FB;border-bottom:1.5px solid #E8EAEF;text-align:right;white-space:nowrap}
+table.precios th:first-child{text-align:left}
+table.precios td{padding:5px 10px;border-bottom:1px solid #F3F4F8;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.precios td:first-child{text-align:left;font-weight:600}
+table.precios .ptot td{font-weight:700;border-top:1.5px solid #E8EAEF;background:#F8F9FB}
+.precios-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.precios-grid{grid-template-columns:1fr}}
 /* Print */
 @media print{
   body{background:#fff}
@@ -517,6 +530,12 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
     </div>
   </div>
 
+  <!-- Precios Promedio -->
+  <div class="section" id="precios-section">
+    <div class="section-title">Precio Promedio por Bloque · us$</div>
+    <div class="precios-grid" id="precios-body"></div>
+  </div>
+
   <!-- Datos Manuales -->
   <div class="section" id="manual-section">
     <div class="section-title manual-section-header" onclick="toggleManualSection()">
@@ -526,12 +545,13 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
     <div id="manual-body" style="display:${defaultManualOpen ? 'block' : 'none'}">
       ${petManualHTML.length > 0 ? `
       <div style="margin-bottom:18px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="ms-hdr" onclick="toggleManualSubsection('pet')">
           <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em">
-            Embarques (Petróleo)<span class="m-done-badge" id="pet-done-badge"></span>
+            <span class="ms-caret" id="ms-icon-pet">▶</span>Embarques (Petróleo)<span class="m-done-badge" id="pet-done-badge"></span>
           </div>
-          <button class="m-hide-btn" id="pet-hide-btn" data-hiding="0" onclick="toggleHideDone('manual-pet-table','pet-hide-btn')">Ocultar completados</button>
+          <button class="m-hide-btn" id="pet-hide-btn" data-hiding="1" onclick="event.stopPropagation();toggleHideDone('manual-pet-table','pet-hide-btn')">Mostrar todos</button>
         </div>
+        <div id="ms-body-pet" style="display:none">
         <div class="pet-filter-bar">
           <input type="text" id="pet-filter" placeholder="Filtrar por cliente…" oninput="filterPetTable()">
         </div>
@@ -552,16 +572,18 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
             <tbody>${petManualHTML}</tbody>
           </table>
         </div>
+        </div>
       </div>` : ''}
       ${ncManualHTML.length > 0 ? `
       <div style="margin-bottom:18px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="ms-hdr" onclick="toggleManualSubsection('nc')">
           <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em">
-            Notas de Crédito / Débito<span class="m-done-badge" id="nc-done-badge"></span>
+            <span class="ms-caret" id="ms-icon-nc">▶</span>Notas de Crédito / Débito<span class="m-done-badge" id="nc-done-badge"></span>
           </div>
-          <button class="m-hide-btn" id="nc-hide-btn" data-hiding="0" onclick="toggleHideDone('manual-nc-table','nc-hide-btn')">Ocultar completados</button>
+          <button class="m-hide-btn" id="nc-hide-btn" data-hiding="1" onclick="event.stopPropagation();toggleHideDone('manual-nc-table','nc-hide-btn')">Mostrar todos</button>
         </div>
-        <div class="pet-filter-bar">
+        <div id="ms-body-nc" style="display:none">
+        <div class="pet-filter-bar" style="margin-top:10px">
           <input type="text" id="nc-filter" placeholder="Filtrar por comprobante, cliente…" oninput="filterNcTable()">
         </div>
         <div style="overflow-x:auto">
@@ -578,16 +600,18 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
             <tbody>${ncManualHTML}</tbody>
           </table>
         </div>
+        </div>
       </div>` : ''}
       ${otrosManualHTML.length > 0 ? `
       <div style="margin-bottom:18px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="ms-hdr" onclick="toggleManualSubsection('otros')">
           <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em">
-            Otros (DA / DQ)<span class="m-done-badge" id="otros-done-badge"></span>
+            <span class="ms-caret" id="ms-icon-otros">▶</span>Otros (DA / DQ)<span class="m-done-badge" id="otros-done-badge"></span>
           </div>
-          <button class="m-hide-btn" id="otros-hide-btn" data-hiding="0" onclick="toggleHideDone('manual-otros-table','otros-hide-btn')">Ocultar completados</button>
+          <button class="m-hide-btn" id="otros-hide-btn" data-hiding="1" onclick="event.stopPropagation();toggleHideDone('manual-otros-table','otros-hide-btn')">Mostrar todos</button>
         </div>
-        <div class="pet-filter-bar">
+        <div id="ms-body-otros" style="display:none">
+        <div class="pet-filter-bar" style="margin-top:10px">
           <input type="text" id="otros-filter" placeholder="Filtrar por comprobante, cliente…" oninput="filterOtrosTable()">
         </div>
         <div style="overflow-x:auto">
@@ -604,6 +628,7 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
             </tr></thead>
             <tbody>${otrosManualHTML}</tbody>
           </table>
+        </div>
         </div>
       </div>` : ''}
       <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
@@ -1046,6 +1071,73 @@ function toggleManualSection() {
   if (badge) badge.textContent = open ? '▶ expandir' : '▼ colapsar';
 }
 
+function toggleManualSubsection(id) {
+  var body = document.getElementById('ms-body-' + id);
+  var icon = document.getElementById('ms-icon-' + id);
+  if (!body) return;
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  if (icon) icon.textContent = open ? '▶' : '▼';
+}
+
+function renderPrecios(lineas) {
+  var body = document.getElementById('precios-body');
+  if (!body) return;
+  var mesQ = document.getElementById('mesSelect') ? document.getElementById('mesSelect').value : '';
+  var mList = MESES.filter(function(m){
+    if (!activeMeses.has(m)) return false;
+    if (mesQ && m !== mesQ) return false;
+    return true;
+  });
+  function buildTable(lines, prodLabel, unit, toVol) {
+    if (!lines.length) return '';
+    var bloques = [], byBlq = {};
+    lines.forEach(function(l) {
+      if (!byBlq[l.bloque]) { byBlq[l.bloque] = {}; bloques.push(l.bloque); }
+      if (!byBlq[l.bloque][l.mes]) byBlq[l.bloque][l.mes] = { imp: 0, vol: 0 };
+      byBlq[l.bloque][l.mes].imp += l.importe_usd;
+      byBlq[l.bloque][l.mes].vol += toVol(l.cantidad);
+    });
+    var totByMes = {};
+    mList.forEach(function(m){ totByMes[m] = { imp: 0, vol: 0 }; });
+    lines.forEach(function(l){
+      if (totByMes[l.mes]) { totByMes[l.mes].imp += l.importe_usd; totByMes[l.mes].vol += toVol(l.cantidad); }
+    });
+    var html = '<div><div style="font-size:11px;font-weight:700;color:#2B6CB0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">'+enc(prodLabel)+' · '+enc(unit)+'</div>';
+    html += '<table class="precios"><thead><tr><th>Bloque</th>';
+    mList.forEach(function(m){ html += '<th>'+enc(MES_LABELS[m]||m)+'</th>'; });
+    html += '<th>Prom.</th></tr></thead><tbody>';
+    bloques.forEach(function(blq) {
+      html += '<tr><td>'+enc(blq)+'</td>';
+      var ai = 0, av = 0;
+      mList.forEach(function(m) {
+        var g = byBlq[blq][m];
+        if (g && g.vol > 0) { html += '<td>'+fD(g.imp/g.vol,2)+'</td>'; ai += g.imp; av += g.vol; }
+        else html += '<td style="color:#C8CCDA">—</td>';
+      });
+      html += '<td style="font-weight:600">'+(av>0?fD(ai/av,2):'—')+'</td></tr>';
+    });
+    html += '<tr class="ptot"><td>TOTAL</td>';
+    var gi = 0, gv = 0;
+    mList.forEach(function(m) {
+      var g = totByMes[m];
+      if (g && g.vol > 0) { html += '<td>'+fD(g.imp/g.vol,2)+'</td>'; gi += g.imp; gv += g.vol; }
+      else html += '<td style="color:#C8CCDA">—</td>';
+    });
+    html += '<td>'+(gv>0?fD(gi/gv,2):'—')+'</td></tr>';
+    html += '</tbody></table></div>';
+    return html;
+  }
+  var oilLines = lineas.filter(function(l){ return l.es_petroleo && !/AJUSTE/i.test(l.art_codigo||'') && l.cantidad !== 0; });
+  var gasLines = lineas.filter(function(l){ return l.es_gas && l.cantidad !== 0; });
+  var html = '';
+  if (oilLines.length) html += buildTable(oilLines, 'Petróleo', '$/bbl', function(q){ return q*6.28981; });
+  if (gasLines.length) html += buildTable(gasLines, 'Gas', '$/MMBTU', function(q){ return q/1000*35.314; });
+  body.innerHTML = html;
+  var sec = document.getElementById('precios-section');
+  if (sec) sec.style.display = (oilLines.length || gasLines.length) ? '' : 'none';
+}
+
 function updateManualCompletedState() {
   // Pet table: per-row criterion (api-only rows need only api; others need cert or buque); completo overrides
   var petTbl = document.getElementById('manual-pet-table');
@@ -1245,6 +1337,7 @@ function renderFiscal() {
   var filteredLineas = getFilteredLineas();
   renderPivotFromLineas(filteredLineas);
   renderKPIs(filteredLineas);
+  renderPrecios(filteredLineas);
   renderClienteSummary(filteredLineas);
   updateBarChartFromLineas(filteredLineas);
   updateDonutChartFromLineas(filteredLineas);
@@ -1595,47 +1688,120 @@ function getFilteredLineas() {
 }
 
 // ── Excel export ──────────────────────────────────────────────────────────────
+function fmtSheet(ws, freezeRow, numCols, colWidths) {
+  if (colWidths) ws['!cols'] = colWidths.map(function(w){ return {wch:w}; });
+  if (freezeRow > 0) ws['!freeze'] = {xSplit:0, ySplit:freezeRow};
+  if (!numCols || !numCols.length) return;
+  var range = XLSX.utils.decode_range(ws['!ref']||'A1');
+  for (var ri = freezeRow; ri <= range.e.r; ri++) {
+    numCols.forEach(function(info) {
+      var addr = XLSX.utils.encode_cell({r:ri, c:info.c});
+      if (ws[addr] && typeof ws[addr].v === 'number') { ws[addr].t = 'n'; ws[addr].z = info.z||'#,##0.00'; }
+    });
+  }
+}
+
 function exportarExcel() {
   saveManualData();
-  var filtered = new Set(MESES.filter(function(m){ return activeMeses.has(m); }));
+  var mesQ = document.getElementById('mesSelect') ? document.getElementById('mesSelect').value : '';
+  var fMeses = MESES.filter(function(m){
+    if (!activeMeses.has(m)) return false;
+    if (mesQ && m !== mesQ) return false;
+    return true;
+  });
   var wb = XLSX.utils.book_new();
 
-  // Sheet 1: Resumen pivot
-  var fMeses = MESES.filter(function(m){return filtered.has(m);});
+  // === Hoja 1: Resumen por Categoría ===
   var pivHdr = ['Categoría','Bloque'].concat(fMeses.map(function(m){return MES_LABELS[m]||m;})).concat(['Total']);
   var pivRows = [pivHdr];
-  var byCat={};
-  PIVOT_DATA.forEach(function(r){if(!byCat[r.categoria])byCat[r.categoria]=[];byCat[r.categoria].push(r);});
-  Object.keys(byCat).forEach(function(cat){
-    var rows=byCat[cat];
-    pivRows.push([cat,''].concat(fMeses.map(function(m){return rows.reduce(function(s,r){return s+(r.por_mes[m]||0);},0);})).concat([rows.reduce(function(s,r){return s+r.total;},0)]));
+  var byCat = {};
+  PIVOT_DATA.forEach(function(r){ if (!byCat[r.categoria]) byCat[r.categoria]=[]; byCat[r.categoria].push(r); });
+  var gTotM = {}, gTot = 0;
+  fMeses.forEach(function(m){ gTotM[m]=0; });
+  CAT_ORDER.concat(Object.keys(byCat).filter(function(c){return CAT_ORDER.indexOf(c)<0;})).forEach(function(cat){
+    if (!byCat[cat]) return;
+    var rows = byCat[cat], cTotM = {}, cTot = 0;
+    fMeses.forEach(function(m){ cTotM[m]=rows.reduce(function(s,r){return s+(r.por_mes[m]||0);},0); gTotM[m]+=cTotM[m]; });
+    cTot = rows.reduce(function(s,r){return s+r.total;},0); gTot += cTot;
+    pivRows.push([cat,''].concat(fMeses.map(function(m){return cTotM[m]||0;})).concat([cTot]));
     rows.forEach(function(r){
-      pivRows.push(['',r.bloque].concat(fMeses.map(function(m){return r.por_mes[m]||0;})).concat([r.total]));
+      var rTot = fMeses.reduce(function(s,m){return s+(r.por_mes[m]||0);},0);
+      pivRows.push(['',r.bloque].concat(fMeses.map(function(m){return r.por_mes[m]||0;})).concat([rTot]));
     });
   });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pivRows), 'Resumen');
+  pivRows.push(['TOTAL NETO',''].concat(fMeses.map(function(m){return gTotM[m]||0;})).concat([gTot]));
+  var pivWs = XLSX.utils.aoa_to_sheet(pivRows);
+  var mCols = []; for (var ci=2; ci<pivHdr.length; ci++) mCols.push({c:ci, z:'#,##0'});
+  fmtSheet(pivWs, 1, mCols, [28,16].concat(fMeses.map(function(){return 14;})).concat([16]));
+  XLSX.utils.book_append_sheet(wb, pivWs, 'Resumen');
 
-  // Sheet 2: Detalle fiscal
-  var detHdr = ['Fecha','Mes','Comprobante','Cliente','Artículo','Descripción','Bloque','Categoría','Cantidad','P.Neto USD/u','Precio','Unidad','Total Neto USD','Total Neto ARS','TC','Certificado','°API','Buque','Fecha emb.'];
-  var detRows = [detHdr];
-  var clienteQx  = (document.getElementById('clienteSearch').value||'').toLowerCase().trim();
-  var bloqueQx   = document.getElementById('bloqueSelect').value||'';
-  var articuloQx = document.getElementById('articuloSelect').value||'';
-  LINEAS.filter(function(l){
-    if (!filtered.has(l.mes)) return false;
+  // === Hoja 2: Detalle Fiscal ===
+  var clienteQx = (document.getElementById('clienteSearch') ? document.getElementById('clienteSearch').value : '').toLowerCase().trim();
+  var bloqueQx  = document.getElementById('bloqueSelect') ? document.getElementById('bloqueSelect').value : '';
+  var articuloQx = document.getElementById('articuloSelect') ? document.getElementById('articuloSelect').value : '';
+  var detLineas = LINEAS.filter(function(l){
+    if (fMeses.indexOf(l.mes) < 0) return false;
     if (!activeTipos.has(l.categoria)) return false;
     if (clienteQx && l.cliente.toLowerCase().indexOf(clienteQx)<0) return false;
     if (bloqueQx && l.bloque !== bloqueQx) return false;
     if (articuloQx && l.art_codigo !== articuloQx) return false;
     return true;
-  }).forEach(function(l){
-    var saved = manualData[manualKey(l)]||{};
-    detRows.push([l.fecha,MES_LABELS[l.mes]||l.mes,l.comprobante,l.cliente,l.art_codigo,l.art_desc,l.bloque,l.categoria,l.cantidad,l.precio_neto_usd_u,computarPrecio(l).val,computarPrecio(l).unit,l.importe_usd,l.importe_ars,l.tc>0?l.tc:'',saved.cert||'',saved.api||'',saved.buque||'',saved.fecha_emb||'']);
   });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detRows), 'Detalle Fiscal');
+  var detHdr = ['Fecha','Mes','Comprobante','Cliente','Artículo','Descripción','Bloque','Categoría','Cantidad','P.Neto USD/u','Precio','Unidad','Total Neto USD','Total Neto ARS','TC','Certificado','°API','Buque','Fecha emb.'];
+  var detRows = [detHdr];
+  detLineas.forEach(function(l){
+    var saved = manualData[manualKey(l)]||{};
+    var pc = computarPrecio(l);
+    var pcVal = pc.val ? parseFloat(pc.val.replace(',','.')) : '';
+    detRows.push([l.fecha, MES_LABELS[l.mes]||l.mes, l.comprobante, l.cliente, l.art_codigo, l.art_desc,
+      l.bloque, l.categoria, l.cantidad||0, l.precio_neto_usd_u||0, pcVal, pc.unit,
+      l.importe_usd, l.importe_ars, l.tc>0?l.tc:0, saved.cert||'', saved.api||'', saved.buque||'', saved.fecha_emb||'']);
+  });
+  var detWs = XLSX.utils.aoa_to_sheet(detRows);
+  fmtSheet(detWs, 1,
+    [{c:8,z:'#,##0.000'},{c:9,z:'#,##0.0000'},{c:10,z:'#,##0.00'},{c:12,z:'#,##0.00'},{c:13,z:'#,##0.00'},{c:14,z:'#,##0'}],
+    [12,8,24,32,20,44,10,22,12,14,10,8,16,16,8,14,6,22,12]);
+  XLSX.utils.book_append_sheet(wb, detWs, 'Detalle Fiscal');
 
-  var tag = Array.from(filtered).sort()[0]||'';
-  XLSX.writeFile(wb, 'Facturacion_'+tag.replace('-','')+'.xlsx');
+  // === Hoja 3: Precios Promedio ===
+  var priceHdr = ['Producto','Bloque'].concat(fMeses.map(function(m){return MES_LABELS[m]||m;})).concat(['Promedio']);
+  var priceRows = [priceHdr];
+  function addPriceRows(label, filterFn, toVol) {
+    var lines = LINEAS.filter(function(l){ return filterFn(l) && fMeses.indexOf(l.mes)>=0 && l.cantidad!==0; });
+    if (!lines.length) return;
+    var bloques=[], byBlq={};
+    lines.forEach(function(l){
+      if (!byBlq[l.bloque]) { byBlq[l.bloque]={}; bloques.push(l.bloque); }
+      if (!byBlq[l.bloque][l.mes]) byBlq[l.bloque][l.mes]={imp:0,vol:0};
+      byBlq[l.bloque][l.mes].imp+=l.importe_usd; byBlq[l.bloque][l.mes].vol+=toVol(l.cantidad);
+    });
+    var totM={}; fMeses.forEach(function(m){totM[m]={imp:0,vol:0};});
+    lines.forEach(function(l){ if(totM[l.mes]){totM[l.mes].imp+=l.importe_usd;totM[l.mes].vol+=toVol(l.cantidad);} });
+    bloques.forEach(function(blq){
+      var row=[label,blq], ai=0,av=0;
+      fMeses.forEach(function(m){
+        var g=byBlq[blq][m];
+        if(g&&g.vol>0){row.push(g.imp/g.vol);ai+=g.imp;av+=g.vol;}else row.push('');
+      });
+      row.push(av>0?ai/av:''); priceRows.push(row);
+    });
+    var trow=[label+' — Total',''], gi=0,gv=0;
+    fMeses.forEach(function(m){
+      var g=totM[m];
+      if(g&&g.vol>0){trow.push(g.imp/g.vol);gi+=g.imp;gv+=g.vol;}else trow.push('');
+    });
+    trow.push(gv>0?gi/gv:''); priceRows.push(trow);
+    priceRows.push(new Array(priceHdr.length).fill(''));
+  }
+  addPriceRows('Petróleo $/bbl', function(l){return l.es_petroleo&&!/AJUSTE/i.test(l.art_codigo||'');}, function(q){return q*6.28981;});
+  addPriceRows('Gas $/MMBTU',    function(l){return l.es_gas;}, function(q){return q/1000*35.314;});
+  var priceWs = XLSX.utils.aoa_to_sheet(priceRows);
+  var pmCols=[]; for (var pi=2;pi<priceHdr.length;pi++) pmCols.push({c:pi,z:'#,##0.00'});
+  fmtSheet(priceWs, 1, pmCols, [24,14].concat(fMeses.map(function(){return 12;})).concat([12]));
+  XLSX.utils.book_append_sheet(wb, priceWs, 'Precios');
+
+  var tag = fMeses[0]||'';
+  XLSX.writeFile(wb, 'Facturacion_'+(tag.replace('-','')||'export')+'.xlsx');
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -1644,6 +1810,12 @@ function exportarExcel() {
   var c = document.getElementById('fiscal-count');
   if(c) c.textContent = LINEAS.length + ' líneas';
   loadManualFromStorage();
+  // Apply initial hide-done for each manual subsection (they start collapsed)
+  ['manual-pet-table','manual-nc-table','manual-otros-table'].forEach(function(tid){
+    document.querySelectorAll('#'+tid+' tr[data-done="1"]').forEach(function(tr){
+      tr.classList.add('m-row-hidden');
+    });
+  });
   renderFiscal();
 })();
 <\/script>
