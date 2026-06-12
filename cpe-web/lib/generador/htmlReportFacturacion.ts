@@ -18,6 +18,7 @@ function fD(n: number, d = 2): string {
 
 type Linea = DatosFacturacion['lineas'][number]
 function precioDerivado(l: Linea): { val: string; unit: string } {
+  if (/AJUSTE/i.test(l.art_codigo)) return { val: '', unit: '' }
   if (l.es_petroleo && l.cantidad !== 0)
     return { val: fD(l.importe_usd / (l.cantidad * 6.28981), 2), unit: '$/bbl' }
   if (l.es_gas && l.cantidad !== 0)
@@ -730,6 +731,7 @@ function fD(n, d) { return n.toFixed(d||2).replace('.',','); }
 function fechaCorta(iso) { var p=iso.split('-'); return p[2]+'/'+p[1]; }
 function enc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function computarPrecio(l) {
+  if (/AJUSTE/i.test(l.art_codigo || '')) return { val: '', unit: '' };
   if (l.es_petroleo && l.cantidad !== 0)
     return { val: fD(l.importe_usd / (l.cantidad * 6.28981), 2), unit: '$/bbl' };
   if (l.es_gas && l.cantidad !== 0)
