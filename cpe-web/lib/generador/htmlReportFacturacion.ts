@@ -616,7 +616,7 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
   <div class="section">
     <div class="section-title">
       Detalle Fiscal por Comprobante
-      <button id="manual-cols-btn" class="section-badge" style="cursor:pointer;border:none;background:#F0F2F6;padding:2px 10px;border-radius:10px;font-size:10px;color:#7A8099;font-weight:500" onclick="toggleManualCols()">Mostrar cert. ▾</button>
+      <button id="manual-cols-btn" class="section-badge" style="cursor:pointer;border:none;background:#F0F2F6;padding:2px 10px;border-radius:10px;font-size:10px;color:#7A8099;font-weight:500" onclick="toggleManualCols()">Ocultar emb. ▴</button>
       <span class="section-badge">Un comprobante puede tener múltiples artículos</span>
     </div>
 
@@ -653,7 +653,7 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
     </div>
 
     <div style="overflow-x:auto">
-      <table class="fiscal hide-manual-cols" id="fiscal-table">
+      <table class="fiscal" id="fiscal-table">
         <thead>
           <tr>
             <th class="sortable" data-col="fecha" style="min-width:46px">Fecha<span class="sort-icon"></span></th>
@@ -714,7 +714,7 @@ var ALL_CATEGORIAS  = ${j(allCategorias)};
 var activeMeses    = new Set(MESES);
 var activeTipos    = new Set(ALL_CATEGORIAS);
 var collapsedMeses = new Set(MESES);  // start all collapsed
-var showManualCols = false;
+var showManualCols = true;
 var sortState      = { col: null, dir: 1 };
 var manualData     = {};
 var PERIODO_DESDE = '${periodo_desde}';
@@ -1208,7 +1208,7 @@ function toggleManualCols() {
   showManualCols = !showManualCols;
   document.getElementById('fiscal-table').classList.toggle('hide-manual-cols', !showManualCols);
   var btn = document.getElementById('manual-cols-btn');
-  if (btn) btn.textContent = showManualCols ? 'Ocultar cert. ▴' : 'Mostrar cert. ▾';
+  if (btn) btn.textContent = showManualCols ? 'Ocultar emb. ▴' : 'Mostrar emb. ▾';
 }
 
 // ── Sorting ───────────────────────────────────────────────────────────────────
@@ -1629,8 +1629,7 @@ function exportarExcel() {
     if (articuloQx && l.art_codigo !== articuloQx) return false;
     return true;
   }).forEach(function(l){
-    var idx = LINEAS.indexOf(l);
-    var saved = manualData[idx]||{};
+    var saved = manualData[manualKey(l)]||{};
     detRows.push([l.fecha,MES_LABELS[l.mes]||l.mes,l.comprobante,l.cliente,l.art_codigo,l.art_desc,l.bloque,l.categoria,l.cantidad,l.precio_neto_usd_u,computarPrecio(l).val,computarPrecio(l).unit,l.importe_usd,l.importe_ars,l.tc>0?l.tc:'',saved.cert||'',saved.api||'',saved.buque||'',saved.fecha_emb||'']);
   });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detRows), 'Detalle Fiscal');
