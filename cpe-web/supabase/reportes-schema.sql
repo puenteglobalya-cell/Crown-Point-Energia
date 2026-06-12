@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS reportes (
   datos        JSONB NOT NULL,
   html         TEXT NOT NULL,
   estado       TEXT NOT NULL DEFAULT 'borrador' CHECK (estado IN ('borrador', 'publicado')),
+  manual_data  JSONB NOT NULL DEFAULT '{}',
   storage_path TEXT,
   file_name    TEXT,
   file_size    BIGINT,

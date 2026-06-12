@@ -719,6 +719,8 @@ var sortState      = { col: null, dir: 1 };
 var manualData     = {};
 var PERIODO_DESDE = '${periodo_desde}';
 var MANUAL_KEY    = 'cpe_fm_' + PERIODO_DESDE;
+var REPORTE_ID   = '';
+var SAVED_MANUAL = {};
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 function fN(n) {
@@ -910,7 +912,24 @@ function guardarManual() {
   updateManualCompletedState();
   updateNetoDisplay();
   var btn = document.getElementById('save-manual-btn');
-  if (btn) {
+  if (!btn) return;
+  if (REPORTE_ID) {
+    btn.textContent = 'Guardando…';
+    btn.disabled = true;
+    fetch('/api/admin/reportes/' + REPORTE_ID, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manual_data: manualData })
+    }).then(function(r) {
+      btn.disabled = false;
+      btn.textContent = r.ok ? '✓ Guardado en servidor' : '✓ Guardado local';
+      setTimeout(function(){ btn.textContent = 'Guardar y aplicar'; }, 2500);
+    }).catch(function() {
+      btn.disabled = false;
+      btn.textContent = '✓ Guardado local';
+      setTimeout(function(){ btn.textContent = 'Guardar y aplicar'; }, 2500);
+    });
+  } else {
     btn.textContent = '✓ Guardado';
     setTimeout(function(){ btn.textContent = 'Guardar y aplicar'; }, 2000);
   }
@@ -939,10 +958,14 @@ function autoSaveManual() {
 function loadManualFromStorage() {
   try {
     var raw = localStorage.getItem(MANUAL_KEY);
-    if (!raw) return;
-    var saved = JSON.parse(raw);
-    if (typeof saved !== 'object' || !saved) return;
-    manualData = saved;
+    var fromLocal = (raw ? JSON.parse(raw) : null) || {};
+    // Server-saved data (injected at serve time) takes precedence over localStorage
+    var fromServer = (typeof SAVED_MANUAL === 'object' && SAVED_MANUAL && Object.keys(SAVED_MANUAL).length > 0)
+      ? SAVED_MANUAL : null;
+    manualData = fromServer || fromLocal;
+    if (typeof manualData !== 'object' || !manualData) return;
+    // Keep localStorage in sync with server data
+    if (fromServer) { try { localStorage.setItem(MANUAL_KEY, JSON.stringify(manualData)); } catch(e) {} }
     // Pre-fill petroleum inputs
     document.querySelectorAll('#manual-pet-table .m-input').forEach(function(inp) {
       var key   = inp.getAttribute('data-mkey');
