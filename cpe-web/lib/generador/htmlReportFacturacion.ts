@@ -757,6 +757,7 @@ function fN(n) {
 function fD(n, d) { return n.toFixed(d||2).replace('.',','); }
 function fechaCorta(iso) { var p=iso.split('-'); return p[2]+'/'+p[1]; }
 function enc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function encA(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function computarPrecio(l) {
   if (/AJUSTE/i.test(l.art_codigo || '')) return { val: '', unit: '' };
   if (l.es_petroleo && l.cantidad !== 0)
@@ -1080,6 +1081,15 @@ function toggleManualSubsection(id) {
   if (icon) icon.textContent = open ? '▶' : '▼';
 }
 
+function togglePrecios(id) {
+  var e = document.getElementById(id);
+  var a = document.getElementById(id+'-a');
+  if (!e) return;
+  var hidden = e.style.display === 'none';
+  e.style.display = hidden ? '' : 'none';
+  if (a) a.textContent = (hidden ? '▼ ocultar l\xedneas' : '▶ ver l\xedneas ('+e.getAttribute('data-n')+')');
+}
+
 function renderPrecios(lineas) {
   var body = document.getElementById('precios-body');
   if (!body) return;
@@ -1089,21 +1099,38 @@ function renderPrecios(lineas) {
     if (mesQ && m !== mesQ) return false;
     return true;
   });
-  function buildTable(lines, prodLabel, unit, toVol) {
+
+  function buildTable(lines, prodLabel, unit, toVol, slug) {
     if (!lines.length) return '';
     var bloques = [], byBlq = {};
     lines.forEach(function(l) {
       if (!byBlq[l.bloque]) { byBlq[l.bloque] = {}; bloques.push(l.bloque); }
-      if (!byBlq[l.bloque][l.mes]) byBlq[l.bloque][l.mes] = { imp: 0, vol: 0 };
+      if (!byBlq[l.bloque][l.mes]) byBlq[l.bloque][l.mes] = { imp: 0, vol: 0, items: [] };
       byBlq[l.bloque][l.mes].imp += l.importe_usd;
       byBlq[l.bloque][l.mes].vol += toVol(l.cantidad);
+      byBlq[l.bloque][l.mes].items.push(l);
     });
-    var totByMes = {};
-    mList.forEach(function(m){ totByMes[m] = { imp: 0, vol: 0 }; });
-    lines.forEach(function(l){
-      if (totByMes[l.mes]) { totByMes[l.mes].imp += l.importe_usd; totByMes[l.mes].vol += toVol(l.cantidad); }
-    });
-    var html = '<div><div style="font-size:11px;font-weight:700;color:#2B6CB0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">'+enc(prodLabel)+' · '+enc(unit)+'</div>';
+
+    // Per-cell tooltip: shows per-art_codigo breakdown of vol, imp, implied price
+    function cellTip(items) {
+      var byArt = {};
+      items.forEach(function(l) {
+        if (!byArt[l.art_codigo]) byArt[l.art_codigo] = { imp: 0, vol: 0, n: 0 };
+        byArt[l.art_codigo].imp += l.importe_usd;
+        byArt[l.art_codigo].vol += toVol(l.cantidad);
+        byArt[l.art_codigo].n++;
+      });
+      var parts = [];
+      Object.keys(byArt).forEach(function(art) {
+        var g = byArt[art];
+        var pr = g.vol > 0 ? fD(g.imp/g.vol,2) : '—';
+        parts.push(art+' \xd7'+g.n+': vol='+g.vol.toFixed(0)+' → '+pr+' '+unit);
+      });
+      return parts.join('\n');
+    }
+
+    var html = '<div style="overflow-x:auto">';
+    html += '<div style="font-size:11px;font-weight:700;color:#2B6CB0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">'+enc(prodLabel)+' \xb7 '+enc(unit)+'</div>';
     html += '<table class="precios"><thead><tr><th>Bloque</th>';
     mList.forEach(function(m){ html += '<th>'+enc(MES_LABELS[m]||m)+'</th>'; });
     html += '<th>Prom.</th></tr></thead><tbody>';
@@ -1112,8 +1139,12 @@ function renderPrecios(lineas) {
       var ai = 0, av = 0;
       mList.forEach(function(m) {
         var g = byBlq[blq][m];
-        if (g && g.vol > 0) { html += '<td>'+fD(g.imp/g.vol,2)+'</td>'; ai += g.imp; av += g.vol; }
-        else html += '<td style="color:#C8CCDA">—</td>';
+        if (g && g.vol > 0) {
+          html += '<td title="'+encA(cellTip(g.items))+'" style="cursor:help">'+fD(g.imp/g.vol,2)+'</td>';
+          ai += g.imp; av += g.vol;
+        } else {
+          html += '<td style="color:#C8CCDA">—</td>';
+        }
       });
       html += '<td style="font-weight:600">'+(av>0?fD(ai/av,2):'—')+'</td></tr>';
     });
@@ -1129,14 +1160,46 @@ function renderPrecios(lineas) {
       else html += '<td style="color:#C8CCDA">—</td>';
     });
     html += '<td>'+(gv>0?fD(gi/gv,2):'—')+'</td></tr>';
-    html += '</tbody></table></div>';
+    html += '</tbody></table>';
+
+    // Expandable line-by-line detail for formula verification
+    var detId = 'pd-'+slug;
+    html += '<div style="margin-top:6px">';
+    html += '<span id="'+detId+'-a" onclick="togglePrecios(\''+detId+'\')" style="font-size:10px;color:#4A90D9;cursor:pointer">';
+    html += '▶ ver l\xedneas ('+lines.length+')</span>';
+    html += '<div id="'+detId+'" data-n="'+lines.length+'" style="display:none;margin-top:6px">';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:10px">';
+    html += '<thead><tr style="background:#F8F9FB;color:#7A8099;font-weight:600">';
+    html += '<th style="padding:3px 8px;text-align:left">Bloque</th>';
+    html += '<th style="padding:3px 8px;text-align:left">Art\xedculo</th>';
+    html += '<th style="padding:3px 8px;text-align:left">Mes</th>';
+    html += '<th style="padding:3px 8px;text-align:right">Cant. original</th>';
+    html += '<th style="padding:3px 8px;text-align:right">Vol. conv.</th>';
+    html += '<th style="padding:3px 8px;text-align:right">Imp. USD</th>';
+    html += '<th style="padding:3px 8px;text-align:right;color:#2B6CB0">Precio</th>';
+    html += '</tr></thead><tbody>';
+    lines.forEach(function(l) {
+      var v = toVol(l.cantidad);
+      var pr = v !== 0 ? fD(l.importe_usd/v,2) : '—';
+      html += '<tr style="border-bottom:1px solid #F3F4F8">';
+      html += '<td style="padding:3px 8px">'+enc(l.bloque)+'</td>';
+      html += '<td style="padding:3px 8px;font-family:monospace;font-size:9px">'+enc(l.art_codigo)+'</td>';
+      html += '<td style="padding:3px 8px">'+enc(MES_LABELS[l.mes]||l.mes)+'</td>';
+      html += '<td style="padding:3px 8px;text-align:right;font-variant-numeric:tabular-nums">'+fD(l.cantidad,0)+'</td>';
+      html += '<td style="padding:3px 8px;text-align:right;font-variant-numeric:tabular-nums">'+fD(v,1)+'</td>';
+      html += '<td style="padding:3px 8px;text-align:right;font-variant-numeric:tabular-nums">'+fD(l.importe_usd,2)+'</td>';
+      html += '<td style="padding:3px 8px;text-align:right;font-weight:700;color:#2B6CB0">'+pr+'</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div></div></div>';
     return html;
   }
+
   var oilLines = lineas.filter(function(l){ return l.es_petroleo && !/AJUSTE/i.test(l.art_codigo||'') && l.cantidad !== 0; });
   var gasLines = lineas.filter(function(l){ return l.es_gas && l.cantidad !== 0; });
   var html = '';
-  if (oilLines.length) html += buildTable(oilLines, 'Petróleo', '$/bbl', function(q){ return q*6.28981; });
-  if (gasLines.length) html += buildTable(gasLines, 'Gas', '$/MMBTU', function(q){ return q/1000*35.314; });
+  if (oilLines.length) html += buildTable(oilLines, 'Petr\xf3leo', '$/bbl', function(q){ return q*6.28981; }, 'oil');
+  if (gasLines.length) html += buildTable(gasLines, 'Gas', '$/MMBTU', function(q){ return q/1000*35.314; }, 'gas');
   body.innerHTML = html;
   var sec = document.getElementById('precios-section');
   if (sec) sec.style.display = (oilLines.length || gasLines.length) ? '' : 'none';
