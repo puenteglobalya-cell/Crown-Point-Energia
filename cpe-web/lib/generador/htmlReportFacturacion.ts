@@ -531,7 +531,7 @@ table.precios .ptot td{font-weight:700;border-top:1.5px solid #E8EAEF;background
   </div>
 
   <!-- Precios Promedio -->
-  <div class="section" id="precios-section">
+  <div class="section" id="precios-section" style="display:none">
     <div class="section-title">Precio Promedio por Bloque · us$</div>
     <div class="precios-grid" id="precios-body"></div>
   </div>
@@ -1137,7 +1137,7 @@ function renderPrecios(lineas) {
       Object.keys(byArt).forEach(function(art) {
         var g = byArt[art];
         var pr = g.vol > 0 ? fD(g.imp/g.vol,2) : '—';
-        parts.push(art+' \xd7'+g.n+': vol='+g.vol.toFixed(0)+' → '+pr+' '+unit);
+        parts.push(art+' \xd7'+g.n+': vol='+g.vol.toFixed(0)+' \u2192 '+pr+' '+unit);
       });
       return parts.join('\n');
     }
@@ -1419,7 +1419,7 @@ function renderFiscal() {
   var filteredLineas = getFilteredLineas();
   renderPivotFromLineas(filteredLineas);
   renderKPIs(filteredLineas);
-  renderPrecios(filteredLineas);
+  try { renderPrecios(filteredLineas); } catch(e) { console.error('[renderPrecios]', e); }
   renderClienteSummary(filteredLineas);
   updateBarChartFromLineas(filteredLineas);
   updateDonutChartFromLineas(filteredLineas);
