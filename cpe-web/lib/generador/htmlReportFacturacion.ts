@@ -228,18 +228,17 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
     .sort((a, b) => a[0].localeCompare(b[0]))
 
   // Pre-compute manual data rows
-  // FA/FQ/F-type invoices + CL (liquidaciones) + DQ (ajustes de precio) — CA/DA excluded
-  const petManualRows = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.es_petroleo && (l.tipo_comp.startsWith('F') || l.tipo_comp === 'CL' || l.tipo_comp === 'DQ'))
-  const ncManualRows  = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.importe_usd < 0)
-  const defaultManualOpen = petManualRows.length > 0 || ncManualRows.length > 0
+  // FA/FQ/F-type invoices + CL (liquidaciones) — CA/DA/DQ go to Otros section
+  const petManualRows   = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.es_petroleo && (l.tipo_comp.startsWith('F') || l.tipo_comp === 'CL'))
+  const ncManualRows    = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.importe_usd < 0)
+  const otrosManualRows = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.tipo_comp === 'DA' || l.tipo_comp === 'DQ')
+  const defaultManualOpen = petManualRows.length > 0 || ncManualRows.length > 0 || otrosManualRows.length > 0
 
   const petManualHTML = petManualRows.map(({ l }) => {
     const mk = enc(l.art_codigo + '|' + l.comprobante)
     const apiOnly = /YPF|PAN AMERICAN|PAE\b/i.test(l.cliente)
-    const isDQ    = l.tipo_comp === 'DQ'
-    const dimCls  = (apiOnly || isDQ) ? ' api-dim' : ''
-    const noTab   = (apiOnly || isDQ) ? ' tabindex="-1"' : ''
-    const adjPlaceholder = isDQ ? 'Ref. FQ/CL original…' : 'CQ, DQ vinculados (sep. coma)…'
+    const dimCls  = apiOnly ? ' api-dim' : ''
+    const noTab   = apiOnly ? ' tabindex="-1"' : ''
     return `<tr data-cliente="${enc(l.cliente)}" data-api-only="${apiOnly ? '1' : '0'}" data-tipo="${enc(l.tipo_comp)}" data-comprobante="${enc(l.comprobante)}">` +
     `<td class="manual-info">${fechaCorta(l.fecha)}</td>` +
     `<td class="manual-info mono">${enc(l.comprobante)}<div class="m-neto-cell"></div></td>` +
@@ -249,20 +248,36 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
     `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="api" placeholder="°API"></td>` +
     `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="buque" placeholder="Nombre buque"${noTab}></td>` +
     `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="fecha_emb" placeholder="DD/MM/AAAA"${noTab}></td>` +
-    `<td><input class="m-input${isDQ ? ' m-input-ref' : ''}" type="text" data-mkey="${mk}" data-field="ajustes" placeholder="${adjPlaceholder}"></td>` +
+    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="ajustes" placeholder="CQ, DQ vinculados (sep. coma)…"></td>` +
     `<td style="text-align:center"><input type="checkbox" class="m-check" data-mkey="${mk}" data-field="completo" onchange="autoSaveManual()"></td>` +
     `</tr>`
   }).join('')
 
   const ncManualHTML = ncManualRows.map(({ l }) => {
     const mk = enc(l.art_codigo + '|' + l.comprobante)
-    return `<tr>` +
+    return `<tr data-cliente="${enc(l.cliente)}">` +
     `<td class="manual-info">${fechaCorta(l.fecha)}</td>` +
     `<td class="manual-info mono">${enc(l.comprobante)}</td>` +
+    `<td class="manual-info cli" title="${enc(l.cliente)}">${enc(l.cliente)}</td>` +
     `<td class="manual-info mono">${enc(l.art_codigo)}</td>` +
     `<td class="manual-info num">${fN(l.importe_usd)}</td>` +
     `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="aplica_a" placeholder="FA 0009-…"></td>` +
     `<td style="text-align:center"><input type="checkbox" class="m-check" data-mkey="${mk}" data-field="sin_volumen"></td>` +
+    `</tr>`
+  }).join('')
+
+  const otrosManualHTML = otrosManualRows.map(({ l }) => {
+    const mk = enc(l.art_codigo + '|' + l.comprobante)
+    const catColor = CAT_COLORS[l.categoria] ?? '#7A8099'
+    return `<tr data-cliente="${enc(l.cliente)}">` +
+    `<td class="manual-info">${fechaCorta(l.fecha)}</td>` +
+    `<td class="manual-info mono">${enc(l.comprobante)}</td>` +
+    `<td class="manual-info cli" title="${enc(l.cliente)}">${enc(l.cliente)}</td>` +
+    `<td class="manual-info mono">${enc(l.art_codigo)}</td>` +
+    `<td class="manual-info" style="font-size:11px;font-weight:600;color:${catColor}">${enc(l.tipo_comp)}</td>` +
+    `<td class="manual-info num">${fN(l.importe_usd)}</td>` +
+    `<td><input class="m-input m-input-ref" type="text" data-mkey="${mk}" data-field="aplica_a" placeholder="Comp. original…"></td>` +
+    `<td style="text-align:center"><input type="checkbox" class="m-check" data-mkey="${mk}" data-field="completo" onchange="autoSaveManual()"></td>` +
     `</tr>`
   }).join('')
 
@@ -367,7 +382,7 @@ table.fiscal .na-cell{color:#C8CCDA;text-align:center}
 .m-input:focus{outline:none;border-color:#D69E2E;background:#FFF9E6}
 .manual-info{color:#4A5568;font-size:11.5px}
 .manual-val{color:#744210;font-size:11.5px;white-space:nowrap}
-.aplica-tag{font-size:10px;color:#7A8099;background:#F0F2F6;border-radius:3px;padding:1px 5px;margin-left:4px;white-space:nowrap}
+.aplica-tag{display:inline-block;font-size:10px;font-weight:600;color:#2B6CB0;background:#EBF8FF;border:1px solid #BEE3F8;border-radius:3px;padding:1px 6px;margin-left:4px;white-space:nowrap}
 .manual-section-header{cursor:pointer;user-select:none}
 .manual-section-header:hover{opacity:.85}
 .m-row-done{background:rgba(72,187,120,.07)!important;border-left:3px solid #48BB78}
@@ -519,15 +534,15 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
           <table class="fiscal" id="manual-pet-table">
             <thead><tr>
               <th class="sort-th" style="min-width:46px" onclick="sortPetTable(0)">Fecha<span class="sort-arrow" id="pet-sa-0"></span></th>
-              <th style="min-width:140px">Comprobante</th>
+              <th class="sort-th" style="min-width:140px" onclick="sortPetTable(1)">Comprobante<span class="sort-arrow" id="pet-sa-1"></span></th>
               <th class="sort-th" style="min-width:150px" onclick="sortPetTable(2)">Cliente<span class="sort-arrow" id="pet-sa-2"></span></th>
               <th class="sort-th" style="min-width:85px" onclick="sortPetTable(3)">Artículo<span class="sort-arrow" id="pet-sa-3"></span></th>
-              <th style="min-width:90px;background:#FFFBEB">Certificado</th>
-              <th style="min-width:55px;background:#FFFBEB">°API</th>
-              <th style="min-width:120px;background:#FFFBEB">Buque</th>
-              <th style="min-width:100px;background:#FFFBEB">Fecha Emb.</th>
-              <th style="min-width:170px;background:#EBF8FF">Ajustes / Ref.</th>
-              <th style="min-width:52px;background:#F0FFF4;text-align:center">Completo</th>
+              <th class="sort-th" style="min-width:90px;background:#FFFBEB" onclick="sortPetTable(4)">Certificado<span class="sort-arrow" id="pet-sa-4"></span></th>
+              <th class="sort-th" style="min-width:55px;background:#FFFBEB" onclick="sortPetTable(5)">°API<span class="sort-arrow" id="pet-sa-5"></span></th>
+              <th class="sort-th" style="min-width:120px;background:#FFFBEB" onclick="sortPetTable(6)">Buque<span class="sort-arrow" id="pet-sa-6"></span></th>
+              <th class="sort-th" style="min-width:100px;background:#FFFBEB" onclick="sortPetTable(7)">Fecha Emb.<span class="sort-arrow" id="pet-sa-7"></span></th>
+              <th class="sort-th" style="min-width:170px;background:#EBF8FF" onclick="sortPetTable(8)">Ajustes / Ref.<span class="sort-arrow" id="pet-sa-8"></span></th>
+              <th class="sort-th" style="min-width:52px;background:#F0FFF4;text-align:center" onclick="sortPetTable(9)">Completo<span class="sort-arrow" id="pet-sa-9"></span></th>
             </tr></thead>
             <tbody>${petManualHTML}</tbody>
           </table>
@@ -541,17 +556,48 @@ table.detail .num{text-align:right;font-variant-numeric:tabular-nums;white-space
           </div>
           <button class="m-hide-btn" id="nc-hide-btn" data-hiding="0" onclick="toggleHideDone('manual-nc-table','nc-hide-btn')">Ocultar completados</button>
         </div>
+        <div class="pet-filter-bar">
+          <input type="text" id="nc-filter" placeholder="Filtrar por comprobante, cliente…" oninput="filterNcTable()">
+        </div>
         <div style="overflow-x:auto">
           <table class="fiscal" id="manual-nc-table">
             <thead><tr>
               <th style="min-width:46px">Fecha</th>
               <th style="min-width:140px">Comprobante</th>
+              <th style="min-width:150px">Cliente</th>
               <th style="min-width:85px">Artículo</th>
               <th class="num-h" style="min-width:115px">Importe USD</th>
               <th style="min-width:180px;background:#FFFBEB">Aplica a</th>
               <th style="min-width:60px;background:#FFF5F5;text-align:center">Sin vol.</th>
             </tr></thead>
             <tbody>${ncManualHTML}</tbody>
+          </table>
+        </div>
+      </div>` : ''}
+      ${otrosManualHTML.length > 0 ? `
+      <div style="margin-bottom:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em">
+            Otros (DA / DQ)<span class="m-done-badge" id="otros-done-badge"></span>
+          </div>
+          <button class="m-hide-btn" id="otros-hide-btn" data-hiding="0" onclick="toggleHideDone('manual-otros-table','otros-hide-btn')">Ocultar completados</button>
+        </div>
+        <div class="pet-filter-bar">
+          <input type="text" id="otros-filter" placeholder="Filtrar por comprobante, cliente…" oninput="filterOtrosTable()">
+        </div>
+        <div style="overflow-x:auto">
+          <table class="fiscal" id="manual-otros-table">
+            <thead><tr>
+              <th style="min-width:46px">Fecha</th>
+              <th style="min-width:140px">Comprobante</th>
+              <th style="min-width:150px">Cliente</th>
+              <th style="min-width:85px">Artículo</th>
+              <th style="min-width:55px">Tipo</th>
+              <th class="num-h" style="min-width:115px">Importe USD</th>
+              <th style="min-width:180px;background:#EBF8FF">Comp. Original</th>
+              <th style="min-width:52px;background:#F0FFF4;text-align:center">Completo</th>
+            </tr></thead>
+            <tbody>${otrosManualHTML}</tbody>
           </table>
         </div>
       </div>` : ''}
@@ -831,6 +877,20 @@ function collectManualFromForm() {
     if (!manualData[key]) manualData[key] = {};
     manualData[key][field] = inp.checked;
   });
+  document.querySelectorAll('#manual-otros-table .m-input').forEach(function(inp) {
+    var key   = inp.getAttribute('data-mkey');
+    var field = inp.getAttribute('data-field');
+    if (!key || !field) return;
+    if (!manualData[key]) manualData[key] = {};
+    manualData[key][field] = inp.value.trim();
+  });
+  document.querySelectorAll('#manual-otros-table .m-check').forEach(function(inp) {
+    var key   = inp.getAttribute('data-mkey');
+    var field = inp.getAttribute('data-field');
+    if (!key || !field) return;
+    if (!manualData[key]) manualData[key] = {};
+    manualData[key][field] = inp.checked;
+  });
 }
 
 function saveManualData() {
@@ -859,6 +919,12 @@ function autoSaveManual() {
   var btn = document.getElementById('pet-hide-btn');
   if (btn && btn.getAttribute('data-hiding') === '1') {
     document.querySelectorAll('#manual-pet-table tbody tr').forEach(function(tr) {
+      tr.classList.toggle('m-row-hidden', tr.getAttribute('data-done') === '1');
+    });
+  }
+  var otrosBtn = document.getElementById('otros-hide-btn');
+  if (otrosBtn && otrosBtn.getAttribute('data-hiding') === '1') {
+    document.querySelectorAll('#manual-otros-table tbody tr').forEach(function(tr) {
       tr.classList.toggle('m-row-hidden', tr.getAttribute('data-done') === '1');
     });
   }
@@ -897,6 +963,22 @@ function loadManualFromStorage() {
     });
     // Pre-fill NC checkboxes
     document.querySelectorAll('#manual-nc-table .m-check').forEach(function(inp) {
+      var key   = inp.getAttribute('data-mkey');
+      var field = inp.getAttribute('data-field');
+      if (key && field && manualData[key] && manualData[key][field]) {
+        inp.checked = true;
+      }
+    });
+    // Pre-fill Otros inputs
+    document.querySelectorAll('#manual-otros-table .m-input').forEach(function(inp) {
+      var key   = inp.getAttribute('data-mkey');
+      var field = inp.getAttribute('data-field');
+      if (key && field && manualData[key] && manualData[key][field]) {
+        inp.value = manualData[key][field];
+      }
+    });
+    // Pre-fill Otros checkboxes
+    document.querySelectorAll('#manual-otros-table .m-check').forEach(function(inp) {
       var key   = inp.getAttribute('data-mkey');
       var field = inp.getAttribute('data-field');
       if (key && field && manualData[key] && manualData[key][field]) {
@@ -979,6 +1061,7 @@ function updateManualCompletedState() {
     if (badge) badge.textContent = total > 0 ? ' · ' + done + '/' + total : '';
   }
   scanTable('manual-nc-table', 'nc-done-badge', function(d){ return !!(d.aplica_a || d.sin_volumen); });
+  scanTable('manual-otros-table', 'otros-done-badge', function(d){ return !!(d.aplica_a || d.completo); });
 }
 
 function toggleHideDone(tableId, btnId) {
@@ -1003,22 +1086,54 @@ function filterPetTable() {
   });
 }
 
+function filterNcTable() {
+  var q = (document.getElementById('nc-filter') ? document.getElementById('nc-filter').value : '').toLowerCase().trim();
+  document.querySelectorAll('#manual-nc-table tbody tr').forEach(function(tr) {
+    var cli  = (tr.getAttribute('data-cliente') || '').toLowerCase();
+    var comp = (tr.cells[1] ? tr.cells[1].textContent : '').toLowerCase();
+    var hiddenByFilter = q !== '' && cli.indexOf(q) < 0 && comp.indexOf(q) < 0;
+    tr.classList.toggle('m-row-filter', hiddenByFilter);
+  });
+}
+
+function filterOtrosTable() {
+  var q = (document.getElementById('otros-filter') ? document.getElementById('otros-filter').value : '').toLowerCase().trim();
+  document.querySelectorAll('#manual-otros-table tbody tr').forEach(function(tr) {
+    var cli  = (tr.getAttribute('data-cliente') || '').toLowerCase();
+    var comp = (tr.cells[1] ? tr.cells[1].textContent : '').toLowerCase();
+    var hiddenByFilter = q !== '' && cli.indexOf(q) < 0 && comp.indexOf(q) < 0;
+    tr.classList.toggle('m-row-filter', hiddenByFilter);
+  });
+}
+
 var petSortCol = -1, petSortAsc = true;
 function sortPetTable(col) {
   if (petSortCol === col) { petSortAsc = !petSortAsc; } else { petSortCol = col; petSortAsc = true; }
-  [0, 2, 3].forEach(function(c) {
+  for (var c = 0; c < 10; c++) {
     var el = document.getElementById('pet-sa-' + c);
-    if (!el) return;
+    if (!el) continue;
     el.className = 'sort-arrow' + (c === col ? (petSortAsc ? ' asc' : ' desc') : '');
     el.textContent = c === col ? (petSortAsc ? ' ▲' : ' ▼') : '';
-  });
+  }
   var tbl = document.getElementById('manual-pet-table');
   if (!tbl) return;
   var rows = Array.from(tbl.querySelectorAll('tbody tr'));
   rows.sort(function(a, b) {
-    var av = (a.cells[col] ? a.cells[col].textContent : '').trim();
-    var bv = (b.cells[col] ? b.cells[col].textContent : '').trim();
-    return (petSortAsc ? 1 : -1) * av.localeCompare(bv, 'es', { numeric: true });
+    var av, bv;
+    var aCell = a.cells[col], bCell = b.cells[col];
+    var aInp = aCell ? aCell.querySelector('input') : null;
+    var bInp = bCell ? bCell.querySelector('input') : null;
+    if (aInp && aInp.type === 'checkbox') {
+      av = aInp.checked ? '1' : '0';
+      bv = (bInp && bInp.type === 'checkbox') ? (bInp.checked ? '1' : '0') : '0';
+    } else if (aInp) {
+      av = aInp.value;
+      bv = bInp ? bInp.value : '';
+    } else {
+      av = (aCell ? aCell.textContent : '').trim();
+      bv = (bCell ? bCell.textContent : '').trim();
+    }
+    return (petSortAsc ? 1 : -1) * String(av).localeCompare(String(bv), 'es', { numeric: true });
   });
   var tbody = tbl.querySelector('tbody');
   rows.forEach(function(r) { tbody.appendChild(r); });
