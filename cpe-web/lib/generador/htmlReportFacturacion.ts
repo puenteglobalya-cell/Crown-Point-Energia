@@ -1120,8 +1120,12 @@ function renderPrecios(lineas) {
     html += '<tr class="ptot"><td>TOTAL</td>';
     var gi = 0, gv = 0;
     mList.forEach(function(m) {
-      var g = totByMes[m];
-      if (g && g.vol > 0) { html += '<td>'+fD(g.imp/g.vol,2)+'</td>'; gi += g.imp; gv += g.vol; }
+      var mImp = 0, mVol = 0;
+      bloques.forEach(function(blq) {
+        var g = byBlq[blq][m];
+        if (g && g.vol > 0) { mImp += g.imp; mVol += g.vol; }
+      });
+      if (mVol > 0) { html += '<td>'+fD(mImp/mVol,2)+'</td>'; gi += mImp; gv += mVol; }
       else html += '<td style="color:#C8CCDA">—</td>';
     });
     html += '<td>'+(gv>0?fD(gi/gv,2):'—')+'</td></tr>';
