@@ -237,12 +237,7 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
     const importeUSD = nbET
     const importeARS = nbLT
 
-    // CAMMESA reports gas volume in m³ while all other clients use Mm³ (×1000).
-    // Normalize: multiply cantidad by 1000 and divide unit price by 1000.
     const cliNom = String(r[C.cliNom] ?? '').trim()
-    const isCammesa = /MERCADO MAYORISTA ELECTRICO|CAMMESA/i.test(cliNom)
-    const cantFinal = isCammesa ? cant * 1000 : cant
-    const nbEUFinal = isCammesa && cant !== 0 ? nbEU / 1000 : nbEU
 
     lineas.push({
       fecha:            fechaParsed.iso,
@@ -256,8 +251,8 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
       art_desc:         artDesc,
       categoria,
       bloque,
-      cantidad:         cantFinal,
-      precio_neto_usd_u: nbEUFinal,
+      cantidad:         cant,
+      precio_neto_usd_u: nbEU,
       importe_usd:      importeUSD,
       importe_ars:      importeARS,
       tc,
