@@ -402,8 +402,12 @@ table.fiscal .na-cell{color:#C8CCDA;text-align:center}
 .sort-arrow{display:inline-block;margin-left:3px;font-size:9px;opacity:.4}
 .sort-arrow.asc{opacity:1}
 .sort-arrow.desc{opacity:1}
-.fiscal-grouped{background:rgba(72,187,120,.06)!important;border-left:3px solid #48BB78}
+.fiscal-grouped{background:rgba(72,187,120,.06)!important;border-left:3px solid #48BB78;cursor:pointer}
+.fiscal-grouped:hover td{background:rgba(72,187,120,.13)!important}
 .adj-badge{font-size:9.5px;color:#7A8099;margin-top:2px;white-space:nowrap}
+.group-toggle{font-size:9px;color:#48BB78;font-weight:700;margin-right:3px;vertical-align:middle;display:inline-block;width:8px}
+table.fiscal .fiscal-breakdown td{background:#F6F8FC;color:#7A8099;font-size:11px;padding:3px 8px;border-bottom:1px solid #F0F2F6}
+table.fiscal .fiscal-breakdown .nc-val{color:#C53030}
 table.fiscal .fiscal-mes-header{cursor:pointer;user-select:none}
 table.fiscal .fiscal-mes-header:hover td{background:#1e2340}
 table.fiscal .fiscal-mes-header td{background:#14172E;color:#fff;font-weight:700;font-size:12px;letter-spacing:.04em;padding:8px 10px;text-transform:uppercase}
@@ -1160,6 +1164,21 @@ function toggleMesSection(mes) {
   renderFiscal();
 }
 
+function toggleGroupBreakdown(comp) {
+  if (!comp) return;
+  var rows = Array.from(document.querySelectorAll('tr.fiscal-breakdown'));
+  var matching = rows.filter(function(r){ return r.getAttribute('data-group') === comp; });
+  if (!matching.length) return;
+  var isHidden = matching[0].style.display === 'none';
+  matching.forEach(function(r){ r.style.display = isHidden ? '' : 'none'; });
+  var grpRows = Array.from(document.querySelectorAll('tr.fiscal-grouped'));
+  var grp = grpRows.filter(function(r){ return r.getAttribute('data-groupcomp') === comp; })[0];
+  if (grp) {
+    var tog = grp.querySelector('.group-toggle');
+    if (tog) tog.textContent = isHidden ? '▼' : '▶';
+  }
+}
+
 function toggleManualCols() {
   showManualCols = !showManualCols;
   document.getElementById('fiscal-table').classList.toggle('hide-manual-cols', !showManualCols);
@@ -1185,8 +1204,10 @@ document.addEventListener('DOMContentLoaded', function() {
       renderFiscal();
     });
   });
-  // Month header collapse — event delegation so it survives renderFiscal re-renders
+  // Month header collapse + grouped-row breakdown — event delegation survives renderFiscal re-renders
   document.getElementById('fiscal-body').addEventListener('click', function(e) {
+    var grp = e.target.closest('tr.fiscal-grouped');
+    if (grp) { toggleGroupBreakdown(grp.getAttribute('data-groupcomp')); return; }
     var hdr = e.target.closest('tr.fiscal-mes-header');
     if (hdr) toggleMesSection(hdr.getAttribute('data-mes'));
   });
@@ -1331,8 +1352,9 @@ function groupedRowHTML(l, adjLineas, saved) {
   var catColor = CAT_COLORS[l.categoria] || '#7A8099';
   var isNeg    = netImporte < 0;
   var adjBadge = '<div class="adj-badge">' + adjLineas.map(function(a){ return enc(a.comprobante); }).join(' · ') + '</div>';
-  return '<tr class="fiscal-row fiscal-grouped">'+
-    '<td class="dt">'+fechaCorta(l.fecha)+'</td>'+
+  var gc = enc(l.comprobante);
+  var html = '<tr class="fiscal-row fiscal-grouped" data-groupcomp="'+gc+'">'+
+    '<td class="dt"><span class="group-toggle">▶</span> '+fechaCorta(l.fecha)+'</td>'+
     '<td class="comp mono">'+enc(l.comprobante)+adjBadge+'</td>'+
     '<td class="cli" title="'+enc(l.cliente)+'">'+enc(l.cliente)+'</td>'+
     '<td class="art mono">'+enc(l.art_codigo)+'</td>'+
@@ -1352,6 +1374,25 @@ function groupedRowHTML(l, adjLineas, saved) {
         '<td class="manual-val" data-mc>'+(saved.fecha_emb||'')+'</td>'
       : '<td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td>')+
     '</tr>';
+  // Breakdown sub-rows (all components, collapsed by default)
+  [l].concat(adjLineas).forEach(function(ll) {
+    var pc2 = computarPrecio(ll);
+    var isNeg2 = ll.importe_usd < 0;
+    html += '<tr class="fiscal-breakdown" data-group="'+gc+'" style="display:none">'+
+      '<td class="dt">'+fechaCorta(ll.fecha)+'</td>'+
+      '<td class="comp mono" style="padding-left:20px">'+enc(ll.comprobante)+'</td>'+
+      '<td></td><td class="art mono">'+enc(ll.art_codigo)+'</td>'+
+      '<td></td><td></td><td></td>'+
+      '<td class="num">'+fN(ll.cantidad)+'</td>'+
+      '<td class="num">'+fD(ll.precio_neto_usd_u,4)+'</td>'+
+      '<td class="num precio-col">'+(pc2.val?'<span class="pv">'+pc2.val+'</span> <small class="pu">'+pc2.unit+'</small>':'')+'</td>'+
+      '<td class="num'+(isNeg2?' nc-val':'')+'">'+fN(ll.importe_usd)+'</td>'+
+      '<td class="num ars-col">'+fN(ll.importe_ars)+'</td>'+
+      '<td class="num tc-col">'+(ll.tc>0?fN(ll.tc):'')+'</td>'+
+      '<td colspan="4"></td>'+
+      '</tr>';
+  });
+  return html;
 }
 
 function rowHTML(l, idx, ncS, saved) {
