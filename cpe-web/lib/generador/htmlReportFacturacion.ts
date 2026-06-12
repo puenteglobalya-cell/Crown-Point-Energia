@@ -1325,6 +1325,8 @@ function buildGroupMap(lineas) {
     lineasByComp[l.comprobante].push(l);
   });
   var groups = {}, absorbed = new Set();
+
+  // Pass 1: FQ/CL "ajustes" field — parent links to its children
   lineas.forEach(function(l) {
     var d = manualData[manualKey(l)] || {};
     if (!d.ajustes) return;
@@ -1341,6 +1343,26 @@ function buildGroupMap(lineas) {
     });
     groups[l.comprobante] = adj;
   });
+
+  // Pass 2: any row's "aplica_a" field — child points back to its parent invoice
+  var seenPairs = new Set();
+  lineas.forEach(function(l) {
+    var d = manualData[manualKey(l)] || {};
+    var targetComp = (d.aplica_a || '').trim();
+    if (!targetComp) return;
+    // Only group if the parent is also visible in this filtered view
+    if (!lineasByComp[targetComp]) return;
+    var pairKey = l.comprobante + '|' + targetComp;
+    if (seenPairs.has(pairKey)) return;
+    seenPairs.add(pairKey);
+    if (!groups[targetComp]) groups[targetComp] = [];
+    var alreadyAdj = groups[targetComp].some(function(a){ return a.comprobante === l.comprobante; });
+    if (!alreadyAdj) {
+      LINEAS.forEach(function(ll){ if (ll.comprobante === l.comprobante) groups[targetComp].push(ll); });
+    }
+    absorbed.add(l.comprobante);
+  });
+
   return { groups: groups, absorbed: absorbed };
 }
 
