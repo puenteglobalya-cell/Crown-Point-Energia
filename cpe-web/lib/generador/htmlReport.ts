@@ -254,7 +254,12 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
   body::before{display:none;}
   body{background:#fff;}
   .wrap{padding:0 16px;}
-  .card{box-shadow:none;border:1px solid #ddd;}
+  .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid;}
+  .card-full{box-shadow:none;border:1px solid #ddd;break-inside:avoid;}
+  .acard{break-inside:avoid;}
+  .areas{break-inside:avoid;}
+  .g2{break-inside:avoid;}
+  .sec{break-after:avoid;}
 }
 #print-btn{
   position:fixed;bottom:28px;right:28px;z-index:9999;
@@ -269,10 +274,21 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
 </head>
 <body>
 <div class="wrap">
-<button id="print-btn" class="no-print" onclick="window.print()">
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-  Imprimir / Guardar PDF
-</button>
+<div class="no-print" style="position:fixed;bottom:28px;right:28px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+  <a id="pdf-btn"
+    href="#"
+    style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap;background:#fff;color:#1F2566;border:1.5px solid #1F2566;border-radius:40px;padding:11px 20px;font-size:13px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;text-decoration:none;box-shadow:0 4px 16px rgba(31,37,102,.15)"
+    onclick="return pedirPDF(this)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Descargar PDF
+  </a>
+  <button
+    style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap;background:#1F2566;color:#fff;border:none;border-radius:40px;padding:11px 20px;font-size:13px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(31,37,102,.3)"
+    onclick="window.print()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Imprimir
+  </button>
+</div>
 
 <!-- HEADER -->
 <header>
@@ -694,6 +710,20 @@ ${macro!.hasBrent ? `new Chart(document.getElementById('cMacroBrent'),{type:'lin
 ${macro!.hasHH ? `new Chart(document.getElementById('cMacroHH'),{type:'line',data:{labels:_mL,datasets:[{label:'Actual',data:${macroHHData},borderColor:'#8B1A2A',backgroundColor:'rgba(139,26,42,.08)',tension:.35,pointRadius:3.5,pointHoverRadius:5.5,pointBackgroundColor:'#8B1A2A',borderWidth:2.5,fill:true}${hhPrevDs}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:${hhLegend},labels:{font:{size:10},usePointStyle:true,color:C.muted}},tooltip:{...tip,callbacks:{label:c=>\`  \${c.dataset.label}: \${c.parsed.y?.toFixed(3)} USD/MMBtu\`}}},scales:{x:{grid:{color:C.bg2},ticks:{font:{family:"'JetBrains Mono'",size:10.5},color:C.muted,maxRotation:40}},y:{grid:{color:C.bg2},ticks:{callback:v=>\`\$\${Number(v).toFixed(2)}\`,font:{family:"'JetBrains Mono'",size:10.5},color:C.muted}}}}});` : ''}
 ` : ''}
 
+function pedirPDF(btn){
+  var id=window.location.pathname.split('/').filter(Boolean).pop();
+  if(!id||id.length<10){alert('No se pudo determinar el ID del reporte.');return false;}
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Generando…';
+  btn.style.opacity='0.6';
+  btn.style.pointerEvents='none';
+  window.open('/api/admin/reportes/'+id+'/pdf','_blank');
+  setTimeout(function(){
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar PDF';
+    btn.style.opacity='1';
+    btn.style.pointerEvents='';
+  },12000);
+  return false;
+}
 </script>
 </body>
 </html>`

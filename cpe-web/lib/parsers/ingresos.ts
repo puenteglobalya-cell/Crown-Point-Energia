@@ -117,11 +117,11 @@ function parsearSalesVolume(
     return `${abbr}-${yr}`
   }
 
-  // Price section: D40:H51 in Excel (data[39]–data[50])
+  // Price section: D40:H54 in Excel (data[39]–data[53])
   // Col B (1) = Spanish month label (current year), col A (0) = English prior-year label
   // Col D(3)=PCKK, E(4)=ETLPPQ, F(5)=RCLV, G(6)=CH, H(7)=PPCO
   const priceByLabel: Record<string, any[]> = {}
-  for (let i = 39; i <= 50; i++) {
+  for (let i = 39; i <= 53; i++) {
     const row = data[i]
     if (!row) continue
     const label = parseMesLabel(row[1]) ?? parseMesLabel(row[0])
@@ -131,10 +131,10 @@ function parsearSalesVolume(
   const result: MesHistorico[] = []
   const seen = new Set<string>()
 
-  // Revenue section: Excel rows 8–19 (data[7]–data[18])
+  // Revenue section: Excel rows 8–22 (data[7]–data[21])
   // Col B (1) = Spanish month label
   // Col D(3)=PCKK, E(4)=ETLPPQ, F(5)=RCLV, G(6)=CH, H(7)=PPCO, J(9)=GasET, K(10)=GasRCLV
-  for (let i = 7; i <= 18; i++) {
+  for (let i = 7; i <= 21; i++) {
     const row = data[i]
     if (!row) continue
     const label = parseMesLabel(row[1])
@@ -390,7 +390,38 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
       },
     },
 
-    mensual_historico: parsearSalesVolume(wb, currentPrices),
+    mensual_historico: (() => {
+      const historico = parsearSalesVolume(wb, currentPrices)
+      // Append the current month if not already present in historico
+      // (Excel historical section often omits the current period)
+      const MES_ABR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+      const [py, pm] = periodo.split('-')
+      const mesAbrev = `${MES_ABR[parseInt(pm) - 1]}-${py.slice(2)}`
+      if (historico.length > 0 && !historico.some(h => h.mes === mesAbrev)) {
+        const ET_MM_c   = (totalUs?.[2] ?? 0) / 1_000_000
+        const PCKK_MM_c = (totalUs?.[3] ?? 0) / 1_000_000
+        const CH_MM_c   = (totalUs?.[4] ?? 0) / 1_000_000
+        const RCLV_MM_c = (totalUs?.[5] ?? 0) / 1_000_000
+        const gas_MM_c  = (gasETIngreso + (totalUs?.[7] ?? 0)) / 1_000_000
+        const total_c   = ET_MM_c + PCKK_MM_c + CH_MM_c + RCLV_MM_c + gas_MM_c
+        if (total_c > 0) {
+          historico.push({
+            mes:         mesAbrev,
+            total_MM:    total_c,
+            ET_MM:       ET_MM_c,
+            PCKK_MM:     PCKK_MM_c,
+            CH_MM:       CH_MM_c,
+            RCLV_MM:     RCLV_MM_c,
+            gas_MM:      gas_MM_c,
+            precio_ET:   precioN?.[2] ?? 0,
+            precio_PCKK: precioN?.[3] ?? 0,
+            precio_CH:   precioN?.[4] ?? 0,
+            precio_RCLV: precioN?.[5] ?? 0,
+          })
+        }
+      }
+      return historico
+    })(),
   }
 }
 

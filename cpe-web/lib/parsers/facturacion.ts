@@ -102,8 +102,18 @@ function parsearFecha(v: any): { iso: string; mes: string; label: string } | nul
   if (v instanceof Date) {
     d = v
   } else if (typeof v === 'string') {
-    const parsed = Date.parse(v)
-    if (!isNaN(parsed)) d = new Date(parsed)
+    const s = v.trim()
+    const parsed = Date.parse(s)
+    if (!isNaN(parsed)) {
+      d = new Date(parsed)
+    } else {
+      // Handle dd/mm/yyyy or dd-mm-yyyy (Argentine accounting export format)
+      const parts = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/)
+      if (parts) {
+        const yr = parts[3].length === 2 ? 2000 + parseInt(parts[3], 10) : parseInt(parts[3], 10)
+        d = new Date(Date.UTC(yr, parseInt(parts[2], 10) - 1, parseInt(parts[1], 10)))
+      }
+    }
   } else if (typeof v === 'number' && v > 40000 && v < 60000) {
     d = new Date(Math.round((v - 25569) * 86400 * 1000))
   }
@@ -218,7 +228,12 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
     const tipo    = String(r[C.tipo]    ?? '').trim()
     const suc     = r[C.suc]
     const nro     = r[C.nro]
-    const cant    = Number(r[C.cant]  ?? 0)
+    const cantRaw = Number(r[C.cant]  ?? 0)
+    // PLAN.GAS invoices are sometimes exported in thousands of m³ (Mm³).
+    // Expected monthly volume is ~1,500,000 m³; values under 10 000 are treated as Mm³.
+    const cant = /^PLAN\.GAS/i.test(artCod) && cantRaw !== 0 && Math.abs(cantRaw) < 10_000
+      ? cantRaw * 1_000
+      : cantRaw
     const nbEU    = Number(r[C.nbEU]  ?? 0)   // precio neto USD / unidad
     const nbET    = Number(r[C.nbET]  ?? 0)   // total neto USD
     const nbLT    = Number(r[C.nbLT]  ?? 0)   // total neto ARS
@@ -237,12 +252,7 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
     const importeUSD = nbET
     const importeARS = nbLT
 
-    // CAMMESA reports gas volume in m³ while all other clients use Mm³ (×1000).
-    // Normalize: multiply cantidad by 1000 and divide unit price by 1000.
     const cliNom = String(r[C.cliNom] ?? '').trim()
-    const isCammesa = /MERCADO MAYORISTA ELECTRICO|CAMMESA/i.test(cliNom)
-    const cantFinal = isCammesa ? cant * 1000 : cant
-    const nbEUFinal = isCammesa && cant !== 0 ? nbEU / 1000 : nbEU
 
     lineas.push({
       fecha:            fechaParsed.iso,
@@ -256,8 +266,8 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
       art_desc:         artDesc,
       categoria,
       bloque,
-      cantidad:         cantFinal,
-      precio_neto_usd_u: nbEUFinal,
+      cantidad:         cant,
+      precio_neto_usd_u: nbEU,
       importe_usd:      importeUSD,
       importe_ars:      importeARS,
       tc,
