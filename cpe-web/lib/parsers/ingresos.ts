@@ -117,11 +117,11 @@ function parsearSalesVolume(
     return `${abbr}-${yr}`
   }
 
-  // Price section: D40:H51 in Excel (data[39]–data[50])
+  // Price section: D40:H54 in Excel (data[39]–data[53])
   // Col B (1) = Spanish month label (current year), col A (0) = English prior-year label
   // Col D(3)=PCKK, E(4)=ETLPPQ, F(5)=RCLV, G(6)=CH, H(7)=PPCO
   const priceByLabel: Record<string, any[]> = {}
-  for (let i = 39; i <= 50; i++) {
+  for (let i = 39; i <= 53; i++) {
     const row = data[i]
     if (!row) continue
     const label = parseMesLabel(row[1]) ?? parseMesLabel(row[0])
@@ -131,10 +131,10 @@ function parsearSalesVolume(
   const result: MesHistorico[] = []
   const seen = new Set<string>()
 
-  // Revenue section: Excel rows 8–19 (data[7]–data[18])
+  // Revenue section: Excel rows 8–22 (data[7]–data[21])
   // Col B (1) = Spanish month label
   // Col D(3)=PCKK, E(4)=ETLPPQ, F(5)=RCLV, G(6)=CH, H(7)=PPCO, J(9)=GasET, K(10)=GasRCLV
-  for (let i = 7; i <= 18; i++) {
+  for (let i = 7; i <= 21; i++) {
     const row = data[i]
     if (!row) continue
     const label = parseMesLabel(row[1])
