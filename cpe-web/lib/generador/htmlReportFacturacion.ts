@@ -292,6 +292,7 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"><\/script>
+<script>if(!window.Chart){document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\\/script>');}<\/script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -522,11 +523,11 @@ table.precios .ptot td{font-weight:700;border-top:1.5px solid #E8EAEF;background
   <div class="charts-grid">
     <div class="chart-card">
       <div class="section-title">Facturación mensual · us$</div>
-      <canvas id="barChart" height="190"></canvas>
+      <div style="position:relative;height:240px"><canvas id="barChart"></canvas></div>
     </div>
     <div class="chart-card">
       <div class="section-title">Mix por categoría</div>
-      <canvas id="donutChart" height="190"></canvas>
+      <div style="position:relative;height:240px"><canvas id="donutChart"></canvas></div>
     </div>
   </div>
 
@@ -1657,17 +1658,18 @@ function rowHTML(l, idx, ncS, saved) {
 
 // ── Bar chart ─────────────────────────────────────────────────────────────────
 var barChart;
-(function(){
-  var ctx = document.getElementById('barChart').getContext('2d');
-  barChart = new Chart(ctx, {
+try {
+  var bCtx = document.getElementById('barChart').getContext('2d');
+  barChart = new Chart(bCtx, {
     type:'bar',
     data:{ labels: MESES.map(function(m){return MES_LABELS[m]||m;}), datasets: ${j(catDatasets)} },
     options:{
       responsive:true,
+      maintainAspectRatio:false,
       plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}},
       scales:{
-        x:{grid:{display:false},ticks:{font:{size:11}}},
-        y:{ticks:{font:{size:11},callback:function(v){
+        x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+        y:{stacked:true,ticks:{font:{size:11},callback:function(v){
           if(Math.abs(v)>=1000000) return (v/1000000).toFixed(1)+'M';
           if(Math.abs(v)>=1000) return (v/1000).toFixed(0)+'k';
           return v;
@@ -1675,7 +1677,7 @@ var barChart;
       },
     },
   });
-})();
+} catch(e) { console.error('[barChart init]', e); }
 
 function updateBarChartFromLineas(lineas) {
   if (!barChart) return;
@@ -1698,23 +1700,23 @@ function updateBarChartFromLineas(lineas) {
 
 // ── Donut chart ───────────────────────────────────────────────────────────────
 var donutChart;
-(function(){
-  var ctx = document.getElementById('donutChart').getContext('2d');
-  donutChart = new Chart(ctx,{
+try {
+  var dCtx = document.getElementById('donutChart').getContext('2d');
+  donutChart = new Chart(dCtx,{
     type:'doughnut',
     data:{ labels:${j(donutLabels)}, datasets:[{data:${j(donutData)},backgroundColor:${j(donutColors)},borderWidth:2,borderColor:'#fff'}] },
     options:{
-      responsive:true, cutout:'62%',
+      responsive:true, maintainAspectRatio:false, cutout:'62%',
       plugins:{
         legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},
-        tooltip:{callbacks:{label:function(ctx){
-          var total=ctx.dataset.data.reduce(function(a,b){return a+b;},0);
-          return ' '+(ctx.parsed/1e6).toFixed(3)+' MM ('+(total>0?(ctx.parsed/total*100).toFixed(1):0)+'%)';
+        tooltip:{callbacks:{label:function(c){
+          var total=c.dataset.data.reduce(function(a,b){return a+b;},0);
+          return ' '+(c.parsed/1e6).toFixed(3)+' MM ('+(total>0?(c.parsed/total*100).toFixed(1):0)+'%)';
         }}},
       },
     },
   });
-})();
+} catch(e) { console.error('[donutChart init]', e); }
 
 function updateDonutChartFromLineas(lineas) {
   if (!donutChart) return;
