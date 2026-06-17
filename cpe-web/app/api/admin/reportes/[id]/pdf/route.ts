@@ -34,11 +34,12 @@ export async function GET(
   const db = createSupabaseServerAdminClient()
   const { data: reporte, error } = await db
     .from('reportes')
-    .select('html, titulo, tipo')
+    .select('html, titulo, type_id')
     .eq('id', id)
     .single()
 
   if (error || !reporte?.html) {
+    console.error('[pdf] db error or no html:', error?.message, 'id:', id)
     return NextResponse.json({ error: 'Reporte no encontrado' }, { status: 404 })
   }
 
@@ -73,7 +74,7 @@ export async function GET(
 
     await browser.close()
 
-    const slug = (reporte.titulo ?? reporte.tipo ?? 'reporte')
+    const slug = (reporte.titulo ?? reporte.type_id ?? 'reporte')
       .replace(/[^a-zA-Z0-9\s_-]/g, '')
       .replace(/\s+/g, '_')
       .slice(0, 80)
