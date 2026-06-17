@@ -56,6 +56,10 @@ export default function PortalNav({
 
         <div style={{ width: 1, height: 18, background: 'var(--rule)' }} />
 
+        <Link href="/portal/dashboard" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
+          Dashboard
+        </Link>
+
         <Link href="/portal" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
           Reportes
         </Link>

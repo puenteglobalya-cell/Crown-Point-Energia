@@ -68,6 +68,16 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://crownpointenergy.com',
   },
+  manifest: '/manifest.json',
+  themeColor: '#1F2566',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'CPE Portal',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 }
 
 const orgJsonLd = {
