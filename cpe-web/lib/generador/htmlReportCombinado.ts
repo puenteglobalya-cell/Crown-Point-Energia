@@ -31,8 +31,9 @@ function extractBody(html: string): string {
 }
 
 function stripPrintBtn(html: string): string {
-  // Remove the fixed print button from individual sections
-  return html.replace(/<button[^>]*id="print-btn"[^>]*>[\s\S]*?<\/button>/gi, '')
+  return html
+    .replace(/<button[^>]*id="print-btn"[^>]*>[\s\S]*?<\/button>/gi, '')
+    .replace(/<div[^>]*class="no-print"[^>]*>[\s\S]*?<\/div>\s*(?=<\/div>|<[a-z]|$)/gi, '')
 }
 
 export function combinarReportesHTML(reportes: ReporteHTML[]): string {
@@ -60,26 +61,21 @@ export function combinarReportesHTML(reportes: ReporteHTML[]): string {
 ${styleBlocks.join('\n')}
 <style>
 .report-section { position: relative; }
-#cpe-print-btn {
-  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
-  background: #1F2566; color: #fff; border: none;
-  padding: 11px 20px; border-radius: 24px;
-  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
-  cursor: pointer; display: flex; align-items: center; gap: 7px;
-  box-shadow: 0 4px 14px rgba(31,37,102,.28);
-}
+.no-print{}
 @media print {
-  #cpe-print-btn { display: none !important; }
+  .no-print { display: none !important; }
   .report-section { page-break-after: always; }
   .report-section:last-child { page-break-after: auto; }
 }
 </style>
 </head>
 <body>
-<button id="cpe-print-btn" onclick="window.print()">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-  Imprimir / Guardar PDF
-</button>
+<div class="no-print" style="position:fixed;bottom:28px;right:28px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+  <button style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap;background:#1F2566;color:#fff;border:none;border-radius:40px;padding:11px 20px;font-size:13px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(31,37,102,.3)" onclick="window.print()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Imprimir
+  </button>
+</div>
 ${sections}
 </body>
 </html>`

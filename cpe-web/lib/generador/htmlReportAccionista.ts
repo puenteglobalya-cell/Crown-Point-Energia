@@ -126,16 +126,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--f
 
 .page { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px }
 
-/* ── print button ─────────── */
-#print-btn {
-  position: fixed; bottom: 24px; right: 24px; z-index: 100;
-  background: var(--navy); color: #fff; border: none;
-  padding: 11px 20px; border-radius: 24px;
-  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
-  cursor: pointer; display: flex; align-items: center; gap: 7px;
-  box-shadow: 0 4px 14px rgba(31,37,102,.28);
-}
-#print-btn:hover { background: #2a3180 }
+/* ── action buttons ───────── */
+.no-print { /* hidden via @media print */ }
 
 /* ── header ───────────────── */
 .report-header {
@@ -230,12 +222,16 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--f
 </head>
 <body>
 
-<button id="print-btn" class="no-print" onclick="window.print()">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
-  </svg>
-  Imprimir / Guardar PDF
-</button>
+<div class="no-print" style="position:fixed;bottom:28px;right:28px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+  <a id="pdf-btn" href="#" style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap;background:#fff;color:#1F2566;border:1.5px solid #1F2566;border-radius:40px;padding:11px 20px;font-size:13px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;text-decoration:none;box-shadow:0 4px 16px rgba(31,37,102,.15)" onclick="return pedirPDF(this)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Descargar PDF
+  </a>
+  <button style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap;background:#1F2566;color:#fff;border:none;border-radius:40px;padding:11px 20px;font-size:13px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(31,37,102,.3)" onclick="window.print()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Imprimir
+  </button>
+</div>
 
 <div class="page">
 
@@ -364,6 +360,21 @@ ${hasPrice ? `
   })
 })()
 ` : ''}
+
+function pedirPDF(btn){
+  var id=window.location.pathname.split('/').filter(Boolean).pop();
+  if(!id||id.length<10){alert('No se pudo determinar el ID del reporte.');return false;}
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Generando…';
+  btn.style.opacity='0.6';
+  btn.style.pointerEvents='none';
+  window.open('/api/admin/reportes/'+id+'/pdf','_blank');
+  setTimeout(function(){
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar PDF';
+    btn.style.opacity='1';
+    btn.style.pointerEvents='';
+  },12000);
+  return false;
+}
 </script>
 </body>
 </html>`

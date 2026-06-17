@@ -716,6 +716,7 @@ table.precios .ptot td{font-weight:700;border-top:1.5px solid #E8EAEF;background
 
   <div class="export-bar">
     <button class="btn-exp btn-secondary" onclick="window.print()">Imprimir / PDF</button>
+    <button class="btn-exp btn-secondary" onclick="return pedirPDF(this)">Descargar PDF</button>
     <button class="btn-exp btn-primary" onclick="exportarExcel()">Exportar a Excel</button>
   </div>
 
@@ -1910,6 +1911,21 @@ function exportarExcel() {
   });
   renderFiscal();
 })();
+
+function pedirPDF(btn){
+  var id=window.location.pathname.split('/').filter(Boolean).pop();
+  if(!id||id.length<10){alert('No se pudo determinar el ID del reporte.');return false;}
+  btn.textContent='Generando…';
+  btn.style.opacity='0.6';
+  btn.style.pointerEvents='none';
+  window.open('/api/admin/reportes/'+id+'/pdf','_blank');
+  setTimeout(function(){
+    btn.textContent='Descargar PDF';
+    btn.style.opacity='1';
+    btn.style.pointerEvents='';
+  },12000);
+  return false;
+}
 <\/script>
 </body>
 </html>`
