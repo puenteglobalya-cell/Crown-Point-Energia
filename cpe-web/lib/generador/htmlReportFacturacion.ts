@@ -1915,7 +1915,7 @@ function exportarExcel() {
 function pedirPDF(btn){
   var id=window.location.pathname.split('/').filter(Boolean).pop();
   if(!id||id.length<10){alert('No se pudo determinar el ID del reporte.');return false;}
-  btn.textContent='Generando…';
+  btn.textContent='Generando… (~30s)';
   btn.style.opacity='0.6';
   btn.style.pointerEvents='none';
   window.open('/api/admin/reportes/'+id+'/pdf','_blank');
@@ -1923,7 +1923,7 @@ function pedirPDF(btn){
     btn.textContent='Descargar PDF';
     btn.style.opacity='1';
     btn.style.pointerEvents='';
-  },12000);
+  },62000);
   return false;
 }
 <\/script>

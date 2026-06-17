@@ -70,8 +70,8 @@ export async function GET(
     const page = await browser.newPage()
     await page.setContent(html, { waitUntil: 'load', timeout: 30_000 })
 
-    // Let Chart.js finish rendering animations
-    await new Promise(r => setTimeout(r, 2500))
+    // Wait for Chart.js to finish rendering (animations complete in ~1s)
+    await new Promise(r => setTimeout(r, 1500))
 
     const pdf = await page.pdf({
       format: 'A4',

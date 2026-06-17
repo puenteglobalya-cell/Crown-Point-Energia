@@ -118,7 +118,7 @@ export function generarReporteGenericoHTML(datos: DatosGenerico): string {
 function pedirPDF(btn){
   var id=window.location.pathname.split('/').filter(Boolean).pop();
   if(!id||id.length<10){alert('No se pudo determinar el ID del reporte.');return false;}
-  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Generando…';
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Generando… (~30s)';
   btn.style.opacity='0.6';
   btn.style.pointerEvents='none';
   window.open('/api/admin/reportes/'+id+'/pdf','_blank');
@@ -126,7 +126,7 @@ function pedirPDF(btn){
     btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar PDF';
     btn.style.opacity='1';
     btn.style.pointerEvents='';
-  },12000);
+  },62000);
   return false;
 }
 </script>
