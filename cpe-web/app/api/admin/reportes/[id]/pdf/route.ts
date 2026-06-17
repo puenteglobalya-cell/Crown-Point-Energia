@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdminUser } from '@/lib/admin-auth'
+import { requireAnyActiveUser } from '@/lib/admin-auth'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 
 // Chromium binary URL for Vercel serverless — pinned to a stable build
@@ -34,21 +34,26 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireAdminUser()
-  if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const auth = await requireAnyActiveUser()
+  if (!auth) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { id } = await params
 
   const db = createSupabaseServerAdminClient()
   const { data: reporte, error } = await db
     .from('reportes')
-    .select('html, titulo, type_id')
+    .select('html, titulo, type_id, estado')
     .eq('id', id)
     .single()
 
   if (error || !reporte?.html) {
     console.error('[pdf] db error or no html:', error?.message, 'id:', id)
     return NextResponse.json({ error: 'Reporte no encontrado' }, { status: 404 })
+  }
+
+  // Portal users (non-admin) can only download published reports
+  if (!auth.isAdmin && reporte.estado !== 'publicado') {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
   }
 
   // Inject page-break fixes into the stored HTML

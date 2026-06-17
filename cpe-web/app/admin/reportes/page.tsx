@@ -100,6 +100,18 @@ export default function ReportesAdminPage() {
     }
   }
 
+  async function handleRegenerar(item: ReporteItem) {
+    if (!confirm(`¿Regenerar el HTML de "${item.titulo}"? Se perderán los datos macro (Brent/HH) del reporte original.`)) return
+    flash('Regenerando…')
+    const res = await fetch(`/api/admin/reportes/${item.id}/regenerar`, { method: 'POST' })
+    if (res.ok) {
+      flash('HTML regenerado')
+    } else {
+      const body = await res.json().catch(() => ({}))
+      flash(body.error ?? 'Error al regenerar')
+    }
+  }
+
   async function handleCopy(id: string) {
     await navigator.clipboard.writeText(`${window.location.origin}/api/admin/reportes/${id}`)
     setCopiedId(id); setTimeout(() => setCopiedId(''), 1800)
@@ -275,6 +287,13 @@ export default function ReportesAdminPage() {
                     >
                       Ver / PDF
                     </a>
+                    <button
+                      onClick={() => handleRegenerar(item)}
+                      style={{ background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', padding: '5px 9px', cursor: 'pointer', fontSize: 12, color: 'var(--fg-muted)' }}
+                      title="Regenerar HTML desde datos guardados"
+                    >
+                      ↺
+                    </button>
                     <button
                       onClick={() => handleDelete(item)}
                       style={{ background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', padding: '5px 9px', cursor: 'pointer', fontSize: 12, color: 'var(--fg-muted)' }}

@@ -5,6 +5,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity, getPermissionsForRole } from '@/lib/roles'
 import { isAdminEmail } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { enviarNotificacionReporte } from '@/lib/email'
 
 async function getUserWithRole() {
   const cookieStore = await cookies()
@@ -134,6 +135,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
   const patch = { estado: body.estado as Estado, updated_at: new Date().toISOString() }
 
+  // Fetch current estado to detect transition → publicado
+  const { data: current } = await db
+    .from('reportes')
+    .select('estado, titulo, periodo, type_id')
+    .eq('id', params.id)
+    .single()
+
   const { error } = await db.from('reportes').update(patch).eq('id', params.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -145,6 +153,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     resourceId: params.id,
     metadata: body,
   })
+
+  // Send email notifications when publishing for the first time
+  if (patch.estado === 'publicado' && current?.estado !== 'publicado') {
+    const { data: subs } = await db
+      .from('ir_subscribers')
+      .select('nombre, email')
+      .eq('activo', true)
+
+    if (subs && subs.length > 0) {
+      enviarNotificacionReporte({
+        titulo:      current?.titulo ?? '',
+        periodo:     current?.periodo ?? '',
+        type_id:     current?.type_id ?? null,
+        reporteId:   params.id,
+        subscribers: subs,
+      }).catch(e => console.error('[email]', e))
+    }
+  }
 
   return NextResponse.json({ ok: true })
 }
