@@ -725,6 +725,160 @@ function pedirPDF(btn){
   return false;
 }
 </script>
+<!-- ── TUTORIAL ─────────────────────────────────────────────────── -->
+<style>
+#cpt-ov{position:fixed;inset:0;z-index:99990;pointer-events:all;background:transparent}
+#cpt-spl{position:fixed;z-index:99991;border-radius:8px;pointer-events:none;
+  box-shadow:0 0 0 9999px rgba(15,17,40,.68);
+  transition:top .35s,left .35s,width .35s,height .35s}
+#cpt-pop{position:fixed;z-index:99999;background:#fff;border-radius:14px;
+  padding:22px 24px;box-shadow:0 12px 48px rgba(15,17,40,.20);
+  font-family:'DM Sans',sans-serif;font-size:14px;color:#14172E;
+  width:min(400px,90vw)}
+.cpt-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.cpt-counter{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:#8e91b0;background:#f4f6fb;padding:3px 9px;border-radius:20px}
+.cpt-skip{font-size:12px;background:none;border:none;color:#8e91b0;cursor:pointer;
+  text-decoration:underline;padding:2px 0;font-family:inherit}
+.cpt-skip:hover{color:#1F2566}
+.cpt-title{display:block;font-size:16px;font-weight:700;margin-bottom:8px;color:#14172E}
+.cpt-desc{font-size:13px;color:#5a5d78;line-height:1.55;margin:0 0 20px}
+.cpt-nav{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cpt-btn{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;
+  cursor:pointer;font-family:inherit;border:none;transition:background .15s}
+.cpt-prev{background:#f0f2f9;color:#1F2566}
+.cpt-prev:hover{background:#e2e6f5}
+.cpt-next{background:#1F2566;color:#fff;margin-left:auto}
+.cpt-next:hover{background:#2a3180}
+.cpt-dots{display:flex;gap:5px;align-items:center}
+.cpt-dot{width:6px;height:6px;border-radius:50%;background:#dcdae6;transition:background .2s}
+.cpt-dot.active{background:#1F2566}
+</style>
+<div id="cpt-ov" style="display:none"></div>
+<div id="cpt-spl" style="display:none"></div>
+<div id="cpt-pop" style="display:none"></div>
+<script>
+(function(){
+  var KEY = 'cpe_tour_ingresos_v1';
+  if (localStorage.getItem(KEY)) return;
+
+  var STEPS = [
+    {sel: null,
+     title: 'Reporte de Ingresos Estimados',
+     desc:  'Te guiamos por las secciones principales. Podés saltar el tutorial en cualquier momento usando el botón "Saltar".'},
+    {sel: '.kpi-row',
+     title: 'Indicadores clave',
+     desc:  'Los KPIs muestran el total de ingresos del período, producción de petróleo y gas, y el precio promedio estimado.'},
+    {sel: '.g2',
+     title: 'Composición de ingresos',
+     desc:  'El gráfico circular muestra el peso de cada área sobre el total. A la derecha ves el desglose con valores absolutos.'},
+    {sel: '.areas',
+     title: 'Detalle por área',
+     desc:  'Cada tarjeta resume la producción e ingresos estimados de una concesión. La barra indica su participación porcentual en el total.'},
+    {sel: '#cMensual',
+     title: 'Evolución mensual',
+     desc:  'Gráfico de barras apiladas con la evolución de los ingresos mes a mes, desagregado por área y gas.'},
+    {sel: '#cPrecios',
+     title: 'Precios netos por área',
+     desc:  'Evolución del precio neto de petróleo recibido por cada concesión a lo largo del período.'},
+    {sel: '.no-print',
+     title: 'Descarga y exportación',
+     desc:  'Desde estos botones podés descargar el reporte en PDF (generado en servidor) o imprimirlo directamente.'},
+  ];
+
+  var cur = 0;
+  var ov  = document.getElementById('cpt-ov');
+  var spl = document.getElementById('cpt-spl');
+  var pop = document.getElementById('cpt-pop');
+
+  function finish() {
+    localStorage.setItem(KEY, '1');
+    ov.style.display = 'none';
+    spl.style.display = 'none';
+    pop.style.display = 'none';
+  }
+
+  function dots(i) {
+    return STEPS.map(function(_, idx) {
+      return '<span class="cpt-dot' + (idx === i ? ' active' : '') + '"></span>';
+    }).join('');
+  }
+
+  function render(i) {
+    cur = i;
+    var s    = STEPS[i];
+    var last = i === STEPS.length - 1;
+
+    pop.innerHTML =
+      '<div class="cpt-hdr">' +
+        '<span class="cpt-counter">' + (i + 1) + ' de ' + STEPS.length + '</span>' +
+        '<button class="cpt-skip" id="cptSkip">Saltar tutorial</button>' +
+      '</div>' +
+      '<strong class="cpt-title">' + s.title + '</strong>' +
+      '<p class="cpt-desc">' + s.desc + '</p>' +
+      '<div class="cpt-nav">' +
+        '<div class="cpt-dots">' + dots(i) + '</div>' +
+        (i > 0 ? '<button class="cpt-btn cpt-prev" id="cptPrev">← Anterior</button>' : '<span></span>') +
+        '<button class="cpt-btn cpt-next" id="cptNext">' + (last ? 'Listo ✓' : 'Siguiente →') + '</button>' +
+      '</div>';
+
+    document.getElementById('cptSkip').addEventListener('click', finish);
+    document.getElementById('cptNext').addEventListener('click', function() { last ? finish() : render(i + 1); });
+    if (i > 0) document.getElementById('cptPrev').addEventListener('click', function() { render(i - 1); });
+
+    place(s, i);
+  }
+
+  function place(s, i) {
+    if (!s.sel) {
+      spl.style.display = 'none';
+      pop.style.cssText = 'display:block;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(420px,90vw)';
+      return;
+    }
+
+    var el = document.querySelector(s.sel);
+    if (!el || el.offsetParent === null) {
+      render(i < STEPS.length - 1 ? i + 1 : i - 1);
+      return;
+    }
+
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    setTimeout(function() {
+      var r = el.getBoundingClientRect();
+      var P = 10;
+
+      spl.style.display = 'block';
+      spl.style.top    = (r.top  - P) + 'px';
+      spl.style.left   = (r.left - P) + 'px';
+      spl.style.width  = (r.width  + P * 2) + 'px';
+      spl.style.height = (r.height + P * 2) + 'px';
+
+      var winW = window.innerWidth, winH = window.innerHeight;
+      var popW = Math.min(400, winW * 0.9);
+      var popH = 240;
+      var pl   = Math.max(12, Math.min(r.left, winW - popW - 12));
+      var pt;
+
+      if (winH - r.bottom - P > popH + 16) {
+        pt = r.bottom + P + 12;
+      } else if (r.top - P > popH + 16) {
+        pt = r.top - P - popH - 12;
+      } else {
+        pt = Math.max(12, winH / 2 - popH / 2);
+        pl = Math.max(12, winW / 2 - popW / 2);
+      }
+
+      pop.style.cssText = 'display:block;position:fixed;top:' + pt + 'px;left:' + pl + 'px;transform:none;width:' + popW + 'px';
+    }, 500);
+  }
+
+  ov.style.display  = 'block';
+  pop.style.display = 'block';
+  render(0);
+})();
+</script>
+
 </body>
 </html>`
 }
