@@ -463,6 +463,9 @@ export default function AdminPage() {
             <Link href="/admin/usuarios" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Usuarios
             </Link>
+            <Link href="/admin/push" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
+              Push 🔔
+            </Link>
             <Link href="/admin/logs" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
               Logs
             </Link>
