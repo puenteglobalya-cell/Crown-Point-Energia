@@ -57,15 +57,20 @@ export default function DashboardClient({ latest, latestId, recientes }: Props) 
   const hist      = latest?.mensual_historico ?? []
   const hasCharts = hist.length >= 2
 
-  // KPIs from current period
-  const mes    = latest?.mes ?? null
-  const totalMM = latest?.ventas_MM ?? null
-  const prod    = latest?.vol_producido_boed ?? null
-  const precio  = latest?.precio_neto_oil ?? null
-  const dias    = latest?.dias ?? null
-  const brent   = latest?.brent_prom ?? null
+  // KPIs
+  const mes       = latest?.mes ?? null
+  const totalMM   = latest?.ventas_MM ?? null
+  const prod      = latest?.vol_producido_boed ?? null
+  const precio    = latest?.precio_neto_oil ?? null
+  const precioGas = latest?.precio_neto_gas ?? null
+  const dias      = latest?.dias ?? null
+  const brent     = latest?.brent_prom ?? null
+  const medanito  = latest?.medanito_prom ?? null
+  const stock     = latest?.stock_MM ?? null
+  const oilPct    = latest?.oil_pct_prod ?? null
+  const gasPct    = latest?.gas_pct_prod ?? null
 
-  // Delta ingresos: compare last two months in history
+  // Deltas from history
   const curMes  = hist.at(-1)
   const prevMes = hist.at(-2)
   const deltaRev = curMes && prevMes && prevMes.total_MM
@@ -80,6 +85,19 @@ export default function DashboardClient({ latest, latestId, recientes }: Props) 
   const ingRCLV = areas?.RCLV.ingreso ?? 0
   const ingGas  = (latest?.gas.ET.ingreso ?? 0) + (latest?.gas.RCLV.ingreso ?? 0)
   const totalUS = ingET + ingPCKK + ingCH + ingRCLV + ingGas
+
+  // Area production table rows
+  const areaRows = latest ? [
+    { name: 'ET / LT',   color: C.naranja, prodM3: areas?.ET.prod_100_m3d,   precio: areas?.ET.precio_neto,   ingMM: ingET / 1e6 },
+    { name: 'PC-KK',     color: C.azul,    prodM3: areas?.PCKK.prod_100_m3d, precio: areas?.PCKK.precio_neto, ingMM: ingPCKK / 1e6 },
+    { name: 'CH / PPCO', color: C.violeta, prodM3: areas?.CH.prod_100_m3d,   precio: areas?.CH.precio_neto,   ingMM: ingCH / 1e6 },
+    { name: 'RCLV',      color: C.green,   prodM3: areas?.RCLV.prod_100_m3d, precio: areas?.RCLV.precio_neto, ingMM: ingRCLV / 1e6 },
+  ].filter(r => (r.ingMM ?? 0) !== 0) : []
+
+  const gasRows = latest ? [
+    { name: 'Gas ET',   color: C.warm, prodMcfd: latest.gas.ET.prod_mcfd,   precioMcf: latest.gas.ET.precio_mcf,   ingMM: latest.gas.ET.ingreso / 1e6 },
+    { name: 'Gas RCLV', color: C.warm, prodMcfd: latest.gas.RCLV.prod_mcfd, precioMcf: latest.gas.RCLV.precio_mcf, ingMM: latest.gas.RCLV.ingreso / 1e6 },
+  ].filter(r => (r.ingMM ?? 0) !== 0) : []
 
   useEffect(() => {
     if (!hasCharts) return
@@ -208,28 +226,45 @@ export default function DashboardClient({ latest, latestId, recientes }: Props) 
             </Link>
           )}
         </div>
-        {brent != null && (
+        {(brent != null || medanito != null) && (
           <p style={{ fontSize: 12, color: C.muted, margin: '4px 0 0' }}>
-            Brent referencia: US$ {fmt(brent, 2)}/bbl
+            {brent != null && <>Brent: US$ {fmt(brent, 2)}/bbl</>}
+            {brent != null && medanito != null && <span style={{ margin: '0 8px' }}>·</span>}
+            {medanito != null && <>Medanito: US$ {fmt(medanito, 2)}/bbl</>}
+            {(oilPct != null || gasPct != null) && (
+              <span style={{ marginLeft: 12 }}>
+                Mix: {oilPct != null ? `${fmt(oilPct, 0)}% petróleo` : ''}
+                {oilPct != null && gasPct != null && ' / '}
+                {gasPct != null ? `${fmt(gasPct, 0)}% gas` : ''}
+              </span>
+            )}
           </p>
         )}
       </div>
 
       {/* ── KPI Cards ── */}
       {latest ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: 12, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: 12, marginBottom: 24 }}>
           <KpiCard
             label="Ingresos del período"
             value={totalMM != null ? `US$ ${fmt(totalMM, 2)}MM` : '—'}
             delta={deltaRev}
           />
           <KpiCard
-            label="Producción"
+            label="Producción total"
             value={prod != null ? `${Math.round(prod).toLocaleString('es-AR')} BOED` : '—'}
           />
           <KpiCard
             label="Precio neto petróleo"
             value={precio != null ? `US$ ${fmt(precio, 2)}/bbl` : '—'}
+          />
+          <KpiCard
+            label="Precio neto gas"
+            value={precioGas != null && precioGas > 0 ? `US$ ${fmt(precioGas, 3)}/MCF` : '—'}
+          />
+          <KpiCard
+            label="Stock en tierra"
+            value={stock != null && stock > 0 ? `US$ ${fmt(stock, 2)}MM` : '—'}
           />
           <KpiCard
             label="Días del período"
@@ -255,6 +290,68 @@ export default function DashboardClient({ latest, latestId, recientes }: Props) 
             <canvas ref={refPrice} />
           </ChartCard>
         </>
+      )}
+
+      {/* ── Area breakdown table ── */}
+      {latest && (areaRows.length > 0 || gasRows.length > 0) && (
+        <div style={{ background: 'var(--surface)', borderRadius: 12, padding: '18px 20px', boxShadow: '0 1px 6px rgba(15,17,40,.07)', border: '1px solid var(--rule)', marginBottom: 24 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', margin: '0 0 2px' }}>Desglose por Área</p>
+          <p style={{ fontSize: 11, color: C.muted, margin: '0 0 14px' }}>producción y precios del período</p>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--rule)' }}>
+                  <th style={{ textAlign: 'left', padding: '6px 8px', fontSize: 10, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: C.muted }}>Área</th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', fontSize: 10, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: C.muted }}>Producción</th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', fontSize: 10, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: C.muted }}>Precio neto</th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', fontSize: 10, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: C.muted }}>Ingreso</th>
+                </tr>
+              </thead>
+              <tbody>
+                {areaRows.map(r => (
+                  <tr key={r.name} style={{ borderBottom: '1px solid var(--rule)' }}>
+                    <td style={{ padding: '8px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: r.color, flexShrink: 0, display: 'inline-block' }} />
+                      <span style={{ fontWeight: 600, color: 'var(--fg)' }}>{r.name}</span>
+                    </td>
+                    <td style={{ textAlign: 'right', padding: '8px 8px', fontFamily: 'var(--font-mono)', color: 'var(--fg-soft)' }}>
+                      {r.prodM3 != null && r.prodM3 > 0 ? `${fmt(r.prodM3, 1)} m³/d` : '—'}
+                    </td>
+                    <td style={{ textAlign: 'right', padding: '8px 8px', fontFamily: 'var(--font-mono)', color: 'var(--fg-soft)' }}>
+                      {r.precio != null && r.precio > 0 ? `US$ ${fmt(r.precio, 2)}/bbl` : '—'}
+                    </td>
+                    <td style={{ textAlign: 'right', padding: '8px 8px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--fg)' }}>
+                      {r.ingMM != null ? `US$ ${fmt(r.ingMM, 3)}MM` : '—'}
+                    </td>
+                  </tr>
+                ))}
+                {gasRows.map(r => (
+                  <tr key={r.name} style={{ borderBottom: '1px solid var(--rule)' }}>
+                    <td style={{ padding: '8px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: r.color, flexShrink: 0, display: 'inline-block' }} />
+                      <span style={{ fontWeight: 600, color: 'var(--fg)' }}>{r.name}</span>
+                    </td>
+                    <td style={{ textAlign: 'right', padding: '8px 8px', fontFamily: 'var(--font-mono)', color: 'var(--fg-soft)' }}>
+                      {r.prodMcfd != null && r.prodMcfd > 0 ? `${fmt(r.prodMcfd, 0)} MCFD` : '—'}
+                    </td>
+                    <td style={{ textAlign: 'right', padding: '8px 8px', fontFamily: 'var(--font-mono)', color: 'var(--fg-soft)' }}>
+                      {r.precioMcf != null && r.precioMcf > 0 ? `US$ ${fmt(r.precioMcf, 3)}/MCF` : '—'}
+                    </td>
+                    <td style={{ textAlign: 'right', padding: '8px 8px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--fg)' }}>
+                      {r.ingMM != null ? `US$ ${fmt(r.ingMM, 3)}MM` : '—'}
+                    </td>
+                  </tr>
+                ))}
+                <tr style={{ background: 'var(--bg-alt)' }}>
+                  <td style={{ padding: '8px 8px', fontWeight: 700, color: 'var(--fg)' }} colSpan={3}>Total</td>
+                  <td style={{ textAlign: 'right', padding: '8px 8px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--fg)' }}>
+                    US$ {fmt(totalUS / 1e6, 3)}MM
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {/* ── Recent reports ── */}

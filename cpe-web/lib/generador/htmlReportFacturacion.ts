@@ -175,6 +175,46 @@ function buildFiscalTableHTML(
   return html
 }
 
+// ─── Auto-group builder ───────────────────────────────────────────────────────
+
+function buildAutoGroups(lineas: DatosFacturacion['lineas']): Record<string, string[]> {
+  const isParent = (t: string) => t.startsWith('F') || t === 'CL'
+  const isChild  = (t: string) => (t.startsWith('C') && t !== 'CL') || t.startsWith('D')
+  const getSuc   = (comp: string) => comp.split(' ')[1]?.split('-')[0] ?? ''
+
+  type CI = { comp: string; tipo: string; mes: string; suc: string }
+  const seen = new Map<string, CI>()
+  for (const l of lineas) {
+    if (!seen.has(l.comprobante))
+      seen.set(l.comprobante, { comp: l.comprobante, tipo: l.tipo_comp, mes: l.mes, suc: getSuc(l.comprobante) })
+  }
+
+  const byMesSuc = new Map<string, CI[]>()
+  for (const ci of seen.values()) {
+    const key = `${ci.mes}|${ci.suc}`
+    if (!byMesSuc.has(key)) byMesSuc.set(key, [])
+    byMesSuc.get(key)!.push(ci)
+  }
+
+  const result: Record<string, string[]> = {}
+  for (const group of byMesSuc.values()) {
+    const parents  = group.filter(c => isParent(c.tipo))
+    const children = group.filter(c => isChild(c.tipo))
+    if (!parents.length || !children.length) continue
+    if (parents.length === 1) {
+      result[parents[0].comp] = children.map(c => c.comp)
+    } else {
+      // Multiple parents in same suc+month — match by second letter (FQ→CQ/DQ, FA→CA/DA)
+      for (const p of parents) {
+        const letter = p.tipo[1] ?? ''
+        const matched = children.filter(c => (c.tipo[1] ?? '') === letter)
+        if (matched.length) result[p.comp] = matched.map(c => c.comp)
+      }
+    }
+  }
+  return result
+}
+
 // ─── Main generator ───────────────────────────────────────────────────────────
 
 export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
@@ -216,7 +256,8 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
   const donutData   = donutLabels.map(c => Math.abs(resumen.por_categoria[c] ?? 0))
   const donutColors = donutLabels.map(c => CAT_COLORS[c] ?? '#A0AEC0')
 
-  const ncLineas = lineas.filter(l => l.importe_usd < 0)
+  const ncLineas   = lineas.filter(l => l.importe_usd < 0)
+  const autoGroups = buildAutoGroups(lineas)
 
   // All unique clients, bloques, articles and categories for datalist / selects
   const allClientes   = [...new Set(lineas.map(l => l.cliente).filter(Boolean))].sort()
@@ -737,6 +778,7 @@ var RESUMEN    = ${j(resumen)};
 var CAT_ORDER       = ${j(CAT_ORDER)};
 var CAT_COLORS      = ${j(CAT_COLORS)};
 var ALL_CATEGORIAS  = ${j(allCategorias)};
+var AUTO_GROUPS     = ${j(autoGroups)};
 
 var activeMeses    = new Set(MESES);
 var activeTipos    = new Set(ALL_CATEGORIAS);
@@ -1538,7 +1580,20 @@ function buildGroupMap(lineas) {
   });
   var groups = {}, absorbed = new Set();
 
-  // Pass 1: FQ/CL "ajustes" field — parent links to its children
+  // Pass 0: auto-detected groups (FQ/FA/CL → CQ/DQ/CA/DA by same month+suc)
+  Object.keys(AUTO_GROUPS).forEach(function(parentComp) {
+    // Only apply if parent is visible in current filtered view
+    if (!lineasByComp[parentComp]) return;
+    var childComps = AUTO_GROUPS[parentComp];
+    var adj = [];
+    childComps.forEach(function(comp) {
+      LINEAS.forEach(function(ll) { if (ll.comprobante === comp) adj.push(ll); });
+      if (lineasByComp[comp]) absorbed.add(comp);
+    });
+    if (adj.length) groups[parentComp] = adj;
+  });
+
+  // Pass 1: FQ/CL "ajustes" field — manual parent override (replaces auto group)
   lineas.forEach(function(l) {
     var d = manualData[manualKey(l)] || {};
     if (!d.ajustes) return;
@@ -1548,9 +1603,7 @@ function buildGroupMap(lineas) {
     if (!comps.length) return;
     var adj = [];
     comps.forEach(function(comp) {
-      // Use ALL LINEAS for the amounts so the net is always correct
       LINEAS.forEach(function(ll){ if (ll.comprobante === comp) adj.push(ll); });
-      // Only absorb if the row is currently visible
       if (lineasByComp[comp]) absorbed.add(comp);
     });
     groups[l.comprobante] = adj;
@@ -1562,7 +1615,6 @@ function buildGroupMap(lineas) {
     var d = manualData[manualKey(l)] || {};
     var targetComp = (d.aplica_a || '').trim();
     if (!targetComp) return;
-    // Only group if the parent is also visible in this filtered view
     if (!lineasByComp[targetComp]) return;
     var pairKey = l.comprobante + '|' + targetComp;
     if (seenPairs.has(pairKey)) return;
