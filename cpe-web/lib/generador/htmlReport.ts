@@ -274,10 +274,33 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
 </head>
 <body>
 <div class="wrap">
-<button id="print-btn" class="no-print" onclick="window.print()">
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-  Imprimir / Guardar PDF
-</button>
+<div class="no-print" style="position:fixed;bottom:28px;right:28px;z-index:9999;display:flex;gap:10px;">
+  <button id="pdf-btn"
+    style="display:flex;align-items:center;gap:8px;background:#fff;color:#1F2566;border:1.5px solid #1F2566;border-radius:40px;padding:12px 22px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(31,37,102,.18);transition:opacity .15s"
+    onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'"
+    onclick="descargarPDF()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Descargar PDF
+  </button>
+  <button id="print-btn"
+    style="display:flex;align-items:center;gap:8px;background:#1F2566;color:#fff;border:none;border-radius:40px;padding:12px 22px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(31,37,102,.35);transition:opacity .15s"
+    onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'"
+    onclick="window.print()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Imprimir
+  </button>
+</div>
+<script>
+function descargarPDF() {
+  var m = window.location.pathname.match(/\/reportes\/([^/?#]+)/);
+  var id = m ? m[1] : null;
+  if (!id) { alert('No se pudo determinar el ID del reporte.'); return; }
+  var btn = document.getElementById('pdf-btn');
+  if (btn) { btn.textContent = 'Generando…'; btn.disabled = true; }
+  window.location.href = '/api/admin/reportes/' + id + '/pdf';
+  setTimeout(function(){ if (btn) { btn.innerHTML = 'Descargar PDF'; btn.disabled = false; } }, 8000);
+}
+</script>
 
 <!-- HEADER -->
 <header>
