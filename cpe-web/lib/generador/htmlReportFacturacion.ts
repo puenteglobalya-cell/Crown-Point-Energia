@@ -1410,6 +1410,16 @@ document.addEventListener('DOMContentLoaded', function() {
     var hdr = e.target.closest('tr.fiscal-mes-header');
     if (hdr) toggleMesSection(hdr.getAttribute('data-mes'));
   });
+
+  // Expand all months before printing so no line is hidden in the PDF
+  window.addEventListener('beforeprint', function() {
+    collapsedMeses.clear();
+    renderFiscal();
+  });
+  window.addEventListener('afterprint', function() {
+    MESES.forEach(function(m) { collapsedMeses.add(m); });
+    renderFiscal();
+  });
 });
 
 // ── Fiscal render ─────────────────────────────────────────────────────────────

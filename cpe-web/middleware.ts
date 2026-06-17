@@ -1,9 +1,20 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 type CookieEntry = { name: string; value: string; options?: CookieOptions }
 
 const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
+
+// Use service role to bypass RLS when checking user_roles in middleware
+async function getRoleRow(userId: string) {
+  const db = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  const { data } = await db.from('user_roles').select('role, activo').eq('user_id', userId).single()
+  return data as { role: string; activo: boolean } | null
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -41,7 +52,7 @@ export async function middleware(request: NextRequest) {
     // Check role: CMS_ADMIN_EMAILS are always allowed; others need an active role row
     const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
     if (!isAdminEmail) {
-      const { data: roleRow } = await supabase.from('user_roles').select('role, activo').eq('user_id', user.id).single()
+      const roleRow = await getRoleRow(user.id)
       if (!roleRow?.activo) {
         return NextResponse.redirect(new URL('/portal/login', request.url))
       }
@@ -52,7 +63,7 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/portal/login' && user) {
     const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
     if (isAdminEmail) return NextResponse.redirect(new URL('/portal', request.url))
-    const { data: roleRow } = await supabase.from('user_roles').select('activo').eq('user_id', user.id).single()
+    const roleRow = await getRoleRow(user.id)
     if (roleRow?.activo) return NextResponse.redirect(new URL('/portal', request.url))
   }
 
@@ -62,7 +73,7 @@ export async function middleware(request: NextRequest) {
     if (!isAdminEmailFlag) {
       let userRole: string | null = null
       if (user) {
-        const { data: roleRow } = await supabase.from('user_roles').select('role, activo').eq('user_id', user.id).single()
+        const roleRow = await getRoleRow(user.id)
         if (roleRow?.activo) userRole = roleRow.role
       }
 
@@ -86,7 +97,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
     // Also check user_roles
-    const { data: roleRow } = await supabase.from('user_roles').select('role, activo').eq('user_id', user.id).single()
+    const roleRow = await getRoleRow(user.id)
     if (roleRow?.role === 'admin' && roleRow?.activo) {
       return NextResponse.redirect(new URL('/admin', request.url))
     }

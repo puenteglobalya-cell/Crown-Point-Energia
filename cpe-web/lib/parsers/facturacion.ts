@@ -102,8 +102,18 @@ function parsearFecha(v: any): { iso: string; mes: string; label: string } | nul
   if (v instanceof Date) {
     d = v
   } else if (typeof v === 'string') {
-    const parsed = Date.parse(v)
-    if (!isNaN(parsed)) d = new Date(parsed)
+    const s = v.trim()
+    const parsed = Date.parse(s)
+    if (!isNaN(parsed)) {
+      d = new Date(parsed)
+    } else {
+      // Handle dd/mm/yyyy or dd-mm-yyyy (Argentine accounting export format)
+      const parts = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/)
+      if (parts) {
+        const yr = parts[3].length === 2 ? 2000 + parseInt(parts[3], 10) : parseInt(parts[3], 10)
+        d = new Date(Date.UTC(yr, parseInt(parts[2], 10) - 1, parseInt(parts[1], 10)))
+      }
+    }
   } else if (typeof v === 'number' && v > 40000 && v < 60000) {
     d = new Date(Math.round((v - 25569) * 86400 * 1000))
   }
