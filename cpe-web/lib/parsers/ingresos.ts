@@ -390,7 +390,38 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
       },
     },
 
-    mensual_historico: parsearSalesVolume(wb, currentPrices),
+    mensual_historico: (() => {
+      const historico = parsearSalesVolume(wb, currentPrices)
+      // Append the current month if not already present in historico
+      // (Excel historical section often omits the current period)
+      const MES_ABR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+      const [py, pm] = periodo.split('-')
+      const mesAbrev = `${MES_ABR[parseInt(pm) - 1]}-${py.slice(2)}`
+      if (historico.length > 0 && !historico.some(h => h.mes === mesAbrev)) {
+        const ET_MM_c   = (totalUs?.[2] ?? 0) / 1_000_000
+        const PCKK_MM_c = (totalUs?.[3] ?? 0) / 1_000_000
+        const CH_MM_c   = (totalUs?.[4] ?? 0) / 1_000_000
+        const RCLV_MM_c = (totalUs?.[5] ?? 0) / 1_000_000
+        const gas_MM_c  = (gasETIngreso + (totalUs?.[7] ?? 0)) / 1_000_000
+        const total_c   = ET_MM_c + PCKK_MM_c + CH_MM_c + RCLV_MM_c + gas_MM_c
+        if (total_c > 0) {
+          historico.push({
+            mes:         mesAbrev,
+            total_MM:    total_c,
+            ET_MM:       ET_MM_c,
+            PCKK_MM:     PCKK_MM_c,
+            CH_MM:       CH_MM_c,
+            RCLV_MM:     RCLV_MM_c,
+            gas_MM:      gas_MM_c,
+            precio_ET:   precioN?.[2] ?? 0,
+            precio_PCKK: precioN?.[3] ?? 0,
+            precio_CH:   precioN?.[4] ?? 0,
+            precio_RCLV: precioN?.[5] ?? 0,
+          })
+        }
+      }
+      return historico
+    })(),
   }
 }
 

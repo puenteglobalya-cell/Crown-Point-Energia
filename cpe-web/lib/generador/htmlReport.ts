@@ -254,7 +254,12 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
   body::before{display:none;}
   body{background:#fff;}
   .wrap{padding:0 16px;}
-  .card{box-shadow:none;border:1px solid #ddd;}
+  .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid;}
+  .card-full{box-shadow:none;border:1px solid #ddd;break-inside:avoid;}
+  .acard{break-inside:avoid;}
+  .areas{break-inside:avoid;}
+  .g2{break-inside:avoid;}
+  .sec{break-after:avoid;}
 }
 #print-btn{
   position:fixed;bottom:28px;right:28px;z-index:9999;
