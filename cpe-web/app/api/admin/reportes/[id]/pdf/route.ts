@@ -6,11 +6,19 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 const CHROMIUM_URL =
   'https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar'
 
-// Extra CSS injected before PDF render to fix page breaks in all existing reports
+// A4 at 96 DPI = 794px. With 10mm side margins = 38px each → content = 718px.
+// Viewport must match so charts render at the same width as the PDF content area.
+const PDF_VIEWPORT_WIDTH = 718
+
+// Extra CSS injected before PDF render to fix page breaks and overflow in all reports
 const PRINT_FIX_CSS = `
 <style>
   body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .no-print, #print-btn { display: none !important; }
+  /* Constrain layout to viewport so nothing overflows the PDF page */
+  .wrap, .page { max-width: 100% !important; box-sizing: border-box !important; }
+  canvas { max-width: 100% !important; }
+  /* Page breaks */
   .sec  { break-after: avoid !important; }
   .card { break-inside: avoid !important; }
   .card-full { break-inside: avoid !important; }
@@ -54,7 +62,7 @@ export async function GET(
 
     const browser = await puppeteer.launch({
       args: chromium.args,
-      defaultViewport: { width: 1200, height: 900 },
+      defaultViewport: { width: PDF_VIEWPORT_WIDTH, height: 1122 },
       executablePath: await chromium.executablePath(CHROMIUM_URL),
       headless: true,
     })
@@ -67,7 +75,7 @@ export async function GET(
 
     const pdf = await page.pdf({
       format: 'A4',
-      margin: { top: '14mm', bottom: '14mm', left: '12mm', right: '12mm' },
+      margin: { top: '12mm', bottom: '12mm', left: '10mm', right: '10mm' },
       printBackground: true,
       displayHeaderFooter: false,
     })
