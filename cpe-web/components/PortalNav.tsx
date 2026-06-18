@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import PushSubscriber from '@/components/PushSubscriber'
 
 const ROLE_LABELS: Record<string, string> = {
   viewer: 'Consulta',
@@ -56,6 +57,10 @@ export default function PortalNav({
 
         <div style={{ width: 1, height: 18, background: 'var(--rule)' }} />
 
+        <Link href="/portal/dashboard" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
+          Dashboard
+        </Link>
+
         <Link href="/portal" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
           Reportes
         </Link>
@@ -71,8 +76,10 @@ export default function PortalNav({
         )}
       </div>
 
-      {/* Right: user info + logout */}
+      {/* Right: push bell + user info + logout */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <PushSubscriber />
+
         <span style={{
           fontSize: 12,
           fontFamily: 'var(--font-mono)',

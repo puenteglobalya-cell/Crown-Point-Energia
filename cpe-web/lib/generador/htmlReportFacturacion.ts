@@ -175,6 +175,46 @@ function buildFiscalTableHTML(
   return html
 }
 
+// ─── Auto-group builder ───────────────────────────────────────────────────────
+
+function buildAutoGroups(lineas: DatosFacturacion['lineas']): Record<string, string[]> {
+  const isParent = (t: string) => t.startsWith('F') || t === 'CL'
+  const isChild  = (t: string) => (t.startsWith('C') && t !== 'CL') || t.startsWith('D')
+  const getSuc   = (comp: string) => comp.split(' ')[1]?.split('-')[0] ?? ''
+
+  type CI = { comp: string; tipo: string; mes: string; suc: string }
+  const seen = new Map<string, CI>()
+  for (const l of lineas) {
+    if (!seen.has(l.comprobante))
+      seen.set(l.comprobante, { comp: l.comprobante, tipo: l.tipo_comp, mes: l.mes, suc: getSuc(l.comprobante) })
+  }
+
+  const byMesSuc = new Map<string, CI[]>()
+  for (const ci of seen.values()) {
+    const key = `${ci.mes}|${ci.suc}`
+    if (!byMesSuc.has(key)) byMesSuc.set(key, [])
+    byMesSuc.get(key)!.push(ci)
+  }
+
+  const result: Record<string, string[]> = {}
+  for (const group of byMesSuc.values()) {
+    const parents  = group.filter(c => isParent(c.tipo))
+    const children = group.filter(c => isChild(c.tipo))
+    if (!parents.length || !children.length) continue
+    if (parents.length === 1) {
+      result[parents[0].comp] = children.map(c => c.comp)
+    } else {
+      // Multiple parents in same suc+month — match by second letter (FQ→CQ/DQ, FA→CA/DA)
+      for (const p of parents) {
+        const letter = p.tipo[1] ?? ''
+        const matched = children.filter(c => (c.tipo[1] ?? '') === letter)
+        if (matched.length) result[p.comp] = matched.map(c => c.comp)
+      }
+    }
+  }
+  return result
+}
+
 // ─── Main generator ───────────────────────────────────────────────────────────
 
 export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
@@ -216,7 +256,8 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
   const donutData   = donutLabels.map(c => Math.abs(resumen.por_categoria[c] ?? 0))
   const donutColors = donutLabels.map(c => CAT_COLORS[c] ?? '#A0AEC0')
 
-  const ncLineas = lineas.filter(l => l.importe_usd < 0)
+  const ncLineas   = lineas.filter(l => l.importe_usd < 0)
+  const autoGroups = buildAutoGroups(lineas)
 
   // All unique clients, bloques, articles and categories for datalist / selects
   const allClientes   = [...new Set(lineas.map(l => l.cliente).filter(Boolean))].sort()
@@ -292,6 +333,7 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"><\/script>
+<script>if(!window.Chart){document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\\/script>');}<\/script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -522,11 +564,11 @@ table.precios .ptot td{font-weight:700;border-top:1.5px solid #E8EAEF;background
   <div class="charts-grid">
     <div class="chart-card">
       <div class="section-title">Facturación mensual · us$</div>
-      <canvas id="barChart" height="190"></canvas>
+      <div style="position:relative;height:240px"><canvas id="barChart"></canvas></div>
     </div>
     <div class="chart-card">
       <div class="section-title">Mix por categoría</div>
-      <canvas id="donutChart" height="190"></canvas>
+      <div style="position:relative;height:240px"><canvas id="donutChart"></canvas></div>
     </div>
   </div>
 
@@ -736,6 +778,7 @@ var RESUMEN    = ${j(resumen)};
 var CAT_ORDER       = ${j(CAT_ORDER)};
 var CAT_COLORS      = ${j(CAT_COLORS)};
 var ALL_CATEGORIAS  = ${j(allCategorias)};
+var AUTO_GROUPS     = ${j(autoGroups)};
 
 var activeMeses    = new Set(MESES);
 var activeTipos    = new Set(ALL_CATEGORIAS);
@@ -1537,7 +1580,20 @@ function buildGroupMap(lineas) {
   });
   var groups = {}, absorbed = new Set();
 
-  // Pass 1: FQ/CL "ajustes" field — parent links to its children
+  // Pass 0: auto-detected groups (FQ/FA/CL → CQ/DQ/CA/DA by same month+suc)
+  Object.keys(AUTO_GROUPS).forEach(function(parentComp) {
+    // Only apply if parent is visible in current filtered view
+    if (!lineasByComp[parentComp]) return;
+    var childComps = AUTO_GROUPS[parentComp];
+    var adj = [];
+    childComps.forEach(function(comp) {
+      LINEAS.forEach(function(ll) { if (ll.comprobante === comp) adj.push(ll); });
+      if (lineasByComp[comp]) absorbed.add(comp);
+    });
+    if (adj.length) groups[parentComp] = adj;
+  });
+
+  // Pass 1: FQ/CL "ajustes" field — manual parent override (replaces auto group)
   lineas.forEach(function(l) {
     var d = manualData[manualKey(l)] || {};
     if (!d.ajustes) return;
@@ -1547,9 +1603,7 @@ function buildGroupMap(lineas) {
     if (!comps.length) return;
     var adj = [];
     comps.forEach(function(comp) {
-      // Use ALL LINEAS for the amounts so the net is always correct
       LINEAS.forEach(function(ll){ if (ll.comprobante === comp) adj.push(ll); });
-      // Only absorb if the row is currently visible
       if (lineasByComp[comp]) absorbed.add(comp);
     });
     groups[l.comprobante] = adj;
@@ -1561,7 +1615,6 @@ function buildGroupMap(lineas) {
     var d = manualData[manualKey(l)] || {};
     var targetComp = (d.aplica_a || '').trim();
     if (!targetComp) return;
-    // Only group if the parent is also visible in this filtered view
     if (!lineasByComp[targetComp]) return;
     var pairKey = l.comprobante + '|' + targetComp;
     if (seenPairs.has(pairKey)) return;
@@ -1657,17 +1710,18 @@ function rowHTML(l, idx, ncS, saved) {
 
 // ── Bar chart ─────────────────────────────────────────────────────────────────
 var barChart;
-(function(){
-  var ctx = document.getElementById('barChart').getContext('2d');
-  barChart = new Chart(ctx, {
+try {
+  var bCtx = document.getElementById('barChart').getContext('2d');
+  barChart = new Chart(bCtx, {
     type:'bar',
     data:{ labels: MESES.map(function(m){return MES_LABELS[m]||m;}), datasets: ${j(catDatasets)} },
     options:{
       responsive:true,
+      maintainAspectRatio:false,
       plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}},
       scales:{
-        x:{grid:{display:false},ticks:{font:{size:11}}},
-        y:{ticks:{font:{size:11},callback:function(v){
+        x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+        y:{stacked:true,ticks:{font:{size:11},callback:function(v){
           if(Math.abs(v)>=1000000) return (v/1000000).toFixed(1)+'M';
           if(Math.abs(v)>=1000) return (v/1000).toFixed(0)+'k';
           return v;
@@ -1675,7 +1729,7 @@ var barChart;
       },
     },
   });
-})();
+} catch(e) { console.error('[barChart init]', e); }
 
 function updateBarChartFromLineas(lineas) {
   if (!barChart) return;
@@ -1698,23 +1752,23 @@ function updateBarChartFromLineas(lineas) {
 
 // ── Donut chart ───────────────────────────────────────────────────────────────
 var donutChart;
-(function(){
-  var ctx = document.getElementById('donutChart').getContext('2d');
-  donutChart = new Chart(ctx,{
+try {
+  var dCtx = document.getElementById('donutChart').getContext('2d');
+  donutChart = new Chart(dCtx,{
     type:'doughnut',
     data:{ labels:${j(donutLabels)}, datasets:[{data:${j(donutData)},backgroundColor:${j(donutColors)},borderWidth:2,borderColor:'#fff'}] },
     options:{
-      responsive:true, cutout:'62%',
+      responsive:true, maintainAspectRatio:false, cutout:'62%',
       plugins:{
         legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},
-        tooltip:{callbacks:{label:function(ctx){
-          var total=ctx.dataset.data.reduce(function(a,b){return a+b;},0);
-          return ' '+(ctx.parsed/1e6).toFixed(3)+' MM ('+(total>0?(ctx.parsed/total*100).toFixed(1):0)+'%)';
+        tooltip:{callbacks:{label:function(c){
+          var total=c.dataset.data.reduce(function(a,b){return a+b;},0);
+          return ' '+(c.parsed/1e6).toFixed(3)+' MM ('+(total>0?(c.parsed/total*100).toFixed(1):0)+'%)';
         }}},
       },
     },
   });
-})();
+} catch(e) { console.error('[donutChart init]', e); }
 
 function updateDonutChartFromLineas(lineas) {
   if (!donutChart) return;
@@ -1915,7 +1969,7 @@ function exportarExcel() {
 function pedirPDF(btn){
   var id=window.location.pathname.split('/').filter(Boolean).pop();
   if(!id||id.length<10){alert('No se pudo determinar el ID del reporte.');return false;}
-  btn.textContent='Generando…';
+  btn.textContent='Generando… (~30s)';
   btn.style.opacity='0.6';
   btn.style.pointerEvents='none';
   window.open('/api/admin/reportes/'+id+'/pdf','_blank');
@@ -1923,10 +1977,165 @@ function pedirPDF(btn){
     btn.textContent='Descargar PDF';
     btn.style.opacity='1';
     btn.style.pointerEvents='';
-  },12000);
+  },62000);
   return false;
 }
 <\/script>
+
+<!-- ── TUTORIAL ─────────────────────────────────────────────────── -->
+<style>
+#cpt-ov{position:fixed;inset:0;z-index:99990;pointer-events:all;background:transparent}
+#cpt-spl{position:fixed;z-index:99991;border-radius:8px;pointer-events:none;
+  box-shadow:0 0 0 9999px rgba(15,17,40,.68);
+  transition:top .35s,left .35s,width .35s,height .35s}
+#cpt-pop{position:fixed;z-index:99999;background:#fff;border-radius:14px;
+  padding:22px 24px;
+  box-shadow:0 12px 48px rgba(15,17,40,.20),0 2px 8px rgba(15,17,40,.08);
+  font-family:'DM Sans',sans-serif;font-size:14px;color:#14172E;
+  width:min(400px,90vw)}
+.cpt-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.cpt-counter{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:#8e91b0;background:#f4f6fb;padding:3px 9px;border-radius:20px}
+.cpt-skip{font-size:12px;background:none;border:none;color:#8e91b0;cursor:pointer;
+  text-decoration:underline;padding:2px 0;font-family:inherit}
+.cpt-skip:hover{color:#1F2566}
+.cpt-title{display:block;font-size:16px;font-weight:700;margin-bottom:8px;color:#14172E}
+.cpt-desc{font-size:13px;color:#5a5d78;line-height:1.55;margin:0 0 20px}
+.cpt-nav{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cpt-btn{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;
+  cursor:pointer;font-family:inherit;border:none;transition:background .15s}
+.cpt-prev{background:#f0f2f9;color:#1F2566}
+.cpt-prev:hover{background:#e2e6f5}
+.cpt-next{background:#1F2566;color:#fff;margin-left:auto}
+.cpt-next:hover{background:#2a3180}
+.cpt-dots{display:flex;gap:5px;align-items:center}
+.cpt-dot{width:6px;height:6px;border-radius:50%;background:#dcdae6;transition:background .2s}
+.cpt-dot.active{background:#1F2566}
+</style>
+
+<div id="cpt-ov" style="display:none"></div>
+<div id="cpt-spl" style="display:none"></div>
+<div id="cpt-pop" style="display:none"></div>
+
+<script>
+(function(){
+  var KEY = 'cpe_tour_fac_v1';
+  if (localStorage.getItem(KEY)) return;
+
+  var STEPS = [
+    {sel: null,
+     title: 'Reporte de Facturación',
+     desc:  'Te guiamos por las secciones principales en 5 pasos. Podés saltar el tutorial en cualquier momento usando el botón "Saltar".'},
+    {sel: '.filter-bar',
+     title: 'Filtros de período',
+     desc:  'Seleccioná el bloque y el mes. Todos los KPIs, gráficos y tablas se actualizan automáticamente al aplicar el filtro.'},
+    {sel: '#pivot-table',
+     title: 'Resumen mensual',
+     desc:  'Facturación agrupada por mes y categoría (petróleo, gas, regalías…). Los subtotales responden al filtro de bloque seleccionado.'},
+    {sel: '#manual-section',
+     title: 'Datos manuales',
+     desc:  'Cargá aquí embarques, notas de crédito y otros ajustes que no figuran en el Excel. Presioná "Guardar" para sincronizarlos con el servidor.'},
+    {sel: '.fiscal-filter-bar',
+     title: 'Detalle por comprobante',
+     desc:  'Buscá un comprobante por texto libre o filtrá por bloque y artículo. La tabla de abajo se actualiza en tiempo real.'},
+    {sel: '.export-bar',
+     title: 'Exportar',
+     desc:  'Descargá el Excel completo (incluye datos manuales en hoja separada) o generá un PDF del reporte directamente desde el servidor.'},
+  ];
+
+  var cur = 0;
+  var ov  = document.getElementById('cpt-ov');
+  var spl = document.getElementById('cpt-spl');
+  var pop = document.getElementById('cpt-pop');
+
+  function finish() {
+    localStorage.setItem(KEY, '1');
+    ov.style.display = 'none';
+    spl.style.display = 'none';
+    pop.style.display = 'none';
+  }
+
+  function dots(i) {
+    return STEPS.map(function(_, idx) {
+      return '<span class="cpt-dot' + (idx === i ? ' active' : '') + '"></span>';
+    }).join('');
+  }
+
+  function render(i) {
+    cur = i;
+    var s    = STEPS[i];
+    var last = i === STEPS.length - 1;
+
+    pop.innerHTML =
+      '<div class="cpt-hdr">' +
+        '<span class="cpt-counter">' + (i + 1) + ' de ' + STEPS.length + '</span>' +
+        '<button class="cpt-skip" id="cptSkip">Saltar tutorial</button>' +
+      '</div>' +
+      '<strong class="cpt-title">' + s.title + '</strong>' +
+      '<p class="cpt-desc">' + s.desc + '</p>' +
+      '<div class="cpt-nav">' +
+        '<div class="cpt-dots">' + dots(i) + '</div>' +
+        (i > 0 ? '<button class="cpt-btn cpt-prev" id="cptPrev">← Anterior</button>' : '<span></span>') +
+        '<button class="cpt-btn cpt-next" id="cptNext">' + (last ? 'Listo ✓' : 'Siguiente →') + '</button>' +
+      '</div>';
+
+    document.getElementById('cptSkip').addEventListener('click', finish);
+    document.getElementById('cptNext').addEventListener('click', function() { last ? finish() : render(i + 1); });
+    if (i > 0) document.getElementById('cptPrev').addEventListener('click', function() { render(i - 1); });
+
+    place(s, i);
+  }
+
+  function place(s, i) {
+    if (!s.sel) {
+      spl.style.display = 'none';
+      pop.style.cssText = 'display:block;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(420px,90vw)';
+      return;
+    }
+
+    var el = document.querySelector(s.sel);
+    if (!el || el.offsetParent === null) {
+      render(i < STEPS.length - 1 ? i + 1 : i - 1);
+      return;
+    }
+
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    setTimeout(function() {
+      var r = el.getBoundingClientRect();
+      var P = 10;
+
+      spl.style.display = 'block';
+      spl.style.top    = (r.top  - P) + 'px';
+      spl.style.left   = (r.left - P) + 'px';
+      spl.style.width  = (r.width  + P * 2) + 'px';
+      spl.style.height = (r.height + P * 2) + 'px';
+
+      var winW = window.innerWidth, winH = window.innerHeight;
+      var popW = Math.min(400, winW * 0.9);
+      var popH = 240;
+      var pl   = Math.max(12, Math.min(r.left, winW - popW - 12));
+      var pt;
+
+      if (winH - r.bottom - P > popH + 16) {
+        pt = r.bottom + P + 12;
+      } else if (r.top - P > popH + 16) {
+        pt = r.top - P - popH - 12;
+      } else {
+        pt = Math.max(12, winH / 2 - popH / 2);
+        pl = Math.max(12, winW / 2 - popW / 2);
+      }
+
+      pop.style.cssText = 'display:block;position:fixed;top:' + pt + 'px;left:' + pl + 'px;transform:none;width:' + popW + 'px';
+    }, 500);
+  }
+
+  ov.style.display  = 'block';
+  pop.style.display = 'block';
+  render(0);
+})();
+</script>
+
 </body>
 </html>`
 }

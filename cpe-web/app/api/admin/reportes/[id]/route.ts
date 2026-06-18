@@ -5,6 +5,8 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity, getPermissionsForRole } from '@/lib/roles'
 import { isAdminEmail } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { enviarNotificacionReporte } from '@/lib/email'
+import { enviarPushNotificacion } from '@/lib/push'
 
 async function getUserWithRole() {
   const cookieStore = await cookies()
@@ -134,6 +136,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
   const patch = { estado: body.estado as Estado, updated_at: new Date().toISOString() }
 
+  // Fetch current estado to detect transition → publicado
+  const { data: current } = await db
+    .from('reportes')
+    .select('estado, titulo, periodo, type_id')
+    .eq('id', params.id)
+    .single()
+
   const { error } = await db.from('reportes').update(patch).eq('id', params.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -145,6 +154,41 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     resourceId: params.id,
     metadata: body,
   })
+
+  // Notify on first publish: email to IR subscribers + push to portal users
+  if (patch.estado === 'publicado' && current?.estado !== 'publicado') {
+    const TIPO_LABELS: Record<string, string> = {
+      ingresos:    'Ingresos Estimados',
+      accionista:  'Informe de Seguimiento',
+      produccion:  'Reporte de Producción',
+      financiero:  'Reporte Financiero',
+      facturacion: 'Facturación',
+    }
+    const tipo = TIPO_LABELS[current?.type_id ?? ''] ?? 'Reporte'
+
+    // Email → IR subscribers list
+    const { data: subs } = await db
+      .from('ir_subscribers')
+      .select('nombre, email')
+      .eq('activo', true)
+
+    if (subs && subs.length > 0) {
+      enviarNotificacionReporte({
+        titulo:      current?.titulo ?? '',
+        periodo:     current?.periodo ?? '',
+        type_id:     current?.type_id ?? null,
+        reporteId:   params.id,
+        subscribers: subs,
+      }).catch(e => console.error('[email]', e))
+    }
+
+    // Push → portal users with active push subscriptions
+    enviarPushNotificacion({
+      title: `Nuevo ${tipo}`,
+      body:  `${current?.titulo ?? tipo} · ${current?.periodo ?? ''} ya está disponible.`,
+      url:   '/portal',
+    }).catch(e => console.error('[push]', e))
+  }
 
   return NextResponse.json({ ok: true })
 }
