@@ -1067,7 +1067,7 @@ function loadManualFromStorage() {
 
   // Pre-fill all form inputs — isolated so a DOM error never blocks manualReady
   try {
-    function fillTable(sel) {
+    var fillTable = function(sel) {
       document.querySelectorAll(sel + ' .m-input').forEach(function(inp) {
         var key = inp.getAttribute('data-mkey');
         var field = inp.getAttribute('data-field');
@@ -1078,7 +1078,7 @@ function loadManualFromStorage() {
         var field = inp.getAttribute('data-field');
         if (key && field && manualData[key] && manualData[key][field]) inp.checked = true;
       });
-    }
+    };
     fillTable('#manual-pet-table');
     fillTable('#manual-nc-table');
     fillTable('#manual-otros-table');
@@ -1187,7 +1187,7 @@ function renderPrecios(lineas) {
         var pr = g.vol > 0 ? fD(g.imp/g.vol,2) : '—';
         parts.push(art+' \xd7'+g.n+': vol='+g.vol.toFixed(0)+' \u2192 '+pr+' '+unit);
       });
-      return parts.join('\n');
+      return parts.join('\\n');
     }
 
     var html = '<div style="overflow-x:auto">';
