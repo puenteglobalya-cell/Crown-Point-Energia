@@ -57,6 +57,8 @@ export default function ReportesAdminPage() {
   const [filterType, setFilterType]   = useState<string>('all')
   const [filterEstado, setFilterEstado] = useState<string>('all')
   const [msg, setMsg]                 = useState('')
+  const [msgType, setMsgType]         = useState<'ok' | 'err' | 'info'>('info')
+  const [regenIds, setRegenIds]       = useState<Set<string>>(new Set())
   const [copiedId, setCopiedId]       = useState('')
 
   // Permissions matrix
@@ -101,14 +103,18 @@ export default function ReportesAdminPage() {
   }
 
   async function handleRegenerar(item: ReporteItem) {
-    if (!confirm(`¿Regenerar el HTML de "${item.titulo}"? Se perderán los datos macro (Brent/HH) del reporte original.`)) return
-    flash('Regenerando…')
-    const res = await fetch(`/api/admin/reportes/${item.id}/regenerar`, { method: 'POST' })
-    if (res.ok) {
-      flash('HTML regenerado')
-    } else {
-      const body = await res.json().catch(() => ({}))
-      flash(body.error ?? 'Error al regenerar')
+    setRegenIds(prev => new Set(prev).add(item.id))
+    flash('Regenerando…', 'info')
+    try {
+      const res = await fetch(`/api/admin/reportes/${item.id}/regenerar`, { method: 'POST' })
+      if (res.ok) {
+        flash('✓ HTML regenerado correctamente', 'ok')
+      } else {
+        const body = await res.json().catch(() => ({}))
+        flash('✗ ' + (body.error ?? 'Error al regenerar'), 'err')
+      }
+    } finally {
+      setRegenIds(prev => { const s = new Set(prev); s.delete(item.id); return s })
     }
   }
 
@@ -136,7 +142,10 @@ export default function ReportesAdminPage() {
     setSavingKey('')
   }
 
-  function flash(m: string) { setMsg(m); setTimeout(() => setMsg(''), 2500) }
+  function flash(m: string, type: 'ok' | 'err' | 'info' = 'info') {
+    setMsg(m); setMsgType(type)
+    setTimeout(() => setMsg(''), type === 'ok' || type === 'err' ? 5000 : 2500)
+  }
 
   // Filtered list
   const filtered = items.filter(it => {
@@ -170,7 +179,15 @@ export default function ReportesAdminPage() {
         </div>
 
         {msg && (
-          <div style={{ fontSize: 12, color: 'var(--fg-soft)', background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', padding: '8px 14px', marginBottom: 16, display: 'inline-block' }}>
+          <div style={{
+            fontSize: 13, fontWeight: 600,
+            color: msgType === 'ok' ? '#276749' : msgType === 'err' ? '#9B2C2C' : 'var(--fg-soft)',
+            background: msgType === 'ok' ? '#F0FFF4' : msgType === 'err' ? '#FFF5F5' : 'var(--surface)',
+            border: `1px solid ${msgType === 'ok' ? '#9AE6B4' : msgType === 'err' ? '#FEB2B2' : 'var(--rule)'}`,
+            borderRadius: 'var(--r-sm)', padding: '10px 18px', marginBottom: 16,
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            boxShadow: '0 2px 8px rgba(0,0,0,.07)',
+          }}>
             {msg}
           </div>
         )}
@@ -289,10 +306,19 @@ export default function ReportesAdminPage() {
                     </a>
                     <button
                       onClick={() => handleRegenerar(item)}
-                      style={{ background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', padding: '5px 10px', cursor: 'pointer', fontSize: 11, color: 'var(--fg-soft)', display: 'flex', alignItems: 'center', gap: 4 }}
+                      disabled={regenIds.has(item.id)}
+                      style={{
+                        background: 'none', border: '1px solid var(--rule)',
+                        borderRadius: 'var(--r-sm)', padding: '5px 10px',
+                        cursor: regenIds.has(item.id) ? 'not-allowed' : 'pointer',
+                        fontSize: 11, color: 'var(--fg-soft)',
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        opacity: regenIds.has(item.id) ? 0.5 : 1,
+                        minWidth: 80,
+                      }}
                       title="Regenerar HTML desde datos guardados"
                     >
-                      ↺ Regen.
+                      {regenIds.has(item.id) ? '⟳ Generando…' : '↺ Regen.'}
                     </button>
                     <button
                       onClick={() => handleDelete(item)}
