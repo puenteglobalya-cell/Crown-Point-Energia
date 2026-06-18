@@ -86,8 +86,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (typeof body.manual_data !== 'object' || body.manual_data === null) {
       return NextResponse.json({ error: 'manual_data must be an object' }, { status: 400 })
     }
+    const incoming = body.manual_data as Record<string, unknown>
+    // Reject saves where every entry is empty — guards against race-condition wipes
+    const hasRealData = Object.values(incoming).some(
+      v => v && typeof v === 'object' && Object.values(v as object).some(f => f !== '' && f != null)
+    )
+    if (!hasRealData && Object.keys(incoming).length > 0) {
+      return NextResponse.json({ error: 'manual_data tiene solo valores vacíos — guardado ignorado' }, { status: 400 })
+    }
+    // Fetch current data and MERGE — never replace with empty
+    const { data: current } = await db.from('reportes').select('manual_data').eq('id', params.id).single()
+    const merged = { ...(current?.manual_data ?? {}), ...incoming }
     const { error } = await db.from('reportes')
-      .update({ manual_data: body.manual_data, updated_at: new Date().toISOString() })
+      .update({ manual_data: merged, updated_at: new Date().toISOString() })
       .eq('id', params.id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ ok: true })
