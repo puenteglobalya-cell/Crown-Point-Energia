@@ -788,7 +788,7 @@ var AUTO_GROUPS     = ${j(autoGroups)};
 
 var activeMeses    = new Set(MESES);
 var activeTipos    = new Set(ALL_CATEGORIAS);
-var collapsedMeses = new Set(MESES);  // start all collapsed
+var collapsedMeses = new Set();  // start all expanded
 var showManualCols = true;
 var sortState      = { col: null, dir: 1 };
 var manualData     = {};
@@ -1480,7 +1480,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderFiscal();
   });
   window.addEventListener('afterprint', function() {
-    MESES.forEach(function(m) { collapsedMeses.add(m); });
+    collapsedMeses.clear();
     renderFiscal();
   });
 });
