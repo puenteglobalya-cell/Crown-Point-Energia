@@ -289,10 +289,10 @@ export default function ReportesAdminPage() {
                     </a>
                     <button
                       onClick={() => handleRegenerar(item)}
-                      style={{ background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', padding: '5px 9px', cursor: 'pointer', fontSize: 12, color: 'var(--fg-muted)' }}
+                      style={{ background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', padding: '5px 10px', cursor: 'pointer', fontSize: 11, color: 'var(--fg-soft)', display: 'flex', alignItems: 'center', gap: 4 }}
                       title="Regenerar HTML desde datos guardados"
                     >
-                      ↺
+                      ↺ Regen.
                     </button>
                     <button
                       onClick={() => handleDelete(item)}

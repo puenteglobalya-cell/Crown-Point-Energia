@@ -29,20 +29,53 @@ export async function scrapearSeOfertaExport(
       { waitUntil: 'networkidle2', timeout: 30_000 },
     )
 
-    // Fill date range
+    // Fill date range — try multiple selector patterns
     await page.evaluate(
       (desde, hasta) => {
-        const d = document.querySelector<HTMLInputElement>('#txtFechaDesde')
-        const h = document.querySelector<HTMLInputElement>('#txtFechaHasta')
-        if (d) { d.value = desde; d.dispatchEvent(new Event('change')) }
-        if (h) { h.value = hasta; h.dispatchEvent(new Event('change')) }
+        function setInput(selectors: string[], value: string) {
+          for (const sel of selectors) {
+            const el = document.querySelector<HTMLInputElement>(sel)
+            if (el) {
+              el.value = value
+              el.dispatchEvent(new Event('input', { bubbles: true }))
+              el.dispatchEvent(new Event('change', { bubbles: true }))
+              return true
+            }
+          }
+          return false
+        }
+        setInput(['#txtFechaDesde', '[name*="desde" i]', '[id*="desde" i]', '[placeholder*="desde" i]', 'input[type="text"]:first-of-type'], desde)
+        setInput(['#txtFechaHasta', '[name*="hasta" i]', '[id*="hasta" i]', '[placeholder*="hasta" i]', 'input[type="text"]:last-of-type'], hasta)
       },
       fechaDesde,
       fechaHasta,
     )
 
-    await page.click('#btnBuscar')
-    await page.waitForNetworkIdle({ timeout: 15_000 }).catch(() => {})
+    // Find and click the search button — try multiple selectors
+    const clicked = await page.evaluate(() => {
+      const candidates = [
+        document.querySelector<HTMLElement>('#btnBuscar'),
+        document.querySelector<HTMLElement>('input[type="submit"]'),
+        document.querySelector<HTMLElement>('button[type="submit"]'),
+        document.querySelector<HTMLElement>('input[value*="Buscar"]'),
+        document.querySelector<HTMLElement>('button'),
+        [...document.querySelectorAll<HTMLElement>('input,button')]
+          .find(el => /buscar|search|consultar/i.test(el.textContent ?? '') ||
+                      /buscar|search|consultar/i.test((el as HTMLInputElement).value ?? '')),
+      ].filter(Boolean)
+      if (candidates[0]) { candidates[0].click(); return true }
+      // Last resort: submit the first form
+      const form = document.querySelector('form')
+      if (form) { form.submit(); return true }
+      return false
+    })
+
+    if (!clicked) {
+      const bodySnippet = await page.evaluate(() => document.body.innerHTML.slice(0, 2000))
+      throw new Error(`No se encontró botón de búsqueda en la página SE. Snippet: ${bodySnippet}`)
+    }
+
+    await page.waitForNetworkIdle({ timeout: 20_000 }).catch(() => {})
 
     // Extract table — try common selectors
     const result = await page.evaluate(() => {
