@@ -1049,73 +1049,48 @@ function autoSaveManual() {
 }
 
 function loadManualFromStorage() {
+  // Isolate localStorage read — throws in sandboxed iframes / Safari ITP / private mode
+  var fromLocal = {};
   try {
     var raw = localStorage.getItem(MANUAL_KEY);
-    var fromLocal = (raw ? JSON.parse(raw) : null) || {};
-    // Server-saved data (injected at serve time) takes precedence over localStorage
-    var fromServer = (typeof SAVED_MANUAL === 'object' && SAVED_MANUAL && Object.keys(SAVED_MANUAL).length > 0)
-      ? SAVED_MANUAL : null;
-    manualData = fromServer || fromLocal;
-    if (typeof manualData !== 'object' || !manualData) return;
-    // Keep localStorage in sync with server data
-    if (fromServer) { try { localStorage.setItem(MANUAL_KEY, JSON.stringify(manualData)); } catch(e) {} }
-    // Pre-fill petroleum inputs
-    document.querySelectorAll('#manual-pet-table .m-input').forEach(function(inp) {
-      var key   = inp.getAttribute('data-mkey');
-      var field = inp.getAttribute('data-field');
-      if (key && field && manualData[key] && manualData[key][field]) {
-        inp.value = manualData[key][field];
-      }
-    });
-    // Pre-fill petroleum checkboxes
-    document.querySelectorAll('#manual-pet-table .m-check').forEach(function(inp) {
-      var key   = inp.getAttribute('data-mkey');
-      var field = inp.getAttribute('data-field');
-      if (key && field && manualData[key] && manualData[key][field]) {
-        inp.checked = true;
-      }
-    });
-    // Pre-fill NC inputs
-    document.querySelectorAll('#manual-nc-table .m-input').forEach(function(inp) {
-      var key   = inp.getAttribute('data-mkey');
-      var field = inp.getAttribute('data-field');
-      if (key && field && manualData[key] && manualData[key][field]) {
-        inp.value = manualData[key][field];
-      }
-    });
-    // Pre-fill NC checkboxes
-    document.querySelectorAll('#manual-nc-table .m-check').forEach(function(inp) {
-      var key   = inp.getAttribute('data-mkey');
-      var field = inp.getAttribute('data-field');
-      if (key && field && manualData[key] && manualData[key][field]) {
-        inp.checked = true;
-      }
-    });
-    // Pre-fill Otros inputs
-    document.querySelectorAll('#manual-otros-table .m-input').forEach(function(inp) {
-      var key   = inp.getAttribute('data-mkey');
-      var field = inp.getAttribute('data-field');
-      if (key && field && manualData[key] && manualData[key][field]) {
-        inp.value = manualData[key][field];
-      }
-    });
-    // Pre-fill Otros checkboxes
-    document.querySelectorAll('#manual-otros-table .m-check').forEach(function(inp) {
-      var key   = inp.getAttribute('data-mkey');
-      var field = inp.getAttribute('data-field');
-      if (key && field && manualData[key] && manualData[key][field]) {
-        inp.checked = true;
-      }
-    });
-    // Pre-fill obs inputs in fiscal table
+    fromLocal = (raw ? JSON.parse(raw) : null) || {};
+  } catch(e) {}
+
+  // Server-injected data (SAVED_MANUAL) always takes priority
+  var fromServer = (typeof SAVED_MANUAL === 'object' && SAVED_MANUAL && Object.keys(SAVED_MANUAL).length > 0)
+    ? SAVED_MANUAL : null;
+  manualData = fromServer || fromLocal;
+  if (typeof manualData !== 'object' || !manualData) { manualReady = true; return; }
+
+  // Keep localStorage in sync with server data
+  if (fromServer) { try { localStorage.setItem(MANUAL_KEY, JSON.stringify(manualData)); } catch(e) {} }
+
+  // Pre-fill all form inputs — isolated so a DOM error never blocks manualReady
+  try {
+    function fillTable(sel) {
+      document.querySelectorAll(sel + ' .m-input').forEach(function(inp) {
+        var key = inp.getAttribute('data-mkey');
+        var field = inp.getAttribute('data-field');
+        if (key && field && manualData[key] && manualData[key][field]) inp.value = manualData[key][field];
+      });
+      document.querySelectorAll(sel + ' .m-check').forEach(function(inp) {
+        var key = inp.getAttribute('data-mkey');
+        var field = inp.getAttribute('data-field');
+        if (key && field && manualData[key] && manualData[key][field]) inp.checked = true;
+      });
+    }
+    fillTable('#manual-pet-table');
+    fillTable('#manual-nc-table');
+    fillTable('#manual-otros-table');
+    // Pre-fill obs inputs in fiscal table (rendered at runtime by renderFiscal)
     document.querySelectorAll('#fiscal-table .obs-input').forEach(function(inp) {
       var key = inp.getAttribute('data-mkey');
       if (key && manualData[key] && manualData[key].obs) inp.value = manualData[key].obs;
     });
     updateManualCompletedState();
     updateNetoDisplay();
-    manualReady = true;
   } catch(e) {}
+  manualReady = true;
 }
 
 function updateNetoDisplay() {
