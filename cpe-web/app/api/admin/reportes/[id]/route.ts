@@ -65,7 +65,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     .replace('var SAVED_MANUAL = {};', `var SAVED_MANUAL = ${savedManualJson};`)
 
   return new NextResponse(html, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8' }
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
   })
 }
 

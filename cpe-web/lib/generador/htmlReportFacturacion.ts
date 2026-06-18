@@ -227,6 +227,7 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
   const fechaGen = new Date().toLocaleDateString('es-AR', {
     day: '2-digit', month: 'long', year: 'numeric',
   })
+  const generadoEn = new Date().toISOString()
 
   const filterChips = meses
     .map(m => `<button class="chip active" data-mes="${m}" onclick="toggleMes('${enc(m)}',this)">${enc(mes_labels[m] ?? m)}</button>`)
@@ -779,6 +780,7 @@ table.precios .ptot td{font-weight:700;border-top:1.5px solid #E8EAEF;background
 </div>
 
 <script>
+/* GENERADO: ${generadoEn} — v3 */
 var MESES      = ${j(meses)};
 var MES_LABELS = ${j(mes_labels)};
 var PIVOT_DATA = ${j(pivot)};
