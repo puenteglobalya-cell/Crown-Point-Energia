@@ -31,9 +31,8 @@ export default async function ComercialPage() {
 
     db.from('se_referencias')
       .select('id, fecha_desde, fecha_hasta, scraped_at, headers, filas, brent_ref')
-      .order('scraped_at', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .order('fecha_desde', { ascending: false })
+      .limit(24),
 
     requireAdminUser(),
   ])
@@ -41,6 +40,7 @@ export default async function ComercialPage() {
   type ReporteRow = { id: string; tipo_id: string | null; titulo: string; periodo: string; created_at: string }
   const facturacion = (facturacionRes.data ?? []) as ReporteRow[]
   const ingresos    = (ingresosRes.data    ?? []) as ReporteRow[]
+  const seList      = (seRes.data ?? []) as NonNullable<typeof seRes.data>
 
   return (
     <div style={{ maxWidth: 1080, margin: '0 auto', padding: '24px 20px' }}>
@@ -100,7 +100,7 @@ export default async function ComercialPage() {
         <p style={{ fontSize: 12, color: '#8e91b0', margin: '0 0 16px' }}>
           Secretaría de Energía · oferta de comercio exterior de líquidos
         </p>
-        <ComercialClient initialSe={seRes.data} isAdmin={!!adminUser} />
+        <ComercialClient seList={seList} isAdmin={!!adminUser} />
       </section>
 
     </div>
