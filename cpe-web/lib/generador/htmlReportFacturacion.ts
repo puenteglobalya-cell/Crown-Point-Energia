@@ -593,11 +593,11 @@ table.precios .ptot td{font-weight:700;border-top:1.5px solid #E8EAEF;background
       <div style="margin-bottom:18px">
         <div class="ms-hdr" onclick="toggleManualSubsection('pet')">
           <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em">
-            <span class="ms-caret" id="ms-icon-pet">▶</span>Embarques (Petróleo)<span class="m-done-badge" id="pet-done-badge"></span>
+            <span class="ms-caret" id="ms-icon-pet">▼</span>Embarques (Petróleo)<span class="m-done-badge" id="pet-done-badge"></span>
           </div>
           <button class="m-hide-btn" id="pet-hide-btn" data-hiding="1" onclick="event.stopPropagation();toggleHideDone('manual-pet-table','pet-hide-btn')">Mostrar todos</button>
         </div>
-        <div id="ms-body-pet" style="display:none">
+        <div id="ms-body-pet">
         <div class="pet-filter-bar">
           <input type="text" id="pet-filter" placeholder="Filtrar por cliente…" oninput="filterPetTable()">
         </div>
@@ -624,11 +624,11 @@ table.precios .ptot td{font-weight:700;border-top:1.5px solid #E8EAEF;background
       <div style="margin-bottom:18px">
         <div class="ms-hdr" onclick="toggleManualSubsection('nc')">
           <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em">
-            <span class="ms-caret" id="ms-icon-nc">▶</span>Notas de Crédito / Débito<span class="m-done-badge" id="nc-done-badge"></span>
+            <span class="ms-caret" id="ms-icon-nc">▼</span>Notas de Crédito / Débito<span class="m-done-badge" id="nc-done-badge"></span>
           </div>
           <button class="m-hide-btn" id="nc-hide-btn" data-hiding="1" onclick="event.stopPropagation();toggleHideDone('manual-nc-table','nc-hide-btn')">Mostrar todos</button>
         </div>
-        <div id="ms-body-nc" style="display:none">
+        <div id="ms-body-nc">
         <div class="pet-filter-bar" style="margin-top:10px">
           <input type="text" id="nc-filter" placeholder="Filtrar por comprobante, cliente…" oninput="filterNcTable()">
         </div>
@@ -652,11 +652,11 @@ table.precios .ptot td{font-weight:700;border-top:1.5px solid #E8EAEF;background
       <div style="margin-bottom:18px">
         <div class="ms-hdr" onclick="toggleManualSubsection('otros')">
           <div style="font-size:11px;font-weight:600;color:#7A8099;text-transform:uppercase;letter-spacing:.04em">
-            <span class="ms-caret" id="ms-icon-otros">▶</span>Otros (DA / DQ)<span class="m-done-badge" id="otros-done-badge"></span>
+            <span class="ms-caret" id="ms-icon-otros">▼</span>Otros (DA / DQ)<span class="m-done-badge" id="otros-done-badge"></span>
           </div>
           <button class="m-hide-btn" id="otros-hide-btn" data-hiding="1" onclick="event.stopPropagation();toggleHideDone('manual-otros-table','otros-hide-btn')">Mostrar todos</button>
         </div>
-        <div id="ms-body-otros" style="display:none">
+        <div id="ms-body-otros">
         <div class="pet-filter-bar" style="margin-top:10px">
           <input type="text" id="otros-filter" placeholder="Filtrar por comprobante, cliente…" oninput="filterOtrosTable()">
         </div>
@@ -1756,7 +1756,11 @@ try {
       },
     },
   });
-} catch(e) { console.error('[barChart init]', e); }
+} catch(e) {
+  console.error('[barChart init]', e);
+  var bWrap = document.getElementById('barChart');
+  if (bWrap) { bWrap.style.display='none'; var bErr=document.createElement('div'); bErr.style.cssText='padding:24px;text-align:center;color:#A0AEC0;font-size:12px'; bErr.textContent='Gráfico no disponible (Chart.js no cargó)'; bWrap.parentNode.appendChild(bErr); }
+}
 
 function updateBarChartFromLineas(lineas) {
   if (!barChart) return;
@@ -1795,7 +1799,11 @@ try {
       },
     },
   });
-} catch(e) { console.error('[donutChart init]', e); }
+} catch(e) {
+  console.error('[donutChart init]', e);
+  var dWrap = document.getElementById('donutChart');
+  if (dWrap) { dWrap.style.display='none'; var dErr=document.createElement('div'); dErr.style.cssText='padding:24px;text-align:center;color:#A0AEC0;font-size:12px'; dErr.textContent='Gráfico no disponible (Chart.js no cargó)'; dWrap.parentNode.appendChild(dErr); }
+}
 
 function updateDonutChartFromLineas(lineas) {
   if (!donutChart) return;
