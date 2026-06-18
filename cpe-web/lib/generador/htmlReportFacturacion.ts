@@ -1723,88 +1723,97 @@ function rowHTML(l, idx, ncS, saved) {
     '</tr>';
 }
 
-// ── Bar chart ─────────────────────────────────────────────────────────────────
+// ── Charts (deferred so layout is computed before Chart.js reads canvas size) ──
 var barChart;
-try {
-  var bCtx = document.getElementById('barChart').getContext('2d');
-  barChart = new Chart(bCtx, {
-    type:'bar',
-    data:{ labels: MESES.map(function(m){return MES_LABELS[m]||m;}), datasets: ${j(catDatasets)} },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}},
-      scales:{
-        x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
-        y:{stacked:true,ticks:{font:{size:11},callback:function(v){
-          if(Math.abs(v)>=1000000) return (v/1000000).toFixed(1)+'M';
-          if(Math.abs(v)>=1000) return (v/1000).toFixed(0)+'k';
-          return v;
-        }},grid:{color:'rgba(0,0,0,.06)'}},
+var donutChart;
+requestAnimationFrame(function() {
+  // Bar chart
+  try {
+    var bCtx = document.getElementById('barChart').getContext('2d');
+    barChart = new Chart(bCtx, {
+      type:'bar',
+      data:{ labels: MESES.map(function(m){return MES_LABELS[m]||m;}), datasets: ${j(catDatasets)} },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}},
+        scales:{
+          x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+          y:{stacked:true,ticks:{font:{size:11},callback:function(v){
+            if(Math.abs(v)>=1000000) return (v/1000000).toFixed(1)+'M';
+            if(Math.abs(v)>=1000) return (v/1000).toFixed(0)+'k';
+            return v;
+          }},grid:{color:'rgba(0,0,0,.06)'}},
+        },
       },
-    },
-  });
-} catch(e) {
-  console.error('[barChart init]', e);
-  var bWrap = document.getElementById('barChart');
-  if (bWrap) { bWrap.style.display='none'; var bErr=document.createElement('div'); bErr.style.cssText='padding:24px;text-align:center;color:#A0AEC0;font-size:12px'; bErr.textContent='Gráfico no disponible (Chart.js no cargó)'; bWrap.parentNode.appendChild(bErr); }
-}
+    });
+  } catch(e) {
+    console.error('[barChart init]', e);
+    var bWrap = document.getElementById('barChart');
+    if (bWrap) { bWrap.style.display='none'; var bErr=document.createElement('div'); bErr.style.cssText='padding:24px;text-align:center;color:#A0AEC0;font-size:12px'; bErr.textContent='Gráfico no disponible (Chart.js no cargó)'; bWrap.parentNode.appendChild(bErr); }
+  }
+  // Donut chart
+  try {
+    var dCtx = document.getElementById('donutChart').getContext('2d');
+    donutChart = new Chart(dCtx,{
+      type:'doughnut',
+      data:{ labels:${j(donutLabels)}, datasets:[{data:${j(donutData)},backgroundColor:${j(donutColors)},borderWidth:2,borderColor:'#fff'}] },
+      options:{
+        responsive:true, maintainAspectRatio:false, cutout:'62%',
+        plugins:{
+          legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},
+          tooltip:{callbacks:{label:function(c){
+            var total=c.dataset.data.reduce(function(a,b){return a+b;},0);
+            return ' '+(c.parsed/1e6).toFixed(3)+' MM ('+(total>0?(c.parsed/total*100).toFixed(1):0)+'%)';
+          }}},
+        },
+      },
+    });
+  } catch(e) {
+    console.error('[donutChart init]', e);
+    var dWrap = document.getElementById('donutChart');
+    if (dWrap) { dWrap.style.display='none'; var dErr=document.createElement('div'); dErr.style.cssText='padding:24px;text-align:center;color:#A0AEC0;font-size:12px'; dErr.textContent='Gráfico no disponible (Chart.js no cargó)'; dWrap.parentNode.appendChild(dErr); }
+  }
+  // Populate charts with current filter state (IIFE ran before rAF so charts were null then)
+  try { updateBarChartFromLineas(getFilteredLineas()); } catch(e) { console.error('[barChart update]', e); }
+  try { updateDonutChartFromLineas(getFilteredLineas()); } catch(e) { console.error('[donutChart update]', e); }
+});
 
 function updateBarChartFromLineas(lineas) {
   if (!barChart) return;
-  var mesQ = document.getElementById('mesSelect').value || '';
-  var filtered = MESES.filter(function(m){
-    if (!activeMeses.has(m)) return false;
-    if (mesQ && m !== mesQ) return false;
-    return true;
-  });
-  barChart.data.labels = filtered.map(function(m){ return MES_LABELS[m]||m; });
-  var byCat = {};
-  lineas.forEach(function(l){
-    if (!byCat[l.categoria]) byCat[l.categoria]={label:l.categoria,data:filtered.map(function(){return 0;}),backgroundColor:CAT_COLORS[l.categoria]||'#A0AEC0',stack:'stack'};
-    var i=filtered.indexOf(l.mes);
-    if(i>=0) byCat[l.categoria].data[i]+=l.importe_usd;
-  });
-  barChart.data.datasets=Object.values(byCat);
-  barChart.update();
-}
-
-// ── Donut chart ───────────────────────────────────────────────────────────────
-var donutChart;
-try {
-  var dCtx = document.getElementById('donutChart').getContext('2d');
-  donutChart = new Chart(dCtx,{
-    type:'doughnut',
-    data:{ labels:${j(donutLabels)}, datasets:[{data:${j(donutData)},backgroundColor:${j(donutColors)},borderWidth:2,borderColor:'#fff'}] },
-    options:{
-      responsive:true, maintainAspectRatio:false, cutout:'62%',
-      plugins:{
-        legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},
-        tooltip:{callbacks:{label:function(c){
-          var total=c.dataset.data.reduce(function(a,b){return a+b;},0);
-          return ' '+(c.parsed/1e6).toFixed(3)+' MM ('+(total>0?(c.parsed/total*100).toFixed(1):0)+'%)';
-        }}},
-      },
-    },
-  });
-} catch(e) {
-  console.error('[donutChart init]', e);
-  var dWrap = document.getElementById('donutChart');
-  if (dWrap) { dWrap.style.display='none'; var dErr=document.createElement('div'); dErr.style.cssText='padding:24px;text-align:center;color:#A0AEC0;font-size:12px'; dErr.textContent='Gráfico no disponible (Chart.js no cargó)'; dWrap.parentNode.appendChild(dErr); }
+  try {
+    var mesQ = document.getElementById('mesSelect').value || '';
+    var filtered = MESES.filter(function(m){
+      if (!activeMeses.has(m)) return false;
+      if (mesQ && m !== mesQ) return false;
+      return true;
+    });
+    barChart.data.labels = filtered.map(function(m){ return MES_LABELS[m]||m; });
+    var byCat = {};
+    lineas.forEach(function(l){
+      if (!byCat[l.categoria]) byCat[l.categoria]={label:l.categoria,data:filtered.map(function(){return 0;}),backgroundColor:CAT_COLORS[l.categoria]||'#A0AEC0',stack:'stack'};
+      var i=filtered.indexOf(l.mes);
+      if(i>=0) byCat[l.categoria].data[i]+=l.importe_usd;
+    });
+    barChart.data.datasets=Object.values(byCat);
+    barChart.update();
+  } catch(e) { console.error('[barChart update]', e); }
 }
 
 function updateDonutChartFromLineas(lineas) {
   if (!donutChart) return;
-  var labels=[], data=[], colors=[];
-  ALL_CATEGORIAS.forEach(function(cat){
-    var val=lineas.filter(function(l){return l.categoria===cat;}).reduce(function(s,l){return s+l.importe_usd;},0);
-    if(!val) return;
-    labels.push(cat); data.push(Math.abs(val)); colors.push(CAT_COLORS[cat]||'#A0AEC0');
-  });
-  donutChart.data.labels=labels;
-  donutChart.data.datasets[0].data=data;
-  donutChart.data.datasets[0].backgroundColor=colors;
-  donutChart.update();
+  try {
+    var labels=[], data=[], colors=[];
+    ALL_CATEGORIAS.forEach(function(cat){
+      var val=lineas.filter(function(l){return l.categoria===cat;}).reduce(function(s,l){return s+l.importe_usd;},0);
+      if(!val) return;
+      labels.push(cat); data.push(Math.abs(val)); colors.push(CAT_COLORS[cat]||'#A0AEC0');
+    });
+    donutChart.data.labels=labels;
+    donutChart.data.datasets[0].data=data;
+    donutChart.data.datasets[0].backgroundColor=colors;
+    donutChart.update();
+  } catch(e) { console.error('[donutChart update]', e); }
 }
 
 function renderKPIs(lineas) {
