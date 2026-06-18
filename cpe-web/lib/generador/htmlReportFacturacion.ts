@@ -32,6 +32,9 @@ function enc(s: string): string {
 
 function j(v: unknown): string {
   return JSON.stringify(v)
+    .replace(/<\/script>/gi, '<\\/script>')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029')
 }
 
 function fechaCorta(iso: string): string {

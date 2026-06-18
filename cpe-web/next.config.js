@@ -20,7 +20,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://crownpointenergy.com",
-      "connect-src 'self' https://*.supabase.co https://supabase.co wss://*.supabase.co",
+      "connect-src 'self' https://*.supabase.co https://supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
       "frame-src 'self'",
       "object-src 'none'",
       "base-uri 'self'",
