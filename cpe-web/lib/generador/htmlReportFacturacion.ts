@@ -795,6 +795,7 @@ var collapsedMeses = new Set();  // start all expanded
 var showManualCols = true;
 var sortState      = { col: null, dir: 1 };
 var manualData     = {};
+var manualReady    = false;  // true only after loadManualFromStorage() completes
 var PERIODO_DESDE = '${periodo_desde}';
 var MANUAL_KEY    = 'cpe_fm_' + PERIODO_DESDE;
 var REPORTE_ID   = '';
@@ -1000,6 +1001,12 @@ function guardarManual() {
   var btn = document.getElementById('save-manual-btn');
   if (!btn) return;
   if (REPORTE_ID) {
+    // Guard: if loadManualFromStorage() hasn't completed yet, don't risk sending empty data to server
+    if (!manualReady) {
+      btn.textContent = '⚠ Esperar carga…';
+      setTimeout(function(){ btn.textContent = 'Guardar y aplicar'; }, 1500);
+      return;
+    }
     btn.textContent = 'Guardando…';
     btn.disabled = true;
     fetch('/api/admin/reportes/' + REPORTE_ID, {
@@ -1107,6 +1114,7 @@ function loadManualFromStorage() {
     });
     updateManualCompletedState();
     updateNetoDisplay();
+    manualReady = true;
   } catch(e) {}
 }
 
