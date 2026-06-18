@@ -65,6 +65,10 @@ export default function PortalNav({
           Reportes
         </Link>
 
+        <Link href="/portal/comercial" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
+          Comercial
+        </Link>
+
         {canUpload && (
           <Link href="/portal/subir" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
             Subir reporte
