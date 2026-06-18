@@ -132,7 +132,7 @@ function buildFiscalTableHTML(
     const totalUSD = grupo.reduce((s, l) => s + l.importe_usd, 0)
     const totalARS = grupo.reduce((s, l) => s + l.importe_ars, 0)
 
-    html += `<tr class="fiscal-mes-header"><td colspan="17">${enc(label)}</td></tr>`
+    html += `<tr class="fiscal-mes-header"><td colspan="18">${enc(label)}</td></tr>`
 
     for (const l of grupo) {
       const idx = lineas.indexOf(l)
@@ -159,6 +159,7 @@ function buildFiscalTableHTML(
         (l.es_petroleo
           ? `<td class="manual-val"></td><td class="manual-val"></td><td class="manual-val"></td><td class="manual-val"></td>`
           : `<td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td><td class="na-cell">—</td>`) +
+        `<td style="background:#F0FFF4"><input class="m-input obs-input" type="text" data-mkey="${enc(l.art_codigo + '|' + l.comprobante)}" data-field="obs" placeholder="Observaciones…" oninput="autoSaveManual()"></td>` +
         `</tr>`
       globalIdx++
     }
@@ -168,7 +169,7 @@ function buildFiscalTableHTML(
       `<td></td>` +
       `<td class="num">${fN(totalUSD)}</td>` +
       `<td class="num ars-col">${fN(totalARS)}</td>` +
-      `<td colspan="5"></td>` +
+      `<td colspan="6"></td>` +
       `</tr>`
   }
 
@@ -423,6 +424,9 @@ table.fiscal .na-cell{color:#C8CCDA;text-align:center}
 /* Manual data section */
 .m-input{font-family:'DM Sans',sans-serif;font-size:11.5px;padding:4px 7px;border:1.5px solid #E8EAEF;border-radius:4px;width:100%;background:#FFFBEB;color:#744210}
 .m-input:focus{outline:none;border-color:#D69E2E;background:#FFF9E6}
+.obs-input{background:#F0FFF4!important;border-color:#C6F6D5!important;color:#276749!important}
+.obs-input:focus{border-color:#48BB78!important;background:#ECFDF5!important}
+@media print{.obs-input{border:none!important;background:transparent!important;padding:0!important;color:#276749!important}}
 .manual-info{color:#4A5568;font-size:11.5px}
 .manual-val{color:#744210;font-size:11.5px;white-space:nowrap}
 .aplica-tag{display:inline-block;font-size:10px;font-weight:600;color:#2B6CB0;background:#EBF8FF;border:1px solid #BEE3F8;border-radius:3px;padding:1px 6px;margin-left:4px;white-space:nowrap}
@@ -715,6 +719,7 @@ table.precios .ptot td{font-weight:700;border-top:1.5px solid #E8EAEF;background
         <option value="">Todos los meses</option>
         ${meses.map(m => `<option value="${m}">${enc(mes_labels[m] ?? m)}</option>`).join('')}
       </select>
+      <input type="text" id="obsSearch" placeholder="Filtrar observaciones…" oninput="renderFiscal()" style="min-width:170px">
       <button class="btn-clear" onclick="clearFiscalFilters()">Limpiar</button>
       <span class="fiscal-count" id="fiscal-count"></span>
     </div>
@@ -740,6 +745,7 @@ table.precios .ptot td{font-weight:700;border-top:1.5px solid #E8EAEF;background
             <th data-mc style="min-width:55px;background:#FFFBEB">°API</th>
             <th data-mc style="min-width:120px;background:#FFFBEB">Buque</th>
             <th data-mc style="min-width:100px;background:#FFFBEB">Fecha emb.</th>
+            <th class="sortable" data-col="obs" style="min-width:160px;background:#F0FFF4">Observaciones<span class="sort-icon"></span></th>
           </tr>
         </thead>
         <tbody id="fiscal-body">${fiscalRows}</tbody>
@@ -973,6 +979,13 @@ function collectManualFromForm() {
 
 function saveManualData() {
   collectManualFromForm();
+  document.querySelectorAll('#fiscal-table .obs-input').forEach(function(inp) {
+    var key = inp.getAttribute('data-mkey');
+    var field = inp.getAttribute('data-field');
+    if (!key || !field) return;
+    if (!manualData[key]) manualData[key] = {};
+    manualData[key][field] = inp.value.trim();
+  });
 }
 
 function guardarManual() {
@@ -1083,6 +1096,11 @@ function loadManualFromStorage() {
       if (key && field && manualData[key] && manualData[key][field]) {
         inp.checked = true;
       }
+    });
+    // Pre-fill obs inputs in fiscal table
+    document.querySelectorAll('#fiscal-table .obs-input').forEach(function(inp) {
+      var key = inp.getAttribute('data-mkey');
+      if (key && manualData[key] && manualData[key].obs) inp.value = manualData[key].obs;
     });
     updateManualCompletedState();
     updateNetoDisplay();
@@ -1392,6 +1410,7 @@ function clearFiscalFilters() {
   document.getElementById('bloqueSelect').value = '';
   document.getElementById('articuloSelect').value = '';
   document.getElementById('mesSelect').value = '';
+  if (document.getElementById('obsSearch')) document.getElementById('obsSearch').value = '';
   activeTipos = new Set(ALL_CATEGORIAS);
   document.querySelectorAll('.tipo-cb').forEach(function(cb){ cb.checked = true; });
   updateTipoBtn();
@@ -1489,9 +1508,15 @@ function renderFiscal() {
   var lineas = filteredLineas;
   if (sortState.col) {
     lineas = lineas.slice().sort(function(a, b) {
-      var va = a[sortState.col], vb = b[sortState.col];
-      if (typeof va === 'string') va = va.toLowerCase();
-      if (typeof vb === 'string') vb = vb.toLowerCase();
+      var va, vb;
+      if (sortState.col === 'obs') {
+        va = ((manualData[manualKey(a)] || {}).obs || '').toLowerCase();
+        vb = ((manualData[manualKey(b)] || {}).obs || '').toLowerCase();
+      } else {
+        va = a[sortState.col]; vb = b[sortState.col];
+        if (typeof va === 'string') va = va.toLowerCase();
+        if (typeof vb === 'string') vb = vb.toLowerCase();
+      }
       if (va < vb) return -1 * sortState.dir;
       if (va > vb) return  1 * sortState.dir;
       return 0;
@@ -1526,7 +1551,7 @@ function renderFiscal() {
         '<td></td>' +
         '<td class="num">'+fN(totalUSD)+'</td>' +
         '<td class="num ars-col">'+fN(totalARS)+'</td>' +
-        '<td colspan="5"></td></tr>';
+        '<td colspan="6"></td></tr>';
     }
   } else {
     // Grouped by month
@@ -1545,7 +1570,7 @@ function renderFiscal() {
         '<td></td>'+
         '<td class="num">'+fN(totalUSD)+'</td>'+
         '<td class="num ars-col">'+fN(totalARS)+'</td>'+
-        '<td colspan="5"></td>'+
+        '<td colspan="6"></td>'+
         '</tr>';
       if (!isCol) {
         grupo.forEach(function(l) {
@@ -1563,7 +1588,7 @@ function renderFiscal() {
           '<td></td>' +
           '<td class="num">'+fN(totalUSD)+'</td>' +
           '<td class="num ars-col">'+fN(totalARS)+'</td>' +
-          '<td colspan="5"></td></tr>';
+          '<td colspan="6"></td></tr>';
       }
     });
   }
@@ -1659,6 +1684,7 @@ function groupedRowHTML(l, adjLineas, saved) {
         '<td class="manual-val" data-mc>'+(saved.buque||'')+'</td>'+
         '<td class="manual-val" data-mc>'+(saved.fecha_emb||'')+'</td>'
       : '<td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td>')+
+    '<td style="background:#F0FFF4"><input class="m-input obs-input" type="text" data-mkey="'+encA(manualKey(l))+'" data-field="obs" placeholder="Obs…" value="'+encA(saved.obs||'')+'" oninput="autoSaveManual()"></td>'+
     '</tr>';
   // Breakdown sub-rows (all components, collapsed by default)
   [l].concat(adjLineas).forEach(function(ll) {
@@ -1675,7 +1701,7 @@ function groupedRowHTML(l, adjLineas, saved) {
       '<td class="num'+(isNeg2?' nc-val':'')+'">'+fN(ll.importe_usd)+'</td>'+
       '<td class="num ars-col">'+fN(ll.importe_ars)+'</td>'+
       '<td class="num tc-col">'+(ll.tc>0?fN(ll.tc):'')+'</td>'+
-      '<td colspan="4"></td>'+
+      '<td colspan="5"></td>'+
       '</tr>';
   });
   return html;
@@ -1705,6 +1731,7 @@ function rowHTML(l, idx, ncS, saved) {
         '<td class="manual-val" data-mc>'+(saved.buque||'')+'</td>'+
         '<td class="manual-val" data-mc>'+(saved.fecha_emb||'')+'</td>'
       : '<td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td><td class="na-cell" data-mc>—</td>')+
+    '<td style="background:#F0FFF4"><input class="m-input obs-input" type="text" data-mkey="'+encA(manualKey(l))+'" data-field="obs" placeholder="Obs…" value="'+encA(saved.obs||'')+'" oninput="autoSaveManual()"></td>'+
     '</tr>';
 }
 
@@ -1819,6 +1846,7 @@ function getFilteredLineas() {
   var bloqueQ  =document.getElementById('bloqueSelect').value||'';
   var articuloQ=document.getElementById('articuloSelect').value||'';
   var mesQ     =document.getElementById('mesSelect').value||'';
+  var obsQ     =((document.getElementById('obsSearch') ? document.getElementById('obsSearch').value : '') || '').toLowerCase().trim();
   var mesesActivos=MESES.filter(function(m){
     if(!activeMeses.has(m)) return false;
     if(mesQ&&m!==mesQ) return false;
@@ -1830,6 +1858,10 @@ function getFilteredLineas() {
     if(clienteQ&&l.cliente.toLowerCase().indexOf(clienteQ)<0) return false;
     if(bloqueQ&&l.bloque!==bloqueQ) return false;
     if(articuloQ&&l.art_codigo!==articuloQ) return false;
+    if(obsQ) {
+      var obs = ((manualData[manualKey(l)] || {}).obs || '').toLowerCase();
+      if(obs.indexOf(obsQ) < 0) return false;
+    }
     return true;
   });
 }
@@ -1894,7 +1926,7 @@ function exportarExcel() {
     if (articuloQx && l.art_codigo !== articuloQx) return false;
     return true;
   });
-  var detHdr = ['Fecha','Mes','Comprobante','Cliente','Artículo','Descripción','Bloque','Categoría','Cantidad','P.Neto USD/u','Precio','Unidad','Total Neto USD','Total Neto ARS','TC','Certificado','°API','Buque','Fecha emb.'];
+  var detHdr = ['Fecha','Mes','Comprobante','Cliente','Artículo','Descripción','Bloque','Categoría','Cantidad','P.Neto USD/u','Precio','Unidad','Total Neto USD','Total Neto ARS','TC','Certificado','°API','Buque','Fecha emb.','Observaciones'];
   var detRows = [detHdr];
   detLineas.forEach(function(l){
     var saved = manualData[manualKey(l)]||{};
@@ -1902,12 +1934,12 @@ function exportarExcel() {
     var pcVal = pc.val ? parseFloat(pc.val.replace(',','.')) : '';
     detRows.push([l.fecha, MES_LABELS[l.mes]||l.mes, l.comprobante, l.cliente, l.art_codigo, l.art_desc,
       l.bloque, l.categoria, l.cantidad||0, l.precio_neto_usd_u||0, pcVal, pc.unit,
-      l.importe_usd, l.importe_ars, l.tc>0?l.tc:0, saved.cert||'', saved.api||'', saved.buque||'', saved.fecha_emb||'']);
+      l.importe_usd, l.importe_ars, l.tc>0?l.tc:0, saved.cert||'', saved.api||'', saved.buque||'', saved.fecha_emb||'', saved.obs||'']);
   });
   var detWs = XLSX.utils.aoa_to_sheet(detRows);
   fmtSheet(detWs, 1,
     [{c:8,z:'#,##0.000'},{c:9,z:'#,##0.0000'},{c:10,z:'#,##0.00'},{c:12,z:'#,##0.00'},{c:13,z:'#,##0.00'},{c:14,z:'#,##0'}],
-    [12,8,24,32,20,44,10,22,12,14,10,8,16,16,8,14,6,22,12]);
+    [12,8,24,32,20,44,10,22,12,14,10,8,16,16,8,14,6,22,12,24]);
   XLSX.utils.book_append_sheet(wb, detWs, 'Detalle Fiscal');
 
   // === Hoja 3: Precios Promedio ===

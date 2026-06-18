@@ -146,6 +146,7 @@ export default async function InversoresPage() {
                 <a href="#porque" className="active"><span className="lang-es">¿Por qué Crown Point?</span><span className="lang-en">Why Crown Point?</span></a>
                 <a href="#financieros"><span className="lang-es">Estados financieros</span><span className="lang-en">Financial statements</span></a>
                 <a href="#cobertura"><span className="lang-es">Cobertura de analistas</span><span className="lang-en">Analyst coverage</span></a>
+                <a href="#calificacion"><span className="lang-es">Calificación crediticia</span><span className="lang-en">Credit rating</span></a>
                 <a href="#on"><span className="lang-es">Obligaciones negociables</span><span className="lang-en">Notes</span></a>
                 <a href="#gobierno"><span className="lang-es">Gobierno corporativo</span><span className="lang-en">Corporate governance</span></a>
                 <a href="#calendario"><span className="lang-es">Calendario financiero</span><span className="lang-en">Financial calendar</span></a>
@@ -226,6 +227,65 @@ export default async function InversoresPage() {
                     <span className="lang-en">No active coverage registered.</span>
                   </p>
                 )}
+              </div>
+
+              <div className="section-block" id="calificacion">
+                <span className="eyebrow"><span className="lang-es">Deuda local</span><span className="lang-en">Local debt</span></span>
+                <h2 style={{ marginTop: 8 }}>
+                  <span className="lang-es">Calificación crediticia</span>
+                  <span className="lang-en">Credit rating</span>
+                </h2>
+                <p className="lede">
+                  <span className="lang-es">Calificación otorgada por <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer">FIX SCR</a> (afiliada de Fitch Ratings en Argentina) sobre obligaciones de largo plazo.</span>
+                  <span className="lang-en">Rating assigned by <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer">FIX SCR</a> (Fitch Ratings affiliate in Argentina) on long-term obligations.</span>
+                </p>
+                <style>{`
+                  .fix-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: var(--s-4); }
+                  .fix-table th { text-align: left; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-muted); font-weight: 600; padding: 10px 12px; border-bottom: 1px solid var(--rule); }
+                  .fix-table td { padding: 14px 12px; color: var(--fg-soft); vertical-align: middle; border-bottom: 0; }
+                  .fix-rating-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(31,37,102,.08); border: 1px solid rgba(31,37,102,.18); padding: 6px 14px; border-radius: var(--r-pill); }
+                  [data-theme="dark"] .fix-rating-badge { background: rgba(78,126,196,.13); border-color: rgba(78,126,196,.3); }
+                  .fix-rating-value { font-family: var(--font-mono); font-size: 20px; font-weight: 700; color: var(--accent-deep); letter-spacing: -0.01em; }
+                  [data-theme="dark"] .fix-rating-value { color: var(--cp-blue-light, #7EB3FF); }
+                  .fix-perspectiva { display: inline-flex; align-items: center; gap: 6px; }
+                  .fix-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cp-green-deep); flex-shrink: 0; }
+                  .fix-accion { font-size: 11px; letter-spacing: 0.08em; font-weight: 700; text-transform: uppercase; padding: 3px 10px; border-radius: var(--r-pill); background: rgba(108,174,82,0.14); color: var(--cp-green-deep); }
+                  [data-theme="dark"] .fix-accion { color: #8BD478; }
+                `}</style>
+                <table className="fix-table">
+                  <thead>
+                    <tr>
+                      <th><span className="lang-es">Fecha</span><span className="lang-en">Date</span></th>
+                      <th><span className="lang-es">Plazo</span><span className="lang-en">Tenor</span></th>
+                      <th>Rating</th>
+                      <th><span className="lang-es">Perspectiva</span><span className="lang-en">Outlook</span></th>
+                      <th><span className="lang-es">Acción</span><span className="lang-en">Action</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>08-may-26</td>
+                      <td><span className="lang-es">Largo Plazo</span><span className="lang-en">Long Term</span></td>
+                      <td>
+                        <span className="fix-rating-badge">
+                          <span className="fix-rating-value">BBB(arg)</span>
+                        </span>
+                      </td>
+                      <td>
+                        <span className="fix-perspectiva">
+                          <span className="fix-dot" />
+                          <span className="lang-es">Estable</span><span className="lang-en">Stable</span>
+                        </span>
+                      </td>
+                      <td><span className="fix-accion"><span className="lang-es">Confirma</span><span className="lang-en">Affirmed</span></span></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p style={{ marginTop: 'var(--s-4)', fontSize: 12, color: 'var(--fg-muted)' }}>
+                  <span className="lang-es">Ver ficha completa en </span>
+                  <span className="lang-en">Full report at </span>
+                  <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>fixscr.com →</a>
+                </p>
               </div>
 
               <div className="section-block" id="on">

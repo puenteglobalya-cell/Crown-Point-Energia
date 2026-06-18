@@ -36,6 +36,7 @@ export default function ComercialClient({
 }) {
   const [se, setSe] = useState<SeRow | null>(initialSe)
   const [brentInput, setBrentInput] = useState(initialSe?.brent_ref?.toFixed(2) ?? '')
+  const [soloAceites, setSoloAceites] = useState(true)
 
   // Admin sync form state
   const [syncDesde, setSyncDesde] = useState('')
@@ -290,8 +291,38 @@ export default function ComercialClient({
             <p style={{ padding: '20px 18px', fontSize: 13, color: '#8e91b0', margin: 0 }}>
               El scraping no devolvió filas de datos.
             </p>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
+          ) : (() => {
+            const filasVisible = soloAceites
+              ? se.filas.filter(row =>
+                  Object.values(row).some(v =>
+                    /aceites?\s+crudos/i.test(v)
+                  )
+                )
+              : se.filas
+            return (
+            <div>
+              {/* Filter toggle */}
+              <div style={{ padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid var(--rule)', background: 'var(--bg-alt)' }}>
+                <button
+                  onClick={() => setSoloAceites(v => !v)}
+                  style={{
+                    fontSize: 11, fontWeight: 700, padding: '3px 12px',
+                    borderRadius: 'var(--r-pill, 999px)',
+                    border: '1px solid',
+                    cursor: 'pointer',
+                    background: soloAceites ? '#1F2566' : 'var(--surface)',
+                    color: soloAceites ? '#fff' : 'var(--fg-soft)',
+                    borderColor: soloAceites ? '#1F2566' : 'var(--rule)',
+                    transition: 'all .15s',
+                  }}
+                >
+                  Solo Aceites Crudos
+                </button>
+                <span style={{ fontSize: 11, color: '#8e91b0' }}>
+                  {filasVisible.length} de {se.filas.length} filas
+                </span>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: 'var(--bg-alt)' }}>
@@ -329,10 +360,10 @@ export default function ComercialClient({
                   </tr>
                 </thead>
                 <tbody>
-                  {se.filas.map((row, ri) => (
+                  {filasVisible.map((row, ri) => (
                     <tr
                       key={ri}
-                      style={{ borderBottom: ri < se.filas.length - 1 ? '1px solid var(--rule)' : 'none' }}
+                      style={{ borderBottom: ri < filasVisible.length - 1 ? '1px solid var(--rule)' : 'none' }}
                     >
                       {se.headers.map((h, ci) => (
                         <td key={ci} style={{
@@ -363,7 +394,8 @@ export default function ComercialClient({
                 </tbody>
               </table>
             </div>
-          )}
+            </div>
+          )})()}
         </div>
       )}
     </div>
