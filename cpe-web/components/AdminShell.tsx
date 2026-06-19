@@ -38,6 +38,7 @@ const NAV_GROUPS = [
 
 const EXTERNAL = [
   { href: '/', label: 'Sitio web' },
+  { href: '/infografia', label: 'Infografía' },
   { href: '/biblioteca', label: 'Biblioteca' },
   { href: '/portal', label: 'Portal' },
 ]
