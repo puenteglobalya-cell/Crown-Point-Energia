@@ -398,7 +398,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div style={{ maxWidth: tab === 'sitio' ? 1280 : 760, margin: '0 auto', transition: 'max-width 0.2s' }}>
+    <div style={{ maxWidth: tab === 'sitio' ? 1280 : 760, margin: '0 auto', padding: '40px 32px', transition: 'max-width 0.2s' }}>
 
         {/* Header */}
         <div style={{ marginBottom: 32 }}>

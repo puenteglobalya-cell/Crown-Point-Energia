@@ -171,8 +171,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Main content */}
-      <main style={{ marginLeft: 220, flex: 1, minWidth: 0, padding: '40px 32px', minHeight: '100vh' }}>
+      {/* Main content — pages manage their own padding */}
+      <main style={{ marginLeft: 220, flex: 1, minWidth: 0, minHeight: '100vh' }}>
         {children}
       </main>
     </div>
