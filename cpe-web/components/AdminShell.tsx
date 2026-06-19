@@ -11,6 +11,7 @@ const NAV_GROUPS = [
       { href: '/admin', label: 'CMS' },
       { href: '/admin/cms', label: 'Contenido' },
       { href: '/admin/imagenes', label: 'Imágenes' },
+      { href: '/admin/bloques-fotos', label: 'Fotos de bloques' },
       { href: '/admin/documentos', label: 'Documentos' },
       { href: '/admin/biblioteca', label: 'Biblioteca' },
     ],

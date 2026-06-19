@@ -254,36 +254,72 @@ export default async function InversoresPage() {
 
               <div className="section-block" id="on">
                 <span className="eyebrow"><span className="lang-es">Programa global</span><span className="lang-en">Global program</span></span>
-                <h2 style={{ marginTop: 8 }}><span className="lang-es">Obligaciones negociables</span><span className="lang-en">Notes program</span></h2>
-                <p className="lede"><span className="lang-es">Programa global de emisión autorizado por CNV.</span><span className="lang-en">Global issuance program authorized by the CNV.</span></p>
-                {obligaciones.length > 0 ? (
-                  <table className="on-table">
-                    <thead>
-                      <tr>
-                        <th><span className="lang-es">Serie</span><span className="lang-en">Series</span></th>
-                        <th><span className="lang-es">Monto</span><span className="lang-en">Amount</span></th>
-                        <th><span className="lang-es">Vencimiento</span><span className="lang-en">Maturity</span></th>
-                        <th><span className="lang-es">Tasa</span><span className="lang-en">Rate</span></th>
-                        <th>ISIN</th>
-                        <th><span className="lang-es">Bolsa</span><span className="lang-en">Exchange</span></th>
+                <h2 style={{ marginTop: 8 }}><span className="lang-es">Obligaciones negociables activas</span><span className="lang-en">Active notes</span></h2>
+                <p className="lede">
+                  <span className="lang-es">Calificaciones otorgadas por <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer">FIX SCR</a> (afiliada de Fitch Ratings en Argentina). Programa global de emisión autorizado por CNV.</span>
+                  <span className="lang-en">Ratings assigned by <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer">FIX SCR</a> (Fitch Ratings affiliate in Argentina). Global issuance program authorized by the CNV.</span>
+                </p>
+                <table className="on-table" style={{ marginTop: 'var(--s-4)' }}>
+                  <thead>
+                    <tr>
+                      <th><span className="lang-es">Instrumento</span><span className="lang-en">Instrument</span></th>
+                      <th><span className="lang-es">Fecha</span><span className="lang-en">Date</span></th>
+                      <th>ISIN</th>
+                      <th>Rating</th>
+                      <th><span className="lang-es">Perspectiva</span><span className="lang-en">Outlook</span></th>
+                      <th><span className="lang-es">Acción</span><span className="lang-en">Action</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      {
+                        concepto: { es: 'ON Clase VI Garantizadas — hasta USD 20 MM ampliable a USD 30 MM', en: 'Class VI Secured Notes — up to USD 20 MM expandable to USD 30 MM' },
+                        fecha: '08-may-26', isin: 'AR0134464806',
+                        rating: 'A-(arg)', perspectiva: { es: 'Estable', en: 'Stable' }, accion: { es: 'Confirma', en: 'Affirmed' },
+                      },
+                      {
+                        concepto: { es: 'ON Clase VII — hasta USD 10 MM ampliables hasta USD 25 MM (conjunta con Clase VIII)', en: 'Class VII Notes — up to USD 10 MM expandable to USD 25 MM (combined with Class VIII)' },
+                        fecha: '08-may-26', isin: 'AR0370555119',
+                        rating: 'BBB(arg)', perspectiva: { es: 'Estable', en: 'Stable' }, accion: { es: 'Confirma', en: 'Affirmed' },
+                      },
+                      {
+                        concepto: { es: 'ON Clase IX Garantizadas — hasta USD 15 MM ampliables hasta USD 30 MM', en: 'Class IX Secured Notes — up to USD 15 MM expandable to USD 30 MM' },
+                        fecha: '08-may-26', isin: 'AR0764757453',
+                        rating: 'A-(arg)', perspectiva: { es: 'Estable', en: 'Stable' }, accion: { es: 'Confirma', en: 'Affirmed' },
+                      },
+                    ].map((on, i) => (
+                      <tr key={i}>
+                        <td style={{ color: 'var(--fg)', maxWidth: 280 }}>
+                          <span className="lang-es">{on.concepto.es}</span>
+                          <span className="lang-en">{on.concepto.en}</span>
+                        </td>
+                        <td style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>{on.fecha}</td>
+                        <td className="on-isin">{on.isin}</td>
+                        <td>
+                          <span className="fix-rating-badge">
+                            <span className="fix-rating-value" style={{ fontSize: 15 }}>{on.rating}</span>
+                          </span>
+                        </td>
+                        <td>
+                          <span className="fix-perspectiva">
+                            <span className="fix-dot" />
+                            <span className="lang-es">{on.perspectiva.es}</span>
+                            <span className="lang-en">{on.perspectiva.en}</span>
+                          </span>
+                        </td>
+                        <td><span className="fix-accion"><span className="lang-es">{on.accion.es}</span><span className="lang-en">{on.accion.en}</span></span></td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {obligaciones.map(on => (
-                        <tr key={on.id}>
-                          <td style={{ fontWeight: 600, color: 'var(--fg)' }}>{on.serie}</td>
-                          <td>{on.monto}</td>
-                          <td>{on.vencimiento}</td>
-                          <td>{on.tasa}</td>
-                          <td className="on-isin">{on.isin}</td>
-                          <td>{on.bolsa}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
+                    ))}
+                  </tbody>
+                </table>
+                <p style={{ marginTop: 'var(--s-4)', fontSize: 12, color: 'var(--fg-muted)' }}>
+                  <span className="lang-es">Ver ficha completa en </span>
+                  <span className="lang-en">Full report at </span>
+                  <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>fixscr.com →</a>
+                </p>
+                <div style={{ marginTop: 'var(--s-6)' }}>
                   <InversoresDocsTabs docs={allDocs} tipo="on" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
-                )}
+                </div>
               </div>
 
               <div className="section-block" id="gobierno">
