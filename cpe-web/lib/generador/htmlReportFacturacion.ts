@@ -360,8 +360,8 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"><\/script>
-<script>if(!window.Chart){document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\\/script>');}<\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>
+<script>if(!window.Chart){document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"><\\/script>');}<\/script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1294,7 +1294,7 @@ function renderPrecios(lineas) {
     // Expandable line-by-line detail for formula verification
     var detId = 'pd-'+slug;
     html += '<div style="margin-top:6px">';
-    html += '<span id="'+detId+'-a" onclick="togglePrecios(\''+detId+'\')" style="font-size:10px;color:#4A90D9;cursor:pointer">';
+    html += '<span id="'+detId+'-a" onclick="togglePrecios(\\x27'+detId+'\\x27)" style="font-size:10px;color:#4A90D9;cursor:pointer">';
     html += '▶ ver l\xedneas ('+lines.length+')</span>';
     html += '<div id="'+detId+'" data-n="'+lines.length+'" style="display:none;margin-top:6px">';
     html += '<table style="width:100%;border-collapse:collapse;font-size:10px">';
