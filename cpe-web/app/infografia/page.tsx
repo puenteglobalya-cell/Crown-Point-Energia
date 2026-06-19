@@ -44,6 +44,17 @@ export default async function InfografiaPage() {
         commodity: b.commodity,
         wi:        b.wi || undefined,
       }))}
+      thesis={{
+        prodVal:   f['kpi.production.value'] || '3,090',
+        prodUnit:  f['kpi.production.unit']  || 'boe/d neto',
+        prodDelta: f['kpi.production.delta'] || 'Q1 2026',
+        resVal:    f['kpi.reserves.value']   || 'N/D',
+        resUnit:   f['kpi.reserves.unit']    || 'MMboe 2P',
+        resDelta:  f['kpi.reserves.delta']   || '',
+        ebVal:     f['kpi.ebitda.value']     || 'N/D',
+        ebUnit:    f['kpi.ebitda.unit']      || 'USD MM',
+        ebDelta:   f['kpi.ebitda.delta']     || '',
+      }}
       date={dateStr}
     />
   )

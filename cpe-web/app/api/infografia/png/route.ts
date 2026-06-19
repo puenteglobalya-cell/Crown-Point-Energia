@@ -19,8 +19,12 @@ function fmtCap(n: number) {
   return `CA $${n.toLocaleString()}`
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url)
+    const mParam = searchParams.get('m')
+    const activeModules = mParam ? mParam.split(',').filter(Boolean) : undefined
+
     // ── Fetch data ─────────────────────────────────────────────────────────────
     const db = createSupabaseServerAdminClient()
     const [s, blocksRes, stockRes] = await Promise.all([
@@ -100,8 +104,20 @@ export async function GET() {
         { concepto: 'ON Clase VII — hasta USD 10 MM',              isin: 'AR0370555119', rating: 'BBB(arg)' },
         { concepto: 'ON Clase IX Garantizadas — hasta USD 15 MM',  isin: 'AR0764757453', rating: 'A-(arg)' },
       ],
-      date:  dateStr,
-      url:   'crown-point-energia.vercel.app',
+      thesis: {
+        prodVal:   f['kpi.production.value'] || '3,090',
+        prodUnit:  f['kpi.production.unit']  || 'boe/d neto',
+        prodDelta: f['kpi.production.delta'] || 'Q1 2026',
+        resVal:    f['kpi.reserves.value']   || 'N/D',
+        resUnit:   f['kpi.reserves.unit']    || 'MMboe 2P',
+        resDelta:  f['kpi.reserves.delta']   || '',
+        ebVal:     f['kpi.ebitda.value']     || 'N/D',
+        ebUnit:    f['kpi.ebitda.unit']      || 'USD MM',
+        ebDelta:   f['kpi.ebitda.delta']     || '',
+      },
+      date:    dateStr,
+      url:     'crown-point-energia.vercel.app',
+      modules: activeModules,
     }
 
     // ── Generate HTML ──────────────────────────────────────────────────────────
