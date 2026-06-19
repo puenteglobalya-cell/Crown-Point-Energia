@@ -49,7 +49,7 @@ export default function ComercialClient({
 
   // Admin sync form state — default to last 30 days
   const defaultHasta = new Date().toISOString().slice(0, 10)
-  const defaultDesde = new Date(Date.now() - 29 * 86_400_000).toISOString().slice(0, 10)
+  const defaultDesde = new Date(Date.now() - 14 * 86_400_000).toISOString().slice(0, 10)
   const [syncDesde, setSyncDesde] = useState(defaultDesde)
   const [syncHasta, setSyncHasta] = useState(defaultHasta)
   const [syncBrent, setSyncBrent] = useState('')
@@ -60,7 +60,7 @@ export default function ComercialClient({
   const syncRangeDays = syncDesde && syncHasta
     ? Math.round((new Date(syncHasta).getTime() - new Date(syncDesde).getTime()) / 86_400_000) + 1
     : 0
-  const syncRangeError = syncRangeDays > 30 ? `El rango máximo es 30 días (seleccionaste ${syncRangeDays}).` : null
+  const syncRangeError = syncRangeDays > 15 ? `El rango máximo es 15 días (seleccionaste ${syncRangeDays}).` : null
 
   const ddeeHeader = se?.headers.find(h =>
     /d\.?d\.?e\.?e/i.test(h) || /descuento/i.test(h)
@@ -258,7 +258,7 @@ export default function ComercialClient({
                   {syncing ? 'Sincronizando…' : '↻ Sincronizar'}
                 </button>
                 <span style={{ fontSize: 10, color: syncRangeError ? '#c0392b' : '#8e91b0', fontWeight: syncRangeError ? 600 : 400 }}>
-                  {syncRangeError ?? (syncRangeDays > 0 ? `${syncRangeDays} día${syncRangeDays !== 1 ? 's' : ''} · máx. 30` : 'máx. 30 días')}
+                  {syncRangeError ?? (syncRangeDays > 0 ? `${syncRangeDays} día${syncRangeDays !== 1 ? 's' : ''} · máx. 15` : 'máx. 15 días')}
                 </span>
               </div>
               {syncMsg && (
