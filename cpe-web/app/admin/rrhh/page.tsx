@@ -9,11 +9,24 @@ type Position = {
   activo: boolean; orden: number
 }
 
+type DatosPostulante = {
+  nivel_estudios?: string | null
+  carrera?: string | null
+  anios_experiencia?: string | null
+  anios_sector?: string | null
+  disponibilidad?: string | null
+  relocacion?: string | null
+  ingles_nivel?: string | null
+  otros_idiomas?: string | null
+  pretension?: string | null
+}
+
 type Application = {
   id: string; nombre: string; email: string; telefono: string
   linkedin: string; area: string; mensaje: string
   cv_path: string | null; cv_name: string | null; cv_size: number | null
   estado: string; notas: string; created_at: string; updated_at: string
+  datos?: DatosPostulante | null
 }
 
 type Tab = 'postulaciones' | 'posiciones'
@@ -342,6 +355,31 @@ export default function RrhhPage() {
                       {sel.linkedin && <InfoRow label="LinkedIn" val={sel.linkedin} href={sel.linkedin} />}
                       <InfoRow label="Área" val={AREA_LABELS[sel.area] ?? sel.area} />
                     </div>
+
+                    {/* Structured experience data */}
+                    {sel.datos && Object.values(sel.datos).some(Boolean) && (
+                      <div style={{ background: 'var(--bg-alt)', borderRadius: 'var(--r-md)', padding: '16px', marginBottom: 20 }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', marginBottom: 12 }}>Perfil profesional</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 20px' }}>
+                          {[
+                            { label: 'Nivel de estudios',    val: sel.datos.nivel_estudios },
+                            { label: 'Carrera',              val: sel.datos.carrera },
+                            { label: 'Experiencia total',    val: sel.datos.anios_experiencia },
+                            { label: 'En sector O&G',        val: sel.datos.anios_sector },
+                            { label: 'Disponibilidad',       val: sel.datos.disponibilidad },
+                            { label: 'Relocación',           val: sel.datos.relocacion },
+                            { label: 'Inglés',               val: sel.datos.ingles_nivel },
+                            { label: 'Otros idiomas',        val: sel.datos.otros_idiomas },
+                            { label: 'Pretensión salarial',  val: sel.datos.pretension },
+                          ].filter(r => r.val).map(r => (
+                            <div key={r.label} style={{ borderBottom: '1px solid var(--rule)', paddingBottom: 6 }}>
+                              <div style={{ fontSize: 10, color: 'var(--fg-muted)', letterSpacing: '0.06em', marginBottom: 2 }}>{r.label}</div>
+                              <div style={{ fontSize: 13, color: 'var(--fg)', fontWeight: 500 }}>{r.val}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* CV download */}
                     {sel.cv_path && (
