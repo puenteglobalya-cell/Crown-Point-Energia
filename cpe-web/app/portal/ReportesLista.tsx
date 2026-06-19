@@ -14,6 +14,13 @@ export type ReporteItem = {
   created_at: string
 }
 
+type Comment = {
+  id: string
+  texto: string
+  created_at: string
+  user_id: string
+}
+
 const TYPE_LABELS: Record<string, string> = {
   ingresos:   'Ingresos',
   accionista: 'Seguimiento',
@@ -37,9 +44,10 @@ function fmtSize(bytes: number | null) {
 type Props = {
   items: ReporteItem[]
   userCanUpload: boolean
+  isAccionista?: boolean
 }
 
-export function ReportesLista({ items, userCanUpload }: Props) {
+export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
   const [combineMode, setCombineMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [orderModal, setOrderModal] = useState(false)
@@ -47,6 +55,11 @@ export function ReportesLista({ items, userCanUpload }: Props) {
   const [generating, setGenerating] = useState(false)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [copiedId, setCopiedId] = useState('')
+
+  // Comments state
+  const [commentOpen, setCommentOpen] = useState<Set<string>>(new Set())
+  const [comments, setComments] = useState<Record<string, Comment[]>>({})
+  const [commentText, setCommentText] = useState<Record<string, string>>({})
 
   function toggleSelect(id: string) {
     setSelected(prev => {
@@ -115,6 +128,48 @@ export function ReportesLista({ items, userCanUpload }: Props) {
     await navigator.clipboard.writeText(url)
     setCopiedId(id)
     setTimeout(() => setCopiedId(''), 1800)
+  }
+
+  async function toggleComments(reporteId: string) {
+    setCommentOpen(prev => {
+      const s = new Set(prev)
+      if (s.has(reporteId)) { s.delete(reporteId); return s }
+      s.add(reporteId)
+      return s
+    })
+    if (!comments[reporteId]) {
+      const res = await fetch(`/api/portal/comentarios/${reporteId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setComments(prev => ({ ...prev, [reporteId]: data }))
+      }
+    }
+  }
+
+  async function addComment(reporteId: string) {
+    const texto = commentText[reporteId]?.trim()
+    if (!texto) return
+    const res = await fetch(`/api/portal/comentarios/${reporteId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto }),
+    })
+    if (res.ok) {
+      const newComment = await res.json()
+      setComments(prev => ({ ...prev, [reporteId]: [newComment, ...(prev[reporteId] ?? [])] }))
+      setCommentText(prev => ({ ...prev, [reporteId]: '' }))
+    }
+  }
+
+  async function deleteComment(reporteId: string, commentId: string) {
+    const res = await fetch(`/api/portal/comentarios/${reporteId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commentId }),
+    })
+    if (res.ok) {
+      setComments(prev => ({ ...prev, [reporteId]: (prev[reporteId] ?? []).filter(c => c.id !== commentId) }))
+    }
   }
 
   if (items.length === 0) {
@@ -238,6 +293,43 @@ export function ReportesLista({ items, userCanUpload }: Props) {
                 Ver / PDF
               </a>
             </div>
+
+            {/* Comments section for accionistas */}
+            {isAccionista && (
+              <div style={{ marginTop: 8, borderTop: '1px solid var(--rule)', paddingTop: 8, width: '100%' }}>
+                <button onClick={() => toggleComments(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--fg-muted)', padding: 0 }}>
+                  {commentOpen.has(item.id) ? '▲ Ocultar notas' : `▼ Notas${comments[item.id]?.length ? ` (${comments[item.id].length})` : ''}`}
+                </button>
+                {commentOpen.has(item.id) && (
+                  <div style={{ marginTop: 10 }}>
+                    {(comments[item.id] ?? []).map(c => (
+                      <div key={c.id} style={{ background: 'var(--bg-alt)', borderRadius: 'var(--r-md)', padding: '8px 12px', marginBottom: 6, fontSize: 12 }}>
+                        <div style={{ color: 'var(--fg)', whiteSpace: 'pre-wrap' }}>{c.texto}</div>
+                        <div style={{ marginTop: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{fmtDate(c.created_at)}</span>
+                          <button onClick={() => deleteComment(item.id, c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, color: '#E53E3E', padding: 0 }}>Eliminar</button>
+                        </div>
+                      </div>
+                    ))}
+                    <textarea
+                      value={commentText[item.id] ?? ''}
+                      onChange={e => setCommentText(prev => ({ ...prev, [item.id]: e.target.value }))}
+                      placeholder="Agregar una nota…"
+                      rows={3}
+                      style={{ width: '100%', boxSizing: 'border-box', fontSize: 12, padding: '8px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--rule)', background: 'var(--surface)', color: 'var(--fg)', resize: 'vertical', marginBottom: 6 }}
+                    />
+                    <button
+                      onClick={() => addComment(item.id)}
+                      disabled={!commentText[item.id]?.trim()}
+                      className="btn btn-primary"
+                      style={{ fontSize: 12, padding: '6px 16px' }}
+                    >
+                      Agregar nota
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

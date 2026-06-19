@@ -18,12 +18,13 @@ type BibUG    = { user_id: string; grupo_id: number }
 
 type PermMatrix = Record<string, Record<string, boolean>>
 
-const ROLES = ['viewer', 'uploader', 'admin', 'rrhh'] as const
+const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista'] as const
 const ROLE_LABELS: Record<string, string> = {
-  viewer:   'Consulta',
-  uploader: 'Carga',
-  admin:    'Admin',
-  rrhh:     'RRHH',
+  viewer:     'Consulta',
+  uploader:   'Carga',
+  admin:      'Admin',
+  rrhh:       'RRHH',
+  accionista: 'Accionista',
 }
 
 function fmtDate(iso: string | null) {
@@ -41,17 +42,23 @@ function RoleBadge({ role }: { role: string | null }) {
         ? 'rgba(108,174,82,0.15)'
         : role === 'uploader'
         ? 'color-mix(in oklab, var(--accent) 12%, var(--surface))'
+        : role === 'accionista'
+        ? 'rgba(180,130,0,0.12)'
         : 'var(--bg-alt)',
       color: role === 'admin'
         ? 'var(--cp-green-deep)'
         : role === 'uploader'
         ? 'var(--accent)'
+        : role === 'accionista'
+        ? '#9a6f00'
         : 'var(--fg-muted)',
       border: '1px solid',
       borderColor: role === 'admin'
         ? 'rgba(108,174,82,0.3)'
         : role === 'uploader'
         ? 'color-mix(in oklab, var(--accent) 30%, transparent)'
+        : role === 'accionista'
+        ? 'rgba(180,130,0,0.3)'
         : 'var(--rule)',
     }}>
       {ROLE_LABELS[role] ?? role}
@@ -70,12 +77,19 @@ export default function UsuariosPage() {
 
   // Invite form
   const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteRole, setInviteRole] = useState<'viewer' | 'uploader' | 'admin'>('viewer')
+  const [inviteRole, setInviteRole] = useState<'viewer' | 'uploader' | 'admin' | 'accionista'>('viewer')
   const [inviting, setInviting] = useState(false)
 
   // Permissions matrix
   const [matrix, setMatrix] = useState<PermMatrix | null>(null)
   const [matrixLoading, setMatrixLoading] = useState(true)
+
+  // Acceso modal (accionista report access)
+  const [accesoModal, setAccesoModal] = useState<{ userId: string; email: string } | null>(null)
+  const [accesoReportes, setAccesoReportes] = useState<{id:string;titulo:string;periodo:string;type_id:string|null}[]>([])
+  const [accesoSelected, setAccesoSelected] = useState<Set<string>>(new Set())
+  const [accesoLoading, setAccesoLoading] = useState(false)
+  const [accesoSaving, setAccesoSaving] = useState(false)
 
   function showFlash(msg: string, type: 'ok' | 'err' = 'ok') {
     setFlash({ msg, type })
@@ -109,7 +123,6 @@ export default function UsuariosPage() {
   async function handleBibGrupoToggle(userId: string, grupoId: number, checked: boolean) {
     const current = usuarioGrupos.filter(ug => ug.user_id === userId).map(ug => ug.grupo_id)
     const next = checked ? [...current, grupoId] : current.filter(id => id !== grupoId)
-    // Optimistic update
     setUsuarioGrupos(prev => [
       ...prev.filter(ug => ug.user_id !== userId),
       ...next.map(grupo_id => ({ user_id: userId, grupo_id })),
@@ -186,7 +199,6 @@ export default function UsuariosPage() {
 
   async function handlePermToggle(role: string, perm: string, enabled: boolean) {
     if (role === 'admin' && ADMIN_LOCKED.includes(perm as typeof ADMIN_LOCKED[number])) return
-    // Optimistic update
     setMatrix(prev => prev ? {
       ...prev,
       [role]: { ...prev[role], [perm]: enabled }
@@ -198,7 +210,39 @@ export default function UsuariosPage() {
     })
     if (!res.ok) {
       showFlash('Error al actualizar permiso', 'err')
-      await loadMatrix() // revert
+      await loadMatrix()
+    }
+  }
+
+  async function openAccesoModal(u: UserWithRole) {
+    setAccesoModal({ userId: u.id, email: u.email })
+    setAccesoLoading(true)
+    try {
+      const [reportesRes, accessRes] = await Promise.all([
+        fetch('/api/admin/reportes').then(r => r.json()),
+        fetch(`/api/admin/portal-acceso/${u.id}`).then(r => r.json()),
+      ])
+      const allReportes = (Array.isArray(reportesRes) ? reportesRes : reportesRes.reportes ?? []) as {id:string;titulo:string;periodo:string;type_id:string|null;estado:string}[]
+      setAccesoReportes(allReportes.filter((r: {estado:string}) => r.estado === 'publicado'))
+      setAccesoSelected(new Set(Array.isArray(accessRes) ? accessRes : []))
+    } finally {
+      setAccesoLoading(false)
+    }
+  }
+
+  async function saveAcceso() {
+    if (!accesoModal) return
+    setAccesoSaving(true)
+    try {
+      const res = await fetch(`/api/admin/portal-acceso/${accesoModal.userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reporteIds: Array.from(accesoSelected) }),
+      })
+      if (res.ok) { showFlash('Acceso actualizado'); setAccesoModal(null) }
+      else showFlash('Error al guardar', 'err')
+    } finally {
+      setAccesoSaving(false)
     }
   }
 
@@ -253,12 +297,13 @@ export default function UsuariosPage() {
               <label>Rol</label>
               <select
                 value={inviteRole}
-                onChange={e => setInviteRole(e.target.value as 'viewer' | 'uploader' | 'admin')}
+                onChange={e => setInviteRole(e.target.value as 'viewer' | 'uploader' | 'admin' | 'accionista')}
                 style={{ width: '100%', padding: '10px 12px', borderRadius: 'var(--r-md)', border: '1px solid var(--rule)', background: 'var(--bg)', color: 'var(--fg)', fontSize: 14 }}
               >
                 <option value="viewer">Consulta (viewer)</option>
                 <option value="uploader">Carga (uploader)</option>
                 <option value="admin">Admin</option>
+                <option value="accionista">Accionista</option>
               </select>
             </div>
             <button type="submit" className="btn btn-primary" disabled={inviting}
@@ -296,7 +341,7 @@ export default function UsuariosPage() {
                     {/* Top row: controls */}
                     <div style={{
                       display: 'grid',
-                      gridTemplateColumns: '1fr auto auto auto auto auto',
+                      gridTemplateColumns: '1fr auto auto auto auto auto auto',
                       gap: 10,
                       alignItems: 'center',
                       padding: '14px 18px 10px',
@@ -322,7 +367,15 @@ export default function UsuariosPage() {
                         <option value="viewer">Consulta</option>
                         <option value="uploader">Carga</option>
                         <option value="admin">Admin</option>
+                        <option value="rrhh">RRHH</option>
+                        <option value="accionista">Accionista</option>
                       </select>
+
+                      {user.role === 'accionista' && (
+                        <button className="btn" style={{ fontSize: 11, padding: '5px 10px' }} onClick={() => openAccesoModal(user)}>
+                          Acceso →
+                        </button>
+                      )}
 
                       <div
                         title={user.activo ? 'Clic para desactivar' : 'Clic para activar'}
@@ -413,7 +466,7 @@ export default function UsuariosPage() {
               {/* Header row */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr repeat(3, 110px)',
+                gridTemplateColumns: `1fr repeat(${ROLES.length}, 110px)`,
                 gap: 0,
                 background: 'var(--bg-alt)',
                 borderBottom: '1px solid var(--rule)',
@@ -435,7 +488,7 @@ export default function UsuariosPage() {
                   key={perm}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '1fr repeat(3, 110px)',
+                    gridTemplateColumns: `1fr repeat(${ROLES.length}, 110px)`,
                     gap: 0,
                     padding: '13px 18px',
                     borderBottom: pi < perms.length - 1 ? '1px solid var(--rule)' : 'none',
@@ -478,6 +531,44 @@ export default function UsuariosPage() {
         </div>
 
       </div>
+
+      {/* Acceso modal */}
+      {accesoModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:300, padding:24 }}
+          onClick={e => { if (e.target === e.currentTarget) setAccesoModal(null) }}>
+          <div style={{ background:'var(--bg)', borderRadius:'var(--r-lg)', padding:28, width:'100%', maxWidth:560, maxHeight:'80vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 60px rgba(0,0,0,.2)' }}>
+            <h2 style={{ fontFamily:'var(--font-display)', fontSize:17, fontWeight:600, margin:'0 0 4px', letterSpacing:'-0.01em' }}>
+              Acceso al portal
+            </h2>
+            <p style={{ fontSize:12, color:'var(--fg-muted)', margin:'0 0 16px' }}>
+              {accesoModal.email} — seleccioná los reportes visibles
+            </p>
+            {accesoLoading ? (
+              <p style={{ fontSize:13, color:'var(--fg-muted)' }}>Cargando…</p>
+            ) : accesoReportes.length === 0 ? (
+              <p style={{ fontSize:13, color:'var(--fg-muted)' }}>No hay reportes publicados.</p>
+            ) : (
+              <div style={{ flex:1, overflowY:'auto', display:'grid', gap:6, marginBottom:20 }}>
+                {accesoReportes.map(r => (
+                  <label key={r.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'var(--surface)', border:`1px solid ${accesoSelected.has(r.id) ? 'var(--accent)' : 'var(--rule)'}`, borderRadius:'var(--r-md)', cursor:'pointer' }}>
+                    <input type="checkbox" checked={accesoSelected.has(r.id)} onChange={() => setAccesoSelected(prev => { const s=new Set(prev); s.has(r.id)?s.delete(r.id):s.add(r.id); return s })} style={{ accentColor:'var(--accent)', width:15, height:15 }} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:'var(--fg)' }}>{r.titulo}</div>
+                      <div style={{ fontSize:11, color:'var(--fg-muted)', fontFamily:'var(--font-mono)' }}>{r.periodo}{r.type_id ? ` · ${r.type_id}` : ''}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+              <button className="btn" style={{ padding:'9px 18px' }} onClick={() => setAccesoModal(null)}>Cancelar</button>
+              <button className="btn btn-primary" style={{ padding:'9px 20px', minWidth:120 }} onClick={saveAcceso} disabled={accesoSaving || accesoLoading}>
+                {accesoSaving ? 'Guardando…' : 'Guardar acceso'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -10,7 +10,7 @@ import {
 } from '@/lib/permissions-config'
 
 export type { Permission }
-export type UserRole = 'viewer' | 'uploader' | 'admin'
+export type UserRole = 'viewer' | 'uploader' | 'admin' | 'rrhh' | 'accionista'
 export type RoleRow = { role: UserRole; activo: boolean }
 
 export { ADMIN_LOCKED }

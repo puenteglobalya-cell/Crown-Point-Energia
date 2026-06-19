@@ -27,8 +27,16 @@ export default async function PortalPage() {
   const { data: reportes } = await reportQuery
   let items = (reportes ?? []) as Parameters<typeof ReportesLista>[0]['items']
 
-  // Filter by report_type_access for non-admin roles
-  if (role?.role && role.role !== 'admin') {
+  // Accionista: only explicitly granted reports
+  if (role?.role === 'accionista') {
+    const { data: access } = await db
+      .from('portal_report_access')
+      .select('reporte_id')
+      .eq('user_id', user.id)
+    const granted = new Set((access ?? []).map((r: { reporte_id: string }) => r.reporte_id))
+    items = items.filter(it => granted.has(it.id))
+  } else if (role?.role && role.role !== 'admin') {
+    // Filter by report_type_access for non-admin, non-accionista roles
     const { data: typeAccess } = await db
       .from('report_type_access')
       .select('type_id')
@@ -45,6 +53,7 @@ export default async function PortalPage() {
 
   const userCanUpload = canUpload(permissions)
   const userIsAdmin   = isAdminRole(permissions)
+  const isAccionista  = role?.role === 'accionista'
 
   return (
     <div className="portal-page">
@@ -77,7 +86,7 @@ export default async function PortalPage() {
             <span className="portal-section__badge">— solo publicados</span>
           )}
         </h2>
-        <ReportesLista items={items} userCanUpload={userCanUpload} />
+        <ReportesLista items={items} userCanUpload={userCanUpload} isAccionista={isAccionista} />
       </section>
 
       {userIsAdmin && (
