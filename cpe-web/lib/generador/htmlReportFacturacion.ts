@@ -281,12 +281,20 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
   const otrosManualRows = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.tipo_comp === 'DA' || l.tipo_comp === 'DQ')
   const defaultManualOpen = petManualRows.length > 0 || ncManualRows.length > 0 || otrosManualRows.length > 0
 
+  // Lookup map: comprobante → linea (first occurrence)
+  const compMap = new Map<string, typeof lineas[number]>()
+  for (const l of lineas) {
+    if (!compMap.has(l.comprobante)) compMap.set(l.comprobante, l)
+  }
+
   const petManualHTML = petManualRows.map(({ l }) => {
     const mk = enc(l.art_codigo + '|' + l.comprobante)
     const apiOnly = /YPF|PAN AMERICAN|PAE\b/i.test(l.cliente)
     const dimCls  = apiOnly ? ' api-dim' : ''
     const noTab   = apiOnly ? ' tabindex="-1"' : ''
-    return `<tr data-cliente="${enc(l.cliente)}" data-api-only="${apiOnly ? '1' : '0'}" data-tipo="${enc(l.tipo_comp)}" data-comprobante="${enc(l.comprobante)}">` +
+    const childComps  = autoGroups[l.comprobante] ?? []
+    const autoAjustes = childComps.join(', ')
+    const parentRow = `<tr data-cliente="${enc(l.cliente)}" data-api-only="${apiOnly ? '1' : '0'}" data-tipo="${enc(l.tipo_comp)}" data-comprobante="${enc(l.comprobante)}">` +
     `<td class="manual-info">${fechaCorta(l.fecha)}</td>` +
     `<td class="manual-info mono">${enc(l.comprobante)}<div class="m-neto-cell"></div></td>` +
     `<td class="manual-info cli" title="${enc(l.cliente)}">${enc(l.cliente)}</td>` +
@@ -295,9 +303,24 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
     `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="api" placeholder="°API"></td>` +
     `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="buque" placeholder="Nombre buque"${noTab}></td>` +
     `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="fecha_emb" placeholder="DD/MM/AAAA"${noTab}></td>` +
-    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="ajustes" placeholder="CQ, DQ vinculados (sep. coma)…"></td>` +
+    `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="ajustes" placeholder="CQ, DQ vinculados (sep. coma)…"${autoAjustes ? ` value="${enc(autoAjustes)}"` : ''}></td>` +
     `<td style="text-align:center"><input type="checkbox" class="m-check" data-mkey="${mk}" data-field="completo" onchange="autoSaveManual()"></td>` +
     `</tr>`
+    const adjRows = childComps.map(cc => {
+      const cl = compMap.get(cc)
+      if (!cl) return ''
+      const isNeg = cl.importe_usd < 0
+      const amtColor = isNeg ? '#C53030' : '#276749'
+      return `<tr class="pet-adj-row" data-adj-row="1" data-parent-comp="${enc(l.comprobante)}">` +
+        `<td class="manual-info" style="padding-left:18px;color:#718096">↳ ${fechaCorta(cl.fecha)}</td>` +
+        `<td class="manual-info mono" style="color:#4A5568;font-size:10.5px">${enc(cl.comprobante)}</td>` +
+        `<td class="manual-info cli" style="color:#718096;font-size:10.5px" title="${enc(cl.cliente)}">${enc(cl.cliente)}</td>` +
+        `<td class="manual-info mono" style="font-size:10.5px;color:#718096">${enc(cl.art_codigo)}</td>` +
+        `<td colspan="5" style="font-size:11px;color:${amtColor};font-weight:600">${enc(cl.tipo_comp)} · ${fN(cl.importe_usd)} USD</td>` +
+        `<td></td>` +
+        `</tr>`
+    }).join('')
+    return parentRow + adjRows
   }).join('')
 
   const ncManualHTML = ncManualRows.map(({ l }) => {
@@ -445,6 +468,8 @@ table.fiscal .na-cell{color:#C8CCDA;text-align:center}
 .api-dim{opacity:.25;pointer-events:none}
 .m-neto-cell{font-size:10px;color:#276749;font-weight:600;margin-top:2px;white-space:nowrap}
 .m-input-ref{background:#EBF8FF!important;border-color:#BEE3F8!important;color:#2B6CB0!important}
+.pet-adj-row{background:#F7FAFC}
+.pet-adj-row td{border-top:none!important}
 .pet-filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .pet-filter-bar input{font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 10px;border:1.5px solid #E8EAEF;border-radius:6px;width:220px;color:#14172E;outline:none;background:#fff}
 .pet-filter-bar input:focus{border-color:#14172E}
@@ -681,8 +706,10 @@ table.precios .ptot td{font-weight:700;border-top:1.5px solid #E8EAEF;background
         </div>
         </div>
       </div>` : ''}
-      <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
+      <div style="display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap">
         <button id="save-manual-btn" class="btn-exp btn-primary" style="padding:8px 20px;font-size:13px" onclick="guardarManual()">Guardar y aplicar</button>
+        <button class="btn-exp btn-secondary" style="padding:7px 14px;font-size:12px" onclick="exportarManualData()" title="Descargar todos los datos manuales como JSON">⬇ Backup JSON</button>
+        <label class="btn-exp btn-secondary" style="padding:7px 14px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center" title="Restaurar datos desde un backup JSON">⬆ Restaurar<input type="file" accept=".json" style="display:none" onchange="importarManualData(this)"></label>
       </div>
     </div>
   </div>
@@ -1039,7 +1066,15 @@ function autoSaveManual() {
   var btn = document.getElementById('pet-hide-btn');
   if (btn && btn.getAttribute('data-hiding') === '1') {
     document.querySelectorAll('#manual-pet-table tbody tr').forEach(function(tr) {
-      tr.classList.toggle('m-row-hidden', tr.getAttribute('data-done') === '1');
+      if (tr.hasAttribute('data-adj-row')) return;
+      var done = tr.getAttribute('data-done') === '1';
+      tr.classList.toggle('m-row-hidden', done);
+      var comp = tr.getAttribute('data-comprobante');
+      if (comp) {
+        document.querySelectorAll('#manual-pet-table tbody tr[data-parent-comp="' + comp + '"]').forEach(function(adj) {
+          adj.classList.toggle('m-row-hidden', done);
+        });
+      }
     });
   }
   var otrosBtn = document.getElementById('otros-hide-btn');
@@ -1093,6 +1128,37 @@ function loadManualFromStorage() {
     updateNetoDisplay();
   } catch(e) {}
   manualReady = true;
+}
+
+function exportarManualData() {
+  collectManualFromForm();
+  var blob = new Blob([JSON.stringify(manualData, null, 2)], {type: 'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'manual_data_' + (PERIODO_DESDE || 'backup') + '_' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importarManualData(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (typeof data !== 'object' || !data) throw new Error('Formato inválido');
+      manualData = data;
+      try { localStorage.setItem(MANUAL_KEY, JSON.stringify(manualData)); } catch(ex) {}
+      loadManualFromStorage();
+      alert('Datos restaurados: ' + Object.keys(data).length + ' registros.');
+    } catch(err) { alert('Error al importar: ' + err.message); }
+  };
+  reader.readAsText(file);
+  input.value = '';
 }
 
 function updateNetoDisplay() {
@@ -1325,7 +1391,14 @@ function toggleHideDone(tableId, btnId) {
   btn.setAttribute('data-hiding', hiding ? '1' : '0');
   btn.textContent = hiding ? 'Mostrar todos' : 'Ocultar completados';
   tbl.querySelectorAll('tr[data-done="1"]').forEach(function(tr) {
+    if (tr.hasAttribute('data-adj-row')) return;
     tr.classList.toggle('m-row-hidden', hiding);
+    var comp = tr.getAttribute('data-comprobante');
+    if (comp) {
+      tbl.querySelectorAll('tr[data-parent-comp="' + comp + '"]').forEach(function(adj) {
+        adj.classList.toggle('m-row-hidden', hiding);
+      });
+    }
   });
 }
 
@@ -1333,9 +1406,16 @@ function toggleHideDone(tableId, btnId) {
 function filterPetTable() {
   var q = (document.getElementById('pet-filter').value || '').toLowerCase().trim();
   document.querySelectorAll('#manual-pet-table tbody tr').forEach(function(tr) {
+    if (tr.hasAttribute('data-adj-row')) return; // handled together with parent below
     var cli = (tr.getAttribute('data-cliente') || '').toLowerCase();
     var hiddenByFilter = q !== '' && cli.indexOf(q) < 0;
     tr.classList.toggle('m-row-filter', hiddenByFilter);
+    var comp = tr.getAttribute('data-comprobante');
+    if (comp) {
+      document.querySelectorAll('#manual-pet-table tbody tr[data-parent-comp="' + comp + '"]').forEach(function(adj) {
+        adj.classList.toggle('m-row-filter', hiddenByFilter);
+      });
+    }
   });
 }
 
@@ -1370,7 +1450,8 @@ function sortPetTable(col) {
   }
   var tbl = document.getElementById('manual-pet-table');
   if (!tbl) return;
-  var rows = Array.from(tbl.querySelectorAll('tbody tr'));
+  // Sort only parent rows; adj rows follow their parent
+  var rows = Array.from(tbl.querySelectorAll('tbody tr:not([data-adj-row])'));
   rows.sort(function(a, b) {
     var av, bv;
     var aCell = a.cells[col], bCell = b.cells[col];
@@ -1389,7 +1470,16 @@ function sortPetTable(col) {
     return (petSortAsc ? 1 : -1) * String(av).localeCompare(String(bv), 'es', { numeric: true });
   });
   var tbody = tbl.querySelector('tbody');
-  rows.forEach(function(r) { tbody.appendChild(r); });
+  rows.forEach(function(r) {
+    tbody.appendChild(r);
+    // Re-attach adj children immediately after their parent
+    var comp = r.getAttribute('data-comprobante');
+    if (comp) {
+      tbody.querySelectorAll('tr[data-parent-comp="' + comp + '"]').forEach(function(adj) {
+        tbody.appendChild(adj);
+      });
+    }
+  });
 }
 
 // ── Fiscal table filters ──────────────────────────────────────────────────────
@@ -1723,88 +1813,97 @@ function rowHTML(l, idx, ncS, saved) {
     '</tr>';
 }
 
-// ── Bar chart ─────────────────────────────────────────────────────────────────
+// ── Charts (deferred so layout is computed before Chart.js reads canvas size) ──
 var barChart;
-try {
-  var bCtx = document.getElementById('barChart').getContext('2d');
-  barChart = new Chart(bCtx, {
-    type:'bar',
-    data:{ labels: MESES.map(function(m){return MES_LABELS[m]||m;}), datasets: ${j(catDatasets)} },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}},
-      scales:{
-        x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
-        y:{stacked:true,ticks:{font:{size:11},callback:function(v){
-          if(Math.abs(v)>=1000000) return (v/1000000).toFixed(1)+'M';
-          if(Math.abs(v)>=1000) return (v/1000).toFixed(0)+'k';
-          return v;
-        }},grid:{color:'rgba(0,0,0,.06)'}},
+var donutChart;
+requestAnimationFrame(function() {
+  // Bar chart
+  try {
+    var bCtx = document.getElementById('barChart').getContext('2d');
+    barChart = new Chart(bCtx, {
+      type:'bar',
+      data:{ labels: MESES.map(function(m){return MES_LABELS[m]||m;}), datasets: ${j(catDatasets)} },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}},
+        scales:{
+          x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
+          y:{stacked:true,ticks:{font:{size:11},callback:function(v){
+            if(Math.abs(v)>=1000000) return (v/1000000).toFixed(1)+'M';
+            if(Math.abs(v)>=1000) return (v/1000).toFixed(0)+'k';
+            return v;
+          }},grid:{color:'rgba(0,0,0,.06)'}},
+        },
       },
-    },
-  });
-} catch(e) {
-  console.error('[barChart init]', e);
-  var bWrap = document.getElementById('barChart');
-  if (bWrap) { bWrap.style.display='none'; var bErr=document.createElement('div'); bErr.style.cssText='padding:24px;text-align:center;color:#A0AEC0;font-size:12px'; bErr.textContent='Gráfico no disponible (Chart.js no cargó)'; bWrap.parentNode.appendChild(bErr); }
-}
+    });
+  } catch(e) {
+    console.error('[barChart init]', e);
+    var bWrap = document.getElementById('barChart');
+    if (bWrap) { bWrap.style.display='none'; var bErr=document.createElement('div'); bErr.style.cssText='padding:24px;text-align:center;color:#A0AEC0;font-size:12px'; bErr.textContent='Gráfico no disponible (Chart.js no cargó)'; bWrap.parentNode.appendChild(bErr); }
+  }
+  // Donut chart
+  try {
+    var dCtx = document.getElementById('donutChart').getContext('2d');
+    donutChart = new Chart(dCtx,{
+      type:'doughnut',
+      data:{ labels:${j(donutLabels)}, datasets:[{data:${j(donutData)},backgroundColor:${j(donutColors)},borderWidth:2,borderColor:'#fff'}] },
+      options:{
+        responsive:true, maintainAspectRatio:false, cutout:'62%',
+        plugins:{
+          legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},
+          tooltip:{callbacks:{label:function(c){
+            var total=c.dataset.data.reduce(function(a,b){return a+b;},0);
+            return ' '+(c.parsed/1e6).toFixed(3)+' MM ('+(total>0?(c.parsed/total*100).toFixed(1):0)+'%)';
+          }}},
+        },
+      },
+    });
+  } catch(e) {
+    console.error('[donutChart init]', e);
+    var dWrap = document.getElementById('donutChart');
+    if (dWrap) { dWrap.style.display='none'; var dErr=document.createElement('div'); dErr.style.cssText='padding:24px;text-align:center;color:#A0AEC0;font-size:12px'; dErr.textContent='Gráfico no disponible (Chart.js no cargó)'; dWrap.parentNode.appendChild(dErr); }
+  }
+  // Populate charts with current filter state (IIFE ran before rAF so charts were null then)
+  try { updateBarChartFromLineas(getFilteredLineas()); } catch(e) { console.error('[barChart update]', e); }
+  try { updateDonutChartFromLineas(getFilteredLineas()); } catch(e) { console.error('[donutChart update]', e); }
+});
 
 function updateBarChartFromLineas(lineas) {
   if (!barChart) return;
-  var mesQ = document.getElementById('mesSelect').value || '';
-  var filtered = MESES.filter(function(m){
-    if (!activeMeses.has(m)) return false;
-    if (mesQ && m !== mesQ) return false;
-    return true;
-  });
-  barChart.data.labels = filtered.map(function(m){ return MES_LABELS[m]||m; });
-  var byCat = {};
-  lineas.forEach(function(l){
-    if (!byCat[l.categoria]) byCat[l.categoria]={label:l.categoria,data:filtered.map(function(){return 0;}),backgroundColor:CAT_COLORS[l.categoria]||'#A0AEC0',stack:'stack'};
-    var i=filtered.indexOf(l.mes);
-    if(i>=0) byCat[l.categoria].data[i]+=l.importe_usd;
-  });
-  barChart.data.datasets=Object.values(byCat);
-  barChart.update();
-}
-
-// ── Donut chart ───────────────────────────────────────────────────────────────
-var donutChart;
-try {
-  var dCtx = document.getElementById('donutChart').getContext('2d');
-  donutChart = new Chart(dCtx,{
-    type:'doughnut',
-    data:{ labels:${j(donutLabels)}, datasets:[{data:${j(donutData)},backgroundColor:${j(donutColors)},borderWidth:2,borderColor:'#fff'}] },
-    options:{
-      responsive:true, maintainAspectRatio:false, cutout:'62%',
-      plugins:{
-        legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},
-        tooltip:{callbacks:{label:function(c){
-          var total=c.dataset.data.reduce(function(a,b){return a+b;},0);
-          return ' '+(c.parsed/1e6).toFixed(3)+' MM ('+(total>0?(c.parsed/total*100).toFixed(1):0)+'%)';
-        }}},
-      },
-    },
-  });
-} catch(e) {
-  console.error('[donutChart init]', e);
-  var dWrap = document.getElementById('donutChart');
-  if (dWrap) { dWrap.style.display='none'; var dErr=document.createElement('div'); dErr.style.cssText='padding:24px;text-align:center;color:#A0AEC0;font-size:12px'; dErr.textContent='Gráfico no disponible (Chart.js no cargó)'; dWrap.parentNode.appendChild(dErr); }
+  try {
+    var mesQ = document.getElementById('mesSelect').value || '';
+    var filtered = MESES.filter(function(m){
+      if (!activeMeses.has(m)) return false;
+      if (mesQ && m !== mesQ) return false;
+      return true;
+    });
+    barChart.data.labels = filtered.map(function(m){ return MES_LABELS[m]||m; });
+    var byCat = {};
+    lineas.forEach(function(l){
+      if (!byCat[l.categoria]) byCat[l.categoria]={label:l.categoria,data:filtered.map(function(){return 0;}),backgroundColor:CAT_COLORS[l.categoria]||'#A0AEC0',stack:'stack'};
+      var i=filtered.indexOf(l.mes);
+      if(i>=0) byCat[l.categoria].data[i]+=l.importe_usd;
+    });
+    barChart.data.datasets=Object.values(byCat);
+    barChart.update();
+  } catch(e) { console.error('[barChart update]', e); }
 }
 
 function updateDonutChartFromLineas(lineas) {
   if (!donutChart) return;
-  var labels=[], data=[], colors=[];
-  ALL_CATEGORIAS.forEach(function(cat){
-    var val=lineas.filter(function(l){return l.categoria===cat;}).reduce(function(s,l){return s+l.importe_usd;},0);
-    if(!val) return;
-    labels.push(cat); data.push(Math.abs(val)); colors.push(CAT_COLORS[cat]||'#A0AEC0');
-  });
-  donutChart.data.labels=labels;
-  donutChart.data.datasets[0].data=data;
-  donutChart.data.datasets[0].backgroundColor=colors;
-  donutChart.update();
+  try {
+    var labels=[], data=[], colors=[];
+    ALL_CATEGORIAS.forEach(function(cat){
+      var val=lineas.filter(function(l){return l.categoria===cat;}).reduce(function(s,l){return s+l.importe_usd;},0);
+      if(!val) return;
+      labels.push(cat); data.push(Math.abs(val)); colors.push(CAT_COLORS[cat]||'#A0AEC0');
+    });
+    donutChart.data.labels=labels;
+    donutChart.data.datasets[0].data=data;
+    donutChart.data.datasets[0].backgroundColor=colors;
+    donutChart.update();
+  } catch(e) { console.error('[donutChart update]', e); }
 }
 
 function renderKPIs(lineas) {
