@@ -80,13 +80,17 @@ export default async function HomePage() {
       {show['hero'] !== false && (
         <section className="hero" data-cpe-section="hero">
           <div className="hero-media">
-            <Image
-              src={heroImg}
-              alt=""
-              fill
-              loading="eager"
-              style={{ objectFit: 'cover', filter: 'brightness(0.85) saturate(0.92)' }}
-            />
+            {heroImg ? (
+              <Image
+                src={heroImg}
+                alt={f['hero.home.img.alt'] || ''}
+                fill
+                loading="eager"
+                style={{ objectFit: 'cover', filter: 'brightness(0.85) saturate(0.92)' }}
+              />
+            ) : (
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(150deg, #0d1230 0%, #1F2566 45%, #142e22 100%)' }} />
+            )}
             <div className="hero-veil"></div>
           </div>
           <div className="container hero-content">
@@ -168,6 +172,29 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* EN NÚMEROS */}
+      <section className="nums-strip" aria-label="Crown Point en números">
+        <div className="container">
+          <div className="nums-grid">
+            {[
+              { val: f['stats.pozos']      || '357',  es: 'pozos productivos',     en: 'producing wells' },
+              { val: f['stats.inyectores'] || '83',   es: 'pozos inyectores',      en: 'injection wells' },
+              { val: f['stats.cuencas']    || '4',    es: 'cuencas productoras',   en: 'producing basins' },
+              { val: f['stats.ha']         || '372k', es: 'hectáreas operadas',    en: 'operated hectares' },
+              { val: f['stats.anios']      || '25+',  es: 'años en upstream arg.', en: 'yrs Argentine upstream' },
+            ].map(s => (
+              <div className="nums-item" key={s.es}>
+                <span className="nums-val num">{s.val}</span>
+                <span className="nums-label">
+                  <span className="lang-es">{s.es}</span>
+                  <span className="lang-en">{s.en}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* KPIs */}
       {show['kpis'] !== false && (
         <section className="section" data-cpe-section="kpis">
@@ -245,6 +272,16 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* STATEMENT */}
+      <section className="statement-section" data-cpe-section="statement">
+        <div className="container">
+          <blockquote className="statement-quote reveal">
+            <span className="lang-es">{f['statement.home.es'] || 'Crecimiento disciplinado con activos reales.'}</span>
+            <span className="lang-en">{f['statement.home.en'] || 'Disciplined growth backed by real assets.'}</span>
+          </blockquote>
+        </div>
+      </section>
 
       {/* OPERATIONS MAP */}
       {show['ops'] !== false && (
