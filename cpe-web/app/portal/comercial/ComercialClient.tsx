@@ -47,13 +47,20 @@ export default function ComercialClient({
   const [sortCol, setSortCol] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<1 | -1>(1)
 
-  // Admin sync form state
-  const [syncDesde, setSyncDesde] = useState('')
-  const [syncHasta, setSyncHasta] = useState('')
+  // Admin sync form state — default to last 30 days
+  const defaultHasta = new Date().toISOString().slice(0, 10)
+  const defaultDesde = new Date(Date.now() - 29 * 86_400_000).toISOString().slice(0, 10)
+  const [syncDesde, setSyncDesde] = useState(defaultDesde)
+  const [syncHasta, setSyncHasta] = useState(defaultHasta)
   const [syncBrent, setSyncBrent] = useState('')
   const [syncing, setSyncing]     = useState(false)
   const [syncMsg, setSyncMsg]     = useState<string | null>(null)
   const [showForm, setShowForm]   = useState(false)
+
+  const syncRangeDays = syncDesde && syncHasta
+    ? Math.round((new Date(syncHasta).getTime() - new Date(syncDesde).getTime()) / 86_400_000) + 1
+    : 0
+  const syncRangeError = syncRangeDays > 30 ? `El rango máximo es 30 días (seleccionaste ${syncRangeDays}).` : null
 
   const ddeeHeader = se?.headers.find(h =>
     /d\.?d\.?e\.?e/i.test(h) || /descuento/i.test(h)
@@ -126,6 +133,10 @@ export default function ComercialClient({
   async function handleSync() {
     if (!syncDesde || !syncHasta) {
       setSyncMsg('Completar fecha desde y hasta.')
+      return
+    }
+    if (syncRangeError) {
+      setSyncMsg(syncRangeError)
       return
     }
     setSyncing(true)
@@ -231,21 +242,27 @@ export default function ComercialClient({
                   style={{ ...inputStyle, width: 110 }}
                 />
               </div>
-              <button
-                onClick={handleSync} disabled={syncing}
-                style={{
-                  padding: '7px 18px',
-                  background: syncing ? 'var(--bg-alt)' : '#1F2566',
-                  color: '#fff', border: 'none', borderRadius: 8,
-                  fontSize: 13, fontWeight: 600,
-                  cursor: syncing ? 'not-allowed' : 'pointer',
-                  opacity: syncing ? 0.7 : 1, transition: 'opacity .15s',
-                }}
-              >
-                {syncing ? 'Sincronizando…' : '↻ Sincronizar'}
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <button
+                  onClick={handleSync} disabled={syncing || !!syncRangeError}
+                  style={{
+                    padding: '7px 18px',
+                    background: (syncing || syncRangeError) ? 'var(--bg-alt)' : '#1F2566',
+                    color: (syncing || syncRangeError) ? 'var(--fg-muted)' : '#fff',
+                    border: '1px solid var(--rule)', borderRadius: 8,
+                    fontSize: 13, fontWeight: 600,
+                    cursor: (syncing || syncRangeError) ? 'not-allowed' : 'pointer',
+                    opacity: (syncing || syncRangeError) ? 0.6 : 1, transition: 'opacity .15s',
+                  }}
+                >
+                  {syncing ? 'Sincronizando…' : '↻ Sincronizar'}
+                </button>
+                <span style={{ fontSize: 10, color: syncRangeError ? '#c0392b' : '#8e91b0', fontWeight: syncRangeError ? 600 : 400 }}>
+                  {syncRangeError ?? (syncRangeDays > 0 ? `${syncRangeDays} día${syncRangeDays !== 1 ? 's' : ''} · máx. 30` : 'máx. 30 días')}
+                </span>
+              </div>
               {syncMsg && (
-                <span style={{ fontSize: 12, color: syncMsg.startsWith('Error') ? '#c0392b' : '#2C7A5B', fontWeight: 600 }}>
+                <span style={{ fontSize: 12, color: syncMsg.startsWith('Error') || syncMsg.startsWith('El rango') ? '#c0392b' : '#2C7A5B', fontWeight: 600 }}>
                   {syncMsg}
                 </span>
               )}
