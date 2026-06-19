@@ -12,9 +12,9 @@ export type MapBlockData = {
 }
 
 const COMMODITY_LABEL: Record<MapBlockData['commodity'], { es: string; en: string; color: string }> = {
-  oil:   { es: 'Petróleo',   en: 'Oil',    color: '#E2B23A' },
-  gas:   { es: 'Gas',        en: 'Gas',    color: '#2FA08A' },
-  mixed: { es: 'Petróleo + Gas', en: 'Oil + Gas', color: '#6CAE52' },
+  oil:   { es: 'Petróleo',       en: 'Oil',       color: '#1F2566' },
+  gas:   { es: 'Gas natural',    en: 'Natural gas', color: '#4a8a3a' },
+  mixed: { es: 'Petróleo + Gas', en: 'Oil + Gas',  color: '#6CAE52' },
 }
 
 export default function ArgentinaMapInteractive({

@@ -9,8 +9,8 @@ export const revalidate = 60
 
 type Commodity = 'oil' | 'gas' | 'mixed'
 const COMMODITY: Record<Commodity, { color: string; es: string; en: string }> = {
-  oil:   { color: '#E2B23A', es: 'Petróleo',       en: 'Oil' },
-  gas:   { color: '#2FA08A', es: 'Gas natural',     en: 'Natural gas' },
+  oil:   { color: '#1F2566', es: 'Petróleo',       en: 'Oil' },
+  gas:   { color: '#4a8a3a', es: 'Gas natural',     en: 'Natural gas' },
   mixed: { color: '#6CAE52', es: 'Petróleo + Gas',  en: 'Oil + Gas' },
 }
 
