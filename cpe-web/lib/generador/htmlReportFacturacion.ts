@@ -181,42 +181,8 @@ function buildFiscalTableHTML(
 
 // ─── Auto-group builder ───────────────────────────────────────────────────────
 
-function buildAutoGroups(lineas: DatosFacturacion['lineas']): Record<string, string[]> {
-  const isParent = (t: string) => t.startsWith('F') || t === 'CL'
-  const isChild  = (t: string) => (t.startsWith('C') && t !== 'CL') || t.startsWith('D')
-  const getSuc   = (comp: string) => comp.split(' ')[1]?.split('-')[0] ?? ''
-
-  type CI = { comp: string; tipo: string; mes: string; suc: string }
-  const seen = new Map<string, CI>()
-  for (const l of lineas) {
-    if (!seen.has(l.comprobante))
-      seen.set(l.comprobante, { comp: l.comprobante, tipo: l.tipo_comp, mes: l.mes, suc: getSuc(l.comprobante) })
-  }
-
-  const byMesSuc = new Map<string, CI[]>()
-  for (const ci of seen.values()) {
-    const key = `${ci.mes}|${ci.suc}`
-    if (!byMesSuc.has(key)) byMesSuc.set(key, [])
-    byMesSuc.get(key)!.push(ci)
-  }
-
-  const result: Record<string, string[]> = {}
-  for (const group of byMesSuc.values()) {
-    const parents  = group.filter(c => isParent(c.tipo))
-    const children = group.filter(c => isChild(c.tipo))
-    if (!parents.length || !children.length) continue
-    if (parents.length === 1) {
-      result[parents[0].comp] = children.map(c => c.comp)
-    } else {
-      // Multiple parents in same suc+month — match by second letter (FQ→CQ/DQ, FA→CA/DA)
-      for (const p of parents) {
-        const letter = p.tipo[1] ?? ''
-        const matched = children.filter(c => (c.tipo[1] ?? '') === letter)
-        if (matched.length) result[p.comp] = matched.map(c => c.comp)
-      }
-    }
-  }
-  return result
+function buildAutoGroups(_lineas: DatosFacturacion['lineas']): Record<string, string[]> {
+  return {}
 }
 
 // ─── Main generator ───────────────────────────────────────────────────────────
@@ -294,10 +260,14 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
     const noTab   = apiOnly ? ' tabindex="-1"' : ''
     const childComps  = autoGroups[l.comprobante] ?? []
     const autoAjustes = childComps.join(', ')
-    const parentRow = `<tr data-cliente="${enc(l.cliente)}" data-api-only="${apiOnly ? '1' : '0'}" data-tipo="${enc(l.tipo_comp)}" data-comprobante="${enc(l.comprobante)}">` +
+    const apiRowStyle = apiOnly ? ' style="border-left:3px solid #BEE3F8;background:#F0F8FF"' : ''
+    const clienteCell = apiOnly
+      ? `${enc(l.cliente)} <span style="font-size:9px;background:#BEE3F8;color:#2B6CB0;border-radius:3px;padding:1px 4px;font-weight:700;vertical-align:middle">API</span>`
+      : enc(l.cliente)
+    const parentRow = `<tr data-cliente="${enc(l.cliente)}" data-api-only="${apiOnly ? '1' : '0'}" data-tipo="${enc(l.tipo_comp)}" data-comprobante="${enc(l.comprobante)}"${apiRowStyle}>` +
     `<td class="manual-info">${fechaCorta(l.fecha)}</td>` +
     `<td class="manual-info mono">${enc(l.comprobante)}<div class="m-neto-cell"></div></td>` +
-    `<td class="manual-info cli" title="${enc(l.cliente)}">${enc(l.cliente)}</td>` +
+    `<td class="manual-info cli" title="${enc(l.cliente)}">${clienteCell}</td>` +
     `<td class="manual-info mono">${enc(l.art_codigo)}</td>` +
     `<td class="${dimCls}"><input class="m-input" type="text" data-mkey="${mk}" data-field="cert" placeholder="Certificado"${noTab}></td>` +
     `<td><input class="m-input" type="text" data-mkey="${mk}" data-field="api" placeholder="°API"></td>` +
@@ -465,7 +435,7 @@ table.fiscal .na-cell{color:#C8CCDA;text-align:center}
 .m-hide-btn{font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid #C6F6D5;background:#F0FFF4;color:#276749;cursor:pointer;white-space:nowrap}
 .m-hide-btn:hover{background:#C6F6D5}
 .m-done-badge{font-size:11px;color:#48BB78;font-weight:600;margin-left:8px}
-.api-dim{opacity:.25;pointer-events:none}
+.api-dim{opacity:.3;pointer-events:none;position:relative}.api-dim input{background:#F0F4F8!important;border-color:#CBD5E0!important;color:#A0AEC0!important;text-decoration:line-through}
 .m-neto-cell{font-size:10px;color:#276749;font-weight:600;margin-top:2px;white-space:nowrap}
 .m-input-ref{background:#EBF8FF!important;border-color:#BEE3F8!important;color:#2B6CB0!important}
 .pet-adj-row{background:#F7FAFC}

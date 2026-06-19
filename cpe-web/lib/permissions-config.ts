@@ -19,7 +19,9 @@ export const ADMIN_LOCKED: Permission[] = ['manage_users', 'manage_cms']
 
 // Fallback defaults when the DB has no row for a given permission
 export const DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
-  viewer:   [],
-  uploader: ['view_drafts', 'upload_reports'],
-  admin:    PERMISSION_KEYS,
+  viewer:     [],
+  uploader:   ['view_drafts', 'upload_reports'],
+  admin:      PERMISSION_KEYS,
+  rrhh:       [],
+  accionista: [],
 }
