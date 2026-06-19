@@ -19,6 +19,8 @@ type BibUG    = { user_id: string; grupo_id: number }
 type PermMatrix = Record<string, Record<string, boolean>>
 
 const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista'] as const
+// Accionista access is managed via portal_report_access, not the permissions matrix
+const MATRIX_ROLES = ['viewer', 'uploader', 'admin', 'rrhh'] as const
 const ROLE_LABELS: Record<string, string> = {
   viewer:     'Consulta',
   uploader:   'Carga',
@@ -254,10 +256,7 @@ export default function UsuariosPage() {
 
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
-          <Link href="/admin" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>
-            ← Panel CMS
-          </Link>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: '8px 0 4px' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: '0 0 4px' }}>
             Gestión de usuarios
           </h1>
           <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: 0 }}>
@@ -466,7 +465,7 @@ export default function UsuariosPage() {
               {/* Header row */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: `1fr repeat(${ROLES.length}, 110px)`,
+                gridTemplateColumns: `1fr repeat(${MATRIX_ROLES.length}, 110px)`,
                 gap: 0,
                 background: 'var(--bg-alt)',
                 borderBottom: '1px solid var(--rule)',
@@ -475,7 +474,7 @@ export default function UsuariosPage() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   Permiso
                 </div>
-                {ROLES.map(role => (
+                {MATRIX_ROLES.map(role => (
                   <div key={role} style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>
                     <RoleBadge role={role} />
                   </div>
@@ -488,7 +487,7 @@ export default function UsuariosPage() {
                   key={perm}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: `1fr repeat(${ROLES.length}, 110px)`,
+                    gridTemplateColumns: `1fr repeat(${MATRIX_ROLES.length}, 110px)`,
                     gap: 0,
                     padding: '13px 18px',
                     borderBottom: pi < perms.length - 1 ? '1px solid var(--rule)' : 'none',
@@ -498,7 +497,7 @@ export default function UsuariosPage() {
                   <div style={{ fontSize: 13, color: 'var(--fg)' }}>
                     {PERMISSIONS[perm as keyof typeof PERMISSIONS]}
                   </div>
-                  {ROLES.map(role => {
+                  {MATRIX_ROLES.map(role => {
                     const locked = role === 'admin' && ADMIN_LOCKED.includes(perm)
                     const enabled = matrix[role]?.[perm] ?? false
                     return (

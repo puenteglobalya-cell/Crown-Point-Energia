@@ -3,7 +3,7 @@ import { requireAdminUser } from '@/lib/admin-auth'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { scrapearSeOfertaExport } from '@/lib/se-scraper'
 
-export const maxDuration = 60
+export const maxDuration = 300
 
 export async function POST(req: NextRequest) {
   const user = await requireAdminUser()

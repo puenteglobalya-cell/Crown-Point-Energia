@@ -92,8 +92,6 @@ export default function AdminBiblioteca() {
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px' }}>
       <div style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
-          <Link href="/admin" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>← Panel CMS</Link>
-          <span style={{ color: 'var(--rule)' }}>|</span>
           <Link href="/admin/usuarios" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Usuarios</Link>
           <Link href="/admin/documentos" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Documentos</Link>
           <Link href="/admin/comunicados" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Comunicados</Link>

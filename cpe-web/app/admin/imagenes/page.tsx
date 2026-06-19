@@ -115,11 +115,6 @@ export default function ImagenesPage() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
           <div>
-            <div style={{ marginBottom: 6 }}>
-              <Link href="/admin" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>
-                ← Panel CMS
-              </Link>
-            </div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
               Imágenes del sitio
             </h1>

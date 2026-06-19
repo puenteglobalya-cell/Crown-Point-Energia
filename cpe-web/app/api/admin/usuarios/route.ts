@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Faltan campos requeridos: email y role' }, { status: 400 })
   }
 
-  if (!['viewer', 'uploader', 'admin', 'rrhh'].includes(role)) {
+  if (!['viewer', 'uploader', 'admin', 'rrhh', 'accionista'].includes(role)) {
     return NextResponse.json({ error: 'Rol inválido' }, { status: 400 })
   }
 
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   // Invite user via Supabase Auth
   const { data: inviteData, error: inviteError } = await db.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${siteUrl}/portal`,
+    redirectTo: `${siteUrl}/auth/callback?next=/portal/reset-password`,
   })
 
   if (inviteError) {

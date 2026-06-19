@@ -224,7 +224,7 @@ export default async function AcercaPage() {
                     { year: '2021',      es: 'Ingreso al régimen de oferta pública CNV',                                                              en: 'Listed on the CNV public offering regime' },
                     { year: '2022',      es: 'Adquisición del 50% de participación en Puesto Pozo Cercado Oriental — Provincia de Mendoza',           en: 'Acquisition of 50% stake in Puesto Pozo Cercado Oriental — Mendoza Province' },
                     { year: '2024',      es: 'Adquisición del 100% de Piedra Clavada y Koluel Kaike — Provincia de Santa Cruz',                      en: 'Acquisition of 100% of Piedra Clavada and Koluel Kaike — Santa Cruz Province' },
-                    { year: '2024',      es: 'Incremento al 48,33% de la participación en la UTE RCLV — Provincia de Tierra del Fuego',               en: 'Increase to 48.33% in the RCLV JV — Tierra del Fuego Province' },
+                    { year: '2024',      es: 'Incremento al 48,3275% de la participación en la UTE RCLV — Provincia de Tierra del Fuego',               en: 'Increase to 48.3275% in the RCLV JV — Tierra del Fuego Province' },
                     { year: '2025',      es: 'Adquisición del 95% de El Tordillo, La Tapera y Puesto Quiroga — Provincia de Chubut',                 en: 'Acquisition of 95% of El Tordillo, La Tapera and Puesto Quiroga — Chubut Province' },
                   ].map((e, i) => (
                     <li key={i}>

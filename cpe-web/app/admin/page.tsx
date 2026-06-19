@@ -1,8 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import type { CMSState } from '@/lib/cms'
 
 // ─── Schema ────────────────────────────────────────────────────────────────
@@ -391,27 +389,20 @@ export default function AdminPage() {
     await loadState()
   }
 
-  async function handleSignOut() {
-    const supabase = createSupabaseBrowserClient()
-    await supabase.auth.signOut()
-    window.location.href = '/admin/login'
-  }
-
   if (!state) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
         <span style={{ color: 'var(--fg-soft)', fontFamily: 'var(--font-mono)', fontSize: 13 }}>Cargando…</span>
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
-      <div style={{ maxWidth: tab === 'sitio' ? 1280 : 760, margin: '0 auto', transition: 'max-width 0.2s' }}>
+    <div style={{ maxWidth: tab === 'sitio' ? 1280 : 760, margin: '0 auto', padding: '40px 32px', transition: 'max-width 0.2s' }}>
 
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div>
               <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
                 CMS — Crown Point
@@ -420,94 +411,12 @@ export default function AdminPage() {
                 Los cambios se reflejan en el sitio público en hasta 60&nbsp;s.
               </p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {savedMsg && (
-                <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                  ✓ {savedMsg}
-                </span>
-              )}
-              <button onClick={handleSignOut} className="btn" style={{ fontSize: 13, padding: '8px 16px' }}>
-                Cerrar sesión
-              </button>
-            </div>
+            {savedMsg && (
+              <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                ✓ {savedMsg}
+              </span>
+            )}
           </div>
-          <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            {/* Admin tools */}
-            <Link href="/admin/cms" className="btn btn-primary" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              Contenido del sitio
-            </Link>
-            <Link href="/admin/imagenes" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              Imágenes
-            </Link>
-            <Link href="/admin/documentos" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              Documentos
-            </Link>
-            <Link href="/admin/biblioteca" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              Biblioteca
-            </Link>
-            <Link href="/admin/comunicados" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              Comunicados
-            </Link>
-            <Link href="/admin/reportes" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              Reportes
-            </Link>
-            <Link href="/admin/contacto" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              Contacto
-            </Link>
-            <Link href="/admin/suscriptores" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              Suscriptores IR
-            </Link>
-            <Link href="/admin/rrhh" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              RRHH
-            </Link>
-            <Link href="/admin/usuarios" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              Usuarios
-            </Link>
-            <Link href="/admin/push" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              Push 🔔
-            </Link>
-            <Link href="/admin/logs" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>
-              Logs
-            </Link>
-
-            {/* Divider */}
-            <span style={{ width: 1, height: 24, background: 'var(--rule)', margin: '0 4px', flexShrink: 0 }} />
-
-            {/* User-facing links */}
-            <Link href="/" target="_blank" rel="noreferrer" style={{
-              fontSize: 13, padding: '7px 14px', textDecoration: 'none',
-              border: '1px solid var(--rule)', borderRadius: 'var(--r-md)',
-              color: 'var(--fg-soft)', display: 'inline-flex', alignItems: 'center', gap: 5,
-              background: 'var(--surface)',
-            }}>
-              Sitio web
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.5 }}>
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </Link>
-            <Link href="/biblioteca" target="_blank" rel="noreferrer" style={{
-              fontSize: 13, padding: '7px 14px', textDecoration: 'none',
-              border: '1px solid var(--rule)', borderRadius: 'var(--r-md)',
-              color: 'var(--fg-soft)', display: 'inline-flex', alignItems: 'center', gap: 5,
-              background: 'var(--surface)',
-            }}>
-              Biblioteca
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.5 }}>
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </Link>
-            <Link href="/portal" target="_blank" rel="noreferrer" style={{
-              fontSize: 13, padding: '7px 14px', textDecoration: 'none',
-              border: '1px solid var(--rule)', borderRadius: 'var(--r-md)',
-              color: 'var(--fg-soft)', display: 'inline-flex', alignItems: 'center', gap: 5,
-              background: 'var(--surface)',
-            }}>
-              Portal
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.5 }}>
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </Link>
-          </nav>
         </div>
 
         {/* Tabs */}
@@ -923,7 +832,6 @@ export default function AdminPage() {
           </div>
         )}
 
-      </div>
     </div>
   )
 }

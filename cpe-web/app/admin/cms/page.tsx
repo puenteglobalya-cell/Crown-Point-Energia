@@ -1199,7 +1199,6 @@ export default function CmsAdminPage() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <Link href="/admin" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>← Panel CMS</Link>
             <Link href="/" target="_blank" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>Ver sitio</Link>
           </div>
         </div>

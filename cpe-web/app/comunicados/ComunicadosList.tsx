@@ -91,10 +91,47 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
         `}</style>
 
         {initialData.length === 0 ? (
-          <p style={{ color: 'var(--fg-muted)', fontSize: 15, padding: 'var(--s-8) 0', fontStyle: 'italic' }}>
-            <span className="lang-es">Próximamente — los comunicados aparecen aquí cuando se publican.</span>
-            <span className="lang-en">Coming soon — press releases appear here when published.</span>
-          </p>
+          <div className="press-subscribe" style={{ marginTop: 0 }}>
+            <div>
+              <span className="eyebrow" style={{ color: 'var(--accent)' }}>
+                <span className="lang-es">Alertas de prensa</span>
+                <span className="lang-en">Press alerts</span>
+              </span>
+              <h3 style={{ fontSize: 28, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em', marginTop: 8, marginBottom: 8 }}>
+                <span className="lang-es">Suscribite para recibir los comunicados.</span>
+                <span className="lang-en">Subscribe to receive press releases.</span>
+              </h3>
+              <p style={{ color: 'var(--fg-soft)', fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+                <span className="lang-es">Te notificaremos ante cada comunicado de prensa, resultado trimestral y evento material firmado por la Responsable de Relaciones con el Mercado.</span>
+                <span className="lang-en">We'll notify you of each press release, quarterly result and material event signed by the Investor Relations Officer.</span>
+              </p>
+            </div>
+            {subscribed ? (
+              <div style={{ background: 'color-mix(in oklab, var(--cp-green) 12%, var(--surface))', border: '1px solid var(--cp-green)', borderRadius: 'var(--r-lg)', padding: 'var(--s-6)', display: 'flex', gap: 12, alignItems: 'start' }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--cp-green)', color: 'var(--cp-navy-darker)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div>
+                  <p style={{ fontWeight: 600, margin: '0 0 4px', color: 'var(--fg)' }}>
+                    <span className="lang-es">¡Suscripto!</span>
+                    <span className="lang-en">Subscribed!</span>
+                  </p>
+                  <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: 0 }}>
+                    <span className="lang-es">Te notificaremos ante cada comunicado nuevo.</span>
+                    <span className="lang-en">We'll notify you on every new release.</span>
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <form className="press-subscribe-form" onSubmit={e => { e.preventDefault(); setSubscribed(true) }}>
+                <input type="email" required placeholder="correo@empresa.com" />
+                <button type="submit" className="btn btn-primary">
+                  <span className="lang-es">Suscribirme</span>
+                  <span className="lang-en">Subscribe</span>
+                </button>
+              </form>
+            )}
+          </div>
         ) : (
           <>
             <div className="press-toolbar">
