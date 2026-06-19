@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Faltan campos requeridos: email y role' }, { status: 400 })
   }
 
-  if (!['viewer', 'uploader', 'admin', 'rrhh'].includes(role)) {
+  if (!['viewer', 'uploader', 'admin', 'rrhh', 'accionista'].includes(role)) {
     return NextResponse.json({ error: 'Rol inválido' }, { status: 400 })
   }
 
