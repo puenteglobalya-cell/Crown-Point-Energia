@@ -184,31 +184,32 @@ function buildFiscalTableHTML(
 function buildAutoGroups(lineas: DatosFacturacion['lineas']): Record<string, string[]> {
   const isParent = (t: string) => t.startsWith('F') || t === 'CL'
   const isChild  = (t: string) => (t.startsWith('C') && t !== 'CL') || t.startsWith('D')
-  const getSuc   = (comp: string) => comp.split(' ')[1]?.split('-')[0] ?? ''
 
-  type CI = { comp: string; tipo: string; mes: string; suc: string }
+  type CI = { comp: string; tipo: string; mes: string; cli: string }
   const seen = new Map<string, CI>()
   for (const l of lineas) {
     if (!seen.has(l.comprobante))
-      seen.set(l.comprobante, { comp: l.comprobante, tipo: l.tipo_comp, mes: l.mes, suc: getSuc(l.comprobante) })
+      seen.set(l.comprobante, { comp: l.comprobante, tipo: l.tipo_comp, mes: l.mes, cli: l.cliente })
   }
 
-  const byMesSuc = new Map<string, CI[]>()
+  // Group by mes+cliente so each company's documents are kept together.
+  // This prevents Trafigura's FQ/CQ/DQ from being merged into YPF/PAE's ambiguous pool.
+  const byMesCli = new Map<string, CI[]>()
   for (const ci of seen.values()) {
-    const key = `${ci.mes}|${ci.suc}`
-    if (!byMesSuc.has(key)) byMesSuc.set(key, [])
-    byMesSuc.get(key)!.push(ci)
+    const key = `${ci.mes}|${ci.cli}`
+    if (!byMesCli.has(key)) byMesCli.set(key, [])
+    byMesCli.get(key)!.push(ci)
   }
 
   const result: Record<string, string[]> = {}
-  for (const group of byMesSuc.values()) {
+  for (const group of byMesCli.values()) {
     const parents  = group.filter(c => isParent(c.tipo))
     const children = group.filter(c => isChild(c.tipo))
     if (!parents.length || !children.length) continue
     if (parents.length === 1) {
       result[parents[0].comp] = children.map(c => c.comp)
     } else {
-      // Multiple parents in same suc+month — match by second letter (FQ→CQ/DQ, FA→CA/DA)
+      // Multiple parents for same client+month — match by second letter (FQ→CQ/DQ, FA→CA/DA)
       // Only assign when there is exactly ONE parent with that letter; skip if ambiguous
       for (const p of parents) {
         const letter = p.tipo[1] ?? ''
