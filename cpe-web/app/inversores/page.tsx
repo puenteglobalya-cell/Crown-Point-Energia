@@ -5,6 +5,7 @@ import { fetchIrEvents, fetchIrAnalysts, fetchObligaciones } from '@/lib/content
 import InversoresDocsTabs from './InversoresDocsTabs'
 import IrSubscribeForm from './IrSubscribeForm'
 import ReservesTable from './ReservesTable'
+import StockChart from '@/components/StockChart'
 
 export const revalidate = 60
 
@@ -50,14 +51,6 @@ export default async function InversoresPage() {
   const fe = s.fieldsEn
   const heroImg = f['hero.inversores.img'] || ''
 
-  const price = f['stock.price'] || 'CA $0.205'
-  const delta = f['stock.delta'] || '+0.00%'
-  const beta  = f['stock.beta']  || '0.93'
-  const high52 = f['stock.high52'] || 'CA $0.31'
-  const low52  = f['stock.low52']  || 'CA $0.16'
-  const cap    = f['stock.cap']    || 'CA $19.8M'
-  const shares = f['stock.shares'] || '96.6M'
-
   return (
     <>
       <section
@@ -82,43 +75,14 @@ export default async function InversoresPage() {
         </div>
       </section>
 
-      {/* Quote band */}
+      {/* Quote band + price history — live from Yahoo Finance via /api/stock/cwv */}
       <section className="section-tight" style={{ borderBottom: '1px solid var(--rule)' }}>
         <div className="container">
-          <div className="quote-band">
-            <div className="qb-cell qb-main">
-              <span className="qb-label">TSX.V: CWV</span>
-              <div className="qb-price">
-                <span className="num" data-cpe-field="stock.price">{price}</span>
-                <span className={`num delta pos`} data-cpe-field="stock.delta">{delta}</span>
-              </div>
-              <span className="qb-meta"><span className="lang-es">Cotización al cierre anterior · TSXV</span><span className="lang-en">Prior close price · TSXV</span></span>
-            </div>
-            <div className="qb-cell"><span>Beta</span><strong className="num" data-cpe-field="stock.beta">{beta}</strong></div>
-            <div className="qb-cell"><span>52w high</span><strong className="num" data-cpe-field="stock.high52">{high52}</strong></div>
-            <div className="qb-cell"><span>52w low</span><strong className="num" data-cpe-field="stock.low52">{low52}</strong></div>
-            <div className="qb-cell"><span><span className="lang-es">Cap.</span><span className="lang-en">Cap</span></span><strong className="num" data-cpe-field="stock.cap">{cap}</strong></div>
-            <div className="qb-cell"><span><span className="lang-es">Acciones</span><span className="lang-en">Shares</span></span><strong className="num" data-cpe-field="stock.shares">{shares}</strong></div>
-          </div>
+          <StockChart />
         </div>
       </section>
 
       <style>{`
-        .quote-band { display: grid; grid-template-columns: 2fr repeat(5, 1fr); gap: 0; border: 1px solid var(--rule); border-radius: var(--r-lg); overflow: hidden; background: var(--surface); }
-        .qb-cell { padding: 22px 24px; border-right: 1px solid var(--rule); display: flex; flex-direction: column; gap: 8px; }
-        .qb-cell:last-child { border-right: 0; }
-        .qb-cell > span { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-muted); font-weight: 600; }
-        .qb-cell strong { font-family: var(--font-mono); font-weight: 500; font-size: 20px; color: var(--fg); }
-        .qb-main { gap: 6px; }
-        .qb-main .qb-label { color: var(--accent-deep); font-size: 11px; letter-spacing: 0.16em; }
-        [data-theme="dark"] .qb-main .qb-label { color: var(--cp-green); }
-        .qb-main .qb-price { display: flex; align-items: baseline; gap: 12px; }
-        .qb-main .qb-price .num:first-child { font-size: 36px; color: var(--fg); font-weight: 500; }
-        .qb-main .delta { font-size: 14px; padding: 3px 10px; border-radius: var(--r-pill); }
-        .qb-main .delta.pos { background: rgba(108,174,82,0.15); color: var(--cp-green-deep); }
-        [data-theme="dark"] .qb-main .delta.pos { color: #8BD478; }
-        .qb-meta { color: var(--fg-muted) !important; text-transform: none !important; letter-spacing: 0 !important; font-weight: 400 !important; font-size: 12px !important; }
-        @media (max-width: 900px) { .quote-band { grid-template-columns: 1fr 1fr; } .qb-cell { border-bottom: 1px solid var(--rule); } .qb-main { grid-column: 1 / -1; } }
         .analyst-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
         .analyst { background: var(--surface); padding: var(--s-6); display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: baseline; }
         .analyst strong { font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: -0.01em; grid-column: 1 / -1; }
