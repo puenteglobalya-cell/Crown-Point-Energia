@@ -51,88 +51,88 @@ function parseTable(html: string): SeReferencia {
   return { headers, filas }
 }
 
-// ── Strategy 1: direct HTTP POST (fast, ~1-2s) ───────────────────────────────
+// ── Strategy 1: direct HTTP POST (fast, ~2-4s) ───────────────────────────────
 
 async function scrapearDirecto(
   fechaDesde: string,
   fechaHasta: string,
 ): Promise<SeReferencia | null> {
-  const allFilas: Record<string, string>[] = []
-  let headers: string[] = []
+  try {
+    const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
-  // Try common form field name patterns for the SE PHP form
-  const fieldVariants = [
-    { desde: 'txtFechaDesde', hasta: 'txtFechaHasta', btn: 'btnBuscar' },
-    { desde: 'fecha_desde',   hasta: 'fecha_hasta',   btn: 'buscar' },
-    { desde: 'fdesde',        hasta: 'fhasta',        btn: 'buscar' },
-    { desde: 'FechaDesde',    hasta: 'FechaHasta',    btn: 'Buscar' },
-  ]
+    // Step 1 — GET the form page to collect session cookie + hidden fields
+    const getRes = await fetch(SE_URL, {
+      headers: { 'User-Agent': UA, 'Accept': 'text/html', 'Accept-Language': 'es-AR,es;q=0.9' },
+      signal: AbortSignal.timeout(15_000),
+    })
+    if (!getRes.ok) return null
 
-  let html: string | null = null
+    // Collect Set-Cookie header (PHP session)
+    const rawCookie = getRes.headers.get('set-cookie') ?? ''
+    const sessionCookie = rawCookie.split(';')[0].trim()
 
-  for (const fields of fieldVariants) {
-    try {
+    const formHtml = await getRes.text()
+
+    // Extract ALL hidden input fields (includes PHPSESSID / CSRF tokens embedded in form)
+    const hiddenFields: Record<string, string> = {}
+    for (const m of formHtml.matchAll(/<input[^>]+type=["']?hidden["']?[^>]*>/gi)) {
+      const name  = m[0].match(/name=["']?([^"'\s>]+)["']?/i)?.[1]
+      const value = m[0].match(/value=["']?([^"'>]*)["']?/i)?.[1] ?? ''
+      if (name) hiddenFields[name] = value
+    }
+
+    // Auto-detect date field names from the form HTML
+    const fromName = formHtml.match(/name=["']?([^"'\s>]*(?:desde|from|date_from|FechaDesde)[^"'\s>]*)["']?/i)?.[1]
+    const toName   = formHtml.match(/name=["']?([^"'\s>]*(?:hasta|to|date_to|FechaHasta)[^"'\s>]*)["']?/i)?.[1]
+    const btnName  = formHtml.match(/name=["']?([^"'\s>]*(?:buscar|search|consultar|submit)[^"'\s>]*)["']?/i)?.[1]
+
+    const fieldVariants = [
+      // Auto-detected from actual HTML (most reliable)
+      ...(fromName && toName ? [{ desde: fromName, hasta: toName, btn: btnName ?? 'btnBuscar' }] : []),
+      // Common SE PHP patterns
+      { desde: 'txtFechaDesde', hasta: 'txtFechaHasta', btn: 'btnBuscar' },
+      { desde: 'fecha_desde',   hasta: 'fecha_hasta',   btn: 'buscar' },
+      { desde: 'FechaDesde',    hasta: 'FechaHasta',    btn: 'Buscar' },
+      { desde: 'fdesde',        hasta: 'fhasta',        btn: 'buscar' },
+    ]
+
+    const postHeaders: Record<string, string> = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': UA,
+      'Referer': SE_URL,
+      'Accept': 'text/html,application/xhtml+xml',
+      'Accept-Language': 'es-AR,es;q=0.9',
+    }
+    if (sessionCookie) postHeaders['Cookie'] = sessionCookie
+
+    for (const fields of fieldVariants) {
       const body = new URLSearchParams({
+        ...hiddenFields,
         [fields.desde]: fechaDesde,
         [fields.hasta]: fechaHasta,
-        [fields.btn]: 'Buscar',
+        [fields.btn]:   'Buscar',
       })
-      const res = await fetch(SE_URL, {
+
+      const postRes = await fetch(SE_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
-          'Referer': SE_URL,
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'es-AR,es;q=0.9',
-        },
+        headers: postHeaders,
         body: body.toString(),
         signal: AbortSignal.timeout(20_000),
       })
-      if (!res.ok) continue
-      const text = await res.text()
-      // Validate we got actual table data back (not just the empty form)
-      if (/<table/i.test(text) && /<tr/i.test(text)) {
-        html = text
-        break
-      }
-    } catch {
-      continue
+      if (!postRes.ok) continue
+
+      const text = await postRes.text()
+      if (!/<table/i.test(text)) continue
+
+      const parsed = parseTable(text)
+      if (parsed.filas.length > 0) return parsed
     }
+
+    return null
+  } catch (e) {
+    console.warn('[se-direct] failed, will try browser fallback:', e)
+    return null
   }
-
-  if (!html) return null
-
-  const firstPage = parseTable(html)
-  if (!firstPage.filas.length) return null
-
-  headers = firstPage.headers
-  allFilas.push(...firstPage.filas)
-
-  // Handle server-side pagination if present (look for page links like ?pagina=2)
-  const pageLinks = [...html.matchAll(/[?&](?:pagina|page|p)=(\d+)/gi)]
-  const pageNums = [...new Set(pageLinks.map(m => parseInt(m[1])))].filter(n => n > 1).sort((a, b) => a - b)
-
-  for (const pageNum of pageNums.slice(0, 49)) {
-    try {
-      const res = await fetch(`${SE_URL}?pagina=${pageNum}`, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0',
-          'Referer': SE_URL,
-        },
-        signal: AbortSignal.timeout(15_000),
-      })
-      if (!res.ok) break
-      const text = await res.text()
-      const pg = parseTable(text)
-      if (!pg.filas.length) break
-      allFilas.push(...pg.filas)
-    } catch {
-      break
-    }
-  }
-
-  return { headers, filas: allFilas }
 }
 
 // ── Strategy 2: puppeteer fallback ───────────────────────────────────────────
