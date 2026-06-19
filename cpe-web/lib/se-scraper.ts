@@ -77,39 +77,115 @@ export async function scrapearSeOfertaExport(
 
     await page.waitForNetworkIdle({ timeout: 20_000 }).catch(() => {})
 
-    // Extract table — try common selectors
-    const result = await page.evaluate(() => {
-      const selectors = ['#tablaResultados', 'table.tabla', 'table']
-      let table: HTMLTableElement | null = null
+    // Try to set max rows per page before extracting (common SE patterns)
+    await page.evaluate(() => {
+      const selectors = [
+        'select[name*="cantidad" i]', 'select[name*="rows" i]', 'select[name*="limit" i]',
+        'select[name*="paginado" i]', 'select[name*="pagesize" i]', 'select[id*="cantidad" i]',
+        'select[id*="rows" i]', 'select[id*="limit" i]', 'select[id*="pagesize" i]',
+      ]
       for (const sel of selectors) {
-        table = document.querySelector<HTMLTableElement>(sel)
-        if (table) break
+        const el = document.querySelector<HTMLSelectElement>(sel)
+        if (!el) continue
+        // Pick the highest numeric option available
+        const opts = Array.from(el.options).filter(o => /^\d+$/.test(o.value.trim()))
+        if (!opts.length) continue
+        const max = opts.reduce((a, b) => parseInt(a.value) > parseInt(b.value) ? a : b)
+        el.value = max.value
+        el.dispatchEvent(new Event('change', { bubbles: true }))
+        break
       }
-      if (!table) return { headers: [], filas: [] }
+    })
+    await page.waitForNetworkIdle({ timeout: 10_000 }).catch(() => {})
 
-      const rows = Array.from(table.querySelectorAll('tr'))
-      const headers: string[] = []
-      const filas: Record<string, string>[] = []
+    const allFilas: Record<string, string>[] = []
+    let headers: string[] = []
+    let page_num = 0
+    const MAX_PAGES = 50
 
-      rows.forEach((tr, i) => {
-        const cells = Array.from(tr.querySelectorAll('th, td')).map(c =>
-          c.textContent?.trim().replace(/\s+/g, ' ') ?? ''
-        )
-        if (i === 0 || tr.querySelectorAll('th').length > 0) {
-          if (cells.some(c => c)) headers.push(...cells)
-        } else if (cells.some(c => c)) {
-          const obj: Record<string, string> = {}
-          cells.forEach((v, ci) => {
-            obj[headers[ci] ?? `col_${ci}`] = v
-          })
-          filas.push(obj)
+    while (page_num < MAX_PAGES) {
+      page_num++
+
+      const pageResult = await page.evaluate((existingHeaders: string[]) => {
+        const selectors = ['#tablaResultados', 'table.tabla', 'table']
+        let table: HTMLTableElement | null = null
+        for (const sel of selectors) {
+          table = document.querySelector<HTMLTableElement>(sel)
+          if (table) break
         }
+        if (!table) return { headers: existingHeaders, filas: [], hasNext: false }
+
+        const rows = Array.from(table.querySelectorAll('tr'))
+        const hdrs: string[] = existingHeaders.length ? existingHeaders : []
+        const filas: Record<string, string>[] = []
+
+        rows.forEach((tr, i) => {
+          const cells = Array.from(tr.querySelectorAll('th, td')).map(c =>
+            c.textContent?.trim().replace(/\s+/g, ' ') ?? ''
+          )
+          if (i === 0 || tr.querySelectorAll('th').length > 0) {
+            if (cells.some(c => c) && !existingHeaders.length) {
+              // Only collect headers from first page
+              hdrs.push(...cells)
+            }
+          } else if (cells.some(c => c)) {
+            const obj: Record<string, string> = {}
+            cells.forEach((v, ci) => {
+              obj[(existingHeaders.length ? existingHeaders : hdrs)[ci] ?? `col_${ci}`] = v
+            })
+            filas.push(obj)
+          }
+        })
+
+        // Detect a "next page" link/button
+        const nextSelectors = [
+          'a[id*="siguiente" i]', 'a[id*="next" i]', 'input[value*="siguiente" i]',
+          'input[value*=">" ]', 'button[id*="siguiente" i]',
+          'a[href*="pagina" i]', 'a.next', 'li.next a',
+          // DataTables-style
+          'a.paginate_button.next:not(.disabled)',
+          '#tablaResultados_next:not(.disabled) a',
+        ]
+        let hasNext = false
+        for (const sel of nextSelectors) {
+          const el = document.querySelector<HTMLElement>(sel)
+          if (el && !el.classList.contains('disabled') && !el.hasAttribute('disabled')) {
+            hasNext = true
+            break
+          }
+        }
+
+        return { headers: hdrs, filas, hasNext }
+      }, headers)
+
+      if (!headers.length) headers = pageResult.headers
+      allFilas.push(...pageResult.filas)
+
+      if (!pageResult.hasNext || pageResult.filas.length === 0) break
+
+      // Click next page
+      const clicked = await page.evaluate(() => {
+        const nextSelectors = [
+          'a[id*="siguiente" i]', 'a[id*="next" i]', 'input[value*="siguiente" i]',
+          'input[value*=">" ]', 'button[id*="siguiente" i]',
+          'a.paginate_button.next:not(.disabled)',
+          '#tablaResultados_next:not(.disabled) a',
+        ]
+        for (const sel of nextSelectors) {
+          const el = document.querySelector<HTMLElement>(sel)
+          if (el && !el.classList.contains('disabled') && !el.hasAttribute('disabled')) {
+            el.click()
+            return true
+          }
+        }
+        return false
       })
 
-      return { headers, filas }
-    })
+      if (!clicked) break
+      await page.waitForNetworkIdle({ timeout: 15_000 }).catch(() => {})
+    }
 
-    return result
+    return { headers, filas: allFilas }
   } finally {
     await browser.close()
   }
