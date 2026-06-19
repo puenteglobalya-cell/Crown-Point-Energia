@@ -163,8 +163,7 @@ export default function ReportesAdminPage() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <Link href="/admin" style={{ fontSize: 12, color: 'var(--fg-muted)', textDecoration: 'none' }}>← Panel CMS</Link>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 600, letterSpacing: '-0.02em', margin: '6px 0 4px' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 600, letterSpacing: '-0.02em', margin: '0 0 4px' }}>
               Reportes
             </h1>
             <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: 0 }}>Gestión de todos los tipos de reportes</p>

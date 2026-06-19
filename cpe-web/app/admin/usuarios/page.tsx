@@ -256,10 +256,7 @@ export default function UsuariosPage() {
 
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
-          <Link href="/admin" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>
-            ← Panel CMS
-          </Link>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: '8px 0 4px' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: '0 0 4px' }}>
             Gestión de usuarios
           </h1>
           <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: 0 }}>

@@ -106,8 +106,7 @@ export default async function LogsPage({
 
         {/* Header */}
         <div style={{ marginBottom: 28 }}>
-          <Link href="/admin" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>← Panel CMS</Link>
-          <div style={{ marginTop: 8 }}>
+          <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
               Log de actividad
             </h1>
