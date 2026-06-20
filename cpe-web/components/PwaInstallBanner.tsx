@@ -10,6 +10,11 @@ export default function PwaInstallBanner() {
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
+    // Register service worker so the browser can evaluate installability
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+
     if (localStorage.getItem('cpe_pwa_dismissed')) return
 
     const handler = (e: Event) => {

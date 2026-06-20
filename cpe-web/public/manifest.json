@@ -4,17 +4,29 @@
   "description": "Dashboard ejecutivo de reportes — Crown Point Energía",
   "start_url": "/portal/dashboard",
   "display": "standalone",
-  "background_color": "#f4f4f0",
+  "background_color": "#1F2566",
   "theme_color": "#1F2566",
   "orientation": "portrait-primary",
   "scope": "/portal",
   "lang": "es",
   "icons": [
     {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
       "src": "/logo.png",
       "sizes": "178x103",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "categories": ["business", "finance"],
