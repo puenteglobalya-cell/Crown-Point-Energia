@@ -131,11 +131,12 @@ export async function GET(req: Request) {
       args:            chromium.args,
       defaultViewport: { width: 1080, height: 1350 },
       executablePath:  await chromium.executablePath(CHROMIUM_URL),
-      headless:        chromium.headless as boolean | 'new' | 'shell',
+      headless:        true,
     })
 
     const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'networkidle2', timeout: 20_000 })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await page.setContent(html, { waitUntil: 'networkidle2' as any, timeout: 20_000 })
 
     const bodyH = await page.evaluate(() => document.getElementById('ig')?.scrollHeight ?? 1350)
     await page.setViewport({ width: 1080, height: bodyH })
@@ -147,7 +148,7 @@ export async function GET(req: Request) {
 
     await browser.close()
 
-    return new NextResponse(screenshot as Buffer, {
+    return new NextResponse(new Uint8Array(screenshot as Buffer), {
       headers: {
         'Content-Type': 'image/png',
         'Content-Disposition': `attachment; filename="crown-point-infografia-${new Date().toISOString().slice(0, 10)}.png"`,
