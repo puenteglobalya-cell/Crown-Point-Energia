@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 
 const NAV = [
@@ -58,8 +58,36 @@ export default function Header({ fields, show, lang }: Props) {
   const tickerVisible = show['ticker'] !== false
   const price = fields['stock.price'] || 'CA $0.205'
   const delta = fields['stock.delta'] || '+0.00%'
-  const beta = fields['stock.beta'] || '0.93'
+  const beta  = fields['stock.beta']  || '0.93'
   const vol30 = fields['stock.vol30'] || '14,210'
+
+  const [live, setLive] = useState<{ price: string; delta: string; isUp: boolean } | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function fetchStock() {
+      try {
+        const r = await fetch('/api/stock/cwv')
+        if (!r.ok || cancelled) return
+        const d = await r.json() as { ok: boolean; price: number; deltaP: number; delta: number; currency: string }
+        if (!d.ok || cancelled) return
+        const cur = d.currency === 'CAD' ? 'CA' : (d.currency || 'CA')
+        const sign = d.deltaP >= 0 ? '+' : ''
+        setLive({
+          price: `${cur} $${d.price.toFixed(3)}`,
+          delta: `${sign}${d.deltaP.toFixed(2)}%`,
+          isUp: d.delta >= 0,
+        })
+      } catch { /* network unavailable, keep CMS fallback */ }
+    }
+    fetchStock()
+    const id = setInterval(fetchStock, 5 * 60_000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [])
+
+  const displayPrice = live?.price ?? price
+  const displayDelta = live?.delta ?? delta
+  const displayIsUp  = live ? live.isUp : !delta.startsWith('-')
 
   function handleLangSwitch(newLang: string) {
     document.cookie = `cpe_lang=${newLang};path=/;max-age=31536000`
@@ -86,11 +114,11 @@ export default function Header({ fields, show, lang }: Props) {
             </span>
             <div className="ticker-cell">
               <span className="key"><span className="lang-es">Precio</span><span className="lang-en">Price</span></span>
-              <span className="val" data-cpe-field="stock.price">{price}</span>
+              <span className="val">{displayPrice}</span>
             </div>
             <div className="ticker-cell">
               <span className="key"><span className="lang-es">Variación</span><span className="lang-en">Change</span></span>
-              <span className="val delta pos" data-cpe-field="stock.delta">{delta}</span>
+              <span className={`val delta ${displayIsUp ? 'pos' : 'neg'}`}>{displayDelta}</span>
             </div>
             <div className="ticker-cell">
               <span className="key">Beta</span>

@@ -61,6 +61,8 @@ export default function PortalSubirPage() {
   const [existingFactId, setExistingFactId] = useState<string | null>(null)
   const [existingLineas, setExistingLineas] = useState<LineaFacturacion[] | null>(null)
   const [mergeStats, setMergeStats] = useState<{ added: number; skipped: number } | null>(null)
+  const [showPreview, setShowPreview] = useState(false)
+  const [previewHtml, setPreviewHtml] = useState('')
 
   const tipoMeta = TYPES.find(t => t.id === tipo)!
 
@@ -235,7 +237,30 @@ export default function PortalSubirPage() {
     setMacroSnap(null); setIncludeMacro(true)
     setTitulo(''); setDoneId(''); setErr('')
     setExistingFactId(null); setExistingLineas(null); setMergeStats(null)
+    setShowPreview(false); setPreviewHtml('')
     if (fileRef.current) fileRef.current.value = ''
+  }
+
+  function buildPreviewHtml(): string {
+    if (tipo === 'ingresos' && datosIngresos)
+      return generarReporteHTML(datosIngresos, includeMacro && macroSnap ? macroSnap : undefined)
+    if (tipo === 'facturacion' && datosFacturacion)
+      return generarReporteFacturacionHTML(datosFacturacion)
+    if (tipo === 'accionista' && datosAccionista)
+      return generarReporteAccionistaHTML(datosAccionista)
+    if ((tipo === 'produccion' || tipo === 'financiero') && datosGenerico)
+      return generarReporteGenericoHTML(datosGenerico)
+    if (isMacroType(tipo) && datosMacro)
+      return generarHTMLMacro(datosMacro, titulo.trim() || tipoMeta.label)
+    return ''
+  }
+
+  function togglePreview() {
+    if (!showPreview && !previewHtml) {
+      const html = buildPreviewHtml()
+      if (html) setPreviewHtml(html)
+    }
+    setShowPreview(s => !s)
   }
 
   function generarHTMLMacro(d: DatosMacro, t: string): string {
@@ -505,6 +530,40 @@ td{padding:6px 12px;border-bottom:1px solid #eee;font-family:monospace}</style><
                 </>}
               </div>
             </div>
+            <div style={{ marginBottom: 16 }}>
+              <button
+                onClick={togglePreview}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 7,
+                  padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  border: '1px solid var(--rule)', borderRadius: 'var(--r-md)',
+                  background: showPreview ? 'var(--accent-pale)' : 'var(--surface)',
+                  color: showPreview ? 'var(--accent)' : 'var(--fg-soft)',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="1.8"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8"/>
+                </svg>
+                {showPreview ? 'Ocultar preview' : 'Ver preview del informe'}
+              </button>
+            </div>
+
+            {showPreview && previewHtml && (
+              <div style={{ marginBottom: 20 }}>
+                <iframe
+                  srcDoc={previewHtml}
+                  title="Preview del reporte"
+                  style={{
+                    width: '100%', height: 600,
+                    border: '1px solid var(--rule)', borderRadius: 'var(--r-md)',
+                    background: '#fff',
+                  }}
+                  sandbox="allow-scripts"
+                />
+              </div>
+            )}
+
             <div className="form-row" style={{ marginBottom: 20 }}>
               <label>Título del reporte</label>
               <input type="text" value={titulo} onChange={e => setTitulo(e.target.value)} />

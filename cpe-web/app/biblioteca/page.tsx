@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient, createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isAdminEmail } from '@/lib/admin-auth'
-import DocActions from './DocActions'
+import BibliotecaSearch from './BibliotecaSearch'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,15 +24,6 @@ type Carpeta = {
   bib_documentos: Doc[]
 }
 
-function fmtSize(bytes: number | null) {
-  if (!bytes) return ''
-  if (bytes >= 1048576) return ` · ${(bytes / 1048576).toFixed(1)} MB`
-  return ` · ${Math.round(bytes / 1024)} KB`
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })
-}
 
 export default async function BibliotecaPage() {
   const supabase = createSupabaseServerClient()
@@ -92,99 +83,7 @@ export default async function BibliotecaPage() {
           <p style={{ fontSize: 13, color: 'var(--fg-muted)', margin: 0 }}>Contactá al administrador para solicitar acceso.</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: 20 }}>
-          {carpetas.map(carpeta => {
-            const vigente = carpeta.bib_documentos.find(d => d.vigente)
-            const history = carpeta.bib_documentos.filter(d => !d.vigente)
-            return (
-              <div key={carpeta.id} style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--rule)',
-                borderRadius: 'var(--r-lg)',
-                overflow: 'hidden',
-              }}>
-                <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--rule)', display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ color: 'var(--cp-green)', flexShrink: 0 }}>
-                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <div style={{ flex: 1 }}>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, margin: 0 }}>{carpeta.nombre}</h2>
-                    {carpeta.descripcion && (
-                      <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '2px 0 0' }}>{carpeta.descripcion}</p>
-                    )}
-                  </div>
-                  <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
-                    {carpeta.bib_documentos.length} archivo{carpeta.bib_documentos.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-
-                {vigente ? (
-                  <div style={{
-                    padding: '16px 24px',
-                    background: 'rgba(130,188,0,0.05)',
-                    borderBottom: history.length > 0 ? '1px solid var(--rule)' : undefined,
-                    display: 'flex', alignItems: 'center', gap: 16,
-                  }}>
-                    <div style={{ flex: 1 }}>
-                      <span style={{
-                        display: 'inline-block', marginBottom: 6,
-                        fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase',
-                        color: 'var(--cp-green)', fontWeight: 700,
-                        background: 'rgba(130,188,0,0.14)', borderRadius: 4, padding: '2px 7px',
-                      }}>Vigente</span>
-                      <p style={{ fontWeight: 600, fontSize: 15, margin: 0 }}>{vigente.nombre}</p>
-                      <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '3px 0 0' }}>
-                        {fmtDate(vigente.created_at)}{fmtSize(vigente.size_bytes)}
-                      </p>
-                    </div>
-                    {vigente.signedUrl && (
-                      <DocActions
-                        docName={vigente.nombre}
-                        docPath={vigente.path}
-                        signedUrl={vigente.signedUrl}
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <div style={{ padding: '16px 24px', color: 'var(--fg-muted)', fontSize: 14 }}>
-                    Sin documento vigente
-                  </div>
-                )}
-
-                {history.length > 0 && (
-                  <details>
-                    <summary style={{
-                      padding: '10px 24px', fontSize: 13, color: 'var(--fg-soft)',
-                      cursor: 'pointer', userSelect: 'none',
-                    }}>
-                      {history.length} versión{history.length !== 1 ? 'es' : ''} anterior{history.length !== 1 ? 'es' : ''}
-                    </summary>
-                    {history.map(doc => (
-                      <div key={doc.id} style={{
-                        display: 'flex', alignItems: 'center', gap: 12,
-                        padding: '11px 24px', borderTop: '1px solid var(--rule)',
-                      }}>
-                        <div style={{ flex: 1 }}>
-                          <p style={{ fontSize: 14, margin: 0, color: 'var(--fg-soft)' }}>{doc.nombre}</p>
-                          <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '2px 0 0' }}>
-                            {fmtDate(doc.created_at)}{fmtSize(doc.size_bytes)}
-                          </p>
-                        </div>
-                        {doc.signedUrl && (
-                          <DocActions
-                            docName={doc.nombre}
-                            docPath={doc.path}
-                            signedUrl={doc.signedUrl}
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </details>
-                )}
-              </div>
-            )
-          })}
-        </div>
+        <BibliotecaSearch carpetas={carpetas} />
       )}
     </div>
   )
