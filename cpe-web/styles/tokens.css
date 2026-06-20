@@ -746,12 +746,12 @@ h1, h2, h3, h4 {
   --ar-stroke: #2A2F66;
   --ar-leader: #8488A8;
 
-  --block-green: #6CAE52;
-  --block-green-light: #B9D88B;
-  --block-amber: #E2B23A;
-  --block-rust: #C97D3A;
-  --block-teal: #2FA08A;
-  --block-teal-dark: #1F6E70;
+  --block-green:       #6CAE52;  /* CPESA green — Neuquina / San Jorge N. */
+  --block-green-light: #3D5F9A;  /* mid navy — Cuyana (Chañares) */
+  --block-amber:       #1F2566;  /* deep CPESA navy — Neuquina Norte (PPC) */
+  --block-rust:        #C97D3A;  /* unused legacy */
+  --block-teal:        #4a8a3a;  /* dark green — Golfo San Jorge S. (Piedra) */
+  --block-teal-dark:   #2E4878;  /* mid-dark navy — Cuenca Austral (TDF) */
 }
 [data-direction="editorial"] {
   --ar-fill: #ECE7D6;
@@ -761,6 +761,11 @@ h1, h2, h3, h4 {
   --ar-fill: #1A1F58;
   --ar-stroke: #6E73A0;
   --ar-leader: #A6ABD6;
+  --block-amber:       #5271D4;
+  --block-green-light: #6B89E0;
+  --block-green:       #7DC25F;
+  --block-teal:        #5FAF45;
+  --block-teal-dark:   #4A6AD4;
 }
 .ar-map { width: 100%; height: auto; max-height: 820px; display: block; }
 .ar-map .ar-label { font: 600 13px var(--font-body); fill: var(--fg); letter-spacing: -0.01em; }

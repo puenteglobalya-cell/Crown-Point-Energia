@@ -12,16 +12,31 @@ export async function POST(req: NextRequest) {
 
   try {
     const form = await req.formData()
-    const nombre   = String(form.get('nombre') ?? '').trim()
-    const email    = String(form.get('email') ?? '').trim()
-    const telefono = String(form.get('telefono') ?? '').trim()
-    const linkedin = String(form.get('linkedin') ?? '').trim()
-    const area     = String(form.get('area') ?? '').trim()
-    const mensaje  = String(form.get('mensaje') ?? '').trim()
+    const g = (k: string) => String(form.get(k) ?? '').trim()
+
+    const nombre   = g('nombre')
+    const email    = g('email')
+    const telefono = g('telefono')
+    const linkedin = g('linkedin')
+    const area     = g('area')
+    const mensaje  = g('mensaje')
     const cv       = form.get('cv') as File | null
 
-    if (!nombre || !email || !mensaje) {
+    if (!nombre || !email || !area) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
+    }
+
+    // Structured experience data → stored in JSONB column
+    const datos = {
+      nivel_estudios:    g('nivel_estudios')    || null,
+      carrera:           g('carrera')           || null,
+      anios_experiencia: g('anios_experiencia') || null,
+      anios_sector:      g('anios_sector')      || null,
+      disponibilidad:    g('disponibilidad')    || null,
+      relocacion:        g('relocacion')        || null,
+      ingles_nivel:      g('ingles_nivel')      || null,
+      otros_idiomas:     g('otros_idiomas')     || null,
+      pretension:        g('pretension')        || null,
     }
 
     const supabase = createSupabaseServerAdminClient()
@@ -57,6 +72,7 @@ export async function POST(req: NextRequest) {
     const { error: insertErr } = await supabase.from('job_applications').insert({
       nombre, email, telefono, linkedin, area, mensaje,
       cv_path, cv_name, cv_size,
+      datos,
     })
 
     if (insertErr) {
