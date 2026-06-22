@@ -67,12 +67,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Logged-in user on /portal/login → redirect to /portal
+  // Logged-in admin on /portal/login → redirect to /portal
+  // NOTE: Only redirect CMS admin emails here to avoid redirect loops.
+  // Regular portal users are redirected by the login form itself (window.location.href).
+  // Calling getRoleRow() here + at /portal can cause race-condition redirect loops.
   if (pathname === '/portal/login' && user) {
     const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
     if (isAdminEmail) return NextResponse.redirect(new URL('/portal', request.url))
-    const roleRow = await getRoleRow(user.id)
-    if (roleRow?.activo) return NextResponse.redirect(new URL('/portal', request.url))
   }
 
   // ── Admin auth ───────────────────────────────────────────────────────────
