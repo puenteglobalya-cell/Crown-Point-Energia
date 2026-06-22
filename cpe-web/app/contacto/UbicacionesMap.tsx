@@ -33,6 +33,16 @@ const LOCATIONS = [
     zoom: 12,
     mapsQuery: 'Ruta+Provincial+43+km+102+Piedra+Clavada+Santa+Cruz+Argentina',
   },
+  {
+    id: 'tordillo',
+    badge: null,
+    name: 'Yacimiento El Tordillo',
+    address: 'Ruta 26, km. 11 desvío El Tordillo\nComodoro Rivadavia, Chubut U9000, AR',
+    lat: -45.795,
+    lon: -67.544,
+    zoom: 13,
+    mapsQuery: 'Ruta+26+km+11+desvio+El+Tordillo+Comodoro+Rivadavia+Chubut+Argentina',
+  },
 ] as const
 
 function osmEmbedUrl(lat: number, lon: number, zoom: number) {
