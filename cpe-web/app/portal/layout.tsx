@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentUserAndRole, canUpload } from '@/lib/roles'
 import PortalNav from '@/components/PortalNav'
 import PwaInstallBanner from '@/components/PwaInstallBanner'
+import SessionGuard from '@/components/SessionGuard'
 import '@/styles/portal.css'
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
@@ -22,6 +23,7 @@ export default async function PortalLayout({ children }: { children: React.React
         {children}
       </main>
       <PwaInstallBanner />
+      <SessionGuard />
     </div>
   )
 }

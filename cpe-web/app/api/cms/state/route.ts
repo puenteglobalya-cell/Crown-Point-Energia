@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { getCmsState, patchCmsState, CMSState } from '@/lib/cms'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
 
   await patchCmsState(patch)
 
-  // Revalidate all public pages so theme/visibility changes are instant
+  // Bust the 'cms' tag cache (unstable_cache in lib/cms.ts) + all page layouts
+  revalidateTag('cms')
   revalidatePath('/', 'layout')
 
   return NextResponse.json({ ok: true })

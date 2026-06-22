@@ -118,4 +118,25 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=    # server only — NEVER in client bundles
 CMS_ADMIN_EMAILS=              # comma-separated
+CRON_SECRET=                   # random secret — Vercel passes it as Bearer token to cron routes
 ```
+
+#### VAPID key rotation (push notifications)
+
+VAPID keys are permanent — rotating them invalidates ALL existing push subscriptions. Procedure when rotation is necessary (e.g., key leak):
+
+1. Generate new keys: `node -e "const w=require('web-push'); console.log(w.generateVAPIDKeys())"`
+2. Update `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` in Vercel env vars
+3. Redeploy so the new keys are live
+4. In Supabase SQL Editor: `DELETE FROM push_subscriptions;`
+5. The next push send will fail for all users (expected — they need to re-subscribe)
+6. On the portal, users will see a push permission prompt again on next visit
+
+The `PwaInstallBanner` component handles SW registration. Re-subscription happens automatically when a user visits the portal after the rotation.
+
+#### Security notes
+
+- `lib/ratelimit.ts` uses in-memory sliding window — effective for burst protection within a warm serverless instance. For distributed rate limiting across Vercel edge nodes, replace with Upstash Redis (`@upstash/ratelimit`).
+- `lib/cms.ts` wraps `getCmsState()` in `unstable_cache` tagged `'cms'`. Call `revalidateTag('cms')` whenever CMS content changes (already done in `/api/cms/state` POST and `/api/cms/history` restore).
+- Middleware reads role from DB (`user_roles` table) on every request. After running `20260622_security_hardening.sql`, roles are synced to `user.app_metadata` via trigger — middleware can be updated to read from JWT instead, eliminating the DB query.
+- `SessionGuard` client component in portal layout auto-logs out after 30 min of inactivity.

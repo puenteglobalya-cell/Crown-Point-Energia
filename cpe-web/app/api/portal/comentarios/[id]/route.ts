@@ -21,7 +21,10 @@ async function getPortalUser() {
   return { id: user.id, email: user.email, isAdmin: roleRow.role === 'admin' }
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  if (!UUID_RE.test(params.id)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const u = await getPortalUser()
   if (!u) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const db = createSupabaseServerAdminClient()
@@ -36,6 +39,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!UUID_RE.test(params.id)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const u = await getPortalUser()
   if (!u) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -57,6 +61,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!UUID_RE.test(params.id)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const u = await getPortalUser()
   if (!u) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

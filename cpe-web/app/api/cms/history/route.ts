@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { getCmsState, patchCmsState, type CMSState } from '@/lib/cms'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { isSameOrigin } from '@/lib/csrf'
 
 export const dynamic = 'force-dynamic'
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
     })
 
     await patchCmsState(data.snapshot as CMSState)
+    revalidateTag('cms')
     revalidatePath('/', 'layout')
     return NextResponse.json({ ok: true })
   }

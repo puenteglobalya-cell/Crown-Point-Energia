@@ -69,6 +69,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     .replace("var REPORTE_ID   = '';", `var REPORTE_ID   = '${params.id}';`)
     .replace('var SAVED_MANUAL = {};', `var SAVED_MANUAL = ${savedManualJson};`)
 
+  // Audit: log who viewed this report (fire-and-forget — never block the response)
+  logActivity({
+    userId:       userWithRole.id,
+    userEmail:    userWithRole.email ?? null,
+    action:       'view_report',
+    resourceType: 'reporte',
+    resourceId:   params.id,
+  }).catch(() => {})
+
   return new NextResponse(html, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',

@@ -1,30 +1,35 @@
 /** @type {import('next').NextConfig} */
 
 const securityHeaders = [
-  // Prevent embedding in iframes (clickjacking)
-  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+  // DENY embedding in all iframes — portal/admin don't need framing
+  { key: 'X-Frame-Options', value: 'DENY' },
   // Block MIME-type sniffing
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   // Referrer policy
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   // Minimal permissions policy
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-  // HSTS — 1 year, include subdomains
-  { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
-  // CSP — allows self + Supabase, Chart.js/Google Fonts CDN used in HTML reports, Vercel analytics
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
+  // HSTS — 2 years with preload (submit at https://hstspreload.org once stable)
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+  // CSP: unsafe-inline needed for Next.js hydration & HTML report inline scripts.
+  // Upgrade path: generate a per-request nonce in middleware and use strict-dynamic.
+  // CDN sources (chart.js, fonts) needed for self-contained report HTML pages.
   {
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://crownpointenergy.com",
-      "connect-src 'self' https://*.supabase.co https://supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-      "frame-src 'self'",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "img-src 'self' data: blob: https://crownpointenergy.com https://*.supabase.co",
+      "connect-src 'self' https://*.supabase.co https://supabase.co wss://*.supabase.co",
+      "media-src 'self' https://*.supabase.co",
+      "worker-src 'self' blob:",
+      "frame-src 'none'",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      "upgrade-insecure-requests",
     ].join('; '),
   },
 ]
