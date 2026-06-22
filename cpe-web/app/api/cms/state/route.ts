@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { getCmsState, patchCmsState, CMSState } from '@/lib/cms'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { isSameOrigin } from '@/lib/csrf'
 
 export async function GET() {
   const state = await getCmsState()
@@ -10,6 +11,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const user = await requireAdminUser()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

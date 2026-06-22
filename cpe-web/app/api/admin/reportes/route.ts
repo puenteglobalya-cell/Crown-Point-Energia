@@ -113,9 +113,11 @@ export async function POST(req: NextRequest) {
   const VALID_ESTADOS = ['borrador', 'publicado']
   const estadoFinal = VALID_ESTADOS.includes(estado) ? estado : 'borrador'
 
-  // Sanitize storage_path to prevent path traversal
-  const safePath = typeof storage_path === 'string'
-    ? storage_path.replace(/\.\.\//g, '').replace(/^\/+/, '')
+  // Allowlist storage_path to prevent path traversal (incl. encoded variants like ..%2f).
+  // Only permit alphanumeric, dash, underscore, dot, and forward slash.
+  const SAFE_PATH_RE = /^[A-Za-z0-9_\-./]+$/
+  const safePath = typeof storage_path === 'string' && SAFE_PATH_RE.test(storage_path) && !storage_path.includes('..')
+    ? storage_path.replace(/^\/+/, '')
     : null
 
   const VALID_TYPES = ['ingresos', 'produccion', 'financiero', 'accionista', 'henry_hub', 'ice_brent', 'facturacion']

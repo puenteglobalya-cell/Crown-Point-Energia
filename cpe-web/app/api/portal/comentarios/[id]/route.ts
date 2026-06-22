@@ -43,10 +43,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!texto || typeof texto !== 'string' || texto.trim().length === 0) {
     return NextResponse.json({ error: 'texto requerido' }, { status: 400 })
   }
-  if (texto.length > 2000) return NextResponse.json({ error: 'Máximo 2000 caracteres' }, { status: 400 })
+  // Strip null bytes and ASCII control chars (preserve \n \t for readability)
+  // eslint-disable-next-line no-control-regex
+  const sanitized = texto.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim()
+  if (sanitized.length === 0) return NextResponse.json({ error: 'texto requerido' }, { status: 400 })
+  if (sanitized.length > 2000) return NextResponse.json({ error: 'Máximo 2000 caracteres' }, { status: 400 })
   const db = createSupabaseServerAdminClient()
   const { data, error } = await db.from('report_comments')
-    .insert({ reporte_id: params.id, user_id: u.id, texto: texto.trim() })
+    .insert({ reporte_id: params.id, user_id: u.id, texto: sanitized })
     .select('id, texto, created_at').single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
