@@ -89,6 +89,25 @@ export default async function PortalPage() {
         <ReportesLista items={items} userCanUpload={userCanUpload} isAccionista={isAccionista} />
       </section>
 
+      {(userIsAdmin || userCanUpload) && (
+        <section className="portal-section">
+          <h2 className="portal-section__title">Herramientas</h2>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <Link
+              href="/infografia"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '12px 20px', borderRadius: 'var(--r-md)',
+                border: '1px solid var(--rule)', background: 'var(--surface)',
+                color: 'var(--fg)', textDecoration: 'none', fontSize: 14, fontWeight: 500,
+              }}
+            >
+              <span>🖼️</span> Constructor de infografía PNG
+            </Link>
+          </div>
+        </section>
+      )}
+
       {userIsAdmin && (
         <div style={{ marginTop: 8, textAlign: 'right' }}>
           <Link href="/admin/logs" style={{ fontSize: 12, color: 'var(--fg-muted)', textDecoration: 'none' }}>

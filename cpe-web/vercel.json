@@ -12,6 +12,9 @@
   "functions": {
     "app/api/admin/reportes/[id]/pdf/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/infografia/png/route.ts": {
+      "maxDuration": 120
     }
   }
 }

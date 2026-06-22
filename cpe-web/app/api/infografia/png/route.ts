@@ -1,13 +1,34 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 import { getCmsState } from '@/lib/cms'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { isAdminEmail } from '@/lib/admin-auth'
 import { generateInfografiaHtml, type InfografiaData } from '@/lib/infografia-html'
 
 export const maxDuration = 120
 export const dynamic = 'force-dynamic'
 
+// Version must match @sparticuz/chromium-min installed (currently ^149).
+// Override via CHROMIUM_URL env var in Vercel (Settings → Environment Variables).
 const CHROMIUM_URL =
-  'https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar'
+  process.env.CHROMIUM_URL ??
+  'https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.tar'
+
+async function getPortalUser() {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } },
+  )
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  if (isAdminEmail(user.email)) return user
+  const db = createSupabaseServerAdminClient()
+  const { data } = await db.from('user_roles').select('activo').eq('user_id', user.id).single()
+  return data?.activo ? user : null
+}
 
 const YF_URL = 'https://query1.finance.yahoo.com/v8/finance/chart/CWV.V'
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
@@ -20,6 +41,9 @@ function fmtCap(n: number) {
 }
 
 export async function GET(req: Request) {
+  const user = await getPortalUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const { searchParams } = new URL(req.url)
     const mParam = searchParams.get('m')
@@ -131,7 +155,7 @@ export async function GET(req: Request) {
       args:            chromium.args,
       defaultViewport: { width: 1080, height: 1350 },
       executablePath:  await chromium.executablePath(CHROMIUM_URL),
-      headless:        true,
+      headless:        'shell',
     })
 
     const page = await browser.newPage()
@@ -156,7 +180,8 @@ export async function GET(req: Request) {
       },
     })
   } catch (err) {
-    console.error('[infografia/png]', err)
-    return NextResponse.json({ error: String(err) }, { status: 500 })
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error(JSON.stringify({ level: 'error', msg: '[infografia/png]', detail: msg, chromiumUrl: CHROMIUM_URL }))
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

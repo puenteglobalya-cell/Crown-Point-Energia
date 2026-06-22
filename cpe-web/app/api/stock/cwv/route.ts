@@ -45,6 +45,6 @@ export async function GET() {
       history,
     })
   } catch (err) {
-    return NextResponse.json({ ok: false, error: String(err) }, { status: 502 })
+    return NextResponse.json({ ok: false, error: String(err) }, { status: 200 })
   }
 }
