@@ -183,10 +183,30 @@ export default async function CarrerasPage() {
                 <span className="lang-es">Postulate</span>
                 <span className="lang-en">Apply</span>
               </span>
-              <h2 style={{ fontSize: 'clamp(26px, 2.8vw, 36px)', letterSpacing: '-0.02em', marginTop: 8, marginBottom: 'var(--s-6)' }}>
+              <h2 style={{ fontSize: 'clamp(26px, 2.8vw, 36px)', letterSpacing: '-0.02em', marginTop: 8, marginBottom: 'var(--s-4)' }}>
                 <span className="lang-es">Contactá con RRHH</span>
                 <span className="lang-en">Contact HR</span>
               </h2>
+              <a
+                href="https://www.linkedin.com/company/crown-point-energia-sa"
+                target="_blank"
+                rel="noreferrer noopener"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 7,
+                  marginBottom: 'var(--s-6)',
+                  padding: '9px 18px', borderRadius: 'var(--r-md)',
+                  border: '1px solid rgba(10,102,194,.3)',
+                  color: '#0a66c2', fontSize: 13, fontWeight: 600,
+                  textDecoration: 'none', background: 'rgba(10,102,194,.06)',
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/>
+                  <circle cx="4" cy="4" r="2"/>
+                </svg>
+                <span className="lang-es">Seguinos en LinkedIn</span>
+                <span className="lang-en">Follow us on LinkedIn</span>
+              </a>
               <ApplicationForm />
             </div>
           </div>

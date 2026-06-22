@@ -7,6 +7,10 @@ import { fetchOperationsBlocks } from '@/lib/content-fetch'
 
 export const revalidate = 60
 
+// Display order per section
+const EXPLOTACION_ORDER = ['tordillo', 'piedra', 'chanares', 'ppc', 'tdf']
+const EXPLORACION_SLUGS = new Set(['cerro'])
+
 type Commodity = 'oil' | 'gas' | 'mixed'
 const COMMODITY: Record<Commodity, { color: string; es: string; en: string }> = {
   oil:   { color: '#1F2566', es: 'Petróleo',       en: 'Oil' },
@@ -15,10 +19,20 @@ const COMMODITY: Record<Commodity, { color: string; es: string; en: string }> = 
 }
 
 export default async function OperacionesPage() {
-  const [s, blocks] = await Promise.all([
+  const [s, allBlocks] = await Promise.all([
     getCmsState(),
     fetchOperationsBlocks(),
   ])
+
+  // Split and sort into two groups
+  const explotacionBlocks = EXPLOTACION_ORDER
+    .map(slug => allBlocks.find(b => b.slug === slug))
+    .filter(Boolean) as typeof allBlocks
+  const exploracionBlocks = allBlocks.filter(b => EXPLORACION_SLUGS.has(b.slug))
+  // Any blocks not in either group fall through to explotación at the end
+  const knownSlugs = new Set([...EXPLOTACION_ORDER, ...EXPLORACION_SLUGS])
+  const otherBlocks = allBlocks.filter(b => !knownSlugs.has(b.slug))
+  const blocks = [...explotacionBlocks, ...otherBlocks, ...exploracionBlocks]
 
   const f = s.fields
   const fe = s.fieldsEn
@@ -105,7 +119,20 @@ export default async function OperacionesPage() {
               </p>
               <nav>
                 <a href="#mapa" className="active"><span className="lang-es">Mapa general</span><span className="lang-en">Map overview</span></a>
-                {blocks.map(b => <a href={`#${b.slug}`} key={b.slug}>{b.titulo}</a>)}
+                {explotacionBlocks.length > 0 && (
+                  <span className="rail-section-label">
+                    <span className="lang-es">Explotación</span>
+                    <span className="lang-en">Production</span>
+                  </span>
+                )}
+                {[...explotacionBlocks, ...otherBlocks].map(b => <a href={`#${b.slug}`} key={b.slug}>{b.titulo}</a>)}
+                {exploracionBlocks.length > 0 && (
+                  <span className="rail-section-label">
+                    <span className="lang-es">Exploración</span>
+                    <span className="lang-en">Exploration</span>
+                  </span>
+                )}
+                {exploracionBlocks.map(b => <a href={`#${b.slug}`} key={b.slug}>{b.titulo}</a>)}
               </nav>
             </aside>
             <main>
@@ -121,7 +148,21 @@ export default async function OperacionesPage() {
                 </div>
               </div>
 
-              {blocks.map((b, bi) => {
+              {/* ── Explotación ─────────────────────────────────────── */}
+              {[...explotacionBlocks, ...otherBlocks].length > 0 && (
+                <div className="ops-section-header" id="explotacion">
+                  <span className="eyebrow" style={{ color: 'var(--cp-green)' }}>
+                    <span className="lang-es">Explotación</span>
+                    <span className="lang-en">Production</span>
+                  </span>
+                  <h2 style={{ marginTop: 6 }}>
+                    <span className="lang-es">Áreas productivas</span>
+                    <span className="lang-en">Producing areas</span>
+                  </h2>
+                </div>
+              )}
+
+              {[...explotacionBlocks, ...otherBlocks].map((b) => {
                 const comm = COMMODITY[b.commodity]
                 const blockImg = f[`img.ops.${b.slug}`] || ''
                 return (
@@ -134,6 +175,100 @@ export default async function OperacionesPage() {
                     </p>
 
                     {/* Block photo — set via CMS field img.ops.{slug} */}
+                    <div className="block-photo">
+                      {blockImg ? (
+                        <Image
+                          src={blockImg}
+                          alt={f[`img.ops.${b.slug}.alt`] || b.titulo}
+                          fill
+                          sizes="(max-width: 900px) 100vw, 860px"
+                          style={{ objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <div className="block-photo-placeholder">
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5"/>
+                            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+                            <path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          <span>
+                            <span className="lang-es">Imagen pendiente · {b.titulo}</span>
+                            <span className="lang-en">Pending image · {b.titulo}</span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="block-card" style={{ borderTop: `3px solid ${comm.color}` }}>
+                      <header className="block-card-hd">
+                        <h3>
+                          <span className="lang-es">{b.card_title_es}</span>
+                          <span className="lang-en">{b.card_title_en}</span>
+                        </h3>
+                        <div className="chips">
+                          <span className="chip" style={{ background: `${comm.color}20`, color: comm.color, fontWeight: 600 }}>
+                            <span className="lang-es">{comm.es}</span>
+                            <span className="lang-en">{comm.en}</span>
+                          </span>
+                          {b.chips.map((chip, ci) => (
+                            <span className="chip" key={ci}>{chip}</span>
+                          ))}
+                        </div>
+                      </header>
+                      <div className="block-card-body">
+                        <div>
+                          {b.body_es.map((para, pi) => (
+                            <p key={pi}>
+                              <span className="lang-es">{para}</span>
+                              <span className="lang-en">{b.body_en[pi] ?? ''}</span>
+                            </p>
+                          ))}
+                        </div>
+                        <div className="block-stats">
+                          {b.stats.map((stat, si) => (
+                            <div key={si}>
+                              <span>
+                                <span className="lang-es">{stat.label_es}</span>
+                                <span className="lang-en">{stat.label_en}</span>
+                              </span>
+                              <span>{stat.val}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {/* ── Exploración ─────────────────────────────────────── */}
+              {exploracionBlocks.length > 0 && (
+                <div className="ops-section-header" id="exploracion"
+                  style={{ borderTop: '1px solid var(--rule)', paddingTop: 'var(--s-8)', marginTop: 'var(--s-4)' }}
+                >
+                  <span className="eyebrow" style={{ color: 'var(--cp-bordeaux, #7a2a3a)' }}>
+                    <span className="lang-es">Exploración</span>
+                    <span className="lang-en">Exploration</span>
+                  </span>
+                  <h2 style={{ marginTop: 6 }}>
+                    <span className="lang-es">Áreas exploratorias</span>
+                    <span className="lang-en">Exploration areas</span>
+                  </h2>
+                </div>
+              )}
+
+              {exploracionBlocks.map((b) => {
+                const comm = COMMODITY[b.commodity]
+                const blockImg = f[`img.ops.${b.slug}`] || ''
+                return (
+                  <div className="section-block" id={b.slug} key={b.slug}>
+                    <span className="eyebrow">{b.eyebrow}</span>
+                    <h2 style={{ marginTop: 8 }}>{b.titulo}</h2>
+                    <p className="lede">
+                      <span className="lang-es">{b.lede_es}</span>
+                      <span className="lang-en">{b.lede_en}</span>
+                    </p>
+
                     <div className="block-photo">
                       {blockImg ? (
                         <Image

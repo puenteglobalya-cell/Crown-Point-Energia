@@ -4,6 +4,7 @@ import { getCmsState } from '@/lib/cms'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import MapSection from '@/app/operaciones/MapSection'
 import type { MapBlockData } from '@/components/ArgentinaMapInteractive'
+import { DroneHud } from '@/components/DroneHud'
 
 export const revalidate = 60
 
@@ -86,7 +87,8 @@ export default async function HomePage() {
   const stockLow52   = f['stock.low52']   || 'CA $0.16'
   const stockShares  = f['stock.shares']  || '96.6M'
 
-  const heroImg      = f['hero.home.img'] || ''
+  const heroImg      = f['hero.home.img']   || ''
+  const heroVideo    = f['hero.home.video'] || ''
   const heroTitleEs  = f['hero.title.es'] || ''
   const heroTitleEn  = f['hero.title.en'] || ''
   const heroLedeEs   = f['hero.lede.es']  || ''
@@ -100,19 +102,27 @@ export default async function HomePage() {
       {show['hero'] !== false && (
         <section className="hero" data-cpe-section="hero">
           <div className="hero-media">
-            {heroImg ? (
+            {heroVideo ? (
+              <video
+                autoPlay muted loop playsInline
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+              >
+                <source src={heroVideo} type="video/mp4" />
+              </video>
+            ) : heroImg ? (
               <Image
                 src={heroImg}
                 alt={f['hero.home.img.alt'] || ''}
                 fill
                 loading="eager"
-                style={{ objectFit: 'cover', filter: 'brightness(0.85) saturate(0.92)' }}
+                style={{ objectFit: 'cover' }}
               />
             ) : (
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(150deg, #0d1230 0%, #1F2566 45%, #142e22 100%)' }} />
             )}
             <div className="hero-veil"></div>
           </div>
+          <DroneHud lang={s.lang} />
           <div className="container hero-content">
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
@@ -558,10 +568,31 @@ export default async function HomePage() {
                   <span className="cc-key"><span className="lang-es">Oficinas Buenos Aires</span><span className="lang-en">Buenos Aires office</span></span>
                   <span className="cc-val">Godoy Cruz 2769, Piso 4 — C1425FQK</span>
                 </div>
-                <Link className="btn btn-primary cc-btn" href="/contacto">
-                  <span className="lang-es">Ver todos los contactos</span>
-                  <span className="lang-en">All contacts</span>
-                </Link>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Link className="btn btn-primary cc-btn" href="/contacto" style={{ flex: 1, minWidth: 160 }}>
+                    <span className="lang-es">Ver todos los contactos</span>
+                    <span className="lang-en">All contacts</span>
+                  </Link>
+                  <a
+                    href="https://www.linkedin.com/company/crown-point-energia-sa"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 7,
+                      padding: '10px 18px', borderRadius: 'var(--r-md)',
+                      border: '1px solid rgba(10,102,194,.35)',
+                      color: '#0a66c2', fontSize: 14, fontWeight: 600,
+                      textDecoration: 'none', whiteSpace: 'nowrap',
+                      background: 'rgba(10,102,194,.06)',
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/>
+                      <circle cx="4" cy="4" r="2"/>
+                    </svg>
+                    LinkedIn
+                  </a>
+                </div>
               </div>
             </div>
           </div>

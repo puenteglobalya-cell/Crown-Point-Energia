@@ -455,6 +455,17 @@ h1, h2, h3, h4 {
   color: var(--accent-deep);
 }
 [data-theme="dark"] .nav-submenu a:hover { color: var(--accent); }
+.nav-submenu-divider {
+  display: block;
+  padding: 8px 14px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  margin-top: 4px;
+}
+.nav-submenu-divider:first-child { margin-top: 0; }
 
 .header-utils {
   display: flex; align-items: center; gap: 12px;

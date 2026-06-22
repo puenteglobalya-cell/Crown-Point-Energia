@@ -20,12 +20,14 @@ const NAV = [
   {
     key: 'operaciones', href: '/operaciones', es: 'Operaciones', en: 'Operations',
     menu: [
-      { href: '/operaciones#ppc', es: 'Puesto Pozo Cercado Oriental', en: 'Puesto Pozo Cercado Oriental' },
-      { href: '/operaciones#chanares', es: 'Chañares Herrados', en: 'Chañares Herrados' },
-      { href: '/operaciones#cerro', es: 'Cerro de Los Leones', en: 'Cerro de Los Leones' },
+      { divider: true, es: 'Explotación', en: 'Production' },
       { href: '/operaciones#tordillo', es: 'El Tordillo · La Tapera · P. Quiroga', en: 'El Tordillo · La Tapera · P. Quiroga' },
       { href: '/operaciones#piedra', es: 'Piedra Clavada – Koluel Kaike', en: 'Piedra Clavada – Koluel Kaike' },
+      { href: '/operaciones#chanares', es: 'Chañares Herrados', en: 'Chañares Herrados' },
+      { href: '/operaciones#ppc', es: 'Puesto Pozo Cercado Oriental', en: 'Puesto Pozo Cercado Oriental' },
       { href: '/operaciones#tdf', es: 'Río Cullen · Las Violetas', en: 'Río Cullen · Las Violetas' },
+      { divider: true, es: 'Exploración', en: 'Exploration' },
+      { href: '/operaciones#cerro', es: 'Cerro de Los Leones', en: 'Cerro de Los Leones' },
     ]
   },
   {
@@ -157,11 +159,18 @@ export default function Header({ fields, show, lang }: Props) {
                       <span className="lang-en">{it.en}</span>
                     </span>
                     <div className="nav-submenu">
-                      {it.menu.map(m => (
-                        <Link key={m.href} href={m.href}>
-                          <span className="lang-es">{m.es}</span>
-                          <span className="lang-en">{m.en}</span>
-                        </Link>
+                      {it.menu.map((m, mi) => (
+                        'divider' in m ? (
+                          <span key={`d${mi}`} className="nav-submenu-divider">
+                            <span className="lang-es">{m.es}</span>
+                            <span className="lang-en">{m.en}</span>
+                          </span>
+                        ) : (
+                          <Link key={m.href} href={m.href}>
+                            <span className="lang-es">{m.es}</span>
+                            <span className="lang-en">{m.en}</span>
+                          </Link>
+                        )
                       ))}
                     </div>
                   </>
