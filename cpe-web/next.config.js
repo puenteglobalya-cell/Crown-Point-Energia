@@ -25,7 +25,7 @@ const securityHeaders = [
       "connect-src 'self' https://*.supabase.co https://supabase.co wss://*.supabase.co",
       "media-src 'self' https://*.supabase.co",
       "worker-src 'self' blob:",
-      "frame-src 'none'",
+      "frame-src https://www.openstreetmap.org",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
