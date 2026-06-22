@@ -89,6 +89,20 @@
 }
 .two-col .left-rail a:hover { color: var(--fg); background: var(--bg-alt); }
 .two-col .left-rail a.active { border-left-color: var(--accent); color: var(--fg); font-weight: 500; }
+.rail-section-label {
+  display: block;
+  padding: 10px 12px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  margin-top: 6px;
+}
+.ops-section-header {
+  padding: var(--s-10) 0 var(--s-2);
+}
+.ops-section-header h2 { font-size: 26px; }
 
 .section-block {
   padding: var(--s-12) 0;
