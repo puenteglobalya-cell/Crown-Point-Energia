@@ -8,12 +8,20 @@ const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e =
 
 // Use service role to bypass RLS when checking user_roles in middleware
 async function getRoleRow(userId: string) {
-  const db = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-  const { data } = await db.from('user_roles').select('role, activo').eq('user_id', userId).single()
-  return data as { role: string; activo: boolean } | null
+  try {
+    const db = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data, error } = await Promise.race([
+      db.from('user_roles').select('role, activo').eq('user_id', userId).single(),
+      new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+    ])
+    if (error) return null
+    return data as { role: string; activo: boolean } | null
+  } catch {
+    return null
+  }
 }
 
 export async function middleware(request: NextRequest) {
