@@ -128,7 +128,7 @@
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--r-lg);
-  min-width: 380px;
+  min-width: min(380px, calc(100vw - 40px));
   max-width: 100%;
 }
 .hq-row { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }

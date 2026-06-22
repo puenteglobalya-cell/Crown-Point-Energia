@@ -94,6 +94,10 @@
 
 @media (max-width: 600px) {
   .macro-grid { grid-template-columns: 1fr; }
+  .portal-main { padding: 20px 14px; }
+  .portal-header { margin-bottom: 20px; }
+  .portal-header__title { font-size: 20px; }
+  .portal-nav-email { display: none; }
 }
 
 .macro-actions {
