@@ -117,6 +117,16 @@ export async function middleware(request: NextRequest) {
     if (!user) return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  // ── Infografía: portal users only ────────────────────────────────────────
+  if (pathname.startsWith('/infografia')) {
+    if (!user) return NextResponse.redirect(new URL('/portal/login', request.url))
+    const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
+    if (!isAdminEmail) {
+      const roleRow = await getRoleRow(user.id)
+      if (!roleRow?.activo) return NextResponse.redirect(new URL('/portal/login', request.url))
+    }
+  }
+
   // ── Maintenance mode ─────────────────────────────────────────────────────
   const isAdminRoute = pathname.startsWith('/admin')
   const isPortalRoute = pathname.startsWith('/portal')
