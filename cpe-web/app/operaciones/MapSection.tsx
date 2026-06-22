@@ -1,8 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { BLOCK_COORDS } from '@/components/YacimientosLeafletMap'
-import type { YacimientoPin } from '@/components/YacimientosLeafletMap'
+import { BLOCK_COORDS } from '@/lib/block-coords'
+import type { YacimientoPin } from '@/lib/block-coords'
 import type { MapBlockData } from '@/components/ArgentinaMapInteractive'
 import type { CSSProperties } from 'react'
 
