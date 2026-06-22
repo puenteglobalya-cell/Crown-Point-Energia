@@ -28,12 +28,12 @@ export const BLOCK_COORDS: Record<string, [number, number]> = {
   tdf:      [-52.65, -68.60],   // Río Cullen / Las Violetas — Austral, TDF
 }
 
-function svgIcon(color: string) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">
+function divIcon(L: typeof import('leaflet'), color: string) {
+  const html = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36" style="display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))">
     <path d="M14 0C6.27 0 0 6.27 0 14c0 9.9 14 22 14 22s14-12.1 14-22C28 6.27 21.73 0 14 0z" fill="${color}" stroke="white" stroke-width="1.5"/>
-    <circle cx="14" cy="14" r="5.5" fill="white" opacity="0.85"/>
+    <circle cx="14" cy="14" r="5.5" fill="white" opacity="0.9"/>
   </svg>`
-  return `data:image/svg+xml;base64,${btoa(svg)}`
+  return L.divIcon({ className: '', html, iconSize: [28, 36], iconAnchor: [14, 36], popupAnchor: [0, -38] })
 }
 
 export default function YacimientosLeafletMap({ pins, height = 520 }: { pins: YacimientoPin[]; height?: number }) {
@@ -46,6 +46,10 @@ export default function YacimientosLeafletMap({ pins, height = 520 }: { pins: Ya
     async function init() {
       const L = (await import('leaflet')).default
 
+      // Prevent Leaflet from trying to load default marker PNGs (breaks in webpack)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (L.Icon.Default.prototype as any)._getIconUrl
+
       const map = L.map(containerRef.current!, {
         zoomControl: true,
         scrollWheelZoom: false,
@@ -53,16 +57,18 @@ export default function YacimientosLeafletMap({ pins, height = 520 }: { pins: Ya
       })
       mapRef.current = map
 
+      // Remove "Leaflet" branding link — keep OSM credit
+      map.attributionControl.setPrefix(false)
+
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
+        attribution: '© <a href="https://openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>',
         maxZoom: 18,
       }).addTo(map)
 
       const bounds: [number, number][] = []
 
       for (const pin of pins) {
-        const iconUrl = svgIcon(COMMODITY_COLOR[pin.commodity])
-        const icon = L.icon({ iconUrl, iconSize: [28, 36], iconAnchor: [14, 36], popupAnchor: [0, -38] })
+        const icon = divIcon(L, COMMODITY_COLOR[pin.commodity])
         const marker = L.marker([pin.lat, pin.lon], { icon }).addTo(map)
         marker.bindPopup(
           `<div style="font-family:system-ui,sans-serif;min-width:160px">

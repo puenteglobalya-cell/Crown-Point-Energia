@@ -33,16 +33,18 @@ export default function PortalNav({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 24px',
+      padding: '0 16px',
       height: 56,
       background: 'var(--surface)',
       borderBottom: '1px solid var(--rule)',
       position: 'sticky',
       top: 0,
       zIndex: 100,
+      overflowX: 'auto',
+      gap: 12,
     }}>
       {/* Left: logo + nav links */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
         <Link href="/portal" style={{
           fontFamily: 'var(--font-display)',
           fontWeight: 700,
@@ -84,11 +86,12 @@ export default function PortalNav({
           fontSize: 12,
           fontFamily: 'var(--font-mono)',
           color: 'var(--fg-muted)',
-          maxWidth: 200,
+          maxWidth: 160,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
-        }}>
+          display: 'var(--email-display, inline)',
+        }} className="portal-nav-email">
           {email}
         </span>
 

@@ -219,6 +219,8 @@ header{
 .abr{margin-top:12px;height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;}
 .abr-f{height:100%;border-radius:2px;background:var(--ac,var(--naranja));}
 
+.areas-2col{grid-template-columns:repeat(2,1fr);max-width:760px;}
+
 /* ── FULL-WIDTH CARD ────────────────────────────────────── */
 .card-full{
   background:var(--card);border:1px solid var(--border);border-radius:var(--r);
@@ -244,10 +246,24 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
   .areas{grid-template-columns:repeat(2,1fr);}
 }
 @media(max-width:600px){
-  .wrap{padding:0 16px 48px;}
-  .h-left h1{font-size:32px;}
-  .kpi-row{grid-template-columns:1fr;}
+  .wrap{padding:0 14px 80px;}
+  header{flex-direction:column;align-items:flex-start;gap:16px;padding:28px 0 20px;}
+  .h-right{text-align:left;}
+  .h-left h1{font-size:clamp(26px,7vw,38px);}
+  .kpi-row{grid-template-columns:1fr 1fr;}
+  .kpi{padding:16px 14px 12px;}
+  .kpi-val{font-size:20px;}
   .areas{grid-template-columns:1fr;}
+  .g2{grid-template-columns:1fr;}
+  .card{padding:18px 14px;}
+  .card-full{padding:18px 14px;}
+  .ch{height:190px;}
+  .sec{font-size:8.5px;letter-spacing:2px;}
+  .acard{padding:16px;}
+  .areas-2col{grid-template-columns:1fr;max-width:none;}
+  table.t th{font-size:8px;padding:6px 6px;}
+  table.t td{font-size:10.5px;padding:7px 6px;}
+  .no-print[style*="bottom:28px"]{bottom:16px!important;right:16px!important;}
 }
 @media print{
   .no-print{display:none!important;}
@@ -274,7 +290,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
 </head>
 <body>
 <div class="wrap">
-<div class="no-print" style="position:fixed;bottom:28px;right:28px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+<div class="no-print" style="position:fixed;bottom:20px;right:16px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
   <a id="pdf-btn"
     href="#"
     style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap;background:#fff;color:#1F2566;border:1.5px solid #1F2566;border-radius:40px;padding:11px 20px;font-size:13px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;text-decoration:none;box-shadow:0 4px 16px rgba(31,37,102,.15)"
@@ -431,7 +447,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
 
 <!-- DETALLE GAS -->
 <div class="sec">Detalle por Área — Gas</div>
-<div class="areas" style="grid-template-columns:repeat(2,1fr);max-width:760px">
+<div class="areas areas-2col">
 
   <div class="acard" style="--ac:var(--warm)">
     <div class="aname"><div class="adot"></div>Gas — ET-LT-PQ</div>

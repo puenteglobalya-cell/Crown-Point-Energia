@@ -27,6 +27,9 @@ type Application = {
   cv_path: string | null; cv_name: string | null; cv_size: number | null
   estado: string; notas: string; created_at: string; updated_at: string
   datos?: DatosPostulante | null
+  score?: number | null
+  ai_summary?: string | null
+  ai_analyzed_at?: string | null
 }
 
 type Tab = 'postulaciones' | 'posiciones'
@@ -80,6 +83,10 @@ export default function RrhhPage() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<string | null>(null)
   const [filterEstado, setFilterEstado] = useState<string>('todas')
+  const [filterArea, setFilterArea] = useState<string>('todas')
+  const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState<'fecha' | 'score'>('fecha')
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
 
   // ── Positions state ───────
@@ -175,11 +182,49 @@ export default function RrhhPage() {
     }
   }
 
+  // ── AI analysis ──────────
+
+  async function analyzeWithAI(id: string) {
+    setAnalyzingId(id)
+    try {
+      const res = await fetch('/api/rrhh/analizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const d = await res.json()
+      if (res.ok) {
+        setApps(prev => prev.map(a => a.id === id
+          ? { ...a, score: d.score, ai_summary: d.resumen, ai_analyzed_at: new Date().toISOString() }
+          : a
+        ))
+        flash('Análisis IA completado')
+      } else {
+        flash(d.error ?? 'Error al analizar')
+      }
+    } catch {
+      flash('Error de conexión')
+    } finally {
+      setAnalyzingId(null)
+    }
+  }
+
   // ── Derived data ──────────
 
-  const filteredApps = filterEstado === 'todas'
-    ? apps
-    : apps.filter(a => a.estado === filterEstado)
+  const filteredApps = apps
+    .filter(a => filterEstado === 'todas' || a.estado === filterEstado)
+    .filter(a => filterArea === 'todas' || a.area === filterArea)
+    .filter(a => {
+      if (!search.trim()) return true
+      const q = search.toLowerCase()
+      return a.nombre.toLowerCase().includes(q) || a.email.toLowerCase().includes(q)
+    })
+    .sort((a, b) => {
+      if (sortBy === 'score') {
+        return (b.score ?? -1) - (a.score ?? -1)
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
 
   const sel = selected ? apps.find(a => a.id === selected) : null
 
@@ -253,7 +298,36 @@ export default function RrhhPage() {
         ) : tab === 'postulaciones' ? (
           /* ── POSTULACIONES TAB ──────────────────────────────────────── */
           <>
-            {/* Filter bar */}
+            {/* Search + filters */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+              <input
+                type="search"
+                placeholder="Buscar por nombre o email…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ flex: '1 1 200px', minWidth: 180, fontSize: 13, padding: '7px 12px', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', background: 'var(--surface)', color: 'var(--fg)' }}
+              />
+              <select
+                value={filterArea}
+                onChange={e => setFilterArea(e.target.value)}
+                style={{ fontSize: 12, padding: '7px 10px', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', background: 'var(--surface)', color: 'var(--fg)' }}
+              >
+                <option value="todas">Todas las áreas</option>
+                {Object.entries(AREA_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value as 'fecha' | 'score')}
+                style={{ fontSize: 12, padding: '7px 10px', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', background: 'var(--surface)', color: 'var(--fg)' }}
+              >
+                <option value="fecha">Ordenar: más reciente</option>
+                <option value="score">Ordenar: mayor score IA</option>
+              </select>
+            </div>
+
+            {/* Estado filter bar */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
               {['todas', ...ESTADOS].map(e => (
                 <button
@@ -294,18 +368,31 @@ export default function RrhhPage() {
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                           <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg)' }}>{app.nombre}</span>
-                          <span style={{
-                            fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                            padding: '3px 8px', borderRadius: 'var(--r-pill)', background: ec.bg, color: ec.fg,
-                          }}>
-                            {ec.label}
-                          </span>
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                            {app.score != null && (
+                              <span style={{
+                                fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-mono)',
+                                padding: '2px 7px', borderRadius: 'var(--r-pill)',
+                                background: app.score >= 70 ? 'rgba(108,174,82,0.15)' : app.score >= 40 ? 'rgba(201,162,74,0.15)' : 'rgba(179,59,46,0.12)',
+                                color: app.score >= 70 ? 'var(--cp-green-deep)' : app.score >= 40 ? 'var(--cp-gold-deep)' : 'var(--cp-negative)',
+                              }}>
+                                {app.score}
+                              </span>
+                            )}
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                              padding: '3px 8px', borderRadius: 'var(--r-pill)', background: ec.bg, color: ec.fg,
+                            }}>
+                              {ec.label}
+                            </span>
+                          </div>
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 3, fontFamily: 'var(--font-mono)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <span>{AREA_LABELS[app.area] ?? app.area}</span>
                           <span>·</span>
                           <span>hace {age === 0 ? 'hoy' : `${age}d`}</span>
                           {app.cv_path && <><span>·</span><span style={{ color: 'var(--accent)' }}>CV</span></>}
+                          {app.ai_analyzed_at && <><span>·</span><span style={{ color: 'var(--fg-muted)' }}>IA ✓</span></>}
                         </div>
                       </div>
                     )
@@ -398,6 +485,46 @@ export default function RrhhPage() {
                         {sel.cv_size ? ` (${fmtSize(sel.cv_size)})` : ''}
                       </a>
                     )}
+
+                    {/* AI Analysis */}
+                    <div style={{ background: 'var(--bg-alt)', borderRadius: 'var(--r-md)', padding: '16px', marginBottom: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sel.ai_summary ? 10 : 0 }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)' }}>
+                          Análisis IA
+                        </div>
+                        <button
+                          className="btn btn-primary"
+                          style={{ fontSize: 11, padding: '5px 12px', opacity: analyzingId === sel.id ? 0.6 : 1 }}
+                          disabled={analyzingId === sel.id}
+                          onClick={() => analyzeWithAI(sel.id)}
+                        >
+                          {analyzingId === sel.id ? 'Analizando…' : sel.ai_analyzed_at ? 'Re-analizar' : 'Analizar con IA'}
+                        </button>
+                      </div>
+                      {sel.score != null && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: sel.ai_summary ? 8 : 0 }}>
+                          <span style={{
+                            fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-mono)',
+                            color: sel.score >= 70 ? 'var(--cp-green-deep)' : sel.score >= 40 ? 'var(--cp-gold-deep)' : 'var(--cp-negative)',
+                          }}>
+                            {sel.score}<span style={{ fontSize: 12, fontWeight: 400 }}>/100</span>
+                          </span>
+                          {sel.ai_analyzed_at && (
+                            <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
+                              {fmtDate(sel.ai_analyzed_at)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {sel.ai_summary && (
+                        <p style={{ fontSize: 13, color: 'var(--fg-soft)', lineHeight: 1.6, margin: 0 }}>{sel.ai_summary}</p>
+                      )}
+                      {!sel.ai_summary && !sel.ai_analyzed_at && (
+                        <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '8px 0 0', fontStyle: 'italic' }}>
+                          Sin análisis. Presioná "Analizar con IA" para obtener un score y resumen del candidato.
+                        </p>
+                      )}
+                    </div>
 
                     {/* Message */}
                     <div style={{ background: 'var(--bg-alt)', borderRadius: 'var(--r-md)', padding: '16px', marginBottom: 16 }}>
