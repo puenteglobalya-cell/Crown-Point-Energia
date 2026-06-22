@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
 import ContactForm from './ContactForm'
+import { UbicacionesMap } from './UbicacionesMap'
 
 export const revalidate = 60
 
@@ -146,6 +147,13 @@ export default async function ContactoPage() {
               .offices-grid { grid-template-columns: 1fr !important; }
             }
           `}</style>
+        </div>
+      </section>
+
+      {/* Locations map */}
+      <section className="section-tight">
+        <div className="container">
+          <UbicacionesMap />
         </div>
       </section>
 
