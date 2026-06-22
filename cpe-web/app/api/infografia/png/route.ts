@@ -155,7 +155,7 @@ export async function GET(req: Request) {
       args:            chromium.args,
       defaultViewport: { width: 1080, height: 1350 },
       executablePath:  await chromium.executablePath(CHROMIUM_URL),
-      headless:        true,
+      headless:        'shell',
     })
 
     const page = await browser.newPage()
