@@ -564,7 +564,7 @@ export default async function HomePage() {
                     <span className="lang-en">All contacts</span>
                   </Link>
                   <a
-                    href="https://www.linkedin.com/company/crown-point-energia-sa/"
+                    href="https://www.linkedin.com/company/crown-point-energia-sa"
                     target="_blank"
                     rel="noreferrer noopener"
                     style={{

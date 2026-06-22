@@ -12,7 +12,7 @@ export default function Footer() {
             <p className="lang-en">Argentine oil &amp; gas company with international headquarters. We operate in the Austral (Tierra del Fuego), Neuquén, Cuyana (Mendoza) and San Jorge Gulf (Chubut – Santa Cruz) basins. Holding Crown Point Energy Inc. is listed on TSXV: CWV.</p>
             <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
               <a
-                href="https://www.linkedin.com/company/crown-point-energy"
+                href="https://www.linkedin.com/company/crown-point-energia-sa"
                 target="_blank" rel="noreferrer"
                 style={{ width: 32, height: 32, borderRadius: 6, background: 'rgba(255,255,255,0.08)', display: 'grid', placeItems: 'center', color: 'rgba(222,224,242,0.6)', transition: 'background .15s' }}
                 aria-label="LinkedIn"

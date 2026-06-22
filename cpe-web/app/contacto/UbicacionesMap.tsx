@@ -65,7 +65,7 @@ export function UbicacionesMap() {
             <span className="lang-en">Locations ({LOCATIONS.length})</span>
           </span>
           <a
-            href="https://www.linkedin.com/company/crown-point-energia-sa/"
+            href="https://www.linkedin.com/company/crown-point-energia-sa"
             target="_blank"
             rel="noreferrer noopener"
             className="ubicaciones-linkedin"
