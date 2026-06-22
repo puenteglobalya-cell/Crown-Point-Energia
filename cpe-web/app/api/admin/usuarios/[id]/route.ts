@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json()
   const { role, activo } = body
 
-  if (role !== undefined && !['viewer', 'uploader', 'admin'].includes(role)) {
+  if (role !== undefined && !['viewer', 'uploader', 'admin', 'rrhh', 'accionista'].includes(role)) {
     return NextResponse.json({ error: 'Rol inválido' }, { status: 400 })
   }
 

@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { createSupabaseServerAdminClient } from './supabase'
 
 export type CMSState = {
@@ -20,43 +21,50 @@ const HARD_DEFAULTS: CMSState = {
   maintenance: false,
 }
 
-export async function getCmsState(): Promise<CMSState> {
-  try {
-    const supabase = createSupabaseServerAdminClient()
+// Cached CMS fetch — tagged 'cms' so revalidateTag('cms') in the admin POST
+// handler instantly propagates changes to all public pages without a full redeploy.
+// Falls back to HARD_DEFAULTS if Supabase is unavailable.
+export const getCmsState = unstable_cache(
+  async (): Promise<CMSState> => {
+    try {
+      const supabase = createSupabaseServerAdminClient()
 
-    const [settingsRes, sectionsRes, fieldsRes] = await Promise.all([
-      supabase.from('cms_settings').select('direction,theme,lang,maintenance').eq('id', 1).single(),
-      supabase.from('cms_sections').select('key,visible'),
-      supabase.from('cms_fields').select('key,value_es,value_en'),
-    ])
+      const [settingsRes, sectionsRes, fieldsRes] = await Promise.all([
+        supabase.from('cms_settings').select('direction,theme,lang,maintenance').eq('id', 1).single(),
+        supabase.from('cms_sections').select('key,visible'),
+        supabase.from('cms_fields').select('key,value_es,value_en'),
+      ])
 
-    const settings = settingsRes.data
-    const sections = sectionsRes.data ?? []
-    const fields = fieldsRes.data ?? []
+      const settings = settingsRes.data
+      const sections = sectionsRes.data ?? []
+      const fields = fieldsRes.data ?? []
 
-    const show: Record<string, boolean> = {}
-    for (const s of sections) show[s.key] = s.visible
+      const show: Record<string, boolean> = {}
+      for (const s of sections) show[s.key] = s.visible
 
-    const fieldMap: Record<string, string> = {}
-    const fieldMapEn: Record<string, string> = {}
-    for (const f of fields) {
-      fieldMap[f.key] = f.value_es ?? ''
-      fieldMapEn[f.key] = f.value_en ?? ''
+      const fieldMap: Record<string, string> = {}
+      const fieldMapEn: Record<string, string> = {}
+      for (const f of fields) {
+        fieldMap[f.key] = f.value_es ?? ''
+        fieldMapEn[f.key] = f.value_en ?? ''
+      }
+
+      return {
+        direction: (settings?.direction as CMSState['direction']) ?? HARD_DEFAULTS.direction,
+        theme: (settings?.theme as CMSState['theme']) ?? HARD_DEFAULTS.theme,
+        lang: (settings?.lang as CMSState['lang']) ?? HARD_DEFAULTS.lang,
+        show,
+        fields: fieldMap,
+        fieldsEn: fieldMapEn,
+        maintenance: settings?.maintenance ?? false,
+      }
+    } catch {
+      return HARD_DEFAULTS
     }
-
-    return {
-      direction: (settings?.direction as CMSState['direction']) ?? HARD_DEFAULTS.direction,
-      theme: (settings?.theme as CMSState['theme']) ?? HARD_DEFAULTS.theme,
-      lang: (settings?.lang as CMSState['lang']) ?? HARD_DEFAULTS.lang,
-      show,
-      fields: fieldMap,
-      fieldsEn: fieldMapEn,
-      maintenance: settings?.maintenance ?? false,
-    }
-  } catch {
-    return HARD_DEFAULTS
-  }
-}
+  },
+  ['cms-state'],
+  { tags: ['cms'], revalidate: 3600 },
+)
 
 export async function patchCmsState(patch: Partial<CMSState>): Promise<void> {
   const supabase = createSupabaseServerAdminClient()

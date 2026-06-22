@@ -1,21 +1,27 @@
 // Crown Point Portal — Service Worker
-const CACHE = 'cpe-portal-v1'
+const CACHE = 'cpe-portal-v2'
 const PRECACHE = ['/portal', '/portal/dashboard', '/logo.png', '/manifest.json']
 
 // ── Install: precache shell pages ─────────────────────────────────────────────
 self.addEventListener('install', event => {
-  self.skipWaiting()
+  // Don't skipWaiting immediately — let the activate event notify clients first
   event.waitUntil(
     caches.open(CACHE).then(c => c.addAll(PRECACHE).catch(() => {}))
   )
 })
 
-// ── Activate: delete old caches ───────────────────────────────────────────────
+// ── Activate: delete old caches + notify clients of update ───────────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+      .then(() =>
+        // Notify all open tabs that a new version is active
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs =>
+          cs.forEach(c => c.postMessage({ type: 'SW_UPDATED' }))
+        )
+      )
   )
 })
 
@@ -70,6 +76,9 @@ self.addEventListener('fetch', event => {
 self.addEventListener('push', event => {
   let data = {}
   try { data = event.data?.json() ?? {} } catch (_) {}
+
+  // Silent ping from cleanup cron — don't show a notification
+  if (data.type === 'ping') return
 
   const title = data.title || 'Crown Point Energía'
   const options = {

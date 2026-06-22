@@ -29,7 +29,10 @@ async function getUserWithRole() {
   return { id: user.id, email: user.email, role: roleRow.role as 'viewer' | 'uploader' | 'admin', activo: roleRow.activo }
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!UUID_RE.test(params.id)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const userWithRole = await getUserWithRole()
   if (!userWithRole?.activo) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
@@ -58,11 +61,22 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
   }
 
-  // Inject server-side manual data so the report picks it up on load
+  // Inject server-side manual data so the report picks it up on load.
+  // Escape </script> so an attacker can't break out of the script block via string values.
   const savedManualJson = JSON.stringify(data.manual_data ?? {})
+    .replace(/<\/script>/gi, '<\\/script>')
   const html = data.html
     .replace("var REPORTE_ID   = '';", `var REPORTE_ID   = '${params.id}';`)
     .replace('var SAVED_MANUAL = {};', `var SAVED_MANUAL = ${savedManualJson};`)
+
+  // Audit: log who viewed this report (fire-and-forget — never block the response)
+  logActivity({
+    userId:       userWithRole.id,
+    userEmail:    userWithRole.email ?? null,
+    action:       'view_report',
+    resourceType: 'reporte',
+    resourceId:   params.id,
+  }).catch(() => {})
 
   return new NextResponse(html, {
     headers: {

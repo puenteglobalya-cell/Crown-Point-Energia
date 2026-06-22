@@ -8,12 +8,20 @@ const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e =
 
 // Use service role to bypass RLS when checking user_roles in middleware
 async function getRoleRow(userId: string) {
-  const db = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-  const { data } = await db.from('user_roles').select('role, activo').eq('user_id', userId).single()
-  return data as { role: string; activo: boolean } | null
+  try {
+    const db = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data, error } = await Promise.race([
+      db.from('user_roles').select('role, activo').eq('user_id', userId).single(),
+      new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+    ])
+    if (error) return null
+    return data as { role: string; activo: boolean } | null
+  } catch {
+    return null
+  }
 }
 
 export async function middleware(request: NextRequest) {
@@ -59,12 +67,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Logged-in user on /portal/login → redirect to /portal
+  // Logged-in admin on /portal/login → redirect to /portal
+  // NOTE: Only redirect CMS admin emails here to avoid redirect loops.
+  // Regular portal users are redirected by the login form itself (window.location.href).
+  // Calling getRoleRow() here + at /portal can cause race-condition redirect loops.
   if (pathname === '/portal/login' && user) {
     const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
     if (isAdminEmail) return NextResponse.redirect(new URL('/portal', request.url))
-    const roleRow = await getRoleRow(user.id)
-    if (roleRow?.activo) return NextResponse.redirect(new URL('/portal', request.url))
   }
 
   // ── Admin auth ───────────────────────────────────────────────────────────

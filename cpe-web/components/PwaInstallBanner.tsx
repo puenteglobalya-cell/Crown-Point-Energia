@@ -8,12 +8,18 @@ type BeforeInstallEvent = Event & { prompt(): Promise<void>; userChoice: Promise
 export default function PwaInstallBanner() {
   const [prompt, setPrompt] = useState<BeforeInstallEvent | null>(null)
   const [dismissed, setDismissed] = useState(false)
+  const [updateReady, setUpdateReady] = useState(false)
 
   useEffect(() => {
-    // Register service worker so the browser can evaluate installability
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    if (!('serviceWorker' in navigator)) return
+
+    // Register SW and listen for update messages
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'SW_UPDATED') setUpdateReady(true)
     }
+    navigator.serviceWorker.addEventListener('message', onMessage)
 
     if (localStorage.getItem('cpe_pwa_dismissed')) return
 
@@ -22,8 +28,46 @@ export default function PwaInstallBanner() {
       setPrompt(e as BeforeInstallEvent)
     }
     window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler)
+      navigator.serviceWorker.removeEventListener('message', onMessage)
+    }
   }, [])
+
+  // Update banner takes priority over install banner
+  if (updateReady) {
+    return (
+      <div style={{
+        position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)',
+        zIndex: 9000, background: 'var(--cp-green-deep)', color: '#fff',
+        borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center',
+        gap: 12, boxShadow: '0 8px 32px rgba(0,0,0,.25)', fontSize: 13,
+        maxWidth: 'calc(100vw - 40px)', width: 380,
+      }}>
+        <span style={{ fontSize: 22, flexShrink: 0 }}>🔄</span>
+        <div style={{ flex: 1, lineHeight: 1.4 }}>
+          <strong style={{ display: 'block', fontSize: 13 }}>Nueva versión disponible</strong>
+          <span style={{ opacity: 0.85, fontSize: 12 }}>Actualizá para ver las últimas mejoras</span>
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            background: 'rgba(255,255,255,0.2)', color: '#fff', border: 'none',
+            borderRadius: 8, padding: '7px 14px', fontWeight: 700, fontSize: 12,
+            cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+          }}
+        >
+          Actualizar
+        </button>
+        <button
+          onClick={() => setUpdateReady(false)}
+          style={{ background: 'none', border: 'none', color: '#fff', opacity: 0.6,
+            cursor: 'pointer', fontSize: 18, padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
+          aria-label="Cerrar"
+        >×</button>
+      </div>
+    )
+  }
 
   if (!prompt || dismissed) return null
 

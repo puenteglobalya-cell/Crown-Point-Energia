@@ -21,7 +21,10 @@ async function getPortalUser() {
   return { id: user.id, email: user.email, isAdmin: roleRow.role === 'admin' }
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  if (!UUID_RE.test(params.id)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const u = await getPortalUser()
   if (!u) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const db = createSupabaseServerAdminClient()
@@ -36,6 +39,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!UUID_RE.test(params.id)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const u = await getPortalUser()
   if (!u) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -43,16 +47,21 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!texto || typeof texto !== 'string' || texto.trim().length === 0) {
     return NextResponse.json({ error: 'texto requerido' }, { status: 400 })
   }
-  if (texto.length > 2000) return NextResponse.json({ error: 'Máximo 2000 caracteres' }, { status: 400 })
+  // Strip null bytes and ASCII control chars (preserve \n \t for readability)
+  // eslint-disable-next-line no-control-regex
+  const sanitized = texto.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim()
+  if (sanitized.length === 0) return NextResponse.json({ error: 'texto requerido' }, { status: 400 })
+  if (sanitized.length > 2000) return NextResponse.json({ error: 'Máximo 2000 caracteres' }, { status: 400 })
   const db = createSupabaseServerAdminClient()
   const { data, error } = await db.from('report_comments')
-    .insert({ reporte_id: params.id, user_id: u.id, texto: texto.trim() })
+    .insert({ reporte_id: params.id, user_id: u.id, texto: sanitized })
     .select('id, texto, created_at').single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!UUID_RE.test(params.id)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const u = await getPortalUser()
   if (!u) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
