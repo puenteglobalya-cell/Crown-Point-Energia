@@ -92,33 +92,43 @@ export default function PortalNav({
           {email}
         </span>
 
-        <span style={{
-          fontSize: 10,
-          fontFamily: 'var(--font-mono)',
-          fontWeight: 700,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          padding: '3px 8px',
-          borderRadius: 'var(--r-pill)',
-          background: role === 'admin'
-            ? 'rgba(108,174,82,0.15)'
-            : role === 'uploader'
-            ? 'color-mix(in oklab, var(--accent) 12%, var(--surface))'
-            : 'var(--bg-alt)',
-          color: role === 'admin'
-            ? 'var(--cp-green-deep)'
-            : role === 'uploader'
-            ? 'var(--accent)'
-            : 'var(--fg-muted)',
-          border: '1px solid',
-          borderColor: role === 'admin'
-            ? 'rgba(108,174,82,0.3)'
-            : role === 'uploader'
-            ? 'color-mix(in oklab, var(--accent) 30%, transparent)'
-            : 'var(--rule)',
-        }}>
-          {ROLE_LABELS[role] ?? role}
-        </span>
+        {role === 'admin' ? (
+          <Link href="/admin" style={{
+            fontSize: 10,
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            padding: '3px 8px',
+            borderRadius: 'var(--r-pill)',
+            background: 'rgba(108,174,82,0.15)',
+            color: 'var(--cp-green-deep)',
+            border: '1px solid rgba(108,174,82,0.3)',
+            textDecoration: 'none',
+          }}>
+            {ROLE_LABELS[role] ?? role}
+          </Link>
+        ) : (
+          <span style={{
+            fontSize: 10,
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            padding: '3px 8px',
+            borderRadius: 'var(--r-pill)',
+            background: role === 'uploader'
+              ? 'color-mix(in oklab, var(--accent) 12%, var(--surface))'
+              : 'var(--bg-alt)',
+            color: role === 'uploader' ? 'var(--accent)' : 'var(--fg-muted)',
+            border: '1px solid',
+            borderColor: role === 'uploader'
+              ? 'color-mix(in oklab, var(--accent) 30%, transparent)'
+              : 'var(--rule)',
+          }}>
+            {ROLE_LABELS[role] ?? role}
+          </span>
+        )}
 
         <button
           onClick={handleSignOut}
