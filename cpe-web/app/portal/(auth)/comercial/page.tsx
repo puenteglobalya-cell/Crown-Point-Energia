@@ -1,7 +1,7 @@
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import Link from 'next/link'
 import ComercialClient from './ComercialClient'
-import { MacroWidget } from '@/app/portal/MacroWidget'
+import { MacroWidget } from '../MacroWidget'
 import { requireAdminUser } from '@/lib/admin-auth'
 
 export const dynamic = 'force-dynamic'
