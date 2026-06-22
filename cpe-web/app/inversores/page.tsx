@@ -401,6 +401,25 @@ export default async function InversoresPage() {
                 <span className="lang-es">Suscribite a nuestra lista de IR para recibir comunicados de prensa, resultados trimestrales y eventos relevantes en tu casilla.</span>
                 <span className="lang-en">Subscribe to our IR list to get press releases, quarterly results and material events in your inbox.</span>
               </p>
+              <a
+                href="https://www.linkedin.com/company/crown-point-energia-sa"
+                target="_blank"
+                rel="noreferrer noopener"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 7,
+                  marginTop: 'var(--s-5)',
+                  padding: '9px 18px', borderRadius: 'var(--r-md)',
+                  border: '1px solid rgba(10,102,194,.45)',
+                  color: '#7ab3f5', fontSize: 13, fontWeight: 600,
+                  textDecoration: 'none', background: 'rgba(10,102,194,.12)',
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/>
+                  <circle cx="4" cy="4" r="2"/>
+                </svg>
+                LinkedIn
+              </a>
             </div>
             <IrSubscribeForm />
           </div>
