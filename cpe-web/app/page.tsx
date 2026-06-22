@@ -4,6 +4,7 @@ import { getCmsState } from '@/lib/cms'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import MapSection from '@/app/operaciones/MapSection'
 import type { MapBlockData } from '@/components/ArgentinaMapInteractive'
+import { DroneHud } from '@/components/DroneHud'
 
 export const revalidate = 60
 
@@ -86,7 +87,8 @@ export default async function HomePage() {
   const stockLow52   = f['stock.low52']   || 'CA $0.16'
   const stockShares  = f['stock.shares']  || '96.6M'
 
-  const heroImg      = f['hero.home.img'] || ''
+  const heroImg      = f['hero.home.img']   || ''
+  const heroVideo    = f['hero.home.video'] || ''
   const heroTitleEs  = f['hero.title.es'] || ''
   const heroTitleEn  = f['hero.title.en'] || ''
   const heroLedeEs   = f['hero.lede.es']  || ''
@@ -100,19 +102,27 @@ export default async function HomePage() {
       {show['hero'] !== false && (
         <section className="hero" data-cpe-section="hero">
           <div className="hero-media">
-            {heroImg ? (
+            {heroVideo ? (
+              <video
+                autoPlay muted loop playsInline
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+              >
+                <source src={heroVideo} type="video/mp4" />
+              </video>
+            ) : heroImg ? (
               <Image
                 src={heroImg}
                 alt={f['hero.home.img.alt'] || ''}
                 fill
                 loading="eager"
-                style={{ objectFit: 'cover', filter: 'brightness(0.85) saturate(0.92)' }}
+                style={{ objectFit: 'cover' }}
               />
             ) : (
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(150deg, #0d1230 0%, #1F2566 45%, #142e22 100%)' }} />
             )}
             <div className="hero-veil"></div>
           </div>
+          <DroneHud lang={s.lang} />
           <div className="container hero-content">
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
