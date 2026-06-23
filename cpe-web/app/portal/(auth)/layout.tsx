@@ -18,6 +18,9 @@ export default async function PortalLayout({ children }: { children: React.React
         email={user.email ?? ''}
         role={role.role}
         canUpload={canUpload(permissions)}
+        canViewReports={permissions.has('view_reports')}
+        canViewDashboard={permissions.has('view_dashboard')}
+        canViewComercial={permissions.has('view_comercial')}
       />
       <main className="portal-main">
         {children}

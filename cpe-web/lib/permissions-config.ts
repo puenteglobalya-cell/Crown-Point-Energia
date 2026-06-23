@@ -3,12 +3,14 @@
 // permission checks pick it up automatically.
 
 export const PERMISSIONS = {
+  view_reports:    'Ver reportes',
+  view_dashboard:  'Ver dashboard',
+  view_comercial:  'Ver sección comercial',
   view_drafts:     'Ver reportes borrador',
   upload_reports:  'Subir reportes',
   publish_reports: 'Publicar / despublicar reportes',
   manage_users:    'Gestionar usuarios',
   manage_cms:      'Panel CMS / Admin',
-  // ↓ future sections — add here
 } as const
 
 export type Permission = keyof typeof PERMISSIONS
@@ -17,11 +19,12 @@ export const PERMISSION_KEYS = Object.keys(PERMISSIONS) as Permission[]
 // These are always enabled for admin and cannot be toggled off
 export const ADMIN_LOCKED: Permission[] = ['manage_users', 'manage_cms']
 
-// Fallback defaults when the DB has no row for a given permission
+// Defaults applied when no DB row exists for a given permission.
+// DB rows override these — new permissions added here won't break existing users.
 export const DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
-  viewer:     [],
-  uploader:   ['view_drafts', 'upload_reports'],
+  viewer:     ['view_reports', 'view_dashboard', 'view_comercial'],
+  uploader:   ['view_reports', 'view_dashboard', 'view_comercial', 'view_drafts', 'upload_reports'],
   admin:      PERMISSION_KEYS,
-  rrhh:       [],
-  accionista: [],
+  rrhh:       ['view_reports', 'view_dashboard'],
+  accionista: ['view_reports', 'view_dashboard', 'view_comercial'],
 }

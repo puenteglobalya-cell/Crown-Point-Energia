@@ -1,8 +1,9 @@
+import { redirect } from 'next/navigation'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import Link from 'next/link'
 import ComercialClient from './ComercialClient'
 import { MacroWidget } from '../MacroWidget'
-import { requireAdminUser } from '@/lib/admin-auth'
+import { getCurrentUserAndRole } from '@/lib/roles'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,9 +13,12 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 export default async function ComercialPage() {
+  const { permissions } = await getCurrentUserAndRole()
+  if (!permissions.has('view_comercial')) redirect('/portal')
+
   const db = createSupabaseServerAdminClient()
 
-  const [facturacionRes, ingresosRes, seRes, adminUser] = await Promise.all([
+  const [facturacionRes, ingresosRes, seRes] = await Promise.all([
     db.from('reportes')
       .select('id, tipo_id:type_id, titulo, periodo, created_at')
       .eq('type_id', 'facturacion')
@@ -33,14 +37,13 @@ export default async function ComercialPage() {
       .select('id, fecha_desde, fecha_hasta, scraped_at, headers, filas, brent_ref')
       .order('fecha_desde', { ascending: false })
       .limit(24),
-
-    requireAdminUser(),
   ])
 
   type ReporteRow = { id: string; tipo_id: string | null; titulo: string; periodo: string; created_at: string }
   const facturacion = (facturacionRes.data ?? []) as ReporteRow[]
   const ingresos    = (ingresosRes.data    ?? []) as ReporteRow[]
   const seList      = (seRes.data ?? []) as NonNullable<typeof seRes.data>
+  const isAdmin     = permissions.has('manage_users')
 
   return (
     <div style={{ maxWidth: 1080, margin: '0 auto', padding: '24px 20px' }}>
@@ -100,7 +103,7 @@ export default async function ComercialPage() {
         <p style={{ fontSize: 12, color: '#8e91b0', margin: '0 0 16px' }}>
           Secretaría de Energía · oferta de comercio exterior de líquidos
         </p>
-        <ComercialClient seList={seList} isAdmin={!!adminUser} />
+        <ComercialClient seList={seList} isAdmin={isAdmin} />
       </section>
 
     </div>
