@@ -6,9 +6,11 @@ import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import PushSubscriber from '@/components/PushSubscriber'
 
 const ROLE_LABELS: Record<string, string> = {
-  viewer: 'Consulta',
-  uploader: 'Carga',
-  admin: 'Admin',
+  viewer:     'Consulta',
+  uploader:   'Carga',
+  admin:      'Admin',
+  rrhh:       'RRHH',
+  accionista: 'Accionista',
 }
 
 export default function PortalNav({
