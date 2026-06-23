@@ -173,7 +173,12 @@ export async function middleware(request: NextRequest) {
     } catch {}
   }
 
-  supabaseResponse.headers.set('Content-Security-Policy', buildCsp(nonce))
+  // CSP with nonce for page routes only.
+  // API routes are excluded: /api/admin/reportes/[id] returns self-contained
+  // HTML with inline Chart.js scripts that don't carry a nonce.
+  if (!isApiRoute) {
+    supabaseResponse.headers.set('Content-Security-Policy', buildCsp(nonce))
+  }
   return supabaseResponse
 }
 
