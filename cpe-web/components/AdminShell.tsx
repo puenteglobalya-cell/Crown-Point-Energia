@@ -36,6 +36,12 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: '/admin/logs', label: 'Logs' },
     ],
   },
+  {
+    label: 'Sistema',
+    items: [
+      { href: '/admin/sitemap', label: 'Sitemap' },
+    ],
+  },
 ]
 
 const ROLE_LABELS: Record<string, string> = {
