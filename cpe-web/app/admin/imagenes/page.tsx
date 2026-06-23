@@ -42,11 +42,31 @@ export default function ImagenesPage() {
 
   async function loadImages() {
     const supabase = createSupabaseBrowserClient()
-    const { data } = await supabase.storage.from('site-images').list('', {
+    const all: SiteImage[] = []
+
+    // List each section subfolder — Supabase Storage list() is not recursive
+    await Promise.all(SECTIONS.map(async s => {
+      const { data } = await supabase.storage.from('site-images').list(s.value, {
+        limit: 200,
+        sortBy: { column: 'created_at', order: 'desc' },
+      })
+      if (data) {
+        all.push(
+          ...data.filter(f => f.id).map(f => ({ ...f, name: `${s.value}/${f.name}` })) as SiteImage[]
+        )
+      }
+    }))
+
+    // Also capture any root-level files (uncategorized uploads)
+    const { data: rootFiles } = await supabase.storage.from('site-images').list('', {
       limit: 200,
       sortBy: { column: 'created_at', order: 'desc' },
     })
-    setImages((data ?? []).filter(f => f.id) as SiteImage[])
+    if (rootFiles) {
+      all.push(...rootFiles.filter(f => f.id) as SiteImage[])
+    }
+
+    setImages(all.sort((a, b) => (b.created_at > a.created_at ? 1 : -1)))
     setLoading(false)
   }
 

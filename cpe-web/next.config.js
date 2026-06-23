@@ -20,6 +20,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'crownpointenergy.com' },
+      { protocol: 'https', hostname: '*.supabase.co' },
     ],
   },
   async headers() {
