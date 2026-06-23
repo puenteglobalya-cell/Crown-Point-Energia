@@ -13,12 +13,20 @@ export default function PortalResetPasswordPage() {
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setReady(true)
+
+    // Detect session via auth state change (PASSWORD_RECOVERY or SIGNED_IN from invite)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        setReady(true)
+      }
     })
+
+    // Also check for an existing session (user arrived via /auth/callback redirect)
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) setReady(true)
     })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
