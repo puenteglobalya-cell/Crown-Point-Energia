@@ -26,6 +26,12 @@ export async function POST(req: NextRequest) {
 
   // Explicit allowlist — prevents mass assignment of id, created_at, etc.
   const { fecha, titulo_es, titulo_en, resumen_es, resumen_en, url, storage_path, file_name, tipo, publicado } = body
+
+  const SAFE_PATH_RE = /^[A-Za-z0-9_\-./]+$/
+  if (storage_path && !(SAFE_PATH_RE.test(storage_path) && !storage_path.includes('..'))) {
+    return NextResponse.json({ error: 'storage_path inválido' }, { status: 400 })
+  }
+
   const record = { fecha, titulo_es, titulo_en, resumen_es, resumen_en, url, storage_path, file_name, tipo, publicado }
 
   const admin = createSupabaseServerAdminClient()

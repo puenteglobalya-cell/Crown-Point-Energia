@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { requireAnyActiveUser } from '@/lib/admin-auth'
 import type { DatosMacro } from '@/lib/parsers/macro'
 
 export const dynamic = 'force-dynamic'
@@ -138,6 +139,9 @@ function buildPointMap(row: MacroRow | undefined): Map<string, number> {
 }
 
 export async function GET() {
+  const user = await requireAnyActiveUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   // ── 1. Try manual uploads stored in DB ───────────────────────
   try {
     const db = createSupabaseServerAdminClient()

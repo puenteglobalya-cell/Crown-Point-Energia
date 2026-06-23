@@ -33,6 +33,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Archivo demasiado grande (máx 50 MB)' }, { status: 400 })
   }
 
+  const SAFE_PATH_RE = /^[A-Za-z0-9_\-./]+$/
+  if (storage_path && !(SAFE_PATH_RE.test(storage_path) && !storage_path.includes('..'))) {
+    return NextResponse.json({ error: 'storage_path inválido' }, { status: 400 })
+  }
+
   const record = { titulo_es, titulo_en, tipo, periodo, storage_path, file_name, file_size, publico }
   const admin = createSupabaseServerAdminClient()
   const { data, error } = await admin.from('documentos').insert(record).select().single()

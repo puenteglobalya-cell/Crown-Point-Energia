@@ -2,30 +2,14 @@
 
 import { useEffect, useRef } from 'react'
 import 'leaflet/dist/leaflet.css'
+import type { YacimientoPin } from '@/lib/block-coords'
 
-export type YacimientoPin = {
-  id: string
-  title: string
-  subtitle: string
-  commodity: 'oil' | 'gas' | 'mixed'
-  lat: number
-  lon: number
-}
+export type { YacimientoPin }
 
 const COMMODITY_COLOR: Record<YacimientoPin['commodity'], string> = {
   oil:   '#1F2566',
   gas:   '#4a8a3a',
   mixed: '#6CAE52',
-}
-
-// Fixed geographic coordinates for each known block slug
-export const BLOCK_COORDS: Record<string, [number, number]> = {
-  ppc:      [-35.20, -68.80],   // Puesto Pozo Cercado Oriental — Neuquina, Mendoza
-  chanares: [-34.60, -67.80],   // Chañares Herrados — Cuyana, Mendoza
-  cerro:    [-36.50, -69.00],   // Cerro de Los Leones — Neuquina, Mendoza
-  tordillo: [-45.85, -67.54],   // El Tordillo / La Tapera — GSJ, Chubut
-  piedra:   [-47.20, -68.60],   // Piedra Clavada / Koluel Kaike — GSJ, Santa Cruz
-  tdf:      [-52.65, -68.60],   // Río Cullen / Las Violetas — Austral, TDF
 }
 
 function divIcon(L: typeof import('leaflet'), color: string) {

@@ -4,6 +4,25 @@
     <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
       <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#0E1235" flood-opacity="0.12"></feDropShadow>
     </filter>
+    <style>
+      .cc-country        { fill: #DDE5DF; }
+      .cc-stroke         { stroke: #1F2566; }
+      .cc-fill-stroke    { fill: #1F2566; stroke: #1F2566; }
+      .cc-fill-leader    { fill: rgba(31,37,102,0.45); stroke: none; }
+      .cc-amber          { fill: #C9A24A; }
+      .cc-green-light    { fill: #8FC65C; }
+      .cc-green          { fill: #6CAE52; }
+      .cc-teal           { fill: #2FA08A; }
+      .cc-teal-dark      { fill: #1A7265; }
+      .ar-leader         { stroke: rgba(31,37,102,0.22); stroke-width: 0.7; fill: none; }
+      .ar-label          { font-size: 11px; font-weight: 600; fill: #1F2566; font-family: system-ui, sans-serif; }
+      .ar-sublabel       { font-size: 9.5px; fill: #667; font-family: system-ui, sans-serif; }
+      .ar-hq-label       { font-size: 8.5px; font-weight: 700; letter-spacing: 0.12em; fill: #1F2566; font-family: system-ui, sans-serif; }
+      .ar-province text  { font-size: 9px; letter-spacing: 0.18em; fill: rgba(31,37,102,0.32); font-family: system-ui, sans-serif; font-weight: 600; }
+      .ar-compass-text   { font-size: 11px; font-weight: 700; fill: rgba(31,37,102,0.45); font-family: system-ui, sans-serif; }
+      .ar-legend-title   { font-size: 8px; font-weight: 700; letter-spacing: 0.18em; fill: #1F2566; font-family: system-ui, sans-serif; }
+      .ar-legend-text    { font-size: 9.5px; fill: #334; font-family: system-ui, sans-serif; }
+    </style>
   </defs>
 
   

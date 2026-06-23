@@ -182,6 +182,6 @@ export async function GET(req: Request) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error(JSON.stringify({ level: 'error', msg: '[infografia/png]', detail: msg, chromiumUrl: CHROMIUM_URL }))
-    return NextResponse.json({ error: msg }, { status: 500 })
+    return NextResponse.json({ error: 'Error al generar infografía' }, { status: 500 })
   }
 }

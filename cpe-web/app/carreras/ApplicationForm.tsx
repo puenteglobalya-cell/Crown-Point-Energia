@@ -334,7 +334,7 @@ export default function ApplicationForm() {
       {/* ── STEP 3 — CV y mensaje ────────────────────────────────────── */}
       {step === 3 && (
         <div className="contact-form" style={{ display: 'contents' }}>
-          <Field label="CV / Resume" hint="PDF, DOC, DOCX · máx. 10 MB (opcional)">
+          <Field label="CV / Resume" hint="PDF, DOC, DOCX · máx. 5 MB (opcional)">
             <div
               style={{
                 border: '2px dashed var(--rule)', borderRadius: 'var(--r-md)', padding: '20px 16px',
@@ -349,6 +349,10 @@ export default function ApplicationForm() {
                 ;(e.currentTarget as HTMLElement).style.borderColor = ''
                 const f = e.dataTransfer.files[0]
                 if (f && cvRef.current) {
+                  if (f.size > 5 * 1024 * 1024) {
+                    alert('El archivo supera el límite de 5 MB. Elegí un archivo más pequeño.')
+                    return
+                  }
                   const dt = new DataTransfer()
                   dt.items.add(f)
                   cvRef.current.files = dt.files
@@ -362,7 +366,16 @@ export default function ApplicationForm() {
                 name="cv"
                 accept=".pdf,.doc,.docx"
                 style={{ display: 'none' }}
-                onChange={e => setCvName(e.target.files?.[0]?.name ?? '')}
+                onChange={e => {
+                  const f = e.target.files?.[0]
+                  if (f && f.size > 5 * 1024 * 1024) {
+                    e.target.value = ''
+                    setCvName('')
+                    alert('El archivo supera el límite de 5 MB. Elegí un archivo más pequeño.')
+                    return
+                  }
+                  setCvName(f?.name ?? '')
+                }}
               />
               {cvName ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
