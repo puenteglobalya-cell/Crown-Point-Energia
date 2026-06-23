@@ -14,14 +14,24 @@ export default function PortalResetPasswordPage() {
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
 
-    // Detect session via auth state change (PASSWORD_RECOVERY or SIGNED_IN from invite)
+    // If Supabase redirected here directly with a PKCE code, exchange it first
+    const code = new URLSearchParams(window.location.search).get('code')
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (!error) setReady(true)
+        else setError('El link expiró o ya fue usado. Solicitá uno nuevo.')
+      })
+      // Clean the code from the URL so it can't be reused accidentally
+      window.history.replaceState({}, '', '/portal/reset-password')
+      return
+    }
+
+    // Fallback: detect session from auth state (PASSWORD_RECOVERY / SIGNED_IN)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         setReady(true)
       }
     })
-
-    // Also check for an existing session (user arrived via /auth/callback redirect)
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) setReady(true)
     })

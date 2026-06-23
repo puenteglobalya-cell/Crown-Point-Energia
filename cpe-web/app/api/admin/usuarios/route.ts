@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   // Invite user via Supabase Auth
   const { data: inviteData, error: inviteError } = await db.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${siteUrl}/auth/callback?next=/portal/reset-password`,
+    redirectTo: `${siteUrl}/portal/reset-password`,
   })
 
   if (inviteError) {
