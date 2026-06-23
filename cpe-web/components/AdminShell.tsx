@@ -4,7 +4,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-const NAV_GROUPS = [
+type NavItem = { href: string; label: string; roles?: string[] }
+
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Sitio',
     items: [
@@ -29,12 +31,20 @@ const NAV_GROUPS = [
     items: [
       { href: '/admin/usuarios', label: 'Usuarios' },
       { href: '/admin/suscriptores', label: 'Suscriptores IR' },
-      { href: '/admin/rrhh', label: 'RRHH' },
+      { href: '/admin/rrhh', label: 'RRHH', roles: ['rrhh', 'admin'] },
       { href: '/admin/contacto', label: 'Contacto' },
       { href: '/admin/logs', label: 'Logs' },
     ],
   },
 ]
+
+const ROLE_LABELS: Record<string, string> = {
+  admin:      'Admin',
+  uploader:   'Carga',
+  viewer:     'Consulta',
+  rrhh:       'RRHH',
+  accionista: 'Accionista',
+}
 
 const EXTERNAL = [
   { href: '/', label: 'Sitio web' },
@@ -45,7 +55,24 @@ const EXTERNAL = [
 
 const SHELL_EXCLUDED = ['/admin/login', '/admin/reset-password']
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+function getVisibleGroups(role: string): typeof NAV_GROUPS {
+  if (role === 'rrhh') {
+    return NAV_GROUPS
+      .map(g => ({ ...g, items: g.items.filter(item => item.roles?.includes('rrhh')) }))
+      .filter(g => g.items.length > 0)
+  }
+  return NAV_GROUPS
+}
+
+export function AdminShell({
+  children,
+  userEmail = '',
+  userRole = 'admin',
+}: {
+  children: React.ReactNode
+  userEmail?: string
+  userRole?: string
+}) {
   const pathname = usePathname()
 
   if (SHELL_EXCLUDED.some(p => pathname.startsWith(p))) {
@@ -62,6 +89,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     if (href === '/admin') return pathname === '/admin'
     return pathname === href || pathname.startsWith(href + '/')
   }
+
+  const visibleGroups = getVisibleGroups(userRole)
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
@@ -91,7 +120,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
         {/* Nav groups */}
         <nav style={{ flex: 1, padding: '8px 0' }}>
-          {NAV_GROUPS.map(group => (
+          {visibleGroups.map(group => (
             <div key={group.label} style={{ marginBottom: 4 }}>
               <div style={{
                 padding: '6px 20px 4px',
@@ -151,6 +180,36 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </a>
           ))}
         </div>
+
+        {/* Active user display */}
+        {userEmail && (
+          <div style={{ padding: '10px 20px', borderTop: '1px solid var(--rule)' }}>
+            <div style={{
+              fontSize: 11,
+              color: 'var(--fg-muted)',
+              marginBottom: 5,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {userEmail}
+            </div>
+            <span style={{
+              fontSize: 10,
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              padding: '2px 7px',
+              borderRadius: 'var(--r-pill)',
+              background: 'var(--bg-alt)',
+              color: 'var(--fg-muted)',
+              border: '1px solid var(--rule)',
+            }}>
+              {ROLE_LABELS[userRole] ?? userRole}
+            </span>
+          </div>
+        )}
 
         {/* Sign out */}
         <div style={{ padding: '12px 20px', borderTop: '1px solid var(--rule)' }}>
