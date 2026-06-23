@@ -5,6 +5,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity, getPermissionsForRole } from '@/lib/roles'
 import { isAdminEmail } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { dbError } from '@/lib/api-error'
 
 const MAX_FILE_SIZE = 52_428_800 // 50 MB — matches Supabase bucket limit
 
@@ -81,7 +82,7 @@ export async function GET() {
   }
 
   const { data, error } = await q
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json(data ?? [])
 }
 
@@ -137,7 +138,7 @@ export async function POST(req: NextRequest) {
     subido_por:   userWithRole.id,  // always from session — never from body
   }).select('id').single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   await logActivity({
     userId: userWithRole.id,

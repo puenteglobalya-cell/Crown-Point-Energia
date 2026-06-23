@@ -3,6 +3,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireHrUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { logActivity } from '@/lib/roles'
+import { dbError } from '@/lib/api-error'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,7 @@ export async function GET() {
     .select('*')
     .order('orden')
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json(data ?? [])
 }
 
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
     orden: nextOrden,
   }).select().single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   await logActivity({ userId: user.id, userEmail: user.email ?? null, action: 'create_posicion', resourceType: 'posicion', resourceId: data.id, metadata: { area, location, tipo } })
   return NextResponse.json(data, { status: 201 })
@@ -71,7 +72,7 @@ export async function PATCH(req: NextRequest) {
     updated_at: new Date().toISOString(),
   }).eq('id', id)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   await logActivity({ userId: user.id, userEmail: user.email ?? null, action: 'update_posicion', resourceType: 'posicion', resourceId: id, metadata: fields })
   return NextResponse.json({ ok: true })
@@ -87,7 +88,7 @@ export async function DELETE(req: NextRequest) {
 
   const db = createSupabaseServerAdminClient()
   const { error } = await db.from('open_positions').delete().eq('id', id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   await logActivity({ userId: user.id, userEmail: user.email ?? null, action: 'delete_posicion', resourceType: 'posicion', resourceId: id })
   return NextResponse.json({ ok: true })

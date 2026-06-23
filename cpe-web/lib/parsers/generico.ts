@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 
 export interface HojaGenerica {
   nombre: string
@@ -13,24 +13,58 @@ export interface DatosGenerico {
   hojas: HojaGenerica[]
 }
 
+// ---------------------------------------------------------------------------
+// ExcelJS cell value → plain JS value
+// ---------------------------------------------------------------------------
+function cellVal(raw: ExcelJS.CellValue): unknown {
+  if (raw === null || raw === undefined) return null
+  if (typeof raw === 'number' || typeof raw === 'string' || typeof raw === 'boolean') return raw
+  if (raw instanceof Date) return raw
+  if (typeof raw === 'object' && 'result' in (raw as object)) {
+    return cellVal((raw as ExcelJS.CellFormulaValue).result as ExcelJS.CellValue)
+  }
+  if (typeof raw === 'object' && 'richText' in (raw as object)) {
+    return (raw as ExcelJS.CellRichTextValue).richText.map(r => r.text).join('')
+  }
+  if (typeof raw === 'object' && 'text' in (raw as object)) {
+    return (raw as ExcelJS.CellHyperlinkValue).text
+  }
+  return String(raw)
+}
+
+// Build a 0-indexed grid (r[0]=colA) from an ExcelJS worksheet,
+// skipping completely blank rows (blankrows: false equivalent).
+function worksheetToGrid(ws: ExcelJS.Worksheet): unknown[][] {
+  const grid: unknown[][] = []
+  ws.eachRow({ includeEmpty: false }, (row) => {
+    const vals = row.values as ExcelJS.CellValue[]
+    const lastCol = vals.length - 1  // 1-based last index
+    const r: unknown[] = []
+    for (let c = 1; c <= lastCol; c++) {
+      r.push(cellVal(vals[c] ?? null))
+    }
+    // Only add rows that have at least one non-null value
+    if (r.some(v => v !== null && v !== '' && v !== undefined)) {
+      grid.push(r)
+    }
+  })
+  return grid
+}
+
 export async function parsearExcelGenerico(
   file: File,
   tipo: 'produccion' | 'financiero',
 ): Promise<DatosGenerico> {
   const buffer = await file.arrayBuffer()
-  const wb = XLSX.read(buffer, { type: 'array', cellDates: true })
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(buffer as any)
 
   const hojas: HojaGenerica[] = []
 
-  for (const sheetName of wb.SheetNames) {
-    const ws = wb.Sheets[sheetName]
-    const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, {
-      header: 1,
-      defval: null,
-      blankrows: false,
-    }) as unknown[][]
+  wb.eachSheet((ws) => {
+    const raw = worksheetToGrid(ws)
 
-    if (!raw || raw.length === 0) continue
+    if (!raw || raw.length === 0) return
 
     // Find first row with content as headers
     let headerRowIdx = 0
@@ -61,8 +95,8 @@ export async function parsearExcelGenerico(
       if (mapped.length > 0) filas.push(mapped)
     }
 
-    if (filas.length > 0) hojas.push({ nombre: sheetName, headers, filas })
-  }
+    if (filas.length > 0) hojas.push({ nombre: ws.name, headers, filas })
+  })
 
   if (hojas.length === 0) throw new Error('No se encontraron datos en el archivo')
 

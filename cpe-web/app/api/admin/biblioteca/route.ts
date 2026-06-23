@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { dbError } from '@/lib/api-error'
 
 async function checkAdmin(req?: NextRequest) {
   if (req && !isSameOrigin(req)) return null
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
   if (action === 'create_carpeta') {
     const { nombre, descripcion } = body
     const { data, error } = await db.from('bib_carpetas').insert({ nombre, descripcion: descripcion ?? '' }).select().single()
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return dbError(error)
     return NextResponse.json(data)
   }
 
@@ -53,14 +54,14 @@ export async function POST(req: NextRequest) {
     if (activa !== undefined) patch.activa = activa
     if (orden !== undefined) patch.orden = orden
     const { error } = await db.from('bib_carpetas').update(patch).eq('id', id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return dbError(error)
     return NextResponse.json({ ok: true })
   }
 
   if (action === 'delete_carpeta') {
     const { id } = body
     const { error } = await db.from('bib_carpetas').delete().eq('id', id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return dbError(error)
     return NextResponse.json({ ok: true })
   }
 
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
       const { error } = await db.from('bib_carpeta_grupos').insert(
         (grupo_ids as number[]).map(grupo_id => ({ carpeta_id, grupo_id }))
       )
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      if (error) return dbError(error)
     }
     return NextResponse.json({ ok: true })
   }
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
       const { error } = await db.from('bib_usuario_grupos').insert(
         (grupo_ids as number[]).map(grupo_id => ({ user_id, grupo_id }))
       )
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      if (error) return dbError(error)
     }
     return NextResponse.json({ ok: true })
   }
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await db.from('bib_documentos').insert({
       carpeta_id, nombre, path, size_bytes, mime_type, vigente: false,
     }).select().single()
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return dbError(error)
     return NextResponse.json(data)
   }
 
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
     const { doc_id, carpeta_id } = body
     await db.from('bib_documentos').update({ vigente: false }).eq('carpeta_id', carpeta_id)
     const { error } = await db.from('bib_documentos').update({ vigente: true }).eq('id', doc_id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return dbError(error)
     return NextResponse.json({ ok: true })
   }
 

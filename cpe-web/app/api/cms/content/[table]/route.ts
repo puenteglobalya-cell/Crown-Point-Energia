@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { dbError } from '@/lib/api-error'
 
 // Strict allowlist of mutable tables and their writable columns.
 // Any table / column not listed here is silently rejected.
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const db = createSupabaseServerAdminClient()
   const orderCol = params.table === 'esg_pillar_data' ? 'pilar' : 'orden'
   const { data, error } = await db.from(params.table).select('*').order(orderCol)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json(data)
 }
 
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const db = createSupabaseServerAdminClient()
   const { data, error } = await db.from(params.table).insert(record).select().single()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   for (const path of cfg.revalidate) revalidatePath(path)
   return NextResponse.json(data, { status: 201 })
@@ -101,7 +102,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const patch = { ...pickCols(rest, cfg.cols), updated_at: new Date().toISOString() }
   const db = createSupabaseServerAdminClient()
   const { data, error } = await db.from(params.table).update(patch).eq(pk, pkVal).select().single()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   for (const path of cfg.revalidate) revalidatePath(path)
   return NextResponse.json(data)
@@ -121,7 +122,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const pk = params.table === 'esg_pillar_data' ? 'pilar' : 'id'
   const db = createSupabaseServerAdminClient()
   const { error } = await db.from(params.table).delete().eq(pk, id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   for (const path of cfg.revalidate) revalidatePath(path)
   return NextResponse.json({ ok: true })

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { dbError } from '@/lib/api-error'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +35,6 @@ export async function PUT(req: NextRequest) {
     { type_id, role, can_view: !!can_view, can_upload: !!can_upload, updated_at: new Date().toISOString() },
     { onConflict: 'type_id,role' }
   )
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json({ ok: true })
 }

@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -164,19 +164,61 @@ function buildPivot(lineas: LineaFacturacion[], meses: string[]): PivotRow[] {
 
 // ─── Main parser ──────────────────────────────────────────────────────────────
 
+// ---------------------------------------------------------------------------
+// ExcelJS cell value → plain JS value
+// ---------------------------------------------------------------------------
+function cellVal(raw: ExcelJS.CellValue): unknown {
+  if (raw === null || raw === undefined) return null
+  if (typeof raw === 'number' || typeof raw === 'string' || typeof raw === 'boolean') return raw
+  if (raw instanceof Date) return raw
+  if (typeof raw === 'object' && 'result' in (raw as object)) {
+    return cellVal((raw as ExcelJS.CellFormulaValue).result as ExcelJS.CellValue)
+  }
+  if (typeof raw === 'object' && 'richText' in (raw as object)) {
+    return (raw as ExcelJS.CellRichTextValue).richText.map(r => r.text).join('')
+  }
+  if (typeof raw === 'object' && 'text' in (raw as object)) {
+    return (raw as ExcelJS.CellHyperlinkValue).text
+  }
+  return String(raw)
+}
+
+function worksheetToGrid(ws: ExcelJS.Worksheet): any[][] {
+  const grid: any[][] = []
+  ws.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    // ExcelJS row.values is 1-based (index 0 is undefined).
+    // We produce a 0-based array where index 0 = col A, matching
+    // what XLSX.utils.sheet_to_json(ws, {header:1}) used to return.
+    const vals = row.values as ExcelJS.CellValue[]
+    const lastCol = vals.length - 1   // vals[lastCol] is the last column
+    const r: any[] = []
+    for (let c = 1; c <= lastCol; c++) {
+      r.push(cellVal(vals[c] ?? null))
+    }
+    while (grid.length < rowNumber - 1) grid.push([])
+    grid[rowNumber - 1] = r
+  })
+  return grid
+}
+
 export async function parsearFacturacionExcel(file: File): Promise<DatosFacturacion> {
   const buffer = await file.arrayBuffer()
-  const wb = XLSX.read(buffer, { type: 'array', cellDates: true })
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(buffer as any)
 
   // Book2 has one sheet (Sheet1); accept any single sheet
-  const sheetName = wb.SheetNames.find(n =>
-    /detalle.ventas|ventas|facturaci/i.test(n)
-  ) ?? wb.SheetNames[0]
+  let sheetName: string | undefined
+  wb.eachSheet((ws) => {
+    if (!sheetName) {
+      if (/detalle.ventas|ventas|facturaci/i.test(ws.name)) sheetName = ws.name
+    }
+  })
+  if (!sheetName && wb.worksheets.length > 0) sheetName = wb.worksheets[0].name
 
   if (!sheetName) throw new Error('No se encontró ninguna hoja en el archivo.')
 
-  const ws = wb.Sheets[sheetName]
-  const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }) as any[][]
+  const ws = wb.getWorksheet(sheetName)!
+  const raw = worksheetToGrid(ws)
 
   // Find header row: look for "Articulo" in col 0
   let headerIdx = -1

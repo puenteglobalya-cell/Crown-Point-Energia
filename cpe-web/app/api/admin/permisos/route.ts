@@ -4,6 +4,7 @@ import { PERMISSIONS, PERMISSION_KEYS, ADMIN_LOCKED, type Permission } from '@/l
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import type { UserRole } from '@/lib/roles'
+import { dbError } from '@/lib/api-error'
 
 const ROLES: UserRole[] = ['viewer', 'uploader', 'admin']
 
@@ -14,7 +15,7 @@ export async function GET() {
 
   const db = createSupabaseServerAdminClient()
   const { data, error } = await db.from('role_permissions').select('role, permission, enabled')
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   // Build matrix: { viewer: { view_drafts: false, ... }, uploader: {...}, admin: {...} }
   const matrix: Record<string, Record<string, boolean>> = {}
@@ -56,7 +57,7 @@ export async function PUT(req: NextRequest) {
     { role, permission, enabled, updated_at: new Date().toISOString() },
     { onConflict: 'role,permission' }
   )
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   return NextResponse.json({ ok: true })
 }

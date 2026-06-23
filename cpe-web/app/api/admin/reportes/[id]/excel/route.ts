@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isAdminEmail } from '@/lib/admin-auth'
 import { getPermissionsForRole } from '@/lib/roles'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import type { DatosIngresos } from '@/lib/parsers/ingresos'
 
 async function getUserWithRole() {
@@ -40,10 +40,11 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
   const d = data.datos as DatosIngresos
 
-  const wb = XLSX.utils.book_new()
+  const wb = new ExcelJS.Workbook()
 
   // ── Sheet 1: Resumen ──────────────────────────────────────────────────────
-  const resumen = [
+  const wsResumen = wb.addWorksheet('Resumen')
+  wsResumen.addRows([
     ['Reporte de Ingresos — Crown Point Energía'],
     ['Período', d.periodo],
     ['Mes', d.mes],
@@ -62,41 +63,44 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     ['Mix producción gas (%)', f2(d.gas_pct_prod)],
     ['Mix ventas petróleo (%)', f2(d.oil_pct_vend)],
     ['Mix ventas gas (%)', f2(d.gas_pct_vend)],
-  ]
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumen), 'Resumen')
+  ])
 
   // ── Sheet 2: Áreas Petróleo ───────────────────────────────────────────────
-  const areaHeaders = ['Área', 'Prod. 100% (m³/d)', 'Prod. neta (m³/d)', 'Entregados (m³)', 'Vol. (bbl)', 'Precio neto (us$/bbl)', 'Ingreso (us$)', 'Stock (m³)', 'Stock (días)', 'Stock (us$)', 'Brent ref.', 'Descuento (us$)']
-  const areaRows = Object.entries(d.areas).map(([nombre, a]) => [
-    nombre,
-    f2(a.prod_100_m3d), f2(a.prod_neta_m3d), f2(a.entregados_m3),
-    f2(a.vol_bbl), f2(a.precio_neto), f2(a.ingreso),
-    f2(a.stock_m3), f2(a.stock_dias), f2(a.stock_us),
-    f2(a.brent_ref), f2(a.descuento),
-  ])
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([areaHeaders, ...areaRows]), 'Petróleo por área')
+  const wsAreas = wb.addWorksheet('Petróleo por área')
+  wsAreas.addRow(['Área', 'Prod. 100% (m³/d)', 'Prod. neta (m³/d)', 'Entregados (m³)', 'Vol. (bbl)', 'Precio neto (us$/bbl)', 'Ingreso (us$)', 'Stock (m³)', 'Stock (días)', 'Stock (us$)', 'Brent ref.', 'Descuento (us$)'])
+  for (const [nombre, a] of Object.entries(d.areas)) {
+    wsAreas.addRow([
+      nombre,
+      f2(a.prod_100_m3d), f2(a.prod_neta_m3d), f2(a.entregados_m3),
+      f2(a.vol_bbl), f2(a.precio_neto), f2(a.ingreso),
+      f2(a.stock_m3), f2(a.stock_dias), f2(a.stock_us),
+      f2(a.brent_ref), f2(a.descuento),
+    ])
+  }
 
   // ── Sheet 3: Gas ──────────────────────────────────────────────────────────
-  const gasHeaders = ['Área', 'Prod. (Mcf/d)', 'Vol. mes (Mcf)', 'Precio (us$/Mcf)', 'Ingreso (us$)']
-  const gasRows = Object.entries(d.gas).map(([nombre, g]) => [
-    nombre, f2(g.prod_mcfd), f2(g.vol_mes_mcf), f2(g.precio_mcf), f2(g.ingreso),
-  ])
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([gasHeaders, ...gasRows]), 'Gas por área')
+  const wsGas = wb.addWorksheet('Gas por área')
+  wsGas.addRow(['Área', 'Prod. (Mcf/d)', 'Vol. mes (Mcf)', 'Precio (us$/Mcf)', 'Ingreso (us$)'])
+  for (const [nombre, g] of Object.entries(d.gas)) {
+    wsGas.addRow([nombre, f2(g.prod_mcfd), f2(g.vol_mes_mcf), f2(g.precio_mcf), f2(g.ingreso)])
+  }
 
   // ── Sheet 4: Histórico mensual (si existe) ────────────────────────────────
   if (d.mensual_historico && d.mensual_historico.length > 0) {
-    const histHeaders = ['Mes', 'Total (us$ MM)', 'ET (us$ MM)', 'PCKK (us$ MM)', 'CH (us$ MM)', 'RCLV (us$ MM)', 'Gas (us$ MM)', 'Precio ET (us$/bbl)', 'Precio PCKK', 'Precio CH', 'Precio RCLV']
-    const histRows = d.mensual_historico.map(h => [
-      h.mes, f2(h.total_MM), f2(h.ET_MM), f2(h.PCKK_MM), f2(h.CH_MM), f2(h.RCLV_MM), f2(h.gas_MM),
-      f2(h.precio_ET), f2(h.precio_PCKK), f2(h.precio_CH), f2(h.precio_RCLV),
-    ])
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([histHeaders, ...histRows]), 'Histórico mensual')
+    const wsHist = wb.addWorksheet('Histórico mensual')
+    wsHist.addRow(['Mes', 'Total (us$ MM)', 'ET (us$ MM)', 'PCKK (us$ MM)', 'CH (us$ MM)', 'RCLV (us$ MM)', 'Gas (us$ MM)', 'Precio ET (us$/bbl)', 'Precio PCKK', 'Precio CH', 'Precio RCLV'])
+    for (const h of d.mensual_historico) {
+      wsHist.addRow([
+        h.mes, f2(h.total_MM), f2(h.ET_MM), f2(h.PCKK_MM), f2(h.CH_MM), f2(h.RCLV_MM), f2(h.gas_MM),
+        f2(h.precio_ET), f2(h.precio_PCKK), f2(h.precio_CH), f2(h.precio_RCLV),
+      ])
+    }
   }
 
-  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
+  const buf = await wb.xlsx.writeBuffer()
   const filename = `CPE-Ingresos-${d.periodo.replace(/[^a-zA-Z0-9-]/g, '_')}.xlsx`
 
-  return new NextResponse(buf, {
+  return new NextResponse(new Uint8Array(buf as ArrayBuffer), {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="${filename}"`,

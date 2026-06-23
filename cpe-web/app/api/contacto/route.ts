@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
   // 5 submissions per 10 minutes per IP
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-  if (!checkRateLimit(`contacto:${ip}`, 5, 10 * 60 * 1000)) {
+  if (!await checkRateLimit(`contacto:${ip}`, 5, 10 * 60 * 1000)) {
     return NextResponse.json({ error: 'Demasiados intentos. Esperá unos minutos.' }, { status: 429 })
   }
 

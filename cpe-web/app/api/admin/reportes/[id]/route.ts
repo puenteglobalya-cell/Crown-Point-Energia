@@ -7,6 +7,7 @@ import { isAdminEmail } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { enviarNotificacionReporte } from '@/lib/email'
 import { enviarPushNotificacion } from '@/lib/push'
+import { dbError } from '@/lib/api-error'
 
 async function getUserWithRole() {
   const cookieStore = await cookies()
@@ -117,7 +118,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const { error } = await db.from('reportes')
       .update({ manual_data: merged, updated_at: new Date().toISOString() })
       .eq('id', params.id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return dbError(error)
     return NextResponse.json({ ok: true })
   }
 
@@ -137,7 +138,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (newEstado && VALID_ESTADOS.includes(newEstado)) patch.estado = newEstado
 
     const { error } = await db.from('reportes').update(patch).eq('id', params.id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return dbError(error)
 
     await logActivity({
       userId: userWithRole.id,
@@ -172,7 +173,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     .single()
 
   const { error } = await db.from('reportes').update(patch).eq('id', params.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   await logActivity({
     userId: userWithRole.id,
@@ -238,7 +239,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   }
 
   const { error } = await db.from('reportes').delete().eq('id', params.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   await logActivity({
     userId: userWithRole.id,
