@@ -85,6 +85,41 @@ export default function UsuariosPage() {
   const [matrix, setMatrix] = useState<PermMatrix | null>(null)
   const [matrixLoading, setMatrixLoading] = useState(true)
 
+  // Provisional password modal
+  const [pwdModal, setPwdModal] = useState<{ id: string; email: string } | null>(null)
+  const [pwdInput, setPwdInput] = useState('')
+  const [pwdSaving, setPwdSaving] = useState(false)
+  const [pwdCopied, setPwdCopied] = useState(false)
+
+  function generatePassword() {
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$'
+    return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+  }
+
+  function openPwdModal(user: UserWithRole) {
+    setPwdInput(generatePassword())
+    setPwdCopied(false)
+    setPwdModal({ id: user.id, email: user.email })
+  }
+
+  async function handleSetPassword() {
+    if (!pwdModal) return
+    setPwdSaving(true)
+    const res = await fetch(`/api/admin/usuarios/${pwdModal.id}/set-password`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: pwdInput }),
+    })
+    if (res.ok) {
+      showFlash(`Contraseña provisional establecida para ${pwdModal.email}`)
+      setPwdModal(null)
+    } else {
+      const { error } = await res.json().catch(() => ({ error: 'Error desconocido' }))
+      showFlash(error ?? 'Error al establecer contraseña', 'err')
+    }
+    setPwdSaving(false)
+  }
+
   // Acceso modal (accionista report access)
   const [accesoModal, setAccesoModal] = useState<{ userId: string; email: string } | null>(null)
   const [accesoReportes, setAccesoReportes] = useState<{id:string;titulo:string;periodo:string;type_id:string|null}[]>([])
@@ -339,7 +374,7 @@ export default function UsuariosPage() {
                     {/* Top row: controls */}
                     <div style={{
                       display: 'grid',
-                      gridTemplateColumns: '1fr auto auto auto auto auto auto',
+                      gridTemplateColumns: '1fr auto auto auto auto auto auto auto',
                       gap: 10,
                       alignItems: 'center',
                       padding: '14px 18px 10px',
@@ -392,12 +427,21 @@ export default function UsuariosPage() {
                       </div>
 
                       <button
+                        onClick={() => openPwdModal(user)}
+                        className="btn"
+                        title="Establecer contraseña provisional sin email"
+                        style={{ fontSize: 12, padding: '6px 12px', whiteSpace: 'nowrap' }}
+                      >
+                        Clave provisional
+                      </button>
+
+                      <button
                         onClick={() => handleResetPassword(user)}
                         className="btn"
                         title="Enviar email de restablecimiento de contraseña"
                         style={{ fontSize: 12, padding: '6px 12px', whiteSpace: 'nowrap' }}
                       >
-                        Reset contraseña
+                        Reset email
                       </button>
 
                       <button
@@ -529,6 +573,69 @@ export default function UsuariosPage() {
         </div>
 
       </div>
+
+      {/* Contraseña provisional modal */}
+      {pwdModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, padding: 24 }}
+          onClick={e => { if (e.target === e.currentTarget) setPwdModal(null) }}
+        >
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: '32px 28px', width: '100%', maxWidth: 440 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, margin: '0 0 6px', letterSpacing: '-0.01em' }}>
+              Contraseña provisional
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--fg-muted)', margin: '0 0 22px', fontFamily: 'var(--font-mono)' }}>
+              {pwdModal.email}
+            </p>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--fg-soft)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Contraseña
+              </label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="text"
+                  value={pwdInput}
+                  onChange={e => setPwdInput(e.target.value)}
+                  style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 14, padding: '9px 12px', borderRadius: 'var(--r-md)', border: '1px solid var(--rule)', background: 'var(--bg)', color: 'var(--fg)' }}
+                />
+                <button
+                  className="btn"
+                  onClick={() => setPwdInput(generatePassword())}
+                  style={{ fontSize: 12, padding: '6px 10px', whiteSpace: 'nowrap' }}
+                  title="Generar nueva contraseña"
+                >
+                  ↺ Nueva
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => { navigator.clipboard.writeText(pwdInput); setPwdCopied(true); setTimeout(() => setPwdCopied(false), 2000) }}
+                  style={{ fontSize: 12, padding: '6px 10px', color: pwdCopied ? 'var(--cp-green)' : undefined }}
+                >
+                  {pwdCopied ? '✓' : 'Copiar'}
+                </button>
+              </div>
+              <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 8 }}>
+                Mínimo 8 caracteres. Copiá la contraseña antes de confirmar y compartila con el usuario.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24 }}>
+              <button className="btn" style={{ padding: '9px 18px' }} onClick={() => setPwdModal(null)}>
+                Cancelar
+              </button>
+              <button
+                className="btn btn-primary"
+                style={{ padding: '9px 20px', minWidth: 120, opacity: pwdSaving ? 0.7 : 1 }}
+                onClick={handleSetPassword}
+                disabled={pwdSaving || pwdInput.length < 8}
+              >
+                {pwdSaving ? 'Guardando…' : 'Establecer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Acceso modal */}
       {accesoModal && (
