@@ -114,7 +114,7 @@ export async function middleware(request: NextRequest) {
 
   // ── Biblioteca auth (any authenticated user) ─────────────────────────────
   if (pathname.startsWith('/biblioteca')) {
-    if (!user) return NextResponse.redirect(new URL('/login', request.url))
+    if (!user) return NextResponse.redirect(new URL('/portal/login', request.url))
   }
 
   // ── Infografía: portal users only ────────────────────────────────────────

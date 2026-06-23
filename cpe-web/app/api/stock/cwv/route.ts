@@ -45,6 +45,7 @@ export async function GET() {
       history,
     })
   } catch (err) {
-    return NextResponse.json({ ok: false, error: String(err) }, { status: 200 })
+    console.error('[stock/cwv]', err)
+    return NextResponse.json({ ok: false, error: 'No se pudo obtener datos de mercado' }, { status: 502 })
   }
 }

@@ -53,8 +53,17 @@ export async function PATCH(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { id, ...fields } = body
+  const { id } = body
   if (!id) return NextResponse.json({ error: 'Falta id' }, { status: 400 })
+
+  // Explicit allowlist — prevents mass assignment of internal columns
+  const fields = {
+    ...(typeof body.area     === 'string'  && { area: body.area }),
+    ...(typeof body.location === 'string'  && { location: body.location }),
+    ...(typeof body.tipo     === 'string'  && { tipo: body.tipo }),
+    ...(typeof body.activo   === 'boolean' && { activo: body.activo }),
+    ...(typeof body.orden    === 'number'  && { orden: body.orden }),
+  }
 
   const db = createSupabaseServerAdminClient()
   const { error } = await db.from('open_positions').update({

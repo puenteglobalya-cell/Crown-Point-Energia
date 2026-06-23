@@ -10,7 +10,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { fechaDesde, fechaHasta, brentRef } = await req.json()
-  if (!fechaDesde || !fechaHasta) {
+  const DATE_RE = /^\d{2}\/\d{2}\/\d{4}$/
+  if (!fechaDesde || !fechaHasta || !DATE_RE.test(fechaDesde) || !DATE_RE.test(fechaHasta)) {
     return NextResponse.json({ error: 'fechaDesde y fechaHasta son requeridos (DD/MM/AAAA)' }, { status: 400 })
   }
 
@@ -48,7 +49,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  // Return latest scraping sessions for the admin UI
+  const user = await requireAdminUser()
+  if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
   const db = createSupabaseServerAdminClient()
   const { data } = await db
     .from('se_referencias')

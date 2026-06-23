@@ -58,9 +58,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'El CV no puede superar 10 MB' }, { status: 400 })
       }
 
-      const ext = cv.name.split('.').pop()?.toLowerCase() ?? 'pdf'
-      const allowed = ['pdf', 'doc', 'docx']
-      if (!allowed.includes(ext)) {
+      const ext = cv.name.split('.').pop()?.toLowerCase() ?? ''
+      const allowedExts = ['pdf', 'doc', 'docx']
+      const allowedMimes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+      if (!allowedExts.includes(ext) || !allowedMimes.includes(cv.type)) {
         return NextResponse.json({ error: 'Formato no permitido. Usá PDF, DOC o DOCX.' }, { status: 400 })
       }
 
