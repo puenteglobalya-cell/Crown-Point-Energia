@@ -4,6 +4,7 @@ import { requireAdminUser } from '@/lib/admin-auth'
 import { getCmsState, patchCmsState, type CMSState } from '@/lib/cms'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { isSameOrigin } from '@/lib/csrf'
+import { dbError } from '@/lib/api-error'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +19,7 @@ export async function GET() {
     .order('created_at', { ascending: false })
     .limit(30)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json(data ?? [])
 }
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
       label:      label ?? null,
       created_by: user.email,
     })
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return dbError(error)
     return NextResponse.json({ ok: true })
   }
 

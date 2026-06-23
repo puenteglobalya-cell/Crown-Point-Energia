@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { dbError } from '@/lib/api-error'
 
 async function getUser() {
   const cookieStore = await cookies()
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     user_agent: req.headers.get('user-agent') ?? '',
   }, { onConflict: 'user_id,endpoint' })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json({ ok: true })
 }
 

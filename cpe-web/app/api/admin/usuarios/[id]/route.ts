@@ -3,6 +3,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity } from '@/lib/roles'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { dbError } from '@/lib/api-error'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -30,7 +31,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }, { onConflict: 'user_id' })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return dbError(error)
   }
 
   // Get target user email for logging
@@ -63,7 +64,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   // Delete auth user (user_roles will cascade)
   const { error } = await db.auth.admin.deleteUser(params.id)
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return dbError(error)
   }
 
   await logActivity({

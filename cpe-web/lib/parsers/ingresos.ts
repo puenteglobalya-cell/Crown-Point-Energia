@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 
 export interface DatosIngresos {
   mes: string
@@ -69,6 +69,54 @@ export interface MesHistorico {
   precio_RCLV: number
 }
 
+// ---------------------------------------------------------------------------
+// ExcelJS cell value → plain JS value
+// ExcelJS cell values can be: number, string, boolean, Date, null,
+// { text, hyperlink }, { formula, result }, { richText }, SharedString, etc.
+// ---------------------------------------------------------------------------
+function cellVal(raw: ExcelJS.CellValue): unknown {
+  if (raw === null || raw === undefined) return null
+  if (typeof raw === 'number' || typeof raw === 'string' || typeof raw === 'boolean') return raw
+  if (raw instanceof Date) return raw
+  // Formula cell — use cached result
+  if (typeof raw === 'object' && 'result' in (raw as object)) {
+    return cellVal((raw as ExcelJS.CellFormulaValue).result as ExcelJS.CellValue)
+  }
+  // Rich text / hyperlink — extract plain text
+  if (typeof raw === 'object' && 'richText' in (raw as object)) {
+    return (raw as ExcelJS.CellRichTextValue).richText.map(r => r.text).join('')
+  }
+  if (typeof raw === 'object' && 'text' in (raw as object)) {
+    return (raw as ExcelJS.CellHyperlinkValue).text
+  }
+  // Shared string (number in disguise from some xlsx writers) — stringify
+  return String(raw)
+}
+
+// Convert an ExcelJS worksheet to a 0-indexed any[][] (matching what
+// XLSX.utils.sheet_to_json(ws, { header:1, defval: null }) returned).
+// ExcelJS row.values is 1-based (vals[1]=colA, vals[2]=colB, …).
+// We shift so that r[0]=colA, r[1]=colB, … to match the original xlsx output.
+function worksheetToGrid(ws: ExcelJS.Worksheet): any[][] {
+  const grid: any[][] = []
+  ws.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    const vals = row.values as ExcelJS.CellValue[]
+    // vals.length is lastUsedColIndex + 1 (1-based), so lastCol = vals.length - 1
+    const lastCol = vals.length - 1
+    const r: any[] = []
+    // c runs 1..lastCol (ExcelJS 1-based); push at index c-1 (0-based)
+    for (let c = 1; c <= lastCol; c++) {
+      r.push(cellVal(vals[c] ?? null))
+    }
+    // Fill any row gaps in the grid
+    while (grid.length < rowNumber - 1) grid.push([])
+    grid[rowNumber - 1] = r
+  })
+  return grid
+}
+
+// ---------------------------------------------------------------------------
+
 function excelSerialToMesLabel(serial: number): string {
   const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
   const d = new Date(Math.round((serial - 25569) * 86400 * 1000))
@@ -76,12 +124,12 @@ function excelSerialToMesLabel(serial: number): string {
 }
 
 function parsearSalesVolume(
-  wb: XLSX.WorkBook,
+  wb: ExcelJS.Workbook,
   currentPrices: { ET: number; PCKK: number; CH: number; RCLV: number }
 ): MesHistorico[] {
-  const ws = wb.Sheets['sales & Volume']
+  const ws = wb.getWorksheet('sales & Volume')
   if (!ws) return []
-  const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }) as any[][]
+  const data = worksheetToGrid(ws)
 
   // Months in col B may be text strings, JS Date objects (cellDates:true), or numeric serials.
   // Parse all three forms to a canonical "Ene-26" format used as map keys.
@@ -184,7 +232,8 @@ function parsearSalesVolume(
 
 export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   const buffer = await file.arrayBuffer()
-  const wb = XLSX.read(buffer, { type: 'array', cellDates: true })
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(buffer as any)
 
   const resumen  = leerHoja(wb, 'Resumen')
   const detalle  = leerHoja(wb, '2026-05') || leerHojaConFecha(wb)
@@ -275,9 +324,9 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   const vol_vendido_final   = vol_venta  > 0 ? vol_venta  : volVentaDerived
 
   // Gas prices from Resumen H13 (ET/ETLPPQ) and I13 (RCLV) — direct cell address
-  const resumenSheet = wb.Sheets['Resumen']
-  const precioGasResumenET   = resumenSheet ? (Number(resumenSheet['H13']?.v) || 0) : 0
-  const precioGasResumenRCLV = resumenSheet ? (Number(resumenSheet['I13']?.v) || 0) : 0
+  const resumenWs = wb.getWorksheet('Resumen')
+  const precioGasResumenET   = resumenWs ? (Number(cellVal(resumenWs.getCell('H13').value)) || 0) : 0
+  const precioGasResumenRCLV = resumenWs ? (Number(cellVal(resumenWs.getCell('I13').value)) || 0) : 0
 
   // Gas area prices — derive from ingreso ÷ volume when direct read is 0
   const gasETProdRaw   = gasProd?.[6] ?? prodNeta?.[6] ?? 0
@@ -425,20 +474,26 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   }
 }
 
-function leerHoja(wb: XLSX.WorkBook, nombre: string): any[][] | null {
-  const ws = wb.Sheets[nombre]
+function leerHoja(wb: ExcelJS.Workbook, nombre: string): any[][] | null {
+  const ws = wb.getWorksheet(nombre)
   if (!ws) return null
-  return XLSX.utils.sheet_to_json(ws, { header: 1, defval: null }) as any[][]
+  return worksheetToGrid(ws)
 }
 
-function leerHojaConFecha(wb: XLSX.WorkBook): any[][] | null {
-  const hoja = wb.SheetNames.find(n => /^\d{4}-\d{2}$/.test(n))
-  return hoja ? leerHoja(wb, hoja) : null
+function leerHojaConFecha(wb: ExcelJS.Workbook): any[][] | null {
+  let found: string | undefined
+  wb.eachSheet((ws, _id) => {
+    if (!found && /^\d{4}-\d{2}$/.test(ws.name)) found = ws.name
+  })
+  return found ? leerHoja(wb, found) : null
 }
 
-function encontrarPeriodo(wb: XLSX.WorkBook, resumen: any[][]): string {
-  const hoja = wb.SheetNames.find(n => /^\d{4}-\d{2}$/.test(n))
-  if (hoja) return hoja
+function encontrarPeriodo(wb: ExcelJS.Workbook, resumen: any[][]): string {
+  let found: string | undefined
+  wb.eachSheet((ws, _id) => {
+    if (!found && /^\d{4}-\d{2}$/.test(ws.name)) found = ws.name
+  })
+  if (found) return found
 
   for (const row of resumen) {
     for (const cell of row) {

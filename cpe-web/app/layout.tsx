@@ -109,6 +109,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   const headersList = headers()
   const pathname = headersList.get('x-pathname') ?? ''
+  const nonce = headersList.get('x-nonce') ?? undefined
   const showSiteChrome = !pathname.startsWith('/portal') && !pathname.startsWith('/admin')
 
   return (
@@ -122,6 +123,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <script
           type="application/ld+json"
+          nonce={nonce}
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
         />
       </head>

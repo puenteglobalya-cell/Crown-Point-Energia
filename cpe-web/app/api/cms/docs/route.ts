@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { dbError } from '@/lib/api-error'
 
 const MAX_FILE_SIZE = 52_428_800 // 50 MB — matches Supabase bucket limit
 
@@ -16,7 +17,7 @@ export async function GET() {
 
   const base = admin.from('documentos').select('*').order('created_at', { ascending: false })
   const { data, error } = await (adminUser ? base : base.eq('publico', true))
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json(data)
 }
 
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
   const record = { titulo_es, titulo_en, tipo, periodo, storage_path, file_name, file_size, publico }
   const admin = createSupabaseServerAdminClient()
   const { data, error } = await admin.from('documentos').insert(record).select().single()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   revalidatePath('/inversores')
   return NextResponse.json(data)

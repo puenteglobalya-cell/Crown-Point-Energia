@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { getCurrentUserAndRole } from '@/lib/roles'
 import { isSameOrigin } from '@/lib/csrf'
+import { dbError } from '@/lib/api-error'
 
 async function requireAdmin() {
   const { role } = await getCurrentUserAndRole()
@@ -25,7 +26,7 @@ export async function PUT(req: NextRequest, { params }: { params: { userId: stri
   if (reporteIds.length > 0) {
     const rows = reporteIds.map(rid => ({ user_id: params.userId, reporte_id: rid }))
     const { error } = await db.from('portal_report_access').insert(rows)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return dbError(error)
   }
   return NextResponse.json({ ok: true })
 }

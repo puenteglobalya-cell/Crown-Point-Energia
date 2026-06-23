@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { scrapearSeOfertaExport } from '@/lib/se-scraper'
+import { dbError } from '@/lib/api-error'
 
 export const maxDuration = 300
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
       .select('id')
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return dbError(error)
 
     return NextResponse.json({ ok: true, id: data.id, rows: filas.length })
   } catch (e: unknown) {

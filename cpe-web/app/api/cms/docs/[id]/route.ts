@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { dbError } from '@/lib/api-error'
 
 async function requireAdmin() {
   return requireAdminUser()
@@ -26,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   revalidatePath('/inversores')
   return NextResponse.json(data)
 }
@@ -48,7 +49,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   }
 
   const { error } = await admin.from('documentos').delete().eq('id', params.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   revalidatePath('/inversores')
   return NextResponse.json({ ok: true })
 }

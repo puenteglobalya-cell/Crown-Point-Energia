@@ -3,6 +3,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireHrUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { logActivity } from '@/lib/roles'
+import { dbError } from '@/lib/api-error'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,7 @@ export async function GET() {
     .select('*')
     .order('created_at', { ascending: false })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json(data ?? [])
 }
 
@@ -35,7 +36,7 @@ export async function PATCH(req: NextRequest) {
 
   const db = createSupabaseServerAdminClient()
   const { error } = await db.from('job_applications').update(update).eq('id', id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   await logActivity({ userId: user.id, userEmail: user.email ?? null, action: 'update_postulacion', resourceType: 'postulacion', resourceId: id, metadata: { estado, notas: notas != null } })
   return NextResponse.json({ ok: true })
@@ -56,7 +57,7 @@ export async function DELETE(req: NextRequest) {
   }
 
   const { error } = await db.from('job_applications').delete().eq('id', id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   await logActivity({ userId: user.id, userEmail: user.email ?? null, action: 'delete_postulacion', resourceType: 'postulacion', resourceId: id, metadata: { nombre: app?.nombre } })
   return NextResponse.json({ ok: true })

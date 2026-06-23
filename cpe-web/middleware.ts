@@ -6,6 +6,27 @@ type CookieEntry = { name: string; value: string; options?: CookieOptions }
 
 const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
 
+function buildCsp(nonce: string): string {
+  return [
+    "default-src 'self'",
+    // nonce covers inline scripts; strict-dynamic allows scripts loaded by trusted scripts.
+    // unsafe-inline is ignored by nonce-aware browsers but kept as fallback for older ones.
+    // CDN hosts are kept as fallback too; strict-dynamic would drop them in modern browsers.
+    `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https://crownpointenergy.com https://*.supabase.co https://*.tile.openstreetmap.org",
+    "connect-src 'self' https://*.supabase.co https://supabase.co wss://*.supabase.co https://*.tile.openstreetmap.org",
+    "media-src 'self' https://*.supabase.co",
+    "worker-src 'self' blob:",
+    "frame-src https://www.openstreetmap.org",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "upgrade-insecure-requests",
+  ].join('; ')
+}
+
 // Use service role to bypass RLS when checking user_roles in middleware
 async function getRoleRow(userId: string) {
   try {
@@ -27,9 +48,13 @@ async function getRoleRow(userId: string) {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Propagate pathname so layout.tsx can conditionally render Header/Footer
+  // Per-request nonce for Content-Security-Policy
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+
+  // Propagate pathname + nonce so layout.tsx can use them
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-pathname', pathname)
+  requestHeaders.set('x-nonce', nonce)
 
   let supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } })
 
@@ -148,6 +173,7 @@ export async function middleware(request: NextRequest) {
     } catch {}
   }
 
+  supabaseResponse.headers.set('Content-Security-Policy', buildCsp(nonce))
   return supabaseResponse
 }
 

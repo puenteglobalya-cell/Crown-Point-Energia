@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { dbError } from '@/lib/api-error'
 
 async function isAdmin() {
   return requireAdminUser()
@@ -14,7 +15,7 @@ export async function GET() {
 
   const base = admin.from('comunicados').select('*').order('fecha', { ascending: false })
   const { data, error } = await (adminUser ? base : base.eq('publicado', true))
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json(data)
 }
 
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const admin = createSupabaseServerAdminClient()
   const { data, error } = await admin.from('comunicados').insert(record).select().single()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   revalidatePath('/comunicados')
   revalidatePath('/')

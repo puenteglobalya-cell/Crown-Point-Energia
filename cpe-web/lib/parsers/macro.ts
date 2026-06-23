@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 
 export interface DatosMacro {
   source: 'hh' | 'brent'
@@ -153,12 +153,45 @@ export function parsearTextoMacro(text: string, source: 'hh' | 'brent'): DatosMa
   throw new Error(`No se encontraron precios. ${hint}`)
 }
 
+// ---------------------------------------------------------------------------
+// ExcelJS cell value → plain string (for column headers)
+// ---------------------------------------------------------------------------
+function cellStr(raw: ExcelJS.CellValue): string {
+  if (raw === null || raw === undefined) return ''
+  if (typeof raw === 'number' || typeof raw === 'string' || typeof raw === 'boolean') return String(raw)
+  if (raw instanceof Date) return raw.toISOString()
+  if (typeof raw === 'object' && 'result' in (raw as object)) {
+    return cellStr((raw as ExcelJS.CellFormulaValue).result as ExcelJS.CellValue)
+  }
+  if (typeof raw === 'object' && 'richText' in (raw as object)) {
+    return (raw as ExcelJS.CellRichTextValue).richText.map(r => r.text).join('')
+  }
+  if (typeof raw === 'object' && 'text' in (raw as object)) {
+    return (raw as ExcelJS.CellHyperlinkValue).text
+  }
+  return String(raw)
+}
+
 // ── Public: parse Excel file (alternative) ───────────────────────────────────
-export function parsearExcelMacro(buffer: ArrayBuffer, source: 'hh' | 'brent'): DatosMacro {
-  const wb = XLSX.read(buffer)
-  if (!wb.SheetNames.length) throw new Error('Archivo Excel vacío')
-  const ws = wb.Sheets[wb.SheetNames[0]]
-  const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 }) as unknown[][]
+export async function parsearExcelMacro(buffer: ArrayBuffer, source: 'hh' | 'brent'): Promise<DatosMacro> {
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(buffer as any)
+
+  if (!wb.worksheets.length) throw new Error('Archivo Excel vacío')
+  const ws = wb.worksheets[0]
+
+  // Build a simple 0-indexed rows array (each row is an array of cell values as strings)
+  const rows: string[][] = []
+  ws.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    const r: string[] = []
+    const vals = row.values as ExcelJS.CellValue[]
+    const lastCol = vals.length - 1
+    for (let c = 1; c <= lastCol; c++) {
+      r.push(cellStr(vals[c] ?? null))
+    }
+    while (rows.length < rowNumber - 1) rows.push([])
+    rows[rowNumber - 1] = r
+  })
 
   let dataStart = 0
   let priceColIdx = 1
@@ -166,7 +199,7 @@ export function parsearExcelMacro(buffer: ArrayBuffer, source: 'hh' | 'brent'): 
   for (let i = 0; i < Math.min(5, rows.length); i++) {
     const row = rows[i]
     if (!row?.length) continue
-    const found = detectPriceCol(row.map(c => String(c ?? '')), source)
+    const found = detectPriceCol(row, source)
     if (found >= 0) { priceColIdx = found; dataStart = i + 1; break }
     if (toLabel(row[0])) { dataStart = i; break }
   }

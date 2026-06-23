@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isAdminEmail } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { dbError } from '@/lib/api-error'
 
 async function getPortalUser() {
   const cookieStore = await cookies()
@@ -34,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     .order('created_at', { ascending: false })
   if (!u.isAdmin) q = q.eq('user_id', u.id)
   const { data, error } = await q
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json(data ?? [])
 }
 
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { data, error } = await db.from('report_comments')
     .insert({ reporte_id: params.id, user_id: u.id, texto: sanitized })
     .select('id, texto, created_at').single()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json(data)
 }
 
@@ -71,6 +72,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   let q = db.from('report_comments').delete().eq('id', commentId).eq('reporte_id', params.id)
   if (!u.isAdmin) q = q.eq('user_id', u.id)
   const { error } = await q
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json({ ok: true })
 }
