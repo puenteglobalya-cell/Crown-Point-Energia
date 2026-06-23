@@ -285,9 +285,6 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
     // Skip rows with no monetary value
     if (nbET === 0 && nbLT === 0) continue
 
-    // Diferencia de Cambio on CA/CQ/DQ documents is excluded
-    if (/^DIF_CAMBIO/i.test(artCod) && /^(CA|CQ|DQ)$/i.test(tipo)) continue
-
     const tc = nbET !== 0 ? Math.round(nbLT / nbET) : 0
 
     const categoria  = derivarCategoria(artCod)
