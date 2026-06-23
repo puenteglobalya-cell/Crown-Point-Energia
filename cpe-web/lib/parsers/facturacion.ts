@@ -271,9 +271,10 @@ export async function parsearFacturacionExcel(file: File): Promise<DatosFacturac
     const suc     = r[C.suc]
     const nro     = r[C.nro]
     const cantRaw = Number(r[C.cant]  ?? 0)
-    // PLAN.GAS invoices are sometimes exported in thousands of m³ (Mm³).
-    // Expected monthly volume is ~1,500,000 m³; values under 10 000 are treated as Mm³.
-    const cant = /^PLAN\.GAS/i.test(artCod) && cantRaw !== 0 && Math.abs(cantRaw) < 10_000
+    // Gas invoices are sometimes exported in thousands of m³ (Mm³) —
+    // both PLAN.GAS and GAS.M3 (CAMMESA) exports.
+    // Expected monthly volume is > 10 000 m³; values under 10 000 are treated as Mm³.
+    const cant = /^PLAN\.GAS|^GAS\.M3/i.test(artCod) && cantRaw !== 0 && Math.abs(cantRaw) < 10_000
       ? cantRaw * 1_000
       : cantRaw
     const nbEU    = Number(r[C.nbEU]  ?? 0)   // precio neto USD / unidad
