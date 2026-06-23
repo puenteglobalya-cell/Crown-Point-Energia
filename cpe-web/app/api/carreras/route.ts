@@ -52,10 +52,21 @@ export async function POST(req: NextRequest) {
     let cv_name: string | null = null
     let cv_size: number | null = null
 
+    // Per-email: one application per 24 hours
+    const { data: recent } = await supabase
+      .from('job_applications')
+      .select('id')
+      .eq('email', email)
+      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .limit(1)
+    if (recent && recent.length > 0) {
+      return NextResponse.json({ error: 'Ya registramos tu postulación. Podés volver a intentarlo en 24 horas.' }, { status: 429 })
+    }
+
     if (cv && cv.size > 0) {
-      const MAX_SIZE = 10 * 1024 * 1024 // 10 MB
+      const MAX_SIZE = 5 * 1024 * 1024 // 5 MB
       if (cv.size > MAX_SIZE) {
-        return NextResponse.json({ error: 'El CV no puede superar 10 MB' }, { status: 400 })
+        return NextResponse.json({ error: 'El CV no puede superar 5 MB' }, { status: 400 })
       }
 
       const ext = cv.name.split('.').pop()?.toLowerCase() ?? ''
