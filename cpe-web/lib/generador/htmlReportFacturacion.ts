@@ -1,4 +1,4 @@
-import type { DatosFacturacion, PivotRow } from '@/lib/parsers/facturacion'
+import type { DatosFacturacion, PivotRow, LineaFacturacion } from '@/lib/parsers/facturacion'
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -242,9 +242,12 @@ export function generarReporteFacturacionHTML(datos: DatosFacturacion): string {
 
   // Pre-compute manual data rows
   // FA/FQ/F-type invoices + CL (liquidaciones) — CA/DA/DQ go to Otros section
+  // DIF_CAMBIO on CA/CQ/DQ is excluded from manual classification (appears in report totals only)
+  const isDifCambioCACQDQ = (l: LineaFacturacion) =>
+    /^DIF_CAMBIO/i.test(l.art_codigo) && /^(CA|CQ|DQ)$/i.test(l.tipo_comp)
   const petManualRows   = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.es_petroleo && (l.tipo_comp.startsWith('F') || l.tipo_comp === 'CL'))
-  const ncManualRows    = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.importe_usd < 0)
-  const otrosManualRows = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.tipo_comp === 'DA' || l.tipo_comp === 'DQ')
+  const ncManualRows    = lineas.map((l, i) => ({ l, i })).filter(({ l }) => l.importe_usd < 0 && !isDifCambioCACQDQ(l))
+  const otrosManualRows = lineas.map((l, i) => ({ l, i })).filter(({ l }) => (l.tipo_comp === 'DA' || l.tipo_comp === 'DQ') && !isDifCambioCACQDQ(l))
   const defaultManualOpen = petManualRows.length > 0 || ncManualRows.length > 0 || otrosManualRows.length > 0
 
   // Lookup map: comprobante → linea (first occurrence)

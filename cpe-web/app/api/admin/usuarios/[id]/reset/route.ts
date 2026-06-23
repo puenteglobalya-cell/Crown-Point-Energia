@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     { cookies: { getAll: () => [], setAll: () => {} } }
   )
   const { error: resetError } = await anonSupabase.auth.resetPasswordForEmail(target.email, {
-    redirectTo: `${siteUrl}/auth/callback?next=/portal/reset-password`,
+    redirectTo: `${siteUrl}/portal/reset-password`,
   })
 
   if (resetError) return NextResponse.json({ error: resetError.message }, { status: 500 })
