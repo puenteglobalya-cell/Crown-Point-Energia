@@ -40,6 +40,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: 'Sistema',
     items: [
       { href: '/admin/sitemap', label: 'Sitemap' },
+      { href: '/admin/backup',  label: 'Backup' },
     ],
   },
 ]
