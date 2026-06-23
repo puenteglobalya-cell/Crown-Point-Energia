@@ -130,6 +130,13 @@
   .two-col .left-rail a.active { border-bottom-color: var(--accent); border-left: none; }
 }
 
+@media (max-width: 640px) {
+  .page-hero { padding-top: var(--s-10); padding-bottom: var(--s-8); }
+  .page-hero h1 { font-size: clamp(32px, 9vw, 48px); }
+  .page-hero p  { font-size: 15px; }
+  .page-hero.has-photo { padding-top: var(--s-16); padding-bottom: var(--s-12); }
+}
+
 /* -------- Doc / report list -------- */
 .doc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .doc-item {
@@ -243,6 +250,20 @@ a.doc-action:hover { color: var(--accent-deep); }
 .block-stats span:last-child { font-family: var(--font-mono); font-weight: 500; color: var(--fg); }
 
 @media (max-width: 720px) { .block-card-body { grid-template-columns: 1fr; } }
+
+@media (max-width: 640px) {
+  .block-card-hd {
+    padding: var(--s-4) var(--s-5);
+    gap: 8px;
+  }
+  .block-card-hd h3 { font-size: 22px; }
+  .block-card-body { padding: var(--s-5); gap: var(--s-5); }
+  .section-block { padding: var(--s-8) 0; }
+  .section-block h2 { font-size: 26px; }
+  .section-block .lede { font-size: 16px; }
+  .ops-section-header h2 { font-size: 22px; }
+  .block-stats div { padding: 11px 14px; font-size: 12px; }
+}
 
 /* -------- Press / filter chips -------- */
 .filter-row {
