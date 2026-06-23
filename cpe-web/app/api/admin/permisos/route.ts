@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { PERMISSIONS, PERMISSION_KEYS, ADMIN_LOCKED, type Permission } from '@/lib/permissions-config'
+import { PERMISSION_KEYS, ADMIN_LOCKED, DEFAULT_PERMISSIONS, type Permission } from '@/lib/permissions-config'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import type { UserRole } from '@/lib/roles'
 import { dbError } from '@/lib/api-error'
 
-const ROLES: UserRole[] = ['viewer', 'uploader', 'admin']
+const ROLES: UserRole[] = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista']
 
 // GET — returns full permissions matrix
 export async function GET() {
@@ -17,14 +17,16 @@ export async function GET() {
   const { data, error } = await db.from('role_permissions').select('role, permission, enabled')
   if (error) return dbError(error)
 
-  // Build matrix: { viewer: { view_drafts: false, ... }, uploader: {...}, admin: {...} }
+  // Build matrix initialised from DEFAULT_PERMISSIONS so new permissions show correctly
   const matrix: Record<string, Record<string, boolean>> = {}
   for (const role of ROLES) {
     matrix[role] = {}
+    const defaults = new Set(DEFAULT_PERMISSIONS[role] ?? [])
     for (const perm of PERMISSION_KEYS) {
-      matrix[role][perm] = false
+      matrix[role][perm] = defaults.has(perm)
     }
   }
+  // Apply DB overrides
   for (const row of data ?? []) {
     if (matrix[row.role]) matrix[row.role][row.permission] = row.enabled
   }

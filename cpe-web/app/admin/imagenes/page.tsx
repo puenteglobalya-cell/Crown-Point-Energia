@@ -12,11 +12,11 @@ type SiteImage = {
 }
 
 const SECTIONS = [
-  { value: 'hero', label: 'Hero / portada' },
-  { value: 'operaciones', label: 'Operaciones' },
-  { value: 'esg', label: 'ESG / Sostenibilidad' },
-  { value: 'acerca', label: 'Acerca de' },
-  { value: 'general', label: 'General' },
+  { value: 'hero',       label: 'Hero / portada',    cmsKey: 'hero.home.img' as string | null },
+  { value: 'operaciones', label: 'Operaciones',       cmsKey: null },
+  { value: 'esg',        label: 'ESG / Sostenibilidad', cmsKey: null },
+  { value: 'acerca',     label: 'Acerca de',          cmsKey: null },
+  { value: 'general',    label: 'General',             cmsKey: null },
 ]
 
 function fmtSize(bytes: number | null | undefined) {
@@ -42,11 +42,31 @@ export default function ImagenesPage() {
 
   async function loadImages() {
     const supabase = createSupabaseBrowserClient()
-    const { data } = await supabase.storage.from('site-images').list('', {
+    const all: SiteImage[] = []
+
+    // List each section subfolder — Supabase Storage list() is not recursive
+    await Promise.all(SECTIONS.map(async s => {
+      const { data } = await supabase.storage.from('site-images').list(s.value, {
+        limit: 200,
+        sortBy: { column: 'created_at', order: 'desc' },
+      })
+      if (data) {
+        all.push(
+          ...data.filter(f => f.id).map(f => ({ ...f, name: `${s.value}/${f.name}` })) as SiteImage[]
+        )
+      }
+    }))
+
+    // Also capture any root-level files (uncategorized uploads)
+    const { data: rootFiles } = await supabase.storage.from('site-images').list('', {
       limit: 200,
       sortBy: { column: 'created_at', order: 'desc' },
     })
-    setImages((data ?? []).filter(f => f.id) as SiteImage[])
+    if (rootFiles) {
+      all.push(...rootFiles.filter(f => f.id) as SiteImage[])
+    }
+
+    setImages(all.sort((a, b) => (b.created_at > a.created_at ? 1 : -1)))
     setLoading(false)
   }
 
@@ -76,7 +96,19 @@ export default function ImagenesPage() {
         .from('site-images')
         .upload(path, file, { upsert: false })
       if (storageErr) throw new Error(storageErr.message)
-      flash('Imagen subida')
+
+      // If this section maps to a CMS field, publish it to the live website
+      const cmsKey = SECTIONS.find(s => s.value === section)?.cmsKey
+      if (cmsKey) {
+        const url = publicUrl(path)
+        await fetch('/api/cms/state', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ fields: { [cmsKey]: url } }),
+        })
+      }
+
+      flash(cmsKey ? 'Imagen subida y publicada en el sitio' : 'Imagen subida')
       if (fileRef.current) fileRef.current.value = ''
       await loadImages()
     } catch (e) {
@@ -92,6 +124,19 @@ export default function ImagenesPage() {
     await supabase.storage.from('site-images').remove([img.name])
     setImages(prev => prev.filter(i => i.id !== img.id))
     flash('Eliminada')
+  }
+
+  async function handlePublish(img: SiteImage) {
+    const sectionVal = img.name.split('/')[0]
+    const cmsKey = SECTIONS.find(s => s.value === sectionVal)?.cmsKey
+    if (!cmsKey) return
+    const url = publicUrl(img.name)
+    await fetch('/api/cms/state', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ fields: { [cmsKey]: url } }),
+    })
+    flash('Publicada en el sitio')
   }
 
   function copyUrl(path: string) {
@@ -134,8 +179,17 @@ export default function ImagenesPage() {
             <div className="form-row" style={{ margin: 0 }}>
               <label>Sección</label>
               <select value={section} onChange={e => setSection(e.target.value)}>
-                {SECTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                {SECTIONS.map(s => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}{s.cmsKey ? ' ★' : ''}
+                  </option>
+                ))}
               </select>
+              {SECTIONS.find(s => s.value === section)?.cmsKey && (
+                <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 4 }}>
+                  ★ La imagen subida se publica automáticamente en el sitio
+                </div>
+              )}
             </div>
             <div className="form-row" style={{ margin: 0 }}>
               <label>Archivo</label>
@@ -201,7 +255,16 @@ export default function ImagenesPage() {
                         <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', marginBottom: 10 }}>
                           {fmtSize(img.metadata?.size)}
                         </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {SECTIONS.find(s => img.name.startsWith(s.value + '/'))?.cmsKey && (
+                            <button
+                              onClick={() => handlePublish(img)}
+                              className="btn btn-primary"
+                              style={{ fontSize: 11, padding: '5px 8px', flex: 1 }}
+                            >
+                              Publicar ★
+                            </button>
+                          )}
                           <button
                             onClick={() => copyUrl(img.name)}
                             className="btn"
@@ -211,7 +274,7 @@ export default function ImagenesPage() {
                               fontFamily: 'var(--font-mono)',
                             }}
                           >
-                            {copied === img.name ? '✓ Copiada' : 'Copiar URL'}
+                            {copied === img.name ? '✓ Copiada' : 'URL'}
                           </button>
                           <button
                             onClick={() => handleDelete(img)}

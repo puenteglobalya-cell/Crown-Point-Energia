@@ -17,10 +17,16 @@ export default function PortalNav({
   email,
   role,
   canUpload,
+  canViewReports = true,
+  canViewDashboard = true,
+  canViewComercial = true,
 }: {
   email: string
   role: string
   canUpload: boolean
+  canViewReports?: boolean
+  canViewDashboard?: boolean
+  canViewComercial?: boolean
 }) {
   const [signingOut, setSigningOut] = useState(false)
 
@@ -61,17 +67,23 @@ export default function PortalNav({
 
         <div style={{ width: 1, height: 18, background: 'var(--rule)' }} />
 
-        <Link href="/portal/dashboard" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
-          Dashboard
-        </Link>
+        {canViewDashboard && (
+          <Link href="/portal/dashboard" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
+            Dashboard
+          </Link>
+        )}
 
-        <Link href="/portal" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
-          Reportes
-        </Link>
+        {canViewReports && (
+          <Link href="/portal" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
+            Reportes
+          </Link>
+        )}
 
-        <Link href="/portal/comercial" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
-          Comercial
-        </Link>
+        {canViewComercial && (
+          <Link href="/portal/comercial" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
+            Comercial
+          </Link>
+        )}
 
         {canUpload && (
           <Link href="/portal/subir" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>

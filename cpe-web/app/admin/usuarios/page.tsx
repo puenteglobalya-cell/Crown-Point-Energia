@@ -19,8 +19,7 @@ type BibUG    = { user_id: string; grupo_id: number }
 type PermMatrix = Record<string, Record<string, boolean>>
 
 const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista'] as const
-// Accionista access is managed via portal_report_access, not the permissions matrix
-const MATRIX_ROLES = ['viewer', 'uploader', 'admin', 'rrhh'] as const
+const MATRIX_ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista'] as const
 const ROLE_LABELS: Record<string, string> = {
   viewer:     'Consulta',
   uploader:   'Carga',

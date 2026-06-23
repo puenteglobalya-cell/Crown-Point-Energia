@@ -7,6 +7,7 @@ import {
   type Permission,
   ADMIN_LOCKED,
   DEFAULT_PERMISSIONS,
+  PERMISSION_KEYS,
 } from '@/lib/permissions-config'
 
 export type { Permission }
@@ -23,9 +24,14 @@ export async function getPermissionsForRole(role: UserRole): Promise<Set<Permiss
       .from('role_permissions')
       .select('permission, enabled')
       .eq('role', role)
-    if (!data || data.length === 0) return new Set(DEFAULT_PERMISSIONS[role] ?? [])
+
+    const defaults = new Set<Permission>(DEFAULT_PERMISSIONS[role] ?? [])
+    if (!data || data.length === 0) return defaults
+
+    // Merge: start from defaults, apply DB rows as overrides for known permissions
+    const dbMap = new Map(data.map(r => [r.permission, r.enabled]))
     return new Set(
-      data.filter(r => r.enabled).map(r => r.permission as Permission)
+      PERMISSION_KEYS.filter(p => (dbMap.has(p) ? dbMap.get(p) : defaults.has(p)))
     )
   } catch {
     return new Set(DEFAULT_PERMISSIONS[role] ?? [])
