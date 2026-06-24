@@ -134,11 +134,13 @@ export default function AdminKpiPage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 10, marginBottom: 24 }}>
               <Pill label="Producción" value={`${data.fields['kpi.production.value']} boe/d`} />
-              <Pill label="vs Q1 anterior" value={data.fields['kpi.production.delta'] || '—'} />
+              <Pill label="vs Q ant." value={data.fields['kpi.production.delta'] || '—'} />
               <Pill label="Revenue" value={fmtUSD(data.revenueUSD)} />
               <Pill label="Funds flow" value={fmtUSD(data.fundsFlowUSD)} />
               <Pill label="Op. Netback" value={fmtUSD(data.netbackUSD)} />
               <Pill label="EBITDA (campo)" value={`$${data.fields['kpi.ebitda.value']}M`} />
+              <Pill label="Opex/BOE" value={data.fields['kpi.opex.value'] || '—'} />
+              <Pill label="Opex YoY" value={data.fields['kpi.opex.delta'] || '—'} />
             </div>
           </div>
 

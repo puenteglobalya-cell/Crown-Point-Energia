@@ -10,6 +10,8 @@ export interface KpiExtracted {
   fundsFlowPrevUSD: number
   netbackUSD: number
   netbackPrevUSD: number
+  opexPerBoe: number       // production + processing + transportation per BOE ($)
+  opexPerBoePrev: number
   // CMS field payloads ready to upsert
   fields: Record<string, string>    // value_es
   fieldsEn: Record<string, string>  // value_en
@@ -123,15 +125,26 @@ export async function parseKpiExcel(buffer: Buffer | ArrayBuffer): Promise<KpiEx
   const productionBoed     = num(grid[prodRow >= 0 ? prodRow : 68]?.[2])
   const productionPrevBoed = num(grid[prodRow >= 0 ? prodRow : 68]?.[3])
 
+  // --- Opex per BOE (row 142 = index 141): production+processing + transportation ---
+  // Col C = current quarter, col D = prior-year quarter (per BOE, positive values)
+  const opexRow = findRowByLabel(grid, 1, 'operating costs per boe')
+  const opexPerBoeRaw     = num(grid[opexRow >= 0 ? opexRow : 141]?.[2])
+  const opexPerBoePrevRaw = num(grid[opexRow >= 0 ? opexRow : 141]?.[3])
+  // The sheet stores this as a negative (cost sign); take absolute value
+  const opexPerBoe     = Math.abs(opexPerBoeRaw)
+  const opexPerBoePrev = Math.abs(opexPerBoePrevRaw)
+
   // --- Build CMS field updates ---
-  const prodStr   = fmtInt(productionBoed)
-  const prodDelta = fmtDelta(productionBoed, productionPrevBoed)
-  const ffMStr    = fmtMillions(fundsFlowUSD)
-  const ffDelta   = fmtDelta(revenueUSD, revenuePrevUSD) // revenue ratio — clean positive comp
-  const periodEs  = `${period} · Cifras clave`
-  const periodEn  = `${period} · Key figures`
-  const metaEs    = `${period} · ventas netas`
-  const metaEn    = `${period} · net sales`
+  const prodStr    = fmtInt(productionBoed)
+  const prodDelta  = fmtDelta(productionBoed, productionPrevBoed)
+  const ffMStr     = fmtMillions(fundsFlowUSD)
+  const ffDelta    = fmtDelta(revenueUSD, revenuePrevUSD) // revenue ratio — clean positive comp
+  const opexStr    = opexPerBoe > 0 ? `$${opexPerBoe.toFixed(1)}/boe` : ''
+  const opexDelta  = fmtDelta(-opexPerBoe, -opexPerBoePrev) // negative = cost reduction = good
+  const periodEs   = `${period} · Cifras clave`
+  const periodEn   = `${period} · Key figures`
+  const metaEs     = `${period} · ventas netas`
+  const metaEn     = `${period} · net sales`
 
   const fields: Record<string, string> = {
     'kpis.periodo.es':          periodEs,
@@ -139,16 +152,22 @@ export async function parseKpiExcel(buffer: Buffer | ArrayBuffer): Promise<KpiEx
     'kpi.production.delta':     prodDelta,
     'kpi.ebitda.value':         ffMStr,
     'kpi.ebitda.delta':         ffDelta,
+    'kpi.opex.value':           opexStr,
+    'kpi.opex.delta':           opexDelta,
     'ops.kpi.production':       prodStr,
     'ops.kpi.production.meta':  metaEs,
     'inv.thesis.1.val':         prodStr,
     'inv.thesis.1.unit':        'boe/d',
+    'inv.thesis.2.val':         opexPerBoe > 0 ? opexPerBoe.toFixed(1) : '',
+    'inv.thesis.2.unit':        '$/boe',
+    'inv.thesis.2.meta':        `${period} · opex total`,
   }
 
   const fieldsEn: Record<string, string> = {
     'kpis.periodo.en':          periodEn,
     'ops.kpi.production.meta':  metaEn,
     'inv.thesis.1.meta':        `${period} · net`,
+    'inv.thesis.2.meta':        `${period} · total opex`,
   }
 
   return {
@@ -161,6 +180,8 @@ export async function parseKpiExcel(buffer: Buffer | ArrayBuffer): Promise<KpiEx
     fundsFlowPrevUSD,
     netbackUSD,
     netbackPrevUSD,
+    opexPerBoe,
+    opexPerBoePrev,
     fields,
     fieldsEn,
   }
