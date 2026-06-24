@@ -147,7 +147,7 @@ export async function enviarConfirmacionPostulacion({
   await resend.emails.send({
     from:     FROM,
     to:       email,
-    reply_to: 'rrhh@crownpointenergy.com',
+    replyTo:  'rrhh@crownpointenergy.com',
     subject:  'Recibimos tu postulación — Crown Point Energía',
     html:     emailShell('Postulación recibida', body),
   }).catch(() => {/* non-blocking */})
