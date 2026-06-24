@@ -51,7 +51,7 @@ export default async function DashboardPage() {
         latestId={ingresosRes.data?.id ?? null}
         recientes={recientesRes.data ?? []}
       />
-      <div style={{ padding: '0 20px 40px', maxWidth: 1080, margin: '0 auto' }}>
+      <div style={{ padding: '0 20px 40px', maxWidth: 1280, margin: '0 auto' }}>
         <div style={{ marginBottom: 12 }}>
           <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', margin: '0 0 2px' }}>
             Mapa de operaciones

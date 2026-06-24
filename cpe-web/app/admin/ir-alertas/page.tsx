@@ -136,7 +136,7 @@ export default function IrAlertasPage() {
   }
 
   return (
-    <div style={{ maxWidth: 820, margin: '0 auto', padding: '36px 24px' }}>
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '36px 24px' }}>
 
       {/* Header */}
       <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '0 0 4px' }}>Admin</p>

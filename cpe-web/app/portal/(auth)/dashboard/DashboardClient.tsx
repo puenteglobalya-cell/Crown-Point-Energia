@@ -208,7 +208,7 @@ export default function DashboardClient({ latest, latestId, recientes }: Props) 
   }, [latest]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div style={{ padding: '24px 20px', maxWidth: 1080, margin: '0 auto' }}>
+    <div style={{ padding: '24px 20px', maxWidth: 1280, margin: '0 auto' }}>
 
       {/* ── Header ── */}
       <div style={{ marginBottom: 24 }}>
