@@ -104,8 +104,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const state = await getCmsState()
 
   const cookieStore = cookies()
-  const langCookie = cookieStore.get('cpe_lang')?.value
-  const lang = (langCookie === 'en' || langCookie === 'es') ? langCookie : state.lang
+  const langCookie  = cookieStore.get('cpe_lang')?.value
+  const themeCookie = cookieStore.get('cpe_theme')?.value
+  const lang  = (langCookie  === 'en' || langCookie  === 'es')     ? langCookie  : state.lang
+  const theme = (themeCookie === 'dark' || themeCookie === 'light') ? themeCookie : state.theme
 
   const headersList = headers()
   const pathname = headersList.get('x-pathname') ?? ''
@@ -116,7 +118,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang={lang}
       data-direction={state.direction}
-      data-theme={state.theme}
+      data-theme={theme}
       data-lang={lang}
       className={fontClasses}
     >
@@ -134,7 +136,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <span className="lang-en">Skip to content</span>
           </a>
         )}
-        {showSiteChrome && <Header fields={state.fields} show={state.show} lang={lang} />}
+        {showSiteChrome && <Header fields={state.fields} show={state.show} lang={lang} theme={theme} />}
         <main id="main-content">{children}</main>
         {showSiteChrome && <Footer />}
         <CpeAdapter state={{ ...state, lang }} />

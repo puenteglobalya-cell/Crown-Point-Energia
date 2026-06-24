@@ -70,6 +70,9 @@ export default function YacimientosLeafletMap({ pins, height = 520 }: { pins: Ya
         // Default: show all Argentina
         map.setView([-40, -65], 4)
       }
+
+      // Re-check container size after layout settles (sticky/grid parents can defer sizing)
+      setTimeout(() => map.invalidateSize(), 150)
     }
 
     init()

@@ -199,6 +199,16 @@ export default async function ContactoPage() {
 
               <div className="info-row">
                 <span className="info-key">
+                  <span className="lang-es">Recursos Humanos</span>
+                  <span className="lang-en">Human Resources</span>
+                </span>
+                <div className="info-val">
+                  <a href="mailto:rrhh@crownpointenergy.com">rrhh@crownpointenergy.com</a>
+                </div>
+              </div>
+
+              <div className="info-row">
+                <span className="info-key">
                   <span className="lang-es">Argentina</span>
                   <span className="lang-en">Argentina</span>
                 </span>

@@ -46,7 +46,7 @@ export default async function ComercialPage() {
   const isAdmin     = permissions.has('manage_users')
 
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto', padding: '24px 20px' }}>
+    <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 20px' }}>
 
       {/* ── Header ── */}
       <div style={{ marginBottom: 32 }}>

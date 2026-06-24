@@ -1,24 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import { BACKUP_TABLES, CATEGORY_LABELS, CATEGORY_ORDER } from '@/lib/backup-tables'
 
-type BackupItem = {
-  key: string
-  label: string
-  description: string
-  included: boolean
-}
+const byCategory = CATEGORY_ORDER.map(cat => ({
+  cat,
+  label: CATEGORY_LABELS[cat],
+  tables: BACKUP_TABLES.filter(t => t.category === cat),
+}))
 
-const ITEMS: BackupItem[] = [
-  { key: 'cms_settings',    label: 'Configuración CMS',      description: 'Tema, idioma, dirección, modo mantenimiento', included: true },
-  { key: 'cms_fields',      label: 'Campos del sitio',        description: 'Cotización, KPIs, textos editables', included: true },
-  { key: 'cms_sections',    label: 'Secciones del sitio',     description: 'Visibilidad de cada sección pública', included: true },
-  { key: 'reportes',        label: 'Metadatos de reportes',   description: 'Título, período, tipo y estado (sin HTML ni archivos)', included: true },
-  { key: 'user_roles',      label: 'Roles de usuarios',       description: 'Asignaciones de rol y estado activo', included: true },
-  { key: 'role_permissions',label: 'Permisos',                description: 'Matriz de permisos por rol', included: true },
-  { key: 'storage',         label: 'Archivos (Storage)',      description: 'Imágenes y PDFs — descargar desde Supabase → Storage', included: false },
-  { key: 'auth',            label: 'Contraseñas de usuarios', description: 'No exportables — los usuarios deberían resetear al migrar', included: false },
-]
+const totalIncluded = BACKUP_TABLES.filter(t => t.included && t.table !== 'storage').length
 
 export default function BackupPage() {
   const [downloading, setDownloading] = useState(false)
@@ -45,7 +36,7 @@ export default function BackupPage() {
   }
 
   return (
-    <div style={{ maxWidth: 760, margin: '0 auto', padding: '36px 24px' }}>
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '36px 24px' }}>
 
       {/* Header */}
       <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '0 0 4px' }}>
@@ -54,26 +45,30 @@ export default function BackupPage() {
       <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-display)', margin: '0 0 6px', letterSpacing: '-0.02em' }}>
         Backup
       </h1>
-      <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '0 0 36px' }}>
-        Exportá la configuración y metadatos del sitio en un archivo JSON portable.
+      <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '0 0 32px' }}>
+        Exportá todos los datos del sistema en un archivo JSON local.
+        Para agregar tablas nuevas al backup, editá{' '}
+        <code style={{ fontFamily: 'var(--font-mono)', fontSize: 12, background: 'var(--bg-alt)', padding: '1px 6px', borderRadius: 4 }}>
+          lib/backup-tables.ts
+        </code>.
         Se envía un recordatorio automático por email todos los lunes a las 9 AM.
       </p>
 
       {/* Download card */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: '28px 28px', marginBottom: 28 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: '24px 28px', marginBottom: 32 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', marginBottom: 4, fontFamily: 'var(--font-display)' }}>
               Backup completo — JSON
             </div>
             <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>
-              CMS · Reportes · Roles · Permisos
-              {lastDownload && (
-                <span style={{ marginLeft: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                  ✓ Última descarga: {lastDownload}
-                </span>
-              )}
+              {totalIncluded} tablas · CMS · Contenido · Roles · Reportes · Biblioteca · Contactos
             </div>
+            {lastDownload && (
+              <div style={{ marginTop: 6, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                ✓ Última descarga: {lastDownload}
+              </div>
+            )}
           </div>
           <button
             className="btn btn-primary"
@@ -89,39 +84,60 @@ export default function BackupPage() {
         </div>
       </div>
 
-      {/* What's included */}
-      <h2 style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '0 0 12px' }}>
-        Qué incluye
-      </h2>
-      <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', overflow: 'hidden', marginBottom: 32 }}>
-        {ITEMS.map((item, i) => (
-          <div key={item.key} style={{
-            display: 'grid', gridTemplateColumns: '20px 1fr',
-            gap: 14, padding: '13px 18px', alignItems: 'center',
-            borderBottom: i < ITEMS.length - 1 ? '1px solid var(--rule)' : 'none',
-            background: item.included ? 'var(--surface)' : 'var(--bg-alt)',
-            opacity: item.included ? 1 : 0.65,
-          }}>
-            <span style={{ fontSize: 14 }}>{item.included ? '✓' : '✕'}</span>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', marginBottom: 2 }}>
-                {item.label}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>
-                {item.description}
-              </div>
+      {/* Table registry by category */}
+      <div style={{ display: 'grid', gap: 24 }}>
+        {byCategory.map(({ cat, label, tables }) => (
+          <div key={cat}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                background: cat === 'no-incluido' ? 'var(--fg-muted)'
+                  : cat === 'cms' ? '#1F2566'
+                  : cat === 'acceso' ? '#6cae52'
+                  : cat === 'contenido' ? '#3D5F9A'
+                  : cat === 'reportes' ? '#E07B30'
+                  : cat === 'biblioteca' ? '#9a6f00'
+                  : '#6B5EA8',
+              }} />
+              <h2 style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--fg-muted)', margin: 0 }}>
+                {label}
+              </h2>
+              <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>
+                ({tables.filter(t => t.included).length}/{tables.length})
+              </span>
+            </div>
+
+            <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
+              {tables.map((t, i) => (
+                <div key={t.table} style={{
+                  display: 'grid',
+                  gridTemplateColumns: '18px 1fr',
+                  gap: 12, padding: '11px 16px',
+                  alignItems: 'start',
+                  borderBottom: i < tables.length - 1 ? '1px solid var(--rule)' : 'none',
+                  background: t.included ? 'var(--surface)' : 'var(--bg-alt)',
+                  opacity: t.included ? 1 : 0.6,
+                }}>
+                  <span style={{ fontSize: 13, color: t.included ? 'var(--cp-green-deep)' : 'var(--fg-muted)', paddingTop: 1 }}>
+                    {t.included ? '✓' : '✕'}
+                  </span>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{t.label}</span>
+                      <code style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)', background: 'var(--bg-alt)', padding: '1px 6px', borderRadius: 3 }}>
+                        {t.table}
+                      </code>
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>{t.description}</div>
+                    {t.notes && (
+                      <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 3, fontStyle: 'italic' }}>ℹ {t.notes}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ))}
-      </div>
-
-      {/* Storage note */}
-      <div style={{ fontSize: 13, color: 'var(--fg-soft)', background: 'var(--bg-alt)', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', padding: '14px 18px', lineHeight: 1.6 }}>
-        <strong>Para un backup completo:</strong> los archivos de Storage (imágenes y PDFs) hay que descargarlos por separado desde{' '}
-        <strong>Supabase → Storage</strong> bucket por bucket, o con la CLI:<br />
-        <code style={{ fontFamily: 'var(--font-mono)', fontSize: 12, display: 'inline-block', marginTop: 8, background: 'var(--bg)', padding: '4px 10px', borderRadius: 4 }}>
-          supabase storage download --bucket site-images ./backup-images
-        </code>
       </div>
 
     </div>

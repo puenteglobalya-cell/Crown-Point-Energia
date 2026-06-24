@@ -158,7 +158,7 @@ export default function ReportesAdminPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
-      <div style={{ maxWidth: 860, margin: '0 auto' }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>

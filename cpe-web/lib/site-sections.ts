@@ -58,6 +58,37 @@ export const SITE_SECTIONS: SiteSection[] = [
     description: 'Formulario de contacto y datos institucionales.',
   },
   {
+    path: '/carreras',
+    label: 'Carreras',
+    area: 'public',
+    description: 'Posiciones abiertas y formulario de postulación espontánea. Envía confirmación por email al candidato.',
+  },
+  {
+    path: '/comercial',
+    label: 'Comercial',
+    area: 'public',
+    description: 'Información para proveedores y contacto comercial.',
+  },
+  {
+    path: '/legal/terminos',
+    label: 'Términos y condiciones',
+    area: 'public',
+    description: 'Términos de uso del sitio, declaraciones forward-looking y limitaciones de responsabilidad.',
+  },
+  {
+    path: '/legal/privacidad',
+    label: 'Privacidad y cookies',
+    area: 'public',
+    description: 'Política de privacidad y uso de cookies.',
+  },
+  {
+    path: '/legal/avisos',
+    label: 'Avisos legales',
+    area: 'public',
+    description: 'Avisos completos: Declaraciones Prospectivas, BOE, Medidas No-NIIF, Medidas de Petróleo y Gas, y tabla de abreviaciones. Bilingüe ES/EN.',
+    notes: 'Texto oficial de las presentaciones a inversores de Crown Point.',
+  },
+  {
     path: '/maintenance',
     label: 'Mantenimiento',
     area: 'public',

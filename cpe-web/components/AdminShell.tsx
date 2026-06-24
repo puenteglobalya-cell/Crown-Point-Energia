@@ -22,6 +22,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: 'Publicaciones',
     items: [
       { href: '/admin/reportes', label: 'Reportes' },
+      { href: '/admin/kpi', label: 'KPIs Excel' },
       { href: '/admin/comunicados', label: 'Comunicados' },
       { href: '/admin/push', label: 'Push' },
     ],
@@ -31,6 +32,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { href: '/admin/usuarios', label: 'Usuarios' },
       { href: '/admin/suscriptores', label: 'Suscriptores IR' },
+      { href: '/admin/ir-alertas',  label: 'Alertas IR' },
       { href: '/admin/rrhh', label: 'RRHH', roles: ['rrhh', 'admin'] },
       { href: '/admin/contacto', label: 'Contacto' },
       { href: '/admin/logs', label: 'Logs' },
