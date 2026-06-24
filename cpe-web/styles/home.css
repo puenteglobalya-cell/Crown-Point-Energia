@@ -647,4 +647,13 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+
+/* On mobile: taller ratio so the photo actually shows */
+@media (max-width: 640px) {
+  .block-photo {
+    aspect-ratio: 3 / 2;
+    border-radius: var(--r-md);
+    margin-bottom: var(--s-4);
+  }
+}
 .block-photo-placeholder svg { opacity: 0.3; }

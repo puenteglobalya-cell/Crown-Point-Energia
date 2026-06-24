@@ -96,7 +96,7 @@ export default function PortalNav({
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <PushSubscriber />
 
-        <span style={{
+        <Link href="/portal/mi-cuenta" style={{
           fontSize: 12,
           fontFamily: 'var(--font-mono)',
           color: 'var(--fg-muted)',
@@ -105,9 +105,10 @@ export default function PortalNav({
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
           display: 'var(--email-display, inline)',
-        }} className="portal-nav-email">
+          textDecoration: 'none',
+        }} className="portal-nav-email" title="Mi cuenta · Cambiar contraseña">
           {email}
-        </span>
+        </Link>
 
         {role === 'admin' ? (
           <Link href="/admin" style={{

@@ -83,7 +83,8 @@ export default async function EsgPage() {
         .esg-init-list li { font-size: 13px; color: var(--fg-soft); line-height: 1.6; padding-left: 18px; position: relative; }
         .esg-init-list li::before { content: "→"; position: absolute; left: 0; color: var(--fg-muted); }
         .esg-kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--r-lg); overflow: hidden; }
-        @media (max-width: 720px) { .esg-kpi-strip { grid-template-columns: repeat(2, 1fr); } .esg-metrics { grid-template-columns: 1fr; } }
+        .esg-frameworks { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-8); text-align: center; }
+        @media (max-width: 720px) { .esg-kpi-strip { grid-template-columns: repeat(2, 1fr); } .esg-metrics { grid-template-columns: 1fr; } .esg-frameworks { grid-template-columns: 1fr; gap: var(--s-4); text-align: left; } }
       `}</style>
 
       {/* KPI strip */}
@@ -174,7 +175,7 @@ export default async function EsgPage() {
       {/* Reporting & frameworks */}
       <section className="section-tight" style={{ borderTop: '1px solid var(--rule)', background: 'var(--bg-alt)' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--s-8)', textAlign: 'center' }}>
+          <div className="esg-frameworks">
             {[
               { name: 'SASB', descEs: 'Petroleum & Gas Integrated — Oil & Gas Exploration & Production', descEn: 'Petroleum & Gas Integrated — Oil & Gas E&P' },
               { name: 'TCFD', descEs: 'Recomendaciones para divulgación de riesgos climáticos financieros', descEn: 'Recommendations for climate-related financial risk disclosure' },

@@ -7,6 +7,14 @@
     {
       "path": "/api/cron/cleanup-push",
       "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/cron/backup-reminder",
+      "schedule": "0 12 * * 1"
+    },
+    {
+      "path": "/api/cron/cleanup-logs",
+      "schedule": "0 2 1 * *"
     }
   ],
   "functions": {
