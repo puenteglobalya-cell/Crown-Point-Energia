@@ -1,0 +1,37 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdminUser } from '@/lib/admin-auth'
+import { createSupabaseServerClient } from '@/lib/supabase'
+import { isSameOrigin } from '@/lib/csrf'
+
+export const dynamic = 'force-dynamic'
+
+// PATCH /api/admin/ir-alertas/[id] — toggle activo or update nombre
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const user = await requireAdminUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const body = await req.json()
+  const sb = createSupabaseServerClient()
+  const { data, error } = await sb
+    .from('ir_alert_recipients')
+    .update({ ...body, updated_at: new Date().toISOString() })
+    .eq('id', params.id)
+    .select()
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data)
+}
+
+// DELETE /api/admin/ir-alertas/[id]
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const user = await requireAdminUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const sb = createSupabaseServerClient()
+  const { error } = await sb.from('ir_alert_recipients').delete().eq('id', params.id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}

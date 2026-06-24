@@ -5,7 +5,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity, getPermissionsForRole } from '@/lib/roles'
 import { isAdminEmail } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
-import { enviarNotificacionReporte } from '@/lib/email'
+import { enviarNotificacionReporte, enviarNotificacionIR } from '@/lib/email'
 import { enviarPushNotificacion } from '@/lib/push'
 import { dbError } from '@/lib/api-error'
 
@@ -217,6 +217,25 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       body:  `${current?.titulo ?? tipo} · ${current?.periodo ?? ''} ya está disponible.`,
       url:   '/portal',
     }).catch(e => console.error('[push]', e))
+
+    // IR alert recipients → notify when a financial report (estados contables) is published
+    if (['financiero', 'accionista', 'produccion'].includes(current?.type_id ?? '')) {
+      const { data: alertRecipients } = await db
+        .from('ir_alert_recipients')
+        .select('nombre, email')
+        .eq('activo', true)
+
+      if (alertRecipients && alertRecipients.length > 0) {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ''
+        enviarNotificacionIR({
+          titulo:      current?.titulo ?? tipo,
+          tipo,
+          descripcion: `Período: ${current?.periodo ?? ''}. Ya disponible en la sección de documentos.`,
+          url:         `${siteUrl}/admin/reportes`,
+          recipients:  alertRecipients,
+        }).catch(e => console.error('[ir-alert]', e))
+      }
+    }
   }
 
   return NextResponse.json({ ok: true })

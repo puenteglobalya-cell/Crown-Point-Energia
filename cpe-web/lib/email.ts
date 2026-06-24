@@ -125,6 +125,116 @@ export async function enviarConfirmacionContacto({
   }).catch(() => {/* non-blocking */})
 }
 
+// ---------------------------------------------------------------------------
+// IR Alert emails — sent to ir_alert_recipients (internal/professional list)
+// ---------------------------------------------------------------------------
+
+export interface IrRecipient { nombre: string; email: string }
+
+export async function enviarNotificacionIR({
+  titulo,
+  tipo,
+  descripcion,
+  url,
+  recipients,
+}: {
+  titulo: string
+  tipo: string           // e.g. "Estado Financiero", "Hecho Relevante", "Comunicado"
+  descripcion: string
+  url: string            // public URL where the document lives
+  recipients: IrRecipient[]
+}) {
+  if (!resend || recipients.length === 0) return { sent: 0, skipped: true }
+
+  const html = emailShell(`Nueva publicación: ${tipo}`, `
+    <p style="margin:0 0 6px;font-size:15px;color:#1a1c2e;font-weight:600">${titulo}</p>
+    <p style="margin:0 0 24px;font-size:14px;color:#5a5d78;line-height:1.6">${descripcion}</p>
+    <a href="${url}"
+       style="display:inline-block;background:#1F2566;color:#fff;text-decoration:none;
+              padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600">
+      Ver documento →
+    </a>
+    <p style="margin:28px 0 0;font-size:12px;color:#8e91b0">
+      Recibís esta notificación porque estás en la lista de alertas IR de Crown Point Energía.
+    </p>`)
+
+  const results = await Promise.allSettled(
+    recipients.map(r =>
+      resend!.emails.send({
+        from:    FROM,
+        to:      r.email,
+        subject: `[CPE IR] ${titulo}`,
+        html,
+      })
+    )
+  )
+  const sent = results.filter(r => r.status === 'fulfilled').length
+  return { sent, total: recipients.length }
+}
+
+export async function enviarAlertaFilingDeadline({
+  quarter,
+  closeDate,
+  deadline,
+  daysElapsed,
+  adminEmails,
+}: {
+  quarter: string      // e.g. "Q1 2026"
+  closeDate: string    // e.g. "31 de marzo de 2026"
+  deadline: string     // e.g. "19 de junio de 2026"
+  daysElapsed: number
+  adminEmails: string[]
+}) {
+  if (!resend || adminEmails.length === 0) return { sent: 0, skipped: true }
+
+  const daysLeft  = 80 - daysElapsed
+  const isOverdue = daysLeft <= 0
+
+  const urgency = daysLeft <= 0
+    ? '🔴 VENCIDO'
+    : daysLeft <= 5
+    ? '🔴 Urgente'
+    : daysLeft <= 15
+    ? '🟡 Prioridad alta'
+    : '🔵 Recordatorio'
+
+  const html = emailShell(`${urgency} — Filing ${quarter}`, `
+    <p style="margin:0 0 16px;font-size:15px;color:#1a1c2e;font-weight:600">
+      ${isOverdue ? `El plazo para publicar los estados del ${quarter} ya venció.` : `Faltan ${daysLeft} días para publicar los estados del ${quarter}.`}
+    </p>
+    <table style="border-collapse:collapse;width:100%;margin:0 0 24px;font-size:13px">
+      <tr><td style="padding:8px 12px;background:#f4f6fb;border-radius:6px 6px 0 0;color:#5a5d78">Trimestre</td>
+          <td style="padding:8px 12px;background:#f4f6fb;border-radius:6px 6px 0 0;font-weight:600;color:#1a1c2e">${quarter}</td></tr>
+      <tr><td style="padding:8px 12px;color:#5a5d78">Fecha de cierre</td>
+          <td style="padding:8px 12px;font-weight:600;color:#1a1c2e">${closeDate}</td></tr>
+      <tr><td style="padding:8px 12px;background:#f4f6fb;color:#5a5d78">Vencimiento (día 80)</td>
+          <td style="padding:8px 12px;background:#f4f6fb;font-weight:600;color:${isOverdue ? '#c0392b' : '#1a1c2e'}">${deadline}</td></tr>
+      <tr><td style="padding:8px 12px;color:#5a5d78">Días transcurridos</td>
+          <td style="padding:8px 12px;font-weight:600;color:${isOverdue ? '#c0392b' : '#1a1c2e'}">${daysElapsed} / 80</td></tr>
+    </table>
+    <a href="${BASE_URL}/admin/documentos"
+       style="display:inline-block;background:#1F2566;color:#fff;text-decoration:none;
+              padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600">
+      Ir a Documentos →
+    </a>
+    <p style="margin:28px 0 0;font-size:12px;color:#8e91b0">
+      Esta alerta es automática del sistema CPE. Se envía los días 60, 70 y 80 post-cierre de cada trimestre.
+    </p>`)
+
+  const results = await Promise.allSettled(
+    adminEmails.map(to =>
+      resend!.emails.send({
+        from:    FROM,
+        to,
+        subject: `${urgency} — Publicación estados ${quarter} · Día ${daysElapsed}/80`,
+        html,
+      })
+    )
+  )
+  const sent = results.filter(r => r.status === 'fulfilled').length
+  return { sent, total: adminEmails.length }
+}
+
 export async function enviarConfirmacionPostulacion({
   nombre,
   email,

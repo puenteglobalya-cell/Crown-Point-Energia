@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/cleanup-logs",
       "schedule": "0 2 1 * *"
+    },
+    {
+      "path": "/api/cron/filing-reminder",
+      "schedule": "0 9 * * *"
     }
   ],
   "functions": {
