@@ -42,7 +42,15 @@ const NAV = [
   },
   { key: 'comercial', href: '/comercial', es: 'Comercial', en: 'Commercial', menu: null },
   { key: 'contacto', href: '/contacto', es: 'Contacto', en: 'Contact', menu: null },
-  { key: 'portal', href: '/portal', es: 'Acceso', en: 'Login', menu: null, cta: true },
+  {
+    key: 'portal', href: '/portal', es: 'Acceso', en: 'Access', cta: true,
+    menu: [
+      { href: '/portal',    es: 'Intranet',              en: 'Intranet' },
+      { href: '/portal',    es: 'Personal',               en: 'Personnel' },
+      { href: '/comercial', es: 'Portal de proveedores',  en: 'Supplier portal' },
+      { href: '/biblioteca',es: 'VDR',                    en: 'VDR' },
+    ]
+  },
 ]
 
 type Props = {
@@ -152,7 +160,34 @@ export default function Header({ fields, show, lang }: Props) {
                 className={`nav-item${it.menu ? ' has-menu' : ''}${it.key === activeKey ? ' active' : ''}`}
                 tabIndex={0}
               >
-                {it.menu ? (
+                {it.menu && (it as { cta?: boolean }).cta ? (
+                  <>
+                    <span style={{
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      fontSize: 13, fontWeight: 600,
+                      color: 'var(--accent-deep)',
+                      padding: '6px 14px', border: '1.5px solid currentColor',
+                      borderRadius: 'var(--r-pill)', marginLeft: 4, cursor: 'pointer',
+                    }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                        <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                      <span className="lang-es">{it.es}</span>
+                      <span className="lang-en">{it.en}</span>
+                    </span>
+                    <div className="nav-submenu">
+                      {it.menu.map((m) => (
+                        'href' in m && m.href ? (
+                          <Link key={`${m.href}-${m.es}`} href={m.href}>
+                            <span className="lang-es">{m.es}</span>
+                            <span className="lang-en">{m.en}</span>
+                          </Link>
+                        ) : null
+                      ))}
+                    </div>
+                  </>
+                ) : it.menu ? (
                   <>
                     <span>
                       <span className="lang-es">{it.es}</span>
