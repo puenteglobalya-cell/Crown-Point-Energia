@@ -1,7 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+const PAGE_SIZE = 12
 
 type Comunicado = {
   id: string
@@ -52,6 +54,9 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
   const [cat, setCat] = useState('all')
   const [search, setSearch] = useState('')
   const [subscribed, setSubscribed] = useState(false)
+  const [showCount, setShowCount] = useState(PAGE_SIZE)
+
+  useEffect(() => { setShowCount(PAGE_SIZE) }, [cat, search])
 
   const filtered = initialData.filter(r => {
     const matchCat = cat === 'all' || r.tipo === cat
@@ -60,7 +65,8 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
     return matchCat && matchSearch
   })
 
-  const years = [...new Set(filtered.map(r => getYear(r.fecha)))].sort((a, b) => b - a)
+  const paged = filtered.slice(0, showCount)
+  const years = [...new Set(paged.map(r => getYear(r.fecha)))].sort((a, b) => b - a)
 
   return (
     <section className="section">
@@ -154,7 +160,7 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
                 <span className="lang-en">No results for that search.</span>
               </p>
             ) : years.map(year => {
-              const items = filtered.filter(r => getYear(r.fecha) === year)
+              const items = paged.filter(r => getYear(r.fecha) === year)
               return (
                 <div key={year}>
                   <div className="year-divider">
@@ -212,6 +218,24 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
                 </div>
               )
             })}
+
+            {/* Load more */}
+            {filtered.length > showCount && (
+              <div style={{ textAlign: 'center', padding: 'var(--s-8) 0' }}>
+                <button
+                  className="btn btn-secondary"
+                  style={{ padding: '12px 32px', fontSize: 14 }}
+                  onClick={() => setShowCount(c => c + PAGE_SIZE)}
+                >
+                  <span className="lang-es">Ver {Math.min(PAGE_SIZE, filtered.length - showCount)} más</span>
+                  <span className="lang-en">Show {Math.min(PAGE_SIZE, filtered.length - showCount)} more</span>
+                </button>
+                <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 8 }}>
+                  <span className="lang-es">{showCount} de {filtered.length} comunicados</span>
+                  <span className="lang-en">{showCount} of {filtered.length} releases</span>
+                </p>
+              </div>
+            )}
 
             {/* Email subscription */}
             <div className="press-subscribe">

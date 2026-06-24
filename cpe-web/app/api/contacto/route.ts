@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isSameOrigin } from '@/lib/csrf'
 import { checkRateLimit } from '@/lib/ratelimit'
+import { enviarConfirmacionContacto } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,6 +42,8 @@ export async function POST(req: NextRequest) {
     if (error) {
       return NextResponse.json({ error: 'Error al guardar' }, { status: 500 })
     }
+
+    enviarConfirmacionContacto({ nombre: nombre.trim(), email: emailVal, asunto: (tipo ?? '').trim() || undefined })
 
     return NextResponse.json({ ok: true })
   } catch {

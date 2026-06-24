@@ -4,6 +4,7 @@ import { requireHrUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { dbError } from '@/lib/api-error'
+import { enviarConfirmacionPostulacion } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,6 +99,8 @@ export async function POST(req: NextRequest) {
     if (insertErr) {
       return NextResponse.json({ error: 'Error al guardar la postulación' }, { status: 500 })
     }
+
+    enviarConfirmacionPostulacion({ nombre, email, area })
 
     return NextResponse.json({ ok: true })
   } catch {
