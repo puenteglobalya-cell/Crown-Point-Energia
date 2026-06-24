@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { getCurrentUserAndRole, canUpload } from '@/lib/roles'
 import PortalNav from '@/components/PortalNav'
 import PwaInstallBanner from '@/components/PwaInstallBanner'
@@ -12,6 +13,10 @@ export default async function PortalLayout({ children }: { children: React.React
     redirect('/portal/login')
   }
 
+  const cookieStore = cookies()
+  const themeCookie = cookieStore.get('cpe_theme')?.value
+  const theme = (themeCookie === 'dark' || themeCookie === 'light') ? themeCookie : 'light'
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <PortalNav
@@ -21,6 +26,7 @@ export default async function PortalLayout({ children }: { children: React.React
         canViewReports={permissions.has('view_reports')}
         canViewDashboard={permissions.has('view_dashboard')}
         canViewComercial={permissions.has('view_comercial')}
+        theme={theme}
       />
       <main className="portal-main">
         {children}
