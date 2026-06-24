@@ -22,6 +22,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: 'Publicaciones',
     items: [
       { href: '/admin/reportes', label: 'Reportes' },
+      { href: '/admin/kpi', label: 'KPIs Excel' },
       { href: '/admin/comunicados', label: 'Comunicados' },
       { href: '/admin/push', label: 'Push' },
     ],
