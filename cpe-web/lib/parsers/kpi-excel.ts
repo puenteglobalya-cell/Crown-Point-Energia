@@ -12,6 +12,13 @@ export interface KpiExtracted {
   netbackPrevUSD: number
   opexPerBoe: number       // production + processing + transportation per BOE ($)
   opexPerBoePrev: number
+  // Balance sheet
+  netDebtUSD: number       // total loans + notes payable − cash
+  loansUSD: number
+  notesPayableUSD: number
+  cashUSD: number
+  // Income statement
+  ebitdaUSD: number        // operating income + D&A for the period
   // CMS field payloads ready to upsert
   fields: Record<string, string>    // value_es
   fieldsEn: Record<string, string>  // value_en
@@ -125,6 +132,47 @@ export async function parseKpiExcel(buffer: Buffer | ArrayBuffer): Promise<KpiEx
   const productionBoed     = num(grid[prodRow >= 0 ? prodRow : 68]?.[2])
   const productionPrevBoed = num(grid[prodRow >= 0 ? prodRow : 68]?.[3])
 
+  // --- Balance sheet: net debt ---
+  // BS sheet: Loans (current r33) + Non-current loans (r42) + Notes payable current (r34)
+  // + Notes payable non-current (r44) − Cash (r14). Col F = index 5 (1-based col 6).
+  const ws_bs = wb.getWorksheet('BS')
+  let loansUSD = 0
+  let notesPayableUSD = 0
+  let cashUSD = 0
+  if (ws_bs) {
+    const bs = worksheetToGrid(ws_bs)
+    // Row indices (0-based): cash=13, loans=32, noteCurrent=33, loansNonCurr=41, noteNonCurr=43
+    // Use findRowByLabel on col 0 (A) for robustness
+    const cashRow   = findRowByLabel(bs, 0, 'cash and cash equivalents')
+    const loanCRow  = findRowByLabel(bs, 0, 'loans')                    // first hit = current loans
+    const noteCRow  = findRowByLabel(bs, 0, 'current portion of notes')
+    const loanNRow  = findRowByLabel(bs, 0, 'non-current loans')
+    const noteNRow  = findRowByLabel(bs, 0, 'notes payable')            // second hit = non-current
+    cashUSD         = num(bs[cashRow   >= 0 ? cashRow   : 13]?.[5])
+    const loanC     = num(bs[loanCRow  >= 0 ? loanCRow  : 32]?.[5])
+    const noteC     = num(bs[noteCRow  >= 0 ? noteCRow  : 33]?.[5])
+    const loanN     = num(bs[loanNRow  >= 0 ? loanNRow  : 41]?.[5])
+    const noteN     = num(bs[noteNRow  >= 0 ? noteNRow  : 43]?.[5])
+    loansUSD        = loanC + loanN
+    notesPayableUSD = noteC + noteN
+  }
+  const netDebtUSD = loansUSD + notesPayableUSD - cashUSD
+
+  // --- Income statement: EBITDA = operating income + D&A ---
+  // FS Stmt Loss sheet: operating income r29 c4, D&A r20 c4 (depl)+r21 c4 (lease depl)
+  const ws_is = wb.getWorksheet('FS Stmt Loss')
+  let ebitdaUSD = 0
+  if (ws_is) {
+    const is = worksheetToGrid(ws_is)
+    const opIncRow = findRowByLabel(is, 0, 'results from operating activities')
+    const deplRow  = findRowByLabel(is, 0, 'depl & depn')
+    const leaseDeplRow = findRowByLabel(is, 0, 'lease depletion')
+    const opInc  = num(is[opIncRow    >= 0 ? opIncRow    : 27]?.[3])
+    const depl   = num(is[deplRow     >= 0 ? deplRow     : 18]?.[3])
+    const lDepl  = num(is[leaseDeplRow >= 0 ? leaseDeplRow : 19]?.[3])
+    ebitdaUSD = opInc + depl + lDepl
+  }
+
   // --- Opex per BOE (row 142 = index 141): production+processing + transportation ---
   // Col C = current quarter, col D = prior-year quarter (per BOE, positive values)
   const opexRow = findRowByLabel(grid, 1, 'operating costs per boe')
@@ -182,6 +230,11 @@ export async function parseKpiExcel(buffer: Buffer | ArrayBuffer): Promise<KpiEx
     netbackPrevUSD,
     opexPerBoe,
     opexPerBoePrev,
+    netDebtUSD,
+    loansUSD,
+    notesPayableUSD,
+    cashUSD,
+    ebitdaUSD,
     fields,
     fieldsEn,
   }
