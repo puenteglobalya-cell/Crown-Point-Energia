@@ -139,6 +139,10 @@ export default function Footer() {
               <span className="lang-es">Privacidad y cookies</span>
               <span className="lang-en">Privacy &amp; Cookies</span>
             </Link>
+            <Link href="/legal/avisos" style={{ opacity: 0.7 }}>
+              <span className="lang-es">Avisos legales</span>
+              <span className="lang-en">Advisories</span>
+            </Link>
             <Link href="/legal/terminos#accesibilidad" style={{ opacity: 0.7 }}>
               <span className="lang-es">Accesibilidad</span>
               <span className="lang-en">Accessibility</span>
