@@ -209,6 +209,9 @@ export async function parseKpiExcel(buffer: Buffer | ArrayBuffer): Promise<KpiEx
     'inv.thesis.2.val':         opexPerBoe > 0 ? opexPerBoe.toFixed(1) : '',
     'inv.thesis.2.unit':        '$/boe',
     'inv.thesis.2.meta':        `${period} · opex total`,
+    'inv.thesis.3.val':         ebitdaUSD > 0 ? (netDebtUSD / (ebitdaUSD * 4)).toFixed(1) + 'x' : '',
+    'inv.thesis.3.unit':        'Net debt / EBITDA',
+    'inv.thesis.3.meta':        `${period} · anualizado`,
   }
 
   const fieldsEn: Record<string, string> = {
@@ -216,6 +219,7 @@ export async function parseKpiExcel(buffer: Buffer | ArrayBuffer): Promise<KpiEx
     'ops.kpi.production.meta':  metaEn,
     'inv.thesis.1.meta':        `${period} · net`,
     'inv.thesis.2.meta':        `${period} · total opex`,
+    'inv.thesis.3.meta':        `${period} · annualized`,
   }
 
   return {

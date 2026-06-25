@@ -155,5 +155,16 @@ export async function GET(req: NextRequest) {
     results.ice_brent = `error: ${(e as Error).message}`
   }
 
-  return NextResponse.json({ ok: true, date: new Date().toISOString().slice(0, 10), results })
+  const date = new Date().toISOString().slice(0, 10)
+  const hasErrors = Object.values(results).some(v => v.startsWith('error'))
+
+  void db.from('activity_log').insert({
+    user_id:       null,
+    user_email:    'cron/macro',
+    action:        hasErrors ? 'cron_macro_error' : 'cron_macro_ok',
+    resource_type: 'macro',
+    metadata:      { results, date },
+  })
+
+  return NextResponse.json({ ok: true, date, results })
 }
