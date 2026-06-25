@@ -18,20 +18,32 @@ export async function GET() {
     return NextResponse.json({ error: authError.message }, { status: 500 })
   }
 
-  // Get all role rows
-  const { data: roleRows } = await db.from('user_roles').select('user_id, role, activo')
-  const roleMap = new Map((roleRows ?? []).map(r => [r.user_id, r]))
+  // Get all role rows + profiles in parallel
+  const [{ data: roleRows }, { data: profileRows }] = await Promise.all([
+    db.from('user_roles').select('user_id, role, activo'),
+    db.from('user_profiles').select('user_id, dni, nombre, apellido, ubicacion, sector, telefono, notas'),
+  ])
+  const roleMap    = new Map((roleRows    ?? []).map(r => [r.user_id, r]))
+  const profileMap = new Map((profileRows ?? []).map(p => [p.user_id, p]))
 
   const result = users.map(u => {
     const roleRow = roleMap.get(u.id)
+    const profile = profileMap.get(u.id)
     const isAdminEmailFlag = isAdminEmail(u.email)
     return {
-      id: u.id,
-      email: u.email ?? '',
-      role: isAdminEmailFlag ? 'admin' : (roleRow?.role ?? null),
-      activo: isAdminEmailFlag ? true : (roleRow?.activo ?? null),
-      created_at: u.created_at,
+      id:              u.id,
+      email:           u.email ?? '',
+      role:            isAdminEmailFlag ? 'admin' : (roleRow?.role ?? null),
+      activo:          isAdminEmailFlag ? true    : (roleRow?.activo ?? null),
+      created_at:      u.created_at,
       last_sign_in_at: u.last_sign_in_at ?? null,
+      dni:             profile?.dni       ?? '',
+      nombre:          profile?.nombre    ?? '',
+      apellido:        profile?.apellido  ?? '',
+      ubicacion:       profile?.ubicacion ?? '',
+      sector:          profile?.sector    ?? '',
+      telefono:        profile?.telefono  ?? '',
+      notas:           profile?.notas     ?? '',
     }
   })
 
