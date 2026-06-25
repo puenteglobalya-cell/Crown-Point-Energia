@@ -23,6 +23,9 @@ function fmtDate(d: Date) {
 
 // GET /api/cron/filing-reminder — run daily at 9 AM
 export async function GET(req: NextRequest) {
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Misconfigured' }, { status: 500 })
+  }
   if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

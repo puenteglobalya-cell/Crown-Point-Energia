@@ -129,7 +129,7 @@ export default function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <span>© {new Date().getFullYear()} Crown Point Energy Inc.&nbsp;·&nbsp;TSXV: CWV</span>
+          <span suppressHydrationWarning>© {new Date().getFullYear()} Crown Point Energy Inc.&nbsp;·&nbsp;TSXV: CWV</span>
           <span style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <Link href="/legal/terminos" style={{ opacity: 0.7 }}>
               <span className="lang-es">Términos y condiciones</span>

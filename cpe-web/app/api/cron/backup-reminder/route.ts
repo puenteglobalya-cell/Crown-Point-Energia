@@ -9,6 +9,9 @@ const ADMINS  = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim(
 const SITE    = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://crown-point-energia.vercel.app'
 
 export async function GET(req: NextRequest) {
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Misconfigured' }, { status: 500 })
+  }
   if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

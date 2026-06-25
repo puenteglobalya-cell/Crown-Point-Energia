@@ -122,6 +122,9 @@ async function upsertMacro(
 
 // GET /api/cron/macro — runs weekdays at 21:00 UTC (after NYMEX + ICE close)
 export async function GET(req: NextRequest) {
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Misconfigured' }, { status: 500 })
+  }
   if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

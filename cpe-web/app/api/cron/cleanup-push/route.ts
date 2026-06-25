@@ -21,6 +21,9 @@ function ensureVapid() {
 }
 
 export async function GET(req: Request) {
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Misconfigured' }, { status: 500 })
+  }
   // Vercel Cron passes Authorization: Bearer <CRON_SECRET>
   const auth = req.headers instanceof Headers
     ? req.headers.get('authorization')

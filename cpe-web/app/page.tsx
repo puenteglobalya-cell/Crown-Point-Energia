@@ -104,7 +104,7 @@ export default async function HomePage() {
           <div className="hero-media">
             {heroVideo ? (
               <video
-                autoPlay muted loop playsInline
+                autoPlay muted loop playsInline preload="none"
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
               >
                 <source src={heroVideo} type="video/mp4" />
