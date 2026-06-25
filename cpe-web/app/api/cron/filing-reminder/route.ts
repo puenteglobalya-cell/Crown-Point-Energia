@@ -73,5 +73,14 @@ export async function GET(req: NextRequest) {
     alerts.push(`${quarter}: alerta día ${daysElapsed} enviada`)
   }
 
+  const sb2 = createSupabaseServerClient()
+  void sb2.from('activity_log').insert({
+    user_id:       null,
+    user_email:    'cron/filing-reminder',
+    action:        alerts.some(a => a.includes('enviada')) ? 'cron_filing_alerta' : 'cron_filing_ok',
+    resource_type: 'reporte',
+    metadata:      { alerts, today: today.toISOString().slice(0, 10) },
+  })
+
   return NextResponse.json({ ok: true, today: today.toISOString().slice(0, 10), alerts })
 }

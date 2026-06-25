@@ -23,6 +23,7 @@ const SECTIONS: { key: string; label: string; types: string[] }[] = [
   { key: 'postulacion',label: 'Postulaciones',types: ['postulacion'] },
   { key: 'posicion',   label: 'Búsquedas',    types: ['posicion'] },
   { key: 'user',       label: 'Usuarios',     types: ['user'] },
+  { key: 'macro',      label: 'Crons',        types: ['macro'] },
 ]
 
 const ACTION_LABELS: Record<string, string> = {
@@ -43,6 +44,10 @@ const ACTION_LABELS: Record<string, string> = {
   update_user:           'Actualizó usuario',
   delete_user:           'Eliminó usuario',
   reset_password:        'Reseteo contraseña',
+  cron_macro_ok:         'Cron macro — OK',
+  cron_macro_error:      'Cron macro — error',
+  cron_filing_ok:        'Cron filing — sin alertas',
+  cron_filing_alerta:    'Cron filing — alerta enviada',
 }
 
 function fmtDate(iso: string) {
