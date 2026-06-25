@@ -43,6 +43,16 @@ const LOCATIONS = [
     zoom: 13,
     mapsQuery: 'Ruta+26+km+11+desvio+El+Tordillo+Comodoro+Rivadavia+Chubut+Argentina',
   },
+  {
+    id: 'calgary',
+    badge: 'Canadá',
+    name: 'Crown Point Energy Inc.',
+    address: '4000, 520 – 3rd Avenue SW\nCalgary, Alberta T2P 0R3, CA',
+    lat: 51.0459,
+    lon: -114.0676,
+    zoom: 15,
+    mapsQuery: '520+3rd+Avenue+SW+Calgary+Alberta+Canada',
+  },
 ] as const
 
 function osmEmbedUrl(lat: number, lon: number, zoom: number) {
