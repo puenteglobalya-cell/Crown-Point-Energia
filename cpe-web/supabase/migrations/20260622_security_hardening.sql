@@ -8,7 +8,6 @@
 -- QUERY 1 — Paste and run this block first
 -- ══════════════════════════════════════════════════════════════
 
--- Indexes on user_roles (queried on every authenticated request)
 CREATE INDEX IF NOT EXISTS idx_user_roles_user_id
   ON public.user_roles (user_id);
 
@@ -16,11 +15,9 @@ CREATE INDEX IF NOT EXISTS idx_user_roles_user_id_activo
   ON public.user_roles (user_id)
   WHERE activo = true;
 
--- push_subscriptions fast endpoint lookup
 CREATE INDEX IF NOT EXISTS idx_push_subs_endpoint
   ON public.push_subscriptions (endpoint);
 
--- activity_logs table (if not yet created)
 CREATE TABLE IF NOT EXISTS public.activity_logs (
   id            BIGSERIAL PRIMARY KEY,
   user_id       UUID,
@@ -34,7 +31,6 @@ CREATE TABLE IF NOT EXISTS public.activity_logs (
 
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 
--- CREATE POLICY IF NOT EXISTS is not available in PG15 — use DROP + CREATE
 DROP POLICY IF EXISTS "admins_read_logs" ON public.activity_logs;
 CREATE POLICY "admins_read_logs" ON public.activity_logs
   FOR SELECT
@@ -50,8 +46,8 @@ CREATE INDEX IF NOT EXISTS idx_activity_logs_resource
 
 -- ══════════════════════════════════════════════════════════════
 -- QUERY 2 — Open a NEW query tab, paste and run this block
--- (dollar-quoted functions must be run in isolation in the
---  Supabase SQL Editor to avoid the metadata-comment bug)
+-- (uses single-quoted function body and plain UPDATE for
+--  backfill — avoids the Supabase editor dollar-quote bug)
 -- ══════════════════════════════════════════════════════════════
 
 CREATE OR REPLACE FUNCTION public.sync_role_to_jwt()
@@ -59,18 +55,15 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $sync_role$
+AS '
 BEGIN
   UPDATE auth.users
-  SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) ||
-    jsonb_build_object(
-      'role',   NEW.role,
-      'activo', NEW.activo
-    )
+  SET raw_app_meta_data = COALESCE(raw_app_meta_data, ''{}''::jsonb) ||
+    jsonb_build_object(''role'', NEW.role, ''activo'', NEW.activo)
   WHERE id = NEW.user_id;
   RETURN NEW;
 END;
-$sync_role$;
+';
 
 DROP TRIGGER IF EXISTS on_user_role_change ON public.user_roles;
 CREATE TRIGGER on_user_role_change
@@ -78,15 +71,8 @@ CREATE TRIGGER on_user_role_change
   FOR EACH ROW
   EXECUTE FUNCTION public.sync_role_to_jwt();
 
-DO $backfill$
-DECLARE
-  r RECORD;
-BEGIN
-  FOR r IN SELECT user_id, role, activo FROM public.user_roles LOOP
-    UPDATE auth.users
-    SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) ||
-      jsonb_build_object('role', r.role, 'activo', r.activo)
-    WHERE id = r.user_id;
-  END LOOP;
-END;
-$backfill$;
+UPDATE auth.users AS u
+SET raw_app_meta_data = COALESCE(u.raw_app_meta_data, '{}'::jsonb) ||
+  jsonb_build_object('role', r.role, 'activo', r.activo)
+FROM public.user_roles AS r
+WHERE u.id = r.user_id;
