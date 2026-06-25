@@ -13,7 +13,7 @@ VALUES
   ('inv.thesis.1.meta', '86% petróleo · 14% gas · 1Q 2026',  '86% oil · 14% gas · 1Q 2026',  now()),
 
   -- ── 02 · Costos ──────────────────────────────────────────────────────────
-  ('inv.thesis.2.val',  'US$14.2',                            'US$14.2',                      now()),
+  ('inv.thesis.2.val',  'US$38',                              'US$38',                        now()),
   ('inv.thesis.2.unit', '/boe',                               '/boe',                         now()),
   ('inv.thesis.2.meta', 'Opex total LTM',                     'Total opex LTM',               now()),
 
