@@ -3,15 +3,13 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 type CookieEntry = { name: string; value: string; options?: CookieOptions }
+type RoleRow = { role: string; activo: boolean }
 
 const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
 
 function buildCsp(nonce: string): string {
   return [
     "default-src 'self'",
-    // nonce covers inline scripts; strict-dynamic allows scripts loaded by trusted scripts.
-    // unsafe-inline is ignored by nonce-aware browsers but kept as fallback for older ones.
-    // CDN hosts are kept as fallback too; strict-dynamic would drop them in modern browsers.
     `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
@@ -27,8 +25,19 @@ function buildCsp(nonce: string): string {
   ].join('; ')
 }
 
-// Use service role to bypass RLS when checking user_roles in middleware
-async function getRoleRow(userId: string) {
+// Fast path: read role from JWT app_metadata (set by sync_role_to_jwt trigger).
+// Returns null if the user's token predates the trigger — fallback to DB.
+function roleFromJwt(user: { app_metadata?: Record<string, unknown> } | null): RoleRow | null {
+  const m = user?.app_metadata
+  if (m && typeof m.role === 'string' && typeof m.activo === 'boolean') {
+    return { role: m.role, activo: m.activo }
+  }
+  return null
+}
+
+// Slow path: DB query (used only when JWT lacks role claims — i.e. tokens issued
+// before the sync trigger was installed, or first login before role is assigned).
+async function getRoleRow(userId: string): Promise<RoleRow | null> {
   try {
     const db = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,7 +48,7 @@ async function getRoleRow(userId: string) {
       new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
     ])
     if (error) return null
-    return data as { role: string; activo: boolean } | null
+    return data as RoleRow
   } catch {
     return null
   }
@@ -48,10 +57,8 @@ async function getRoleRow(userId: string) {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Per-request nonce for Content-Security-Policy
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
 
-  // Propagate pathname + nonce so layout.tsx can use them
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-pathname', pathname)
   requestHeaders.set('x-nonce', nonce)
@@ -77,15 +84,23 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Resolve role once per request — JWT fast path, DB fallback.
+  // Memoized so multiple checks in the same request only query DB once.
+  let _roleRow: RoleRow | null | undefined = undefined
+  async function getRole(): Promise<RoleRow | null> {
+    if (_roleRow !== undefined) return _roleRow
+    _roleRow = roleFromJwt(user) ?? (user ? await getRoleRow(user.id) : null)
+    return _roleRow
+  }
+
   // ── Portal auth ──────────────────────────────────────────────────────────
   if (pathname.startsWith('/portal') && !pathname.startsWith('/portal/login')) {
     if (!user) {
       return NextResponse.redirect(new URL('/portal/login', request.url))
     }
-    // Check role: CMS_ADMIN_EMAILS are always allowed; others need an active role row
     const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
     if (!isAdminEmail) {
-      const roleRow = await getRoleRow(user.id)
+      const roleRow = await getRole()
       if (!roleRow?.activo) {
         return NextResponse.redirect(new URL('/portal/login', request.url))
       }
@@ -93,9 +108,6 @@ export async function middleware(request: NextRequest) {
   }
 
   // Logged-in admin on /portal/login → redirect to /portal
-  // NOTE: Only redirect CMS admin emails here to avoid redirect loops.
-  // Regular portal users are redirected by the login form itself (window.location.href).
-  // Calling getRoleRow() here + at /portal can cause race-condition redirect loops.
   if (pathname === '/portal/login' && user) {
     const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
     if (isAdminEmail) return NextResponse.redirect(new URL('/portal', request.url))
@@ -107,11 +119,10 @@ export async function middleware(request: NextRequest) {
     if (!isAdminEmailFlag) {
       let userRole: string | null = null
       if (user) {
-        const roleRow = await getRoleRow(user.id)
+        const roleRow = await getRole()
         if (roleRow?.activo) userRole = roleRow.role
       }
 
-      // /admin/rrhh/* is accessible to 'rrhh' and 'admin' roles
       if (pathname.startsWith('/admin/rrhh')) {
         if (userRole !== 'rrhh' && userRole !== 'admin') {
           return NextResponse.redirect(new URL('/admin/login', request.url))
@@ -130,14 +141,13 @@ export async function middleware(request: NextRequest) {
     if (isAdminEmail) {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
-    // Also check user_roles
-    const roleRow = await getRoleRow(user.id)
+    const roleRow = await getRole()
     if (roleRow?.role === 'admin' && roleRow?.activo) {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
   }
 
-  // ── Biblioteca auth (any authenticated user) ─────────────────────────────
+  // ── Biblioteca auth ──────────────────────────────────────────────────────
   if (pathname.startsWith('/biblioteca')) {
     if (!user) return NextResponse.redirect(new URL('/portal/login', request.url))
   }
@@ -147,15 +157,15 @@ export async function middleware(request: NextRequest) {
     if (!user) return NextResponse.redirect(new URL('/portal/login', request.url))
     const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
     if (!isAdminEmail) {
-      const roleRow = await getRoleRow(user.id)
+      const roleRow = await getRole()
       if (!roleRow?.activo) return NextResponse.redirect(new URL('/portal/login', request.url))
     }
   }
 
   // ── Maintenance mode ─────────────────────────────────────────────────────
-  const isAdminRoute = pathname.startsWith('/admin')
-  const isPortalRoute = pathname.startsWith('/portal')
-  const isApiRoute = pathname.startsWith('/api')
+  const isAdminRoute    = pathname.startsWith('/admin')
+  const isPortalRoute   = pathname.startsWith('/portal')
+  const isApiRoute      = pathname.startsWith('/api')
   const isBibliotecaRoute = pathname.startsWith('/biblioteca')
   const isMaintenancePage = pathname === '/maintenance'
 
@@ -173,9 +183,6 @@ export async function middleware(request: NextRequest) {
     } catch {}
   }
 
-  // CSP with nonce for page routes only.
-  // API routes are excluded: /api/admin/reportes/[id] returns self-contained
-  // HTML with inline Chart.js scripts that don't carry a nonce.
   if (!isApiRoute) {
     supabaseResponse.headers.set('Content-Security-Policy', buildCsp(nonce))
   }

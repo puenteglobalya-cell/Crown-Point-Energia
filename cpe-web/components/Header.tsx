@@ -83,6 +83,7 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
   }
 
   useEffect(() => {
+    if (!tickerVisible) return
     let cancelled = false
     async function fetchStock() {
       try {
@@ -102,7 +103,7 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
     fetchStock()
     const id = setInterval(fetchStock, 5 * 60_000)
     return () => { cancelled = true; clearInterval(id) }
-  }, [])
+  }, [tickerVisible])
 
   const displayPrice = live?.price ?? price
   const displayDelta = live?.delta ?? delta

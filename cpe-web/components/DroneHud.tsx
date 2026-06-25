@@ -12,11 +12,13 @@ export function DroneHud({ lang = 'es' }: Props) {
   const [ts, setTs]           = useState('')
 
   useEffect(() => {
+    if (window.matchMedia('(max-width: 640px)').matches) return
     const t = setTimeout(() => setVisible(true), 400)
     return () => clearTimeout(t)
   }, [])
 
   useEffect(() => {
+    if (window.matchMedia('(max-width: 640px)').matches) return
     function tick() {
       const d = new Date()
       setTs(`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} UTC-3`)
@@ -27,6 +29,7 @@ export function DroneHud({ lang = 'es' }: Props) {
   }, [])
 
   useEffect(() => {
+    if (window.matchMedia('(max-width: 640px)').matches) return
     const id = setInterval(() => setRecOn(v => !v), 900)
     return () => clearInterval(id)
   }, [])
