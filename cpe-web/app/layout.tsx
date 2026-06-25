@@ -121,8 +121,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       data-theme={theme}
       data-lang={lang}
       className={fontClasses}
+      suppressHydrationWarning
     >
       <head>
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="shortcut icon" href="/icon.svg" />
         <script
           type="application/ld+json"
           nonce={nonce}
