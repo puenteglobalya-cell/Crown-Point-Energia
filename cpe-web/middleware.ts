@@ -26,11 +26,12 @@ function buildCsp(nonce: string): string {
 }
 
 // Fast path: read role from JWT app_metadata (set by sync_role_to_jwt trigger).
-// Returns null if the user's token predates the trigger — fallback to DB.
+// Only trusts the JWT when activo===true — if false, we fall back to DB so that
+// a re-enabled user isn't locked out for the full JWT TTL (~1 hour).
 function roleFromJwt(user: { app_metadata?: Record<string, unknown> } | null): RoleRow | null {
   const m = user?.app_metadata
-  if (m && typeof m.role === 'string' && typeof m.activo === 'boolean') {
-    return { role: m.role, activo: m.activo }
+  if (m && typeof m.role === 'string' && m.activo === true) {
+    return { role: m.role, activo: true }
   }
   return null
 }

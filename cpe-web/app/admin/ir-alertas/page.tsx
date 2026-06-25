@@ -122,17 +122,27 @@ export default function IrAlertasPage() {
   async function toggleActive(r: Recipient) {
     const next = !r.activo
     setRecipients(prev => prev.map(x => x.id === r.id ? { ...x, activo: next } : x))
-    await fetch(`/api/admin/ir-alertas/${r.id}`, {
+    const res = await fetch(`/api/admin/ir-alertas/${r.id}`, {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ activo: next }),
     })
+    if (!res.ok) {
+      setRecipients(prev => prev.map(x => x.id === r.id ? { ...x, activo: r.activo } : x))
+      setMsg({ text: 'Error al actualizar', ok: false })
+    }
   }
 
   async function handleDelete(id: string) {
     if (!confirm('¿Eliminar este destinatario?')) return
     setRecipients(prev => prev.filter(r => r.id !== id))
-    await fetch(`/api/admin/ir-alertas/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/admin/ir-alertas/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const fresh = await fetch('/api/admin/ir-alertas')
+      const data = await fresh.json()
+      setRecipients(Array.isArray(data) ? data : [])
+      setMsg({ text: 'Error al eliminar', ok: false })
+    }
   }
 
   return (

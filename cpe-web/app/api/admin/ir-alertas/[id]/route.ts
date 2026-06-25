@@ -11,11 +11,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const user = await requireAdminUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json()
+  const raw = await req.json()
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (typeof raw.activo === 'boolean') patch.activo = raw.activo
+  if (typeof raw.nombre === 'string') patch.nombre = raw.nombre.trim()
+
   const sb = createSupabaseServerClient()
   const { data, error } = await sb
     .from('ir_alert_recipients')
-    .update({ ...body, updated_at: new Date().toISOString() })
+    .update(patch)
     .eq('id', params.id)
     .select()
     .single()

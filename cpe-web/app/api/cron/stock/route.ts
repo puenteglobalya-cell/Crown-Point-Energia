@@ -6,6 +6,9 @@ import { patchCmsState } from '@/lib/cms'
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Misconfigured' }, { status: 500 })
+  }
   const authHeader = req.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

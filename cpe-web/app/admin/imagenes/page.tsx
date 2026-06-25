@@ -131,12 +131,17 @@ export default function ImagenesPage() {
     const cmsKey = SECTIONS.find(s => s.value === sectionVal)?.cmsKey
     if (!cmsKey) return
     const url = publicUrl(img.name)
-    await fetch('/api/cms/state', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ fields: { [cmsKey]: url } }),
-    })
-    flash('Publicada en el sitio')
+    try {
+      const res = await fetch('/api/cms/state', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ fields: { [cmsKey]: url } }),
+      })
+      if (!res.ok) throw new Error('Error al publicar')
+      flash('Publicada en el sitio')
+    } catch (e) {
+      flash((e as Error).message, true)
+    }
   }
 
   function copyUrl(path: string) {
