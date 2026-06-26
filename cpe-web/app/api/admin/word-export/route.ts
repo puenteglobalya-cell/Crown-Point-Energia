@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { getCmsState } from '@/lib/cms'
+import { fetchOperationsBlocks } from '@/lib/content-fetch'
+import type { OperationsBlock } from '@/lib/content-fetch'
 import {
   Document, Packer, Paragraph, Table, TableRow, TableCell,
   TextRun, HeadingLevel, AlignmentType, WidthType, BorderStyle,
@@ -125,11 +127,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const s = await getCmsState()
+  const [s, opsBlocks] = await Promise.all([getCmsState(), fetchOperationsBlocks()])
   const f  = s.fields
   const fe = s.fieldsEn ?? {}
 
-  const sections = buildSections(f, fe)
+  const sections = buildSections(f, fe, opsBlocks)
 
   const doc = new Document({
     creator: 'Crown Point Energy — Admin',
@@ -187,6 +189,7 @@ export async function POST(req: NextRequest) {
 function buildSections(
   f: Record<string, string>,
   fe: Record<string, string>,
+  opsBlocks: OperationsBlock[],
 ) {
   const elems: (Paragraph | Table)[] = []
 
@@ -255,17 +258,76 @@ function buildSections(
   elems.push(heading1('3. Operaciones'))
 
   section('Hero', 'Operaciones · Hero', [
-    { label: 'Eyebrow', es: 'Upstream · Argentina', en: 'Upstream · Argentina' },
-    { label: 'Título',  es: f['page.ops.h1'] || 'Seis bloques.\nCuatro cuencas.\nUn solo país.',   en: fe['page.ops.h1'] || 'Six blocks.\nFour basins.\nOne country.' },
-    { label: 'Bajada',  es: f['page.ops.lede'] || 'Nuestra cartera combina producción convencional madura con oportunidades de exploración en cuatro cuencas sedimentarias de Argentina.', en: fe['page.ops.lede'] || 'Our portfolio combines mature conventional production with exploration opportunities across four sedimentary basins in Argentina.' },
+    { label: 'Eyebrow', es: 'Upstream · Argentina',                        en: 'Upstream · Argentina' },
+    { label: 'Título',  es: f['page.operaciones.h1'] || 'Seis bloques.\nCuatro cuencas.\nUn país.',    en: fe['page.operaciones.h1'] || 'Six blocks.\nFour basins.\nOne country.' },
+    { label: 'Bajada',  es: f['page.operaciones.lede'] || 'Una cartera diversificada de áreas productivas y exploratorias, distribuidas estratégicamente entre el norte y el sur de Argentina.', en: fe['page.operaciones.lede'] || 'A diversified portfolio of producing and exploration areas, strategically distributed across northern and southern Argentina.' },
   ])
 
-  section('Cuencas productoras', 'Operaciones · Cuencas', [
-    { label: 'Austral',    es: 'Gas natural · Tierra del Fuego',          en: 'Natural gas · Tierra del Fuego' },
-    { label: 'Golfo SJ',  es: 'Petróleo liviano · Chubut / Santa Cruz',  en: 'Light oil · Chubut / Santa Cruz' },
-    { label: 'Neuquina',  es: 'Petróleo + Gas · Mendoza',                 en: 'Oil + Gas · Mendoza' },
-    { label: 'Cuyana',    es: 'Petróleo · Mendoza',                       en: 'Oil · Mendoza' },
-  ])
+  // Per-block detail
+  const EXPLOTACION = ['tordillo', 'piedra', 'chanares', 'ppc', 'tdf']
+  const orderedBlocks = [
+    ...EXPLOTACION.map(slug => opsBlocks.find(b => b.slug === slug)).filter(Boolean),
+    ...opsBlocks.filter(b => !EXPLOTACION.includes(b.slug) && b.slug !== 'cerro'),
+    ...opsBlocks.filter(b => b.slug === 'cerro'),
+  ] as OperationsBlock[]
+
+  const COMMODITY_ES: Record<string, string> = { oil: 'Petróleo', gas: 'Gas natural', mixed: 'Petróleo + Gas' }
+  const COMMODITY_EN: Record<string, string> = { oil: 'Oil',       gas: 'Natural gas', mixed: 'Oil + Gas' }
+
+  for (const b of orderedBlocks) {
+    elems.push(eyebrow(`Operaciones · ${b.eyebrow || b.titulo}`))
+    elems.push(heading2(b.titulo))
+
+    // Basic info + lede
+    elems.push(bilingualTable([
+      { label: 'Eyebrow / Cuenca', es: b.eyebrow,    en: b.eyebrow },
+      { label: 'Título',           es: b.titulo,      en: b.titulo },
+      { label: 'Commodity',        es: COMMODITY_ES[b.commodity] ?? b.commodity, en: COMMODITY_EN[b.commodity] ?? b.commodity },
+      { label: 'Descripción',      es: b.lede_es || '—', en: b.lede_en || '—' },
+    ]))
+    elems.push(spacer())
+
+    // Body paragraphs
+    if (b.body_es?.length || b.body_en?.length) {
+      const maxLen = Math.max(b.body_es?.length ?? 0, b.body_en?.length ?? 0)
+      const bodyRows = Array.from({ length: maxLen }, (_, i) => ({
+        label: `Párrafo ${i + 1}`,
+        es:    b.body_es?.[i] ?? '—',
+        en:    b.body_en?.[i] ?? '—',
+      }))
+      elems.push(new Paragraph({
+        spacing: { before: 80, after: 60 },
+        children: [new TextRun({ text: 'Texto del bloque', bold: true, size: 18, color: NAVY })],
+      }))
+      elems.push(bilingualTable(bodyRows))
+      elems.push(spacer())
+    }
+
+    // Stats
+    if (b.stats?.length) {
+      elems.push(new Paragraph({
+        spacing: { before: 80, after: 60 },
+        children: [new TextRun({ text: 'Estadísticas', bold: true, size: 18, color: NAVY })],
+      }))
+      elems.push(bilingualTable(b.stats.map(s => ({
+        label: s.val,
+        es:    s.label_es,
+        en:    s.label_en,
+      }))))
+      elems.push(spacer())
+    }
+
+    // Chips
+    if (b.chips?.length) {
+      elems.push(new Paragraph({
+        spacing: { before: 80, after: 60 },
+        children: [new TextRun({ text: 'Tags / Chips: ', bold: true, size: 18, color: NAVY }), new TextRun({ text: b.chips.join(' · '), size: 18 })],
+      }))
+    }
+
+    elems.push(commentBlock())
+    elems.push(spacer())
+  }
 
   // ── INVERSORES ────────────────────────────────────────────────────────────
   elems.push(heading1('4. Inversores (Investor Relations)'))
