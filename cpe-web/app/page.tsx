@@ -127,7 +127,7 @@ export default async function HomePage() {
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
                 <span className="lang-es">TSXV: CWV · Petróleo y gas · Argentina</span>
-                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Argentina</span>
+                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Canada</span>
               </span>
             </div>
             <h1 className="hero-title">
