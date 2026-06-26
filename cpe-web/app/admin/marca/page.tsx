@@ -52,8 +52,8 @@ const TYPEFACES = [
       { weight: 600, label: 'SemiBold' },
       { weight: 700, label: 'Bold' },
     ],
-    specimen: 'Crown Point Energía S.A.',
-    subSpecimen: 'Petróleo y Gas · Patagonia',
+    specimen: 'Crown Point Energy Inc.',
+    subSpecimen: 'Crown Point Energía S.A. · Patagonia',
   },
   {
     family: 'Inter',

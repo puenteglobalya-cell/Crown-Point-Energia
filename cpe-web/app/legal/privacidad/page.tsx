@@ -40,7 +40,7 @@ export default function PrivacidadPage() {
 
           <div className="lang-en">
             <h2>Personal data</h2>
-            <p>Crown Point Energía S.A. only collects personal data that you voluntarily provide through the contact form (name, email, message). This data is used exclusively to respond to your inquiry and is not shared with third parties without your consent.</p>
+            <p>Crown Point Energy Inc. (through its Argentine subsidiary Crown Point Energía S.A.) only collects personal data that you voluntarily provide through the contact form (name, email, message). This data is used exclusively to respond to your inquiry and is not shared with third parties without your consent.</p>
 
             <h2>Cookies</h2>
             <p>This site uses first-party cookies to remember language preferences and cookie acceptance, and analytics cookies (Google Analytics) to measure site usage anonymously. We do not use advertising or commercial tracking cookies.</p>

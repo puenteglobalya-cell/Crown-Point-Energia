@@ -7,9 +7,12 @@ export default function Footer() {
         <div className="footer-grid" style={{ gridTemplateColumns: '1.8fr 1fr 1fr 1fr 1.2fr' }}>
           {/* Brand */}
           <div className="footer-brand">
-            <strong>Crown Point Energía S.A.</strong>
+            <strong>
+              <span className="lang-es">Crown Point Energía S.A.</span>
+              <span className="lang-en">Crown Point Energy Inc.</span>
+            </strong>
             <p className="lang-es">Empresa argentina de petróleo y gas con casa matriz internacional. Operamos en las cuencas Austral (Tierra del Fuego), Neuquina, Cuyana (Mendoza) y Golfo San Jorge (Chubut – Santa Cruz). Holding Crown Point Energy Inc. cotiza en TSXV: CWV.</p>
-            <p className="lang-en">Argentine oil &amp; gas company with international headquarters. We operate in the Austral (Tierra del Fuego), Neuquén, Cuyana (Mendoza) and San Jorge Gulf (Chubut – Santa Cruz) basins. Holding Crown Point Energy Inc. is listed on TSXV: CWV.</p>
+            <p className="lang-en">Canadian holding company with oil &amp; gas operations in Argentina through Crown Point Energía S.A. We operate in the Austral (Tierra del Fuego), Neuquén, Cuyana (Mendoza) and San Jorge Gulf (Chubut – Santa Cruz) basins. Listed on TSXV: CWV.</p>
             <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
               <a
                 href="https://www.linkedin.com/company/crown-point-energia-sa"
@@ -120,7 +123,7 @@ export default function Footer() {
             <span className="lang-en">Neither TSX Venture Exchange nor its Regulation Services Provider accepts responsibility for the adequacy or accuracy of this site.</span>
             {' '}<strong>CNV:</strong>{' '}
             <span className="lang-es">Crown Point Energía S.A. se encuentra inscripta en el Registro de Emisoras de la Comisión Nacional de Valores de la República Argentina.</span>
-            <span className="lang-en">Crown Point Energía S.A. is registered as an issuer with the Comisión Nacional de Valores (Argentine Securities Commission).</span>
+            <span className="lang-en">Crown Point Energy Inc. (through its subsidiary Crown Point Energía S.A.) is registered as an issuer with the Comisión Nacional de Valores (Argentine Securities Commission).</span>
           </p>
           <p style={{ marginTop: 8 }}>
             <span className="lang-es">Las reservas de petróleo y gas se reportan conforme a los estándares de la Canadian Securities Administrators (CSA) National Instrument 51-101. BOE puede ser un concepto engañoso ya que un barril de petróleo equivalente puede no representar la misma relación de valor que entre petróleo y gas natural.</span>
