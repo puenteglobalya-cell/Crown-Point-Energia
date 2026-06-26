@@ -47,7 +47,7 @@ const NAV = [
     menu: [
       { href: '/portal',    es: 'Intranet',              en: 'Intranet' },
       { href: '/portal',    es: 'Personal',               en: 'Personnel' },
-      { href: '/comercial', es: 'Portal de proveedores',  en: 'Supplier portal' },
+      { href: 'https://portal-prd-wz-jjj48h3j.launchpad.cfapps.us10.hana.ondemand.com/site?siteId=46512124-2cbc-41d8-8d70-001d6718bd39#portal-display?sap-ui-app-id-hint=saas_approuter_crown.portal', es: 'Portal de proveedores', en: 'Supplier portal', external: true },
       { href: '/biblioteca',es: 'VDR',                    en: 'VDR' },
     ]
   },
@@ -189,10 +189,17 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
                     <div className="nav-submenu">
                       {it.menu.map((m) => (
                         'href' in m && m.href ? (
-                          <Link key={`${m.href}-${m.es}`} href={m.href}>
-                            <span className="lang-es">{m.es}</span>
-                            <span className="lang-en">{m.en}</span>
-                          </Link>
+                          (m as { href: string; external?: boolean }).external ? (
+                            <a key={`${m.href}-${m.es}`} href={m.href} target="_blank" rel="noreferrer noopener">
+                              <span className="lang-es">{m.es}</span>
+                              <span className="lang-en">{m.en}</span>
+                            </a>
+                          ) : (
+                            <Link key={`${m.href}-${m.es}`} href={m.href}>
+                              <span className="lang-es">{m.es}</span>
+                              <span className="lang-en">{m.en}</span>
+                            </Link>
+                          )
                         ) : null
                       ))}
                     </div>
