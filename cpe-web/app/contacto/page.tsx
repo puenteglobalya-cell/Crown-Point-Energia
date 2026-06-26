@@ -220,14 +220,29 @@ export default async function ContactoPage() {
                 </div>
               </div>
 
-              <div className="info-row" style={{ borderBottom: 0 }}>
+              <div className="info-row">
                 <span className="info-key">
                   <span className="lang-es">Canadá</span>
                   <span className="lang-en">Canada</span>
                 </span>
                 <div className="info-val">
-                  Crown Point Energy Inc.<br/>
-                  <span style={{ fontSize: 13, color: 'var(--fg-soft)' }}>Calgary, AB · {caPhone}</span>
+                  <span style={{ display: 'block', fontWeight: 600, fontSize: 13 }}>Crown Point Energy Inc.</span>
+                  {caAddress.split('\n').map((line, i) => (
+                    <span key={i}>{line}{i < caAddress.split('\n').length - 1 ? <br/> : null}</span>
+                  ))}
+                  <br/><span style={{ fontSize: 13, color: 'var(--fg-soft)' }}>{caPhone}</span>
+                  <br/><a href={`mailto:${caEmail}`}>{caEmail}</a>
+                </div>
+              </div>
+
+              <div className="info-row" style={{ borderBottom: 0 }}>
+                <span className="info-key">
+                  <span className="lang-es">Ética</span>
+                  <span className="lang-en">Ethics</span>
+                </span>
+                <div className="info-val">
+                  <a href={`mailto:${ethicsEmail}`}>{ethicsEmail}</a>
+                  <br/><span style={{ fontSize: 13, color: 'var(--fg-soft)' }}>{ethicsPhone}</span>
                 </div>
               </div>
             </aside>
