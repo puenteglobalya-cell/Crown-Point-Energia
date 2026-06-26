@@ -160,7 +160,12 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
       <header className="site-header">
         <div className="container">
           <Link className="brand" href="/" aria-label="Crown Point Energy">
-            <Image src="/logo.png" alt="Crown Point Energy" className="brand-logo" width={160} height={72} />
+            <span className="lang-es" style={{ display: 'contents' }}>
+              <Image src="/logo.png" alt="Crown Point Energía S.A." className="brand-logo" width={160} height={72} />
+            </span>
+            <span className="lang-en" style={{ display: 'contents' }}>
+              <Image src="/logo-en.png" alt="Crown Point Energy Inc." className="brand-logo" width={160} height={72} />
+            </span>
           </Link>
 
           <nav className="primary-nav" ref={navRef}>
