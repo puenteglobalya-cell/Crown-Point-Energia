@@ -2,8 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getCmsState } from '@/lib/cms'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import MapSection from '@/app/operaciones/MapSection'
-import type { MapBlockData } from '@/components/ArgentinaMapInteractive'
+import ArgentinaMap from '@/components/ArgentinaMap'
 import { DroneHud } from '@/components/DroneHud'
 
 export const revalidate = 60
@@ -39,25 +38,6 @@ export default async function HomePage() {
   ])
 
   const opsBlocks = blocksRes.data ?? []
-
-  const mapBlocks: MapBlockData[] = opsBlocks.map(b => ({
-    id: b.slug,
-    title: b.titulo,
-    eyebrow: (b.subtitulo_es || b.subtitulo_en || '') as string,
-    commodity: (b.commodity || 'mixed') as 'oil' | 'gas' | 'mixed',
-    stats: [
-      ...(b.wi ? [['WI', b.wi] as [string, string]] : []),
-      [
-        { es: 'Tipo', en: 'Commodity' },
-        b.commodity === 'oil'
-          ? { es: 'Petróleo', en: 'Oil' }
-          : b.commodity === 'gas'
-          ? { es: 'Gas natural', en: 'Natural gas' }
-          : { es: 'Petróleo + Gas', en: 'Oil + Gas' },
-      ],
-      ...(b.operador ? [[{ es: 'Rol', en: 'Role' }, { es: 'Operador', en: 'Operator' }] as [{ es: string; en: string }, { es: string; en: string }]] : []),
-    ],
-  }))
 
   const latestComunicados = comunicadosRes.data ?? []
 
@@ -127,7 +107,7 @@ export default async function HomePage() {
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
                 <span className="lang-es">TSXV: CWV · Petróleo y gas · Argentina</span>
-                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Argentina</span>
+                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Canada</span>
               </span>
             </div>
             <h1 className="hero-title">
@@ -331,7 +311,7 @@ export default async function HomePage() {
               </p>
             </div>
             <div className="ops-layout reveal">
-              <div className="ops-map"><MapSection blocks={mapBlocks} /></div>
+              <div className="ops-map"><ArgentinaMap /></div>
               <ul className="ops-list">
                 {opsBlocks.map(b => (
                   <li className="ops-card" data-pin={b.slug} key={b.id}>

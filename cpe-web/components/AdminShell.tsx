@@ -16,6 +16,8 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: '/admin/bloques-fotos', label: 'Fotos de bloques' },
       { href: '/admin/documentos', label: 'Documentos' },
       { href: '/admin/biblioteca', label: 'Biblioteca' },
+      { href: '/admin/marca',        label: 'Manual de marca' },
+      { href: '/admin/word-export',  label: 'Exportar Word' },
     ],
   },
   {
@@ -24,6 +26,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: '/admin/reportes', label: 'Reportes' },
       { href: '/admin/kpi', label: 'KPIs Excel' },
       { href: '/admin/comunicados', label: 'Comunicados' },
+      { href: '/admin/cnv-sync',    label: 'Hechos CNV' },
       { href: '/admin/push', label: 'Push' },
     ],
   },

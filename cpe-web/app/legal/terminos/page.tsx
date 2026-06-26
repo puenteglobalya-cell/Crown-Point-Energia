@@ -45,7 +45,7 @@ export default function TerminosPage() {
 
           <div className="lang-en">
             <h2>General information</h2>
-            <p>This website is owned by Crown Point Energía S.A. (the &quot;Company&quot;). Access to and use of the site implies acceptance of these terms.</p>
+            <p>This website is owned by Crown Point Energy Inc. and operated through its Argentine subsidiary Crown Point Energía S.A. (collectively, the &quot;Company&quot;). Access to and use of the site implies acceptance of these terms.</p>
 
             <h2>Forward-looking statements</h2>
             <p>This site may contain forward-looking statements and estimates about future results. Such statements involve known and unknown risks and uncertainties. Actual results may differ materially from projections. The Company assumes no obligation to update these statements publicly except as required by applicable law.</p>
@@ -54,7 +54,7 @@ export default function TerminosPage() {
             <p>Neither TSX Venture Exchange nor its Regulation Services Provider (as that term is defined in the policies of TSX Venture Exchange) accepts responsibility for the adequacy or accuracy of this site.</p>
 
             <h2>CNV</h2>
-            <p>Crown Point Energía S.A. is registered as an issuer with the Argentine National Securities Commission (CNV). Documents and financial information filed with the CNV are available on the CNV&apos;s official website.</p>
+            <p>Crown Point Energy Inc.&apos;s Argentine subsidiary, Crown Point Energía S.A., is registered as an issuer with the Argentine National Securities Commission (CNV). Documents and financial information filed with the CNV are available on the CNV&apos;s official website.</p>
 
             <h2>Intellectual property</h2>
             <p>All content on this site (text, images, trademarks, logos) is owned by the Company or by third parties who have authorized its use. Partial or total reproduction is prohibited without express authorization.</p>
