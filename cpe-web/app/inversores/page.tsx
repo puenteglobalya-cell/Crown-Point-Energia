@@ -26,11 +26,14 @@ export default async function InversoresPage() {
     analysts: Awaited<ReturnType<typeof fetchIrAnalysts>> = [],
     obligaciones: Awaited<ReturnType<typeof fetchObligaciones>> = []
 
+  type CnvHecho = { doc_id: number; fecha: string; hora: string; tipo: string; descripcion: string; pdf_url: string | null }
+  let cnvHechos: CnvHecho[] = []
+
   try {
-    const [sResult, docsResult, evts, anls, obs] = await Promise.all([
+    const db = createSupabaseServerAdminClient()
+    const [sResult, docsResult, evts, anls, obs, cnvRes] = await Promise.all([
       getCmsState(),
-      createSupabaseServerAdminClient()
-        .from('documentos')
+      db.from('documentos')
         .select('*')
         .eq('publico', true)
         .order('created_at', { ascending: false })
@@ -38,12 +41,18 @@ export default async function InversoresPage() {
       fetchIrEvents(),
       fetchIrAnalysts(),
       fetchObligaciones(),
+      db.from('cnv_hechos')
+        .select('doc_id,fecha,hora,tipo,descripcion,pdf_url')
+        .eq('tipo', 'hecho_relevante')
+        .order('fecha', { ascending: false })
+        .limit(30),
     ])
     s = sResult
     allDocs = docsResult as Documento[]
     irEvents = evts
     analysts = anls
     obligaciones = obs
+    cnvHechos = (cnvRes.data ?? []) as CnvHecho[]
   } catch {
     s = await getCmsState()
   }
@@ -109,6 +118,7 @@ export default async function InversoresPage() {
               <nav>
                 <a href="#porque" className="active"><span className="lang-es">¿Por qué Crown Point?</span><span className="lang-en">Why Crown Point?</span></a>
                 <a href="#financieros"><span className="lang-es">Estados financieros</span><span className="lang-en">Financial statements</span></a>
+                <a href="#hechos-cnv"><span className="lang-es">Hechos relevantes CNV</span><span className="lang-en">CNV disclosures</span></a>
                 <a href="#cobertura"><span className="lang-es">Cobertura de analistas</span><span className="lang-en">Analyst coverage</span></a>
                 <a href="#calificacion"><span className="lang-es">Calificación crediticia</span><span className="lang-en">Credit rating</span></a>
                 <a href="#on"><span className="lang-es">Obligaciones negociables</span><span className="lang-en">Notes</span></a>
@@ -166,6 +176,62 @@ export default async function InversoresPage() {
                   <span className="lang-en">IFRS-audited reports and quarterly management filings. Also available on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a> and the <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a> (search for &quot;Crown Point Energía S.A.&quot;).</span>
                 </p>
                 <InversoresDocsTabs docs={allDocs} tipo="financiero" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
+              </div>
+
+              <div className="section-block" id="hechos-cnv">
+                <span className="eyebrow">CNV · AIF</span>
+                <h2 style={{ marginTop: 8 }}>
+                  <span className="lang-es">Hechos relevantes</span>
+                  <span className="lang-en">Material disclosures</span>
+                </h2>
+                <p className="lede">
+                  <span className="lang-es">Información presentada por Crown Point Energía S.A. ante la Comisión Nacional de Valores. Actualizado automáticamente desde la <a href="https://www.cnv.gov.ar/SitioWeb/Empresas/Empresa/30709346268" target="_blank" rel="noreferrer">AIF de la CNV</a>.</span>
+                  <span className="lang-en">Disclosures filed by Crown Point Energía S.A. with the Argentine National Securities Commission (CNV). Auto-synced from the <a href="https://www.cnv.gov.ar/SitioWeb/Empresas/Empresa/30709346268" target="_blank" rel="noreferrer">CNV AIF</a>.</span>
+                </p>
+                {cnvHechos.length > 0 ? (
+                  <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: 'var(--bg-alt)', borderBottom: '1px solid var(--rule)' }}>
+                          <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', width: 110 }}>
+                            <span className="lang-es">Fecha</span><span className="lang-en">Date</span>
+                          </th>
+                          <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)' }}>
+                            <span className="lang-es">Descripción</span><span className="lang-en">Description</span>
+                          </th>
+                          <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', width: 80 }}>
+                            Doc
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cnvHechos.map((h, i) => (
+                          <tr key={h.doc_id} style={{ borderTop: i > 0 ? '1px solid var(--rule)' : 'none', background: 'var(--surface)' }}>
+                            <td style={{ padding: '12px 16px', color: 'var(--fg-muted)', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                              {new Date(h.fecha + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </td>
+                            <td style={{ padding: '12px 16px', color: 'var(--fg)', lineHeight: 1.5 }}>
+                              {h.descripcion}
+                            </td>
+                            <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                              {h.pdf_url && (
+                                <a href={h.pdf_url} target="_blank" rel="noreferrer noopener"
+                                  style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                                  {h.doc_id}
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
+                    <span className="lang-es">Los hechos relevantes se sincronizan automáticamente desde la CNV cada día hábil.</span>
+                    <span className="lang-en">Material disclosures are automatically synced from the CNV each business day.</span>
+                  </p>
+                )}
               </div>
 
               <div className="section-block" id="cobertura">
