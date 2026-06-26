@@ -16,6 +16,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: '/admin/bloques-fotos', label: 'Fotos de bloques' },
       { href: '/admin/documentos', label: 'Documentos' },
       { href: '/admin/biblioteca', label: 'Biblioteca' },
+      { href: '/admin/marca', label: 'Manual de marca' },
     ],
   },
   {
