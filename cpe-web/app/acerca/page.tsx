@@ -96,8 +96,8 @@ export default async function AcercaPage() {
             <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.acerca.h1'] || 'Real production,<br/>solid foundation,<br/>long-term vision.' }} />
           </h1>
           <p>
-            <span className="lang-es">{f['page.acerca.lede'] || 'Crown Point Energía S.A. opera en el mercado argentino con casa matriz internacional.'}</span>
-            <span className="lang-en">{fe['page.acerca.lede'] || 'Crown Point Energía S.A. operates in the Argentine market with international headquarters.'}</span>
+            <span className="lang-es">{f['page.acerca.lede'] || 'Crown Point Energy Inc. cotiza en la TSX Venture Exchange bajo el símbolo CWV. La Compañía opera en Argentina a través de su subsidiaria Crown Point Energía S.A. (CPESA), con sede en Buenos Aires.'}</span>
+            <span className="lang-en">{fe['page.acerca.lede'] || 'Crown Point Energy Inc. is listed on TSX Venture Exchange: CWV. The Company operates in Argentina through its wholly owned subsidiary, Crown Point Energía S.A. (CPESA), headquartered in Buenos Aires.'}</span>
           </p>
         </div>
       </section>
@@ -137,7 +137,7 @@ export default async function AcercaPage() {
                     <h4><span className="lang-es">Misión</span><span className="lang-en">Mission</span></h4>
                     <p>
                       <span className="lang-es">Generar valor para los accionistas haciendo un uso racional de los recursos, estableciendo relaciones a largo plazo y contribuyendo a mejorar la calidad de vida de las comunidades donde operamos y nuestros socios estratégicos.</span>
-                      <span className="lang-en">Generate value for shareholders through the rational use of resources, building long-term relationships and contributing to improve the quality of life of the communities where we operate and our strategic partners.</span>
+                      <span className="lang-en">Add shareholder value by focusing on assets with low lifting costs, long reserve life, repeatable drilling inventory and strong netbacks.</span>
                     </p>
                   </div>
                   <div className="mvp-card">
@@ -163,10 +163,6 @@ export default async function AcercaPage() {
                   </span>
                   <ul className="advantages-list">
                     <li>
-                      <span className="lang-es">Fuerte compromiso del accionista controlante</span>
-                      <span className="lang-en">Strong commitment from the controlling shareholder</span>
-                    </li>
-                    <li>
                       <span className="lang-es">Alto conocimiento y experiencia en Argentina del accionista y management</span>
                       <span className="lang-en">Deep knowledge and experience in Argentina from both shareholders and management</span>
                     </li>
@@ -183,11 +179,11 @@ export default async function AcercaPage() {
                 <span className="eyebrow"><span className="lang-es">Estrategia</span><span className="lang-en">Strategy</span></span>
                 <h2 style={{ marginTop: 8 }}>
                   <span className="lang-es">Crecimiento disciplinado<br/>con activos reales.</span>
-                  <span className="lang-en">Disciplined growth<br/>with real assets.</span>
+                  <span className="lang-en">Increase oil and gas production<br/>only when returns exceed the cost of capital.</span>
                 </h2>
                 <p className="lede">
                   <span className="lang-es">Establecer una cartera de activos de bajo riesgo generadores de un flujo de caja positivo con el fin de garantizar un crecimiento orgánico que facilite y se complemente con un crecimiento inorgánico.</span>
-                  <span className="lang-en">Build a portfolio of low-risk assets that generate positive cash flow in order to guarantee organic growth that facilitates and complements inorganic growth.</span>
+                  <span className="lang-en">Build a portfolio of low-risk assets that generate positive cash flow to fuel organic growth and acquisitions.</span>
                 </p>
                 <div className="strat-grid">
                   {strategyCards.map(c => (

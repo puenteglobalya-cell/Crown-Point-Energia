@@ -121,10 +121,10 @@ export default async function HomePage() {
             <p className="hero-lede">
               {heroLedeEs
                 ? <span className="lang-es">{heroLedeEs}</span>
-                : <span className="lang-es">Operamos en cuatro de las cuencas más relevantes del país —<strong> Austral, Neuquina, Cuyana y Golfo San Jorge</strong>— con flujo de caja de producción propia, una cartera de proyectos de bajo riesgo y una estructura financiera prudente.</span>}
+                : <span className="lang-es">Participamos en cuatro de las cuencas más relevantes del país con once concesiones — producción propia, cartera de proyectos de bajo riesgo y estructura financiera prudente.</span>}
               {heroLedeEn
                 ? <span className="lang-en">{heroLedeEn}</span>
-                : <span className="lang-en">We operate across four of Argentina&apos;s most relevant basins — <strong>Austral, Neuquén, Cuyana and San Jorge Gulf</strong> — with cash flow from our own production, a low-risk project portfolio and a prudent financial structure.</span>}
+                : <span className="lang-en">We hold interests across four of the country&apos;s most relevant basins with eleven concessions — our own production, a low-risk project portfolio and a prudent financial structure.</span>}
             </p>
             <div className="hero-cta">
               <Link className="btn btn-primary" href="/inversores">
@@ -265,7 +265,7 @@ export default async function HomePage() {
                   <span className="kpi-value num" data-cpe-field="kpi.blocks.value">{kpiBlkVal}</span>
                   <span className="kpi-unit" data-cpe-field="kpi.blocks.unit">
                     <span className="lang-es">{kpiBlkUnit}</span>
-                    <span className="lang-en">in 4 basins</span>
+                    <span className="lang-en">across four basins</span>
                   </span>
                 </div>
                 <span className="kpi-meta">
@@ -301,13 +301,13 @@ export default async function HomePage() {
               <div>
                 <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
                 <h2 className="section-title">
-                  <span className="lang-es">{opsBlocks.length > 0 ? `${['Uno','Dos','Tres','Cuatro','Cinco','Seis','Siete','Ocho'][opsBlocks.length - 1] ?? opsBlocks.length} bloques` : 'Seis bloques'}<br/>en cuatro cuencas.</span>
-                  <span className="lang-en">{opsBlocks.length > 0 ? `${['One','Two','Three','Four','Five','Six','Seven','Eight'][opsBlocks.length - 1] ?? opsBlocks.length} blocks` : 'Six blocks'}<br/>across four basins.</span>
+                  <span className="lang-es">{kpiBlkVal} concesiones<br/>en cuatro cuencas.</span>
+                  <span className="lang-en">{kpiBlkVal} concessions<br/>across four basins.</span>
                 </h2>
               </div>
               <p>
-                <span className="lang-es">Cartera diversificada de áreas convencionales y no convencionales, con foco en gas natural y crudo liviano.</span>
-                <span className="lang-en">A diversified portfolio of conventional and unconventional blocks, focused on natural gas and light oil.</span>
+                <span className="lang-es">Cartera diversificada de activos con foco en petróleo convencional y gas natural.</span>
+                <span className="lang-en">A diversified portfolio of assets focused on conventional oil and natural gas.</span>
               </p>
             </div>
             <div className="ops-layout reveal">

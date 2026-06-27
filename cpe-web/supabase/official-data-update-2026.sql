@@ -204,3 +204,54 @@ UPDATE operations_blocks SET
   orden   = 6,
   eyebrow = '06 · Cuenca Neuquina · Exploratorio'
 WHERE slug = 'cerro';
+
+-- ── Revisiones BJM — Junio 2026 ──────────────────────────────────────────────
+-- Script_revisions_BJM.docx — aplica correcciones de contenido bilingüe
+
+-- KPI "Áreas operativas": 6 bloques → 11 concesiones
+INSERT INTO cms_fields (key, value_es, value_en) VALUES
+  ('kpi.blocks.value', '11', '11'),
+  ('kpi.blocks.unit',  'en 4 cuencas', 'across four basins'),
+  ('kpi.blocks.delta', '372k ha', '372k ha')
+ON CONFLICT (key) DO UPDATE SET
+  value_es   = EXCLUDED.value_es,
+  value_en   = EXCLUDED.value_en,
+  updated_at = now();
+
+-- Página Operaciones — Hero h1: "Seis bloques" → "Once concesiones"
+INSERT INTO cms_fields (key, value_es, value_en) VALUES
+  ('page.operaciones.h1',
+   'Once concesiones.<br/>Cuatro cuencas.<br/>Un país.',
+   'Eleven concessions.<br/>Four basins.<br/>One country.')
+ON CONFLICT (key) DO UPDATE SET
+  value_es   = EXCLUDED.value_es,
+  value_en   = EXCLUDED.value_en,
+  updated_at = now();
+
+-- Página Operaciones — bajada EN actualizada por BJM
+INSERT INTO cms_fields (key, value_es, value_en) VALUES
+  ('page.operaciones.lede',
+   'Una cartera diversificada de áreas productivas y exploratorias, distribuidas estratégicamente entre el norte y el sur de Argentina.',
+   'A diversified portfolio of producing assets with development and exploration upside, strategically distributed across northern and southern Argentina.')
+ON CONFLICT (key) DO UPDATE SET
+  value_es   = EXCLUDED.value_es,
+  value_en   = EXCLUDED.value_en,
+  updated_at = now();
+
+-- Página Acerca de — bajada hero (ES + EN por BJM)
+INSERT INTO cms_fields (key, value_es, value_en) VALUES
+  ('page.acerca.lede',
+   'Crown Point Energy Inc. cotiza en la TSX Venture Exchange bajo el símbolo CWV. La Compañía opera en Argentina a través de su subsidiaria Crown Point Energía S.A. (CPESA), con sede en Buenos Aires.',
+   'Crown Point Energy Inc. is listed on TSX Venture Exchange: CWV. The Company operates in Argentina through its wholly owned subsidiary, Crown Point Energía S.A. (CPESA), headquartered in Buenos Aires.')
+ON CONFLICT (key) DO UPDATE SET
+  value_es   = EXCLUDED.value_es,
+  value_en   = EXCLUDED.value_en,
+  updated_at = now();
+
+-- Chañares Herrados — corregir card_title y chips: crudo liviano (no pesado)
+-- lede_es y body_es ya dicen "38° API / crudo liviano" — alinear chip y card_title
+UPDATE operations_blocks SET
+  card_title_es = 'Crudo liviano',
+  card_title_en = 'Light crude',
+  chips         = '["Crudo liviano · 38° API", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb
+WHERE slug = 'chanares';
