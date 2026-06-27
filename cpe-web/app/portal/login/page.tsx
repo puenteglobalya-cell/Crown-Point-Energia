@@ -1,13 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+
+const SESSION_START_PREFIX = 'cpe_session_start_'
 
 export default function PortalLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [expired, setExpired] = useState(false)
 
   // Password reset flow
   const [showPwd, setShowPwd] = useState(false)
@@ -17,18 +20,23 @@ export default function PortalLoginPage() {
   const [resetMsg, setResetMsg] = useState('')
   const [resetErr, setResetErr] = useState('')
 
+  useEffect(() => {
+    setExpired(new URLSearchParams(window.location.search).get('expirada') === '1')
+  }, [])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
 
     const supabase = createSupabaseBrowserClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError('Email o contraseña incorrectos.')
       setLoading(false)
     } else {
+      if (data.user) localStorage.removeItem(SESSION_START_PREFIX + data.user.id)
       window.location.href = '/portal'
     }
   }
@@ -66,9 +74,19 @@ export default function PortalLoginPage() {
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600, marginBottom: 8, letterSpacing: '-0.02em' }}>
           Portal · Crown Point
         </h1>
-        <p style={{ fontSize: 14, color: 'var(--fg-soft)', marginBottom: 28 }}>
+        <p style={{ fontSize: 14, color: 'var(--fg-soft)', marginBottom: expired ? 16 : 28 }}>
           Acceso interno — ingresá con tu cuenta corporativa.
         </p>
+
+        {expired && (
+          <div style={{
+            fontSize: 13, padding: '10px 14px', marginBottom: 20,
+            background: 'rgba(205,150,30,0.12)', border: '1px solid rgba(205,150,30,0.35)',
+            borderRadius: 'var(--r-md)', color: 'var(--fg)',
+          }}>
+            Tu sesión expiró luego de 1 hora. Ingresá nuevamente.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 16 }}>
           <div className="form-row">
