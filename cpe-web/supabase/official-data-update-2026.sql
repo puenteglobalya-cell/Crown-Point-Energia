@@ -255,3 +255,48 @@ UPDATE operations_blocks SET
   card_title_en = 'Light crude',
   chips         = '["Crudo liviano · 38° API", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb
 WHERE slug = 'chanares';
+
+-- ── Asambleas de accionistas ──────────────────────────────────────────────────
+-- Requiere haber ejecutado shareholder-meetings-schema.sql primero (CREATE TABLE).
+-- Safe to re-run (ON CONFLICT DO UPDATE por id).
+
+INSERT INTO shareholder_meetings
+  (id, tipo, fecha, hora_local, zona_es, zona_en, formato, lugar_es, lugar_en,
+   titulo_es, titulo_en, nota_es, nota_en, record_date, sedar_url, activo, orden)
+VALUES
+  (
+    1,
+    'agm',
+    '2026-09-15',
+    '10:00 AM MST',
+    'Hora de Calgary, Alberta (Canada)',
+    'Calgary, Alberta (Canada) time',
+    'hibrida',
+    'Calgary, Alberta, Canada (con participación virtual disponible)',
+    'Calgary, Alberta, Canada (virtual participation available)',
+    'Asamblea General Anual 2026 — Crown Point Energy Inc.',
+    '2026 Annual General Meeting — Crown Point Energy Inc.',
+    'Elección de directores, designación de auditores y demás asuntos propios de la Asamblea. La documentación de la reunión se publicará en SEDAR+ con al menos 21 días de anticipación.',
+    'Election of directors, appointment of auditors and any other business properly before the meeting. Meeting materials will be filed on SEDAR+ at least 21 days in advance.',
+    '2026-08-14',
+    'https://www.sedarplus.ca',
+    true,
+    1
+  )
+ON CONFLICT (id) DO UPDATE SET
+  tipo        = EXCLUDED.tipo,
+  fecha       = EXCLUDED.fecha,
+  hora_local  = EXCLUDED.hora_local,
+  zona_es     = EXCLUDED.zona_es,
+  zona_en     = EXCLUDED.zona_en,
+  formato     = EXCLUDED.formato,
+  lugar_es    = EXCLUDED.lugar_es,
+  lugar_en    = EXCLUDED.lugar_en,
+  titulo_es   = EXCLUDED.titulo_es,
+  titulo_en   = EXCLUDED.titulo_en,
+  nota_es     = EXCLUDED.nota_es,
+  nota_en     = EXCLUDED.nota_en,
+  record_date = EXCLUDED.record_date,
+  sedar_url   = EXCLUDED.sedar_url,
+  activo      = EXCLUDED.activo,
+  orden       = EXCLUDED.orden;
