@@ -63,12 +63,12 @@ export default async function OperacionesPage() {
           </div>
           <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: f['page.operaciones.h1'] || 'Seis bloques.<br/>Cuatro cuencas.<br/>Un país.' }} />
-            <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.operaciones.h1'] || 'Six blocks.<br/>Four basins.<br/>One country.' }} />
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: f['page.operaciones.h1'] || 'Once concesiones.<br/>Cuatro cuencas.<br/>Un país.' }} />
+            <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.operaciones.h1'] || 'Eleven concessions.<br/>Four basins.<br/>One country.' }} />
           </h1>
           <p>
             <span className="lang-es">{f['page.operaciones.lede'] || 'Una cartera diversificada de áreas productivas y exploratorias, distribuidas estratégicamente entre el norte y el sur de Argentina.'}</span>
-            <span className="lang-en">{fe['page.operaciones.lede'] || 'A diversified portfolio of producing and exploration areas, strategically distributed across northern and southern Argentina.'}</span>
+            <span className="lang-en">{fe['page.operaciones.lede'] || 'A diversified portfolio of producing assets with development and exploration upside, strategically distributed across northern and southern Argentina.'}</span>
           </p>
         </div>
       </section>
@@ -79,7 +79,7 @@ export default async function OperacionesPage() {
             {[
               { labelEs: 'Hectáreas operadas', labelEn: 'Operated acreage',
                 val: f['ops.kpi.acreage'] || '372k', unit: 'ha',
-                metaEs: `${blocks.length} bloques`, metaEn: `${blocks.length} blocks` },
+                metaEs: `${f['kpi.blocks.value'] || '11'} concesiones`, metaEn: `${f['kpi.blocks.value'] || '11'} concessions` },
               { labelEs: 'Pozos productores', labelEn: 'Producing wells',
                 val: f['ops.kpi.wells'] || '357', unitEs: 'activos', unitEn: 'active',
                 metaEs: f['ops.kpi.wells.meta'] || '+83 inyectores en operación',

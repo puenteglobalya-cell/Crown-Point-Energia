@@ -8,6 +8,24 @@ export type IrEvent = {
   activo: boolean; orden: number
 }
 
+export type ShareholderMeeting = {
+  id: number
+  tipo: 'agm' | 'egm'
+  fecha: string
+  hora_local: string | null
+  zona_es: string | null
+  zona_en: string | null
+  formato: 'presencial' | 'virtual' | 'hibrida'
+  lugar_es: string | null
+  lugar_en: string | null
+  titulo_es: string
+  titulo_en: string
+  nota_es: string | null
+  nota_en: string | null
+  record_date: string | null
+  sedar_url: string | null
+}
+
 export type IrAnalyst = {
   id: string; analyst: string; firm: string
   rating_es: string; rating_en: string; target: string
@@ -89,6 +107,15 @@ export async function fetchObligaciones(): Promise<ObligacionNegociable[]> {
 
 export async function fetchOperationsBlocks(): Promise<OperationsBlock[]> {
   return safeQuery(() => db().from('operations_blocks').select('*').eq('activo', true).order('orden'))
+}
+
+export async function fetchShareholderMeetings(): Promise<ShareholderMeeting[]> {
+  return safeQuery(() =>
+    db().from('shareholder_meetings')
+      .select('*')
+      .eq('activo', true)
+      .order('fecha', { ascending: true })
+  )
 }
 
 export async function fetchTeamMembers(tipo?: 'management' | 'board'): Promise<TeamMember[]> {

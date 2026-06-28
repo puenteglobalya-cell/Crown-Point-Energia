@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { fetchIrEvents, fetchIrAnalysts, fetchObligaciones } from '@/lib/content-fetch'
+import { fetchIrEvents, fetchIrAnalysts, fetchObligaciones, fetchShareholderMeetings, type ShareholderMeeting } from '@/lib/content-fetch'
 import InversoresDocsTabs from './InversoresDocsTabs'
 import IrSubscribeForm from './IrSubscribeForm'
 import ReservesTable from './ReservesTable'
@@ -24,14 +24,15 @@ type Documento = {
 export default async function InversoresPage() {
   let s, allDocs: Documento[] = [], irEvents: Awaited<ReturnType<typeof fetchIrEvents>> = [],
     analysts: Awaited<ReturnType<typeof fetchIrAnalysts>> = [],
-    obligaciones: Awaited<ReturnType<typeof fetchObligaciones>> = []
+    obligaciones: Awaited<ReturnType<typeof fetchObligaciones>> = [],
+    meetings: ShareholderMeeting[] = []
 
   type CnvHecho = { doc_id: number; fecha: string; hora: string; tipo: string; descripcion: string; pdf_url: string | null }
   let cnvHechos: CnvHecho[] = []
 
   try {
     const db = createSupabaseServerAdminClient()
-    const [sResult, docsResult, evts, anls, obs, cnvRes] = await Promise.all([
+    const [sResult, docsResult, evts, anls, obs, cnvRes, mtgs] = await Promise.all([
       getCmsState(),
       db.from('documentos')
         .select('*')
@@ -46,6 +47,7 @@ export default async function InversoresPage() {
         .eq('tipo', 'hecho_relevante')
         .order('fecha', { ascending: false })
         .limit(30),
+      fetchShareholderMeetings(),
     ])
     s = sResult
     allDocs = docsResult as Documento[]
@@ -53,6 +55,7 @@ export default async function InversoresPage() {
     analysts = anls
     obligaciones = obs
     cnvHechos = (cnvRes.data ?? []) as CnvHecho[]
+    meetings = mtgs
   } catch {
     s = await getCmsState()
   }
@@ -123,6 +126,7 @@ export default async function InversoresPage() {
                 <a href="#calificacion"><span className="lang-es">Calificación crediticia</span><span className="lang-en">Credit rating</span></a>
                 <a href="#on"><span className="lang-es">Obligaciones negociables</span><span className="lang-en">Notes</span></a>
                 <a href="#gobierno"><span className="lang-es">Gobierno corporativo</span><span className="lang-en">Corporate governance</span></a>
+                <a href="#asambleas"><span className="lang-es">Asambleas de accionistas</span><span className="lang-en">Shareholder meetings</span></a>
                 <a href="#calendario"><span className="lang-es">Calendario financiero</span><span className="lang-en">Financial calendar</span></a>
               </nav>
             </aside>
@@ -163,8 +167,8 @@ export default async function InversoresPage() {
                 </div>
                 <ReservesTable />
                 <p className="pull">
-                  <span className="lang-es">&ldquo;Operamos seis bloques en cuatro cuencas — diversificación geológica real con un solo país.&rdquo;</span>
-                  <span className="lang-en">&ldquo;We operate six blocks across four basins — real geological diversification within a single country.&rdquo;</span>
+                  <span className="lang-es">&ldquo;Once concesiones en cuatro cuencas — diversificación geológica real con un solo país.&rdquo;</span>
+                  <span className="lang-en">&ldquo;Eleven concessions across four basins — real geological diversification within a single country.&rdquo;</span>
                 </p>
               </div>
 
@@ -393,6 +397,130 @@ export default async function InversoresPage() {
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Gobierno corporativo</span><span className="lang-en">Corporate governance</span></h2>
                 <p className="lede"><span className="lang-es">Crown Point Energy Inc. cotiza en TSX Venture Exchange y reporta bajo las normas canadienses para emisores junior.</span><span className="lang-en">Crown Point Energy Inc. is listed on TSX Venture Exchange and reports under Canadian junior issuer standards.</span></p>
                 <InversoresDocsTabs docs={allDocs} tipo="gobierno" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
+              </div>
+
+              <div className="section-block" id="asambleas">
+                <span className="eyebrow"><span className="lang-es">Accionistas</span><span className="lang-en">Shareholders</span></span>
+                <h2 style={{ marginTop: 8 }}>
+                  <span className="lang-es">Asambleas de accionistas</span>
+                  <span className="lang-en">Shareholder meetings</span>
+                </h2>
+                <p className="lede">
+                  <span className="lang-es">Información sobre próximas asambleas de Crown Point Energy Inc. Los materiales de cada reunión se publican en <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a> con al menos 21 días de anticipación.</span>
+                  <span className="lang-en">Information on upcoming Crown Point Energy Inc. shareholder meetings. Meeting materials are filed on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a> at least 21 days in advance.</span>
+                </p>
+                <style>{`
+                  .meeting-card { border: 1px solid var(--rule); border-radius: var(--r-lg); overflow: hidden; margin-top: var(--s-6); }
+                  .meeting-card-head { display: flex; align-items: center; gap: 14px; padding: 18px 24px; background: var(--bg-alt); border-bottom: 1px solid var(--rule); }
+                  .meeting-type-badge { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 12px; border-radius: var(--r-pill); }
+                  .meeting-type-badge.agm { background: rgba(201,162,74,0.16); color: var(--cp-gold-deep); border: 1px solid rgba(201,162,74,0.3); }
+                  .meeting-type-badge.egm { background: rgba(31,37,102,0.1); color: var(--accent); border: 1px solid rgba(31,37,102,0.2); }
+                  [data-theme="dark"] .meeting-type-badge.agm { color: var(--cp-gold); border-color: rgba(201,162,74,.4); }
+                  [data-theme="dark"] .meeting-type-badge.egm { border-color: rgba(78,126,196,.3); }
+                  .meeting-date-big { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--fg); letter-spacing: -0.01em; }
+                  .meeting-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+                  @media (max-width: 640px) { .meeting-body { grid-template-columns: 1fr; } }
+                  .meeting-col { padding: 20px 24px; border-right: 1px solid var(--rule); }
+                  .meeting-col:last-child { border-right: 0; }
+                  .meeting-col-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: var(--fg-muted); margin-bottom: 6px; }
+                  .meeting-col-val { font-size: 14px; color: var(--fg); line-height: 1.5; }
+                  .meeting-col-sub { font-size: 12px; color: var(--fg-muted); margin-top: 3px; }
+                  .meeting-footer { padding: 14px 24px; border-top: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: var(--surface); }
+                  .meeting-footer-note { font-size: 12px; color: var(--fg-muted); }
+                  .formato-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 10px; border-radius: var(--r-pill); border: 1px solid var(--rule); color: var(--fg-soft); }
+                `}</style>
+
+                {meetings.length > 0 ? meetings.map(m => {
+                  const dateObj = new Date(m.fecha + 'T00:00:00')
+                  const dateEs = dateObj.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
+                  const dateEn = dateObj.toLocaleDateString('en-CA', { day: 'numeric', month: 'long', year: 'numeric' })
+                  const recordEs = m.record_date ? new Date(m.record_date + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }) : null
+                  const recordEn = m.record_date ? new Date(m.record_date + 'T00:00:00').toLocaleDateString('en-CA', { day: 'numeric', month: 'long', year: 'numeric' }) : null
+                  return (
+                    <div className="meeting-card" key={m.id}>
+                      <div className="meeting-card-head">
+                        <span className={`meeting-type-badge ${m.tipo}`}>
+                          {m.tipo === 'agm'
+                            ? <><span className="lang-es">Asamblea General Anual</span><span className="lang-en">Annual General Meeting</span></>
+                            : <><span className="lang-es">Asamblea Extraordinaria</span><span className="lang-en">Extraordinary General Meeting</span></>
+                          }
+                        </span>
+                        <span className="meeting-date-big">
+                          <span className="lang-es">{dateEs}</span>
+                          <span className="lang-en">{dateEn}</span>
+                        </span>
+                      </div>
+
+                      <div className="meeting-body">
+                        <div className="meeting-col">
+                          <div className="meeting-col-label"><span className="lang-es">Hora</span><span className="lang-en">Time</span></div>
+                          <div className="meeting-col-val">{m.hora_local || '—'}</div>
+                          {(m.zona_es || m.zona_en) && (
+                            <div className="meeting-col-sub">
+                              <span className="lang-es">{m.zona_es}</span>
+                              <span className="lang-en">{m.zona_en}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="meeting-col">
+                          <div className="meeting-col-label"><span className="lang-es">Lugar</span><span className="lang-en">Venue</span></div>
+                          <div className="meeting-col-val">
+                            <span className="lang-es">{m.lugar_es || '—'}</span>
+                            <span className="lang-en">{m.lugar_en || '—'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {(m.nota_es || m.nota_en) && (
+                        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--rule)' }}>
+                          <div className="meeting-col-label" style={{ marginBottom: 8 }}><span className="lang-es">Agenda / Asuntos</span><span className="lang-en">Agenda / Business</span></div>
+                          <p style={{ fontSize: 14, color: 'var(--fg-soft)', lineHeight: 1.6, margin: 0 }}>
+                            <span className="lang-es">{m.nota_es}</span>
+                            <span className="lang-en">{m.nota_en}</span>
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="meeting-footer">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                          <span className="formato-pill">
+                            {m.formato === 'virtual'
+                              ? <><span className="lang-es">Virtual</span><span className="lang-en">Virtual</span></>
+                              : m.formato === 'presencial'
+                              ? <><span className="lang-es">Presencial</span><span className="lang-en">In-person</span></>
+                              : <><span className="lang-es">Presencial + Virtual</span><span className="lang-en">In-person + Virtual</span></>
+                            }
+                          </span>
+                          {recordEs && (
+                            <span className="meeting-footer-note">
+                              <span className="lang-es">Fecha de registro: {recordEs}</span>
+                              <span className="lang-en">Record date: {recordEn}</span>
+                            </span>
+                          )}
+                        </div>
+                        {m.sedar_url && (
+                          <a
+                            href={m.sedar_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 5 }}
+                          >
+                            <span className="lang-es">Documentos en SEDAR+</span>
+                            <span className="lang-en">Meeting documents on SEDAR+</span>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+                            </svg>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )
+                }) : (
+                  <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic', marginTop: 'var(--s-4)' }}>
+                    <span className="lang-es">No hay asambleas próximas registradas. Los detalles se publican con al menos 21 días de anticipación en SEDAR+.</span>
+                    <span className="lang-en">No upcoming meetings registered. Details are published at least 21 days in advance on SEDAR+.</span>
+                  </p>
+                )}
               </div>
 
               <div className="section-block" id="calendario" style={{ borderBottom: 0 }}>

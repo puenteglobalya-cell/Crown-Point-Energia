@@ -95,7 +95,12 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Portal auth ──────────────────────────────────────────────────────────
-  if (pathname.startsWith('/portal') && !pathname.startsWith('/portal/login')) {
+  if (
+    pathname.startsWith('/portal') &&
+    !pathname.startsWith('/portal/login') &&
+    !pathname.startsWith('/portal/mfa') &&
+    !pathname.startsWith('/portal/reset-password')
+  ) {
     if (!user) {
       return NextResponse.redirect(new URL('/portal/login', request.url))
     }

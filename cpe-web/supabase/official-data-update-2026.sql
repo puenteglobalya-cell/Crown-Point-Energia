@@ -204,3 +204,99 @@ UPDATE operations_blocks SET
   orden   = 6,
   eyebrow = '06 · Cuenca Neuquina · Exploratorio'
 WHERE slug = 'cerro';
+
+-- ── Revisiones BJM — Junio 2026 ──────────────────────────────────────────────
+-- Script_revisions_BJM.docx — aplica correcciones de contenido bilingüe
+
+-- KPI "Áreas operativas": 6 bloques → 11 concesiones
+INSERT INTO cms_fields (key, value_es, value_en) VALUES
+  ('kpi.blocks.value', '11', '11'),
+  ('kpi.blocks.unit',  'en 4 cuencas', 'across four basins'),
+  ('kpi.blocks.delta', '372k ha', '372k ha')
+ON CONFLICT (key) DO UPDATE SET
+  value_es   = EXCLUDED.value_es,
+  value_en   = EXCLUDED.value_en,
+  updated_at = now();
+
+-- Página Operaciones — Hero h1: "Seis bloques" → "Once concesiones"
+INSERT INTO cms_fields (key, value_es, value_en) VALUES
+  ('page.operaciones.h1',
+   'Once concesiones.<br/>Cuatro cuencas.<br/>Un país.',
+   'Eleven concessions.<br/>Four basins.<br/>One country.')
+ON CONFLICT (key) DO UPDATE SET
+  value_es   = EXCLUDED.value_es,
+  value_en   = EXCLUDED.value_en,
+  updated_at = now();
+
+-- Página Operaciones — bajada EN actualizada por BJM
+INSERT INTO cms_fields (key, value_es, value_en) VALUES
+  ('page.operaciones.lede',
+   'Una cartera diversificada de áreas productivas y exploratorias, distribuidas estratégicamente entre el norte y el sur de Argentina.',
+   'A diversified portfolio of producing assets with development and exploration upside, strategically distributed across northern and southern Argentina.')
+ON CONFLICT (key) DO UPDATE SET
+  value_es   = EXCLUDED.value_es,
+  value_en   = EXCLUDED.value_en,
+  updated_at = now();
+
+-- Página Acerca de — bajada hero (ES + EN por BJM)
+INSERT INTO cms_fields (key, value_es, value_en) VALUES
+  ('page.acerca.lede',
+   'Crown Point Energy Inc. cotiza en la TSX Venture Exchange bajo el símbolo CWV. La Compañía opera en Argentina a través de su subsidiaria Crown Point Energía S.A. (CPESA), con sede en Buenos Aires.',
+   'Crown Point Energy Inc. is listed on TSX Venture Exchange: CWV. The Company operates in Argentina through its wholly owned subsidiary, Crown Point Energía S.A. (CPESA), headquartered in Buenos Aires.')
+ON CONFLICT (key) DO UPDATE SET
+  value_es   = EXCLUDED.value_es,
+  value_en   = EXCLUDED.value_en,
+  updated_at = now();
+
+-- Chañares Herrados — corregir card_title y chips: crudo liviano (no pesado)
+-- lede_es y body_es ya dicen "38° API / crudo liviano" — alinear chip y card_title
+UPDATE operations_blocks SET
+  card_title_es = 'Crudo liviano',
+  card_title_en = 'Light crude',
+  chips         = '["Crudo liviano · 38° API", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb
+WHERE slug = 'chanares';
+
+-- ── Asambleas de accionistas ──────────────────────────────────────────────────
+-- Requiere haber ejecutado shareholder-meetings-schema.sql primero (CREATE TABLE).
+-- Safe to re-run (ON CONFLICT DO UPDATE por id).
+
+INSERT INTO shareholder_meetings
+  (id, tipo, fecha, hora_local, zona_es, zona_en, formato, lugar_es, lugar_en,
+   titulo_es, titulo_en, nota_es, nota_en, record_date, sedar_url, activo, orden)
+VALUES
+  (
+    1,
+    'agm',
+    '2026-09-15',
+    '10:00 AM MST',
+    'Hora de Calgary, Alberta (Canada)',
+    'Calgary, Alberta (Canada) time',
+    'hibrida',
+    'Calgary, Alberta, Canada (con participación virtual disponible)',
+    'Calgary, Alberta, Canada (virtual participation available)',
+    'Asamblea General Anual 2026 — Crown Point Energy Inc.',
+    '2026 Annual General Meeting — Crown Point Energy Inc.',
+    'Elección de directores, designación de auditores y demás asuntos propios de la Asamblea. La documentación de la reunión se publicará en SEDAR+ con al menos 21 días de anticipación.',
+    'Election of directors, appointment of auditors and any other business properly before the meeting. Meeting materials will be filed on SEDAR+ at least 21 days in advance.',
+    '2026-08-14',
+    'https://www.sedarplus.ca',
+    true,
+    1
+  )
+ON CONFLICT (id) DO UPDATE SET
+  tipo        = EXCLUDED.tipo,
+  fecha       = EXCLUDED.fecha,
+  hora_local  = EXCLUDED.hora_local,
+  zona_es     = EXCLUDED.zona_es,
+  zona_en     = EXCLUDED.zona_en,
+  formato     = EXCLUDED.formato,
+  lugar_es    = EXCLUDED.lugar_es,
+  lugar_en    = EXCLUDED.lugar_en,
+  titulo_es   = EXCLUDED.titulo_es,
+  titulo_en   = EXCLUDED.titulo_en,
+  nota_es     = EXCLUDED.nota_es,
+  nota_en     = EXCLUDED.nota_en,
+  record_date = EXCLUDED.record_date,
+  sedar_url   = EXCLUDED.sedar_url,
+  activo      = EXCLUDED.activo,
+  orden       = EXCLUDED.orden;
