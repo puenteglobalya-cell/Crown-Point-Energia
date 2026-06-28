@@ -36,6 +36,11 @@ export default function PortalLoginPage() {
       setError('Email o contraseña incorrectos.')
       setLoading(false)
     } else {
+      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
+        window.location.href = '/portal/mfa'
+        return
+      }
       if (data.user) localStorage.removeItem(SESSION_START_PREFIX + data.user.id)
       window.location.href = '/portal'
     }
