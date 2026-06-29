@@ -463,6 +463,12 @@ export default async function InversoresPage() {
                     <IrDocsTabs docs={irDocs} categoria="gobierno" />
                   </div>
                 )}
+                <div style={{ marginTop: 'var(--s-5)', padding: '14px 18px', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', background: 'var(--bg-alt)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: 'var(--fg-muted)' }}>
+                    <span className="lang-es">Línea de denuncias</span><span className="lang-en">Complaint hotline</span>
+                  </span>
+                  <a href="tel:+5491152630361" style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none' }}>+54 911 5263 0361</a>
+                </div>
               </div>}
 
               {showAsambleas && <div className="section-block" id="asambleas">
