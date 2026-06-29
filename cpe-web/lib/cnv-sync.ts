@@ -109,11 +109,19 @@ function parseTable(
   return results
 }
 
+// Esta emisora publica casi todo bajo "Estados Contables" en la AIF; los hechos
+// relevantes reales (calificación, reservas, convocatorias, hechos relevantes,
+// actas de asamblea) van mezclados ahí. Los reclasificamos por descripción.
+const HECHO_RELEVANTE_RE = /hecho relevante|otra informaci[oó]n del adm|convocatoria|calificaci[oó]n|reservas|asamblea/i
+
 export async function scrapeCnvHechos(): Promise<CnvHecho[]> {
   const html = await fetchCnvHtml()
   const hechos  = parseTable(html, 'hechos relevantes',   'hecho_relevante')
   const estados = parseTable(html, 'estados contables',   'estado_contable')
-  return [...hechos, ...estados]
+  const reclasificados = estados.map(h =>
+    HECHO_RELEVANTE_RE.test(h.descripcion) ? { ...h, tipo: 'hecho_relevante' as const } : h
+  )
+  return [...hechos, ...reclasificados]
 }
 
 // ── Supabase upsert ───────────────────────────────────────────────────────────
