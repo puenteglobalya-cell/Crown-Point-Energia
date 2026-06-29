@@ -444,6 +444,11 @@ export default async function InversoresPage() {
                 <div style={{ marginTop: 'var(--s-6)' }}>
                   <InversoresDocsTabs docs={allDocs} tipo="on" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
                 </div>
+                {irDocs.filter(d => d.categoria === 'on').length > 0 && (
+                  <div style={{ marginTop: 'var(--s-6)' }}>
+                    <IrDocsTabs docs={irDocs} categoria="on" />
+                  </div>
+                )}
               </div>
 
               <div className="section-block" id="gobierno">
