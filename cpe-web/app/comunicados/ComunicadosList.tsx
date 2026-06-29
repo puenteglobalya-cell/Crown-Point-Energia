@@ -13,6 +13,7 @@ type Comunicado = {
   resumen_es: string
   resumen_en: string
   url: string
+  url_pdf: string | null
   tipo: string
 }
 
@@ -196,10 +197,24 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
                               <span className="lang-en">{item.resumen_en}</span>
                             </p>
                           )}
-                          <div className="press-card-cta">
-                            <span className="lang-es">Leer más</span>
-                            <span className="lang-en">Read more</span>
-                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          <div className="press-card-cta" style={{ gap: 12 }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span className="lang-es">Leer más</span>
+                              <span className="lang-en">Read more</span>
+                              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </span>
+                            {item.url_pdf && (
+                              <a
+                                href={item.url_pdf}
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                onClick={e => e.stopPropagation()}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', textDecoration: 'none', padding: '3px 9px', border: '1px solid var(--rule)', borderRadius: 'var(--r-pill)', transition: 'all 0.15s' }}
+                              >
+                                <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M8 2v8m0 0-3-3m3 3 3-3M2 12h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                PDF
+                              </a>
+                            )}
                           </div>
                         </>
                       )
