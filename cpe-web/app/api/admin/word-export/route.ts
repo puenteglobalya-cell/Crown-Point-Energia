@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { getCmsState } from '@/lib/cms'
-import { fetchOperationsBlocks } from '@/lib/content-fetch'
-import type { OperationsBlock } from '@/lib/content-fetch'
+import { fetchOperationsBlocks, fetchTeamMembers } from '@/lib/content-fetch'
+import type { OperationsBlock, TeamMember } from '@/lib/content-fetch'
 import {
   Document, Packer, Paragraph, Table, TableRow, TableCell,
   TextRun, HeadingLevel, AlignmentType, WidthType, BorderStyle,
@@ -127,11 +127,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const [s, opsBlocks] = await Promise.all([getCmsState(), fetchOperationsBlocks()])
+  const [s, opsBlocks, management, board] = await Promise.all([
+    getCmsState(), fetchOperationsBlocks(), fetchTeamMembers('management'), fetchTeamMembers('board'),
+  ])
   const f  = s.fields
   const fe = s.fieldsEn ?? {}
 
-  const sections = buildSections(f, fe, opsBlocks)
+  const sections = buildSections(f, fe, opsBlocks, [...management, ...board])
 
   const doc = new Document({
     creator: 'Crown Point Energy — Admin',
@@ -190,6 +192,7 @@ function buildSections(
   f: Record<string, string>,
   fe: Record<string, string>,
   opsBlocks: OperationsBlock[],
+  team: TeamMember[],
 ) {
   const elems: (Paragraph | Table)[] = []
 
@@ -199,6 +202,15 @@ function buildSections(
     elems.push(bilingualTable(rows))
     elems.push(commentBlock())
     elems.push(spacer())
+  }
+
+  function teamSection(label: string, eyebrowText: string, members: TeamMember[]) {
+    if (members.length === 0) return
+    section(label, eyebrowText, members.map(m => ({
+      label: m.name,
+      es: [m.role_es, m.bio_es].filter(Boolean).join(' — '),
+      en: [m.role_en, m.bio_en].filter(Boolean).join(' — '),
+    })))
   }
 
   // ── INICIO ────────────────────────────────────────────────────────────────
@@ -253,6 +265,11 @@ function buildSections(
     { label: 'Item 4', es: 'Menor burocracia y estructura más eficiente',                                         en: 'Less bureaucracy and more efficient structure' },
     { label: 'Item 5', es: 'Foco en el negocio principal',                                                        en: 'Focus on core business' },
   ])
+
+  teamSection('Management — CPE Inc.', 'Acerca de · Management CPE Inc.', team.filter(m => m.tipo === 'management' && m.entidad === 'CPI'))
+  teamSection('Management — CPESA', 'Acerca de · Management CPESA', team.filter(m => m.tipo === 'management' && m.entidad !== 'CPI'))
+  teamSection('Directorio — CPE Inc.', 'Acerca de · Directorio CPE Inc.', team.filter(m => m.tipo === 'board' && m.entidad === 'CPI'))
+  teamSection('Directorio — CPESA', 'Acerca de · Directorio CPESA', team.filter(m => m.tipo === 'board' && m.entidad !== 'CPI'))
 
   // ── OPERACIONES ────────────────────────────────────────────────────────────
   elems.push(heading1('3. Operaciones'))
