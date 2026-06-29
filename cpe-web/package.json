@@ -8,7 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.105.0",
+    "@anthropic-ai/sdk": "^0.106.0",
     "@sparticuz/chromium-min": "^149.0.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.106.2",
@@ -22,10 +22,10 @@
     "mammoth": "^1.12.0",
     "next": "14.2.35",
     "node-html-parser": "^8.0.3",
-    "puppeteer-core": "^25.2.0",
+    "puppeteer-core": "^25.2.1",
     "react": "^18",
     "react-dom": "^18",
-    "resend": "^6.14.0",
+    "resend": "^6.16.0",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
