@@ -72,7 +72,6 @@ export default function Footer() {
               <li><Link href="/acerca"><span className="lang-es">Acerca de nosotros</span><span className="lang-en">About us</span></Link></li>
               <li><Link href="/acerca#estrategia"><span className="lang-es">Estrategia</span><span className="lang-en">Strategy</span></Link></li>
               <li><Link href="/acerca#management">Management</Link></li>
-              <li><Link href="/esg">ESG</Link></li>
               <li><Link href="/carreras"><span className="lang-es">Carreras</span><span className="lang-en">Careers</span></Link></li>
               <li><Link href="/comercial"><span className="lang-es">Comercial</span><span className="lang-en">Commercial</span></Link></li>
               <li><Link href="/contacto"><span className="lang-es">Contacto</span><span className="lang-en">Contact</span></Link></li>

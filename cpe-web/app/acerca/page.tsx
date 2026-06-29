@@ -17,6 +17,9 @@ export default async function AcercaPage() {
   const fe = s.fieldsEn
   const heroImg = f['hero.acerca.img'] || ''
 
+  // ESG oculto hasta validar toda la sección — cambiar a true para reactivar
+  const SHOW_ESG = false
+
   const isCPI = (m: { entidad?: string }) => m.entidad === 'CPI'
   // CPE Inc. (matriz canadiense) vs CPESA (entidad argentina)
   const mgmtCPI    = management.filter(isCPI)
@@ -121,7 +124,7 @@ export default async function AcercaPage() {
                 <a href="#management">Management</a>
                 {boardCPI.length > 0 && <a href="#directorio-cpi"><span className="lang-es">Directorio CPE Inc.</span><span className="lang-en">CPE Inc. Board</span></a>}
                 {boardCPESA.length > 0 && <a href="#directorio"><span className="lang-es">Directorio CPESA</span><span className="lang-en">CPESA Board</span></a>}
-                <Link href="/esg"><span className="lang-es">ESG &amp; Responsabilidad corporativa</span><span className="lang-en">ESG &amp; Corporate responsibility</span></Link>
+                {SHOW_ESG && <Link href="/esg"><span className="lang-es">ESG &amp; Responsabilidad corporativa</span><span className="lang-en">ESG &amp; Corporate responsibility</span></Link>}
               </nav>
             </aside>
             <main>
@@ -380,7 +383,7 @@ export default async function AcercaPage() {
                 </ul>
               </div>}
 
-              <div className="section-block" id="esg" style={{ borderBottom: 0 }}>
+              {SHOW_ESG && <div className="section-block" id="esg" style={{ borderBottom: 0 }}>
                 <span className="eyebrow">ESG</span>
                 <h2 style={{ marginTop: 8 }}>
                   <span className="lang-es">Responsabilidad corporativa</span>
@@ -420,7 +423,7 @@ export default async function AcercaPage() {
                     <span className="lang-en">Full ESG report</span>
                   </Link>
                 </div>
-              </div>
+              </div>}
             </main>
           </div>
         </div>
