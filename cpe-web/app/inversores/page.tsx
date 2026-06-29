@@ -139,7 +139,7 @@ export default async function InversoresPage() {
               <h4><span className="lang-es">En esta página</span><span className="lang-en">On this page</span></h4>
               <nav>
                 <a href="#porque" className="active"><span className="lang-es">¿Por qué Crown Point?</span><span className="lang-en">Why Crown Point?</span></a>
-                {showFinancieros && <a href="#financieros"><span className="lang-es">Estados financieros</span><span className="lang-en">Financial statements</span></a>}
+                {showFinancieros && <a href="#financieros"><span className="lang-es">EEFF CPE Inc.</span><span className="lang-en">CPE Inc. financials</span></a>}
                 {showCpesa && <a href="#cpesa-financieros"><span className="lang-es">EEFF CPESA</span><span className="lang-en">CPESA financials</span></a>}
                 {showAgm && <a href="#agm"><span className="lang-es">AGM / Asambleas CPI</span><span className="lang-en">AGM / CPI meetings</span></a>}
                 {showEstma && <a href="#estma"><span className="lang-es">ESTMA</span><span className="lang-en">ESTMA</span></a>}
@@ -196,7 +196,7 @@ export default async function InversoresPage() {
 
               {showFinancieros && <div className="section-block" id="financieros">
                 <span className="eyebrow"><span className="lang-es">Reportes recientes</span><span className="lang-en">Recent filings</span></span>
-                <h2 style={{ marginTop: 8 }}><span className="lang-es">Estados financieros</span><span className="lang-en">Financial statements</span></h2>
+                <h2 style={{ marginTop: 8 }}><span className="lang-es">Estados financieros — Crown Point Energy Inc.</span><span className="lang-en">Financial statements — Crown Point Energy Inc.</span></h2>
                 <p className="lede">
                   <span className="lang-es">Reportes auditados según IFRS y compilados gerenciales trimestrales — Crown Point Energy Inc. (CPI, TSXV: CWV). Disponibles también en <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
                   <span className="lang-en">IFRS-audited reports and quarterly management filings — Crown Point Energy Inc. (CPI, TSXV: CWV). Also available on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>

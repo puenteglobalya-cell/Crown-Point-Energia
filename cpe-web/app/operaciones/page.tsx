@@ -176,7 +176,7 @@ export default async function OperacionesPage() {
                     </p>
 
                     {/* Block photo — set via CMS field img.ops.{slug} */}
-                    <div className="block-photo">
+                    {(blockImg || !blockMap) && <div className="block-photo">
                       {blockImg ? (
                         <Image
                           src={blockImg}
@@ -198,7 +198,7 @@ export default async function OperacionesPage() {
                           </span>
                         </div>
                       )}
-                    </div>
+                    </div>}
 
                     {blockMap && (
                       <figure style={{ margin: 'var(--s-4) 0 0' }}>
@@ -285,7 +285,7 @@ export default async function OperacionesPage() {
                       <span className="lang-en">{b.lede_en}</span>
                     </p>
 
-                    <div className="block-photo">
+                    {(blockImg || !blockMap) && <div className="block-photo">
                       {blockImg ? (
                         <Image
                           src={blockImg}
@@ -307,7 +307,7 @@ export default async function OperacionesPage() {
                           </span>
                         </div>
                       )}
-                    </div>
+                    </div>}
 
                     {blockMap && (
                       <figure style={{ margin: 'var(--s-4) 0 0' }}>
