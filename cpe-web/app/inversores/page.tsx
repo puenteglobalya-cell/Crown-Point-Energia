@@ -32,20 +32,20 @@ export default async function InversoresPage() {
   type CnvHecho = { doc_id: number; fecha: string; hora: string; tipo: string; descripcion: string; pdf_url: string | null }
   let cnvHechos: CnvHecho[] = []
 
+  const db = createSupabaseServerAdminClient()
+
+  // ir_documents fetched independently so a failure here never blanks the rest of the page
+  const irDocsRes = await db.from('ir_documents').select('*').eq('publicado', true).order('fecha', { ascending: false, nullsFirst: false })
+  irDocs = (irDocsRes.data ?? []) as IrDocument[]
+
   try {
-    const db = createSupabaseServerAdminClient()
-    const [sResult, docsResult, irDocsResult, evts, anls, obs, cnvRes, mtgs] = await Promise.all([
+    const [sResult, docsResult, evts, anls, obs, cnvRes, mtgs] = await Promise.all([
       getCmsState(),
       db.from('documentos')
         .select('*')
         .eq('publico', true)
         .order('created_at', { ascending: false })
         .then(r => (r.data ?? []) as Documento[]),
-      db.from('ir_documents')
-        .select('*')
-        .eq('publicado', true)
-        .order('fecha', { ascending: false })
-        .then(r => (r.data ?? []) as IrDocument[]),
       fetchIrEvents(),
       fetchIrAnalysts(),
       fetchObligaciones(),
@@ -58,7 +58,6 @@ export default async function InversoresPage() {
     ])
     s = sResult
     allDocs = docsResult as Documento[]
-    irDocs = irDocsResult as IrDocument[]
     irEvents = evts
     analysts = anls
     obligaciones = obs
