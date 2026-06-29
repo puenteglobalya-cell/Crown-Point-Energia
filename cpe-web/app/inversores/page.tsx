@@ -3,6 +3,7 @@ import { getCmsState } from '@/lib/cms'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { fetchIrEvents, fetchIrAnalysts, fetchObligaciones, fetchShareholderMeetings, type ShareholderMeeting } from '@/lib/content-fetch'
 import InversoresDocsTabs from './InversoresDocsTabs'
+import IrDocsTabs, { type IrDocument } from './IrDocsTabs'
 import IrSubscribeForm from './IrSubscribeForm'
 import ReservesTable from './ReservesTable'
 import StockChart from '@/components/StockChart'
@@ -22,7 +23,8 @@ type Documento = {
 }
 
 export default async function InversoresPage() {
-  let s, allDocs: Documento[] = [], irEvents: Awaited<ReturnType<typeof fetchIrEvents>> = [],
+  let s, allDocs: Documento[] = [], irDocs: IrDocument[] = [],
+    irEvents: Awaited<ReturnType<typeof fetchIrEvents>> = [],
     analysts: Awaited<ReturnType<typeof fetchIrAnalysts>> = [],
     obligaciones: Awaited<ReturnType<typeof fetchObligaciones>> = [],
     meetings: ShareholderMeeting[] = []
@@ -32,13 +34,18 @@ export default async function InversoresPage() {
 
   try {
     const db = createSupabaseServerAdminClient()
-    const [sResult, docsResult, evts, anls, obs, cnvRes, mtgs] = await Promise.all([
+    const [sResult, docsResult, irDocsResult, evts, anls, obs, cnvRes, mtgs] = await Promise.all([
       getCmsState(),
       db.from('documentos')
         .select('*')
         .eq('publico', true)
         .order('created_at', { ascending: false })
         .then(r => (r.data ?? []) as Documento[]),
+      db.from('ir_documents')
+        .select('*')
+        .eq('publicado', true)
+        .order('fecha', { ascending: false })
+        .then(r => (r.data ?? []) as IrDocument[]),
       fetchIrEvents(),
       fetchIrAnalysts(),
       fetchObligaciones(),
@@ -51,6 +58,7 @@ export default async function InversoresPage() {
     ])
     s = sResult
     allDocs = docsResult as Documento[]
+    irDocs = irDocsResult as IrDocument[]
     irEvents = evts
     analysts = anls
     obligaciones = obs
@@ -121,6 +129,9 @@ export default async function InversoresPage() {
               <nav>
                 <a href="#porque" className="active"><span className="lang-es">¿Por qué Crown Point?</span><span className="lang-en">Why Crown Point?</span></a>
                 <a href="#financieros"><span className="lang-es">Estados financieros</span><span className="lang-en">Financial statements</span></a>
+                <a href="#cpesa-financieros"><span className="lang-es">EEFF CPESA</span><span className="lang-en">CPESA financials</span></a>
+                <a href="#agm"><span className="lang-es">AGM / Asambleas CPI</span><span className="lang-en">AGM / CPI meetings</span></a>
+                <a href="#estma"><span className="lang-es">ESTMA</span><span className="lang-en">ESTMA</span></a>
                 <a href="#hechos-cnv"><span className="lang-es">Hechos relevantes CNV</span><span className="lang-en">CNV disclosures</span></a>
                 <a href="#cobertura"><span className="lang-es">Cobertura de analistas</span><span className="lang-en">Analyst coverage</span></a>
                 <a href="#calificacion"><span className="lang-es">Calificación crediticia</span><span className="lang-en">Credit rating</span></a>
@@ -176,10 +187,54 @@ export default async function InversoresPage() {
                 <span className="eyebrow"><span className="lang-es">Reportes recientes</span><span className="lang-en">Recent filings</span></span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Estados financieros</span><span className="lang-en">Financial statements</span></h2>
                 <p className="lede">
-                  <span className="lang-es">Reportes auditados según IFRS y compilados gerenciales trimestrales. Disponibles también en <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a> y en la <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a> (buscar &quot;Crown Point Energía S.A.&quot;).</span>
-                  <span className="lang-en">IFRS-audited reports and quarterly management filings. Also available on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a> and the <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a> (search for &quot;Crown Point Energía S.A.&quot;).</span>
+                  <span className="lang-es">Reportes auditados según IFRS y compilados gerenciales trimestrales — Crown Point Energy Inc. (CPI, TSXV: CWV). Disponibles también en <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
+                  <span className="lang-en">IFRS-audited reports and quarterly management filings — Crown Point Energy Inc. (CPI, TSXV: CWV). Also available on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
                 </p>
                 <InversoresDocsTabs docs={allDocs} tipo="financiero" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
+                {irDocs.filter(d => d.categoria === 'financiero' && d.entidad === 'CPI').length > 0 && (
+                  <div style={{ marginTop: 'var(--s-4)' }}>
+                    <IrDocsTabs docs={irDocs} categoria="financiero" entidad="CPI" />
+                  </div>
+                )}
+              </div>
+
+              <div className="section-block" id="cpesa-financieros">
+                <span className="eyebrow">CPESA · <span className="lang-es">Empresa local</span><span className="lang-en">Local entity</span></span>
+                <h2 style={{ marginTop: 8 }}>
+                  <span className="lang-es">Estados financieros CPESA</span>
+                  <span className="lang-en">CPESA Financial Statements</span>
+                </h2>
+                <p className="lede">
+                  <span className="lang-es">Estados contables de Crown Point Energía S.A. (CPESA), entidad argentina operadora de las concesiones. Presentados ante la <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a>.</span>
+                  <span className="lang-en">Financial statements of Crown Point Energía S.A. (CPESA), the Argentine operating entity. Filed with the <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a>.</span>
+                </p>
+                <IrDocsTabs docs={irDocs} categoria="financiero" entidad="CPESA" />
+              </div>
+
+              <div className="section-block" id="agm">
+                <span className="eyebrow">CPI · AGM</span>
+                <h2 style={{ marginTop: 8 }}>
+                  <span className="lang-es">Materiales de asamblea — CPI</span>
+                  <span className="lang-en">AGM materials — CPI</span>
+                </h2>
+                <p className="lede">
+                  <span className="lang-es">Circulares de información, notices y formularios de proxy de las asambleas anuales de Crown Point Energy Inc. Archivados en <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
+                  <span className="lang-en">Information circulars, notices and proxy forms for Crown Point Energy Inc. Annual General Meetings. Filed on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
+                </p>
+                <IrDocsTabs docs={irDocs} categoria="agm" />
+              </div>
+
+              <div className="section-block" id="estma">
+                <span className="eyebrow">ESTMA</span>
+                <h2 style={{ marginTop: 8 }}>
+                  <span className="lang-es">Reportes ESTMA</span>
+                  <span className="lang-en">ESTMA Reports</span>
+                </h2>
+                <p className="lede">
+                  <span className="lang-es">Reportes de pagos a gobiernos bajo la <em>Extractive Sector Transparency Measures Act</em> (ESTMA) de Canadá. Crown Point Energy Inc. reporta sus pagos a gobiernos argentinos anualment.</span>
+                  <span className="lang-en">Payments to governments reports under Canada's <em>Extractive Sector Transparency Measures Act</em> (ESTMA). Crown Point Energy Inc. reports annual payments to Argentine governments.</span>
+                </p>
+                <IrDocsTabs docs={irDocs} categoria="estma" />
               </div>
 
               <div className="section-block" id="hechos-cnv">
@@ -397,6 +452,11 @@ export default async function InversoresPage() {
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Gobierno corporativo</span><span className="lang-en">Corporate governance</span></h2>
                 <p className="lede"><span className="lang-es">Crown Point Energy Inc. cotiza en TSX Venture Exchange y reporta bajo las normas canadienses para emisores junior.</span><span className="lang-en">Crown Point Energy Inc. is listed on TSX Venture Exchange and reports under Canadian junior issuer standards.</span></p>
                 <InversoresDocsTabs docs={allDocs} tipo="gobierno" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
+                {irDocs.filter(d => d.categoria === 'gobierno').length > 0 && (
+                  <div style={{ marginTop: 'var(--s-4)' }}>
+                    <IrDocsTabs docs={irDocs} categoria="gobierno" />
+                  </div>
+                )}
               </div>
 
               <div className="section-block" id="asambleas">
