@@ -6,13 +6,21 @@ import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
 
 export async function GET() {
-  const isAdmin = await requireAdminUser()
-  const admin = createSupabaseServerAdminClient()
+  try {
+    const isAdmin = await requireAdminUser()
+    const admin = createSupabaseServerAdminClient()
 
-  const base = admin.from('ir_documents').select('*').order('fecha', { ascending: false, nullsFirst: false })
-  const { data, error } = await (isAdmin ? base : base.eq('publicado', true))
-  if (error) return NextResponse.json({ error: error.message, code: error.code, details: error.details }, { status: 500 })
-  return NextResponse.json(data ?? [])
+    const base = admin.from('ir_documents').select('*').order('fecha', { ascending: false, nullsFirst: false })
+    const { data, error } = await (isAdmin ? base : base.eq('publicado', true))
+    if (error) {
+      console.error('IR Docs query error:', error)
+      return NextResponse.json({ error: error.message, code: error.code, details: error.details }, { status: 500 })
+    }
+    return NextResponse.json(data ?? [])
+  } catch (e) {
+    console.error('IR Docs API error:', e)
+    return NextResponse.json({ error: String(e) }, { status: 500 })
+  }
 }
 
 export async function POST(req: NextRequest) {
