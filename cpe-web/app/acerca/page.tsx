@@ -17,12 +17,19 @@ export default async function AcercaPage() {
   const fe = s.fieldsEn
   const heroImg = f['hero.acerca.img'] || ''
 
+  const isCPI = (m: { entidad?: string }) => m.entidad === 'CPI'
+  // CPE Inc. (matriz canadiense) vs CPESA (entidad argentina)
+  const mgmtCPI    = management.filter(isCPI)
+  const mgmtCPESA  = management.filter(m => !isCPI(m))
+  const boardCPI   = board.filter(isCPI)
+  const boardCPESA = board.filter(m => !isCPI(m))
+
   const BOARD_CATEGORIES = ['Director Titular', 'Director Suplente', 'Síndico Titular', 'Síndico Suplente']
-  const dirTitulares  = board.filter(d => d.cargo_board === 'Director Titular')
-  const dirSuplentes  = board.filter(d => d.cargo_board === 'Director Suplente')
-  const sindTitulares = board.filter(d => d.cargo_board === 'Síndico Titular')
-  const sindSuplentes = board.filter(d => d.cargo_board === 'Síndico Suplente')
-  const boardOther    = board.filter(d => !BOARD_CATEGORIES.includes(d.cargo_board))
+  const dirTitulares  = boardCPESA.filter(d => d.cargo_board === 'Director Titular')
+  const dirSuplentes  = boardCPESA.filter(d => d.cargo_board === 'Director Suplente')
+  const sindTitulares = boardCPESA.filter(d => d.cargo_board === 'Síndico Titular')
+  const sindSuplentes = boardCPESA.filter(d => d.cargo_board === 'Síndico Suplente')
+  const boardOther    = boardCPESA.filter(d => !BOARD_CATEGORIES.includes(d.cargo_board))
 
   const boardJsonLd = {
     '@context': 'https://schema.org',
@@ -112,7 +119,8 @@ export default async function AcercaPage() {
                 <a href="#estrategia"><span className="lang-es">Estrategia</span><span className="lang-en">Strategy</span></a>
                 <a href="#evolucion"><span className="lang-es">Evolución</span><span className="lang-en">History</span></a>
                 <a href="#management">Management</a>
-                <a href="#directorio"><span className="lang-es">Directorio CPE Inc.</span><span className="lang-en">CPE Inc. Board</span></a>
+                {boardCPI.length > 0 && <a href="#directorio-cpi"><span className="lang-es">Directorio CPE Inc.</span><span className="lang-en">CPE Inc. Board</span></a>}
+                {boardCPESA.length > 0 && <a href="#directorio"><span className="lang-es">Directorio CPESA</span><span className="lang-en">CPESA Board</span></a>}
                 <Link href="/esg"><span className="lang-es">ESG &amp; Responsabilidad corporativa</span><span className="lang-en">ESG &amp; Corporate responsibility</span></Link>
               </nav>
             </aside>
@@ -239,32 +247,69 @@ export default async function AcercaPage() {
                   <span className="lang-es">Profesionales con más de 20 años de experiencia en upstream argentino y mercados de capitales canadienses.</span>
                   <span className="lang-en">Professionals with over 20 years of experience in Argentine upstream and Canadian capital markets.</span>
                 </p>
-                <ul className="people-grid">
-                  {management.map(p => (
-                    <li className="person" key={p.id}>
-                      <div className="avatar" style={{ background: p.bg }}>{p.initials}</div>
-                      <strong>{p.name}</strong>
-                      <span className="role">
-                        <span className="lang-es">{p.role_es}</span>
-                        <span className="lang-en">{p.role_en}</span>
-                      </span>
-                      {(p.bio_es || p.bio_en) && (
-                        <p>
-                          <span className="lang-es">{p.bio_es}</span>
-                          <span className="lang-en">{p.bio_en}</span>
-                        </p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                {[
+                  { label: 'Crown Point Energy Inc.', list: mgmtCPI },
+                  { label: 'Crown Point Energía S.A. (CPESA)', list: mgmtCPESA },
+                ].filter(g => g.list.length > 0).map(g => (
+                  <div key={g.label} style={{ marginTop: 'var(--s-6)' }}>
+                    <h3 style={{ fontSize: 13, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent-deep)', fontWeight: 700, marginBottom: 'var(--s-4)' }}>{g.label}</h3>
+                    <ul className="people-grid">
+                      {g.list.map(p => (
+                        <li className="person" key={p.id}>
+                          <div className="avatar" style={{ background: p.bg }}>{p.initials}</div>
+                          <strong>{p.name}</strong>
+                          <span className="role">
+                            <span className="lang-es">{p.role_es}</span>
+                            <span className="lang-en">{p.role_en}</span>
+                          </span>
+                          {(p.bio_es || p.bio_en) && (
+                            <p>
+                              <span className="lang-es">{p.bio_es}</span>
+                              <span className="lang-en">{p.bio_en}</span>
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </div>
 
-              <div className="section-block" id="directorio">
-                <span className="eyebrow">Crown Point Energy Inc.</span>
-                <h2 style={{ marginTop: 8 }}><span className="lang-es">Directorio</span><span className="lang-en">Board of directors</span></h2>
+              {boardCPI.length > 0 && (
+                <div className="section-block" id="directorio-cpi">
+                  <span className="eyebrow">Crown Point Energy Inc.</span>
+                  <h2 style={{ marginTop: 8 }}><span className="lang-es">Directorio — CPE Inc.</span><span className="lang-en">Board of directors — CPE Inc.</span></h2>
+                  <p className="lede">
+                    <span className="lang-es">Cumplimos con NI 58-101 sobre prácticas de gobierno corporativo.</span>
+                    <span className="lang-en">We comply with NI 58-101 on corporate governance practices.</span>
+                  </p>
+                  <ul className="people-grid">
+                    {boardCPI.map(p => (
+                      <li className="person" key={p.id}>
+                        <div className="avatar" style={{ background: p.bg }}>{p.initials}</div>
+                        <strong>{p.name}</strong>
+                        <span className="role">
+                          <span className="lang-es">{p.role_es}</span>
+                          <span className="lang-en">{p.role_en}</span>
+                        </span>
+                        {(p.bio_es || p.bio_en) && (
+                          <p>
+                            <span className="lang-es">{p.bio_es}</span>
+                            <span className="lang-en">{p.bio_en}</span>
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {boardCPESA.length > 0 && <div className="section-block" id="directorio">
+                <span className="eyebrow">Crown Point Energía S.A.</span>
+                <h2 style={{ marginTop: 8 }}><span className="lang-es">Directorio — CPESA</span><span className="lang-en">Board of directors — CPESA</span></h2>
                 <p className="lede">
-                  <span className="lang-es">Cumplimos con NI 58-101 sobre prácticas de gobierno corporativo.</span>
-                  <span className="lang-en">We comply with NI 58-101 on corporate governance practices.</span>
+                  <span className="lang-es">Directorio y Comisión Fiscalizadora de la entidad operadora argentina.</span>
+                  <span className="lang-en">Board and Statutory Audit Committee of the Argentine operating entity.</span>
                 </p>
                 <ul className="director-list">
                   {dirTitulares.length > 0 && (
@@ -333,7 +378,7 @@ export default async function AcercaPage() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </div>}
 
               <div className="section-block" id="esg" style={{ borderBottom: 0 }}>
                 <span className="eyebrow">ESG</span>

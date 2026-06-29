@@ -54,7 +54,7 @@ export type TeamMember = {
   id: string; name: string; role_es: string; role_en: string
   bio_es: string; bio_en: string; initials: string; bg: string
   tipo: 'management' | 'board'; cargo_board: string; independiente: boolean | null
-  orden: number; activo: boolean
+  entidad: string; orden: number; activo: boolean
 }
 
 export type StrategyCard = {
