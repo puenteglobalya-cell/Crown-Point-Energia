@@ -8,6 +8,7 @@ import { dbError } from '@/lib/api-error'
 export async function GET() {
   try {
     const isAdmin = await requireAdminUser()
+    console.log('isAdmin:', isAdmin?.email, 'CMS_ADMIN_EMAILS:', process.env.CMS_ADMIN_EMAILS)
     const admin = createSupabaseServerAdminClient()
 
     const base = admin.from('ir_documents').select('*').order('fecha', { ascending: false, nullsFirst: false })
@@ -16,6 +17,7 @@ export async function GET() {
       console.error('IR Docs query error:', error)
       return NextResponse.json({ error: error.message, code: error.code, details: error.details }, { status: 500 })
     }
+    console.log('ir_documents data count:', data?.length ?? 0)
     return NextResponse.json(data ?? [])
   } catch (e) {
     console.error('IR Docs API error:', e)
