@@ -119,6 +119,11 @@ export const BACKUP_TABLES: BackupTable[] = [
     category: 'contenido', included: true,
   },
   {
+    table: 'ir_documents',        key: 'ir_documents',        label: 'Documentos IR',
+    description: 'EE.FF., MD&A, AGM, ESTMA, gobierno y ONs (CPI/CPESA)',
+    category: 'contenido', included: true,
+  },
+  {
     table: 'strategy_cards',      key: 'strategy_cards',      label: 'Pilares de estrategia',
     description: 'Cards de estrategia corporativa de la página Acerca de',
     category: 'contenido', included: true,
