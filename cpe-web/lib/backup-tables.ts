@@ -124,6 +124,16 @@ export const BACKUP_TABLES: BackupTable[] = [
     category: 'contenido', included: true,
   },
   {
+    table: 'cnv_hechos',          key: 'cnv_hechos',          label: 'Hechos relevantes CNV',
+    description: 'Hechos relevantes y estados contables sincronizados desde la CNV',
+    category: 'contenido', included: true,
+  },
+  {
+    table: 'shareholder_meetings', key: 'shareholder_meetings', label: 'Asambleas de accionistas',
+    description: 'Asambleas (AGM/EGM): fecha, lugar, formato y record date',
+    category: 'contenido', included: true,
+  },
+  {
     table: 'strategy_cards',      key: 'strategy_cards',      label: 'Pilares de estrategia',
     description: 'Cards de estrategia corporativa de la página Acerca de',
     category: 'contenido', included: true,
