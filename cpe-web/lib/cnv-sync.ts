@@ -127,7 +127,9 @@ export async function scrapeCnvHechos(): Promise<CnvHecho[]> {
 // ── Supabase upsert ───────────────────────────────────────────────────────────
 
 export async function syncCnvToSupabase(): Promise<{ inserted: number; errors: string[] }> {
-  const hechos = await scrapeCnvHechos()
+  const scraped = await scrapeCnvHechos()
+  // Solo hechos relevantes: los balances/estados contables se publican en la sección EEFF CPESA
+  const hechos = scraped.filter(h => h.tipo === 'hecho_relevante')
   if (!hechos.length) return { inserted: 0, errors: ['No rows parsed from CNV — page may be JS-rendered'] }
 
   const db = createClient(
