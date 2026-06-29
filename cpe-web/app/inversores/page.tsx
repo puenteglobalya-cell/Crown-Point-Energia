@@ -53,7 +53,7 @@ export default async function InversoresPage() {
         .select('doc_id,fecha,hora,tipo,descripcion,pdf_url')
         .eq('tipo', 'hecho_relevante')
         .order('fecha', { ascending: false })
-        .limit(30),
+        .limit(100),
       fetchShareholderMeetings(),
     ])
     s = sResult
