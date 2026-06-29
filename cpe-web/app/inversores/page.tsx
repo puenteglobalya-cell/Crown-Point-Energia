@@ -34,8 +34,8 @@ export default async function InversoresPage() {
 
   const db = createSupabaseServerAdminClient()
 
-  // ir_documents via RPC (PostgREST schema cache workaround)
-  const irDocsRes = await db.rpc('get_ir_documents', { only_published: true })
+  // ir_documents fetched independently so a failure here never blanks the rest of the page
+  const irDocsRes = await db.from('ir_documents').select('*').eq('publicado', true).order('fecha', { ascending: false, nullsFirst: false })
   irDocs = (irDocsRes.data ?? []) as IrDocument[]
 
   try {
