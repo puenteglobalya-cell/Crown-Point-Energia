@@ -9,10 +9,10 @@ export async function GET() {
   const isAdmin = await requireAdminUser()
   const admin = createSupabaseServerAdminClient()
 
-  const base = admin.from('ir_documents').select('*').order('fecha', { ascending: false })
+  const base = admin.from('ir_documents').select('*').order('fecha', { ascending: false, nullsFirst: false })
   const { data, error } = await (isAdmin ? base : base.eq('publicado', true))
-  if (error) return dbError(error)
-  return NextResponse.json(data)
+  if (error) return NextResponse.json({ error: error.message, code: error.code, details: error.details }, { status: 500 })
+  return NextResponse.json(data ?? [])
 }
 
 export async function POST(req: NextRequest) {
