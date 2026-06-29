@@ -165,6 +165,7 @@ export default async function OperacionesPage() {
               {[...explotacionBlocks, ...otherBlocks].map((b) => {
                 const comm = COMMODITY[b.commodity]
                 const blockImg = f[`img.ops.${b.slug}`] || ''
+                const blockMap = f[`img.ops.${b.slug}.map`] || ''
                 return (
                   <div className="section-block" id={b.slug} key={b.slug}>
                     <span className="eyebrow">{b.eyebrow}</span>
@@ -198,6 +199,20 @@ export default async function OperacionesPage() {
                         </div>
                       )}
                     </div>
+
+                    {blockMap && (
+                      <figure style={{ margin: 'var(--s-4) 0 0' }}>
+                        <img
+                          src={blockMap}
+                          alt={f[`img.ops.${b.slug}.map.alt`] || `Mapa de ubicación · ${b.titulo}`}
+                          style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--rule)', display: 'block' }}
+                        />
+                        <figcaption style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
+                          <span className="lang-es">Mapa de ubicación</span>
+                          <span className="lang-en">Location map</span>
+                        </figcaption>
+                      </figure>
+                    )}
 
                     <div className="block-card" style={{ borderTop: `3px solid ${comm.color}` }}>
                       <header className="block-card-hd">
@@ -260,6 +275,7 @@ export default async function OperacionesPage() {
               {exploracionBlocks.map((b) => {
                 const comm = COMMODITY[b.commodity]
                 const blockImg = f[`img.ops.${b.slug}`] || ''
+                const blockMap = f[`img.ops.${b.slug}.map`] || ''
                 return (
                   <div className="section-block" id={b.slug} key={b.slug}>
                     <span className="eyebrow">{b.eyebrow}</span>
@@ -292,6 +308,20 @@ export default async function OperacionesPage() {
                         </div>
                       )}
                     </div>
+
+                    {blockMap && (
+                      <figure style={{ margin: 'var(--s-4) 0 0' }}>
+                        <img
+                          src={blockMap}
+                          alt={f[`img.ops.${b.slug}.map.alt`] || `Mapa de ubicación · ${b.titulo}`}
+                          style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--rule)', display: 'block' }}
+                        />
+                        <figcaption style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
+                          <span className="lang-es">Mapa de ubicación</span>
+                          <span className="lang-en">Location map</span>
+                        </figcaption>
+                      </figure>
+                    )}
 
                     <div className="block-card" style={{ borderTop: `3px solid ${comm.color}` }}>
                       <header className="block-card-hd">
