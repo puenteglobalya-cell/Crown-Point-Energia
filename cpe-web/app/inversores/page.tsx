@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { getPostgresClient } from '@/lib/postgres-direct'
 import { fetchIrEvents, fetchIrAnalysts, fetchObligaciones, fetchShareholderMeetings, type ShareholderMeeting } from '@/lib/content-fetch'
 import InversoresDocsTabs from './InversoresDocsTabs'
 import IrDocsTabs, { type IrDocument } from './IrDocsTabs'
@@ -33,10 +34,15 @@ export default async function InversoresPage() {
   let cnvHechos: CnvHecho[] = []
 
   const db = createSupabaseServerAdminClient()
+  const sql = getPostgresClient()
 
-  // ir_documents fetched independently so a failure here never blanks the rest of the page
-  const irDocsRes = await db.from('ir_documents').select('*').eq('publicado', true).order('fecha', { ascending: false, nullsFirst: false })
-  irDocs = (irDocsRes.data ?? []) as IrDocument[]
+  // ir_documents fetched via direct postgres (PostgREST cache workaround)
+  try {
+    irDocs = await sql`SELECT * FROM ir_documents WHERE publicado = true ORDER BY fecha DESC NULLS LAST` as IrDocument[]
+  } catch (e) {
+    console.error('Failed to fetch ir_documents:', e)
+    irDocs = []
+  }
 
   try {
     const [sResult, docsResult, evts, anls, obs, cnvRes, mtgs] = await Promise.all([

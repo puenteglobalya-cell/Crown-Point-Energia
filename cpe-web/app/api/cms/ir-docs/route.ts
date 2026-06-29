@@ -4,21 +4,19 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
+import { getPostgresClient } from '@/lib/postgres-direct'
 
 export async function GET() {
   try {
     const isAdmin = await requireAdminUser()
-    console.log('isAdmin:', isAdmin?.email, 'CMS_ADMIN_EMAILS:', process.env.CMS_ADMIN_EMAILS)
-    const admin = createSupabaseServerAdminClient()
+    const sql = getPostgresClient()
 
-    const base = admin.from('ir_documents').select('*').order('fecha', { ascending: false, nullsFirst: false })
-    const { data, error } = await (isAdmin ? base : base.eq('publicado', true))
-    if (error) {
-      console.error('IR Docs query error:', error)
-      return NextResponse.json({ error: error.message, code: error.code, details: error.details }, { status: 500 })
-    }
-    console.log('ir_documents data count:', data?.length ?? 0)
-    return NextResponse.json(data ?? [])
+    const query = isAdmin
+      ? `SELECT * FROM ir_documents ORDER BY fecha DESC NULLS LAST`
+      : `SELECT * FROM ir_documents WHERE publicado = true ORDER BY fecha DESC NULLS LAST`
+
+    const data = await sql.unsafe(query)
+    return NextResponse.json(data)
   } catch (e) {
     console.error('IR Docs API error:', e)
     return NextResponse.json({ error: String(e) }, { status: 500 })
