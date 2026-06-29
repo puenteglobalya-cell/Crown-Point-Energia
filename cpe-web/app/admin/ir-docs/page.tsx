@@ -64,7 +64,9 @@ export default function IrDocsAdminPage() {
   async function load() {
     setLoading(true)
     const res = await fetch('/api/cms/ir-docs')
-    if (res.ok) setDocs(await res.json())
+    const body = await res.json()
+    if (res.ok) setDocs(body)
+    else flash(`Error API: ${body.error ?? res.status} (${body.code ?? ''})`, true)
     setLoading(false)
   }
 
