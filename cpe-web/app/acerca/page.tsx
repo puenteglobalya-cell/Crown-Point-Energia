@@ -5,6 +5,12 @@ import { fetchTeamMembers, fetchStrategyCards, fetchEsgPillars } from '@/lib/con
 
 export const revalidate = 60
 
+export const metadata = {
+  title: 'Acerca de | Crown Point Energy',
+  description: 'Compañía de petróleo y gas con producción en Argentina, listada en TSXV: CWV. Directorio CPE Inc. y CPESA, equipo de management y estrategia corporativa.',
+  alternates: { canonical: 'https://crownpointenergy.com/acerca' },
+}
+
 export default async function AcercaPage() {
   const [s, management, board, strategyCards, esgPillars] = await Promise.all([
     getCmsState(),

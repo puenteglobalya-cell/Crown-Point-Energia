@@ -4,6 +4,12 @@ import ComunicadosList from './ComunicadosList'
 
 export const revalidate = 60
 
+export const metadata = {
+  title: 'Comunicados | Crown Point Energy',
+  description: 'Comunicados de prensa, hechos relevantes y novedades corporativas de Crown Point Energy (TSXV: CWV).',
+  alternates: { canonical: 'https://crownpointenergy.com/comunicados' },
+}
+
 export default async function ComunicadosPage() {
   const { data } = await createSupabaseServerAdminClient()
     .from('comunicados')

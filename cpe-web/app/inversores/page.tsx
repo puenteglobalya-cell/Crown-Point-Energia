@@ -23,6 +23,12 @@ type Documento = {
   publico: boolean
 }
 
+export const metadata = {
+  title: 'Inversores | Crown Point Energy (TSXV: CWV)',
+  description: 'Cotización CWV en tiempo real, estados financieros CPE Inc. y CPESA, obligaciones negociables, calificación crediticia y hechos relevantes ante la CNV.',
+  alternates: { canonical: 'https://crownpointenergy.com/inversores' },
+}
+
 export default async function InversoresPage() {
   let s, allDocs: Documento[] = [], irDocs: IrDocument[] = [],
     irEvents: Awaited<ReturnType<typeof fetchIrEvents>> = [],

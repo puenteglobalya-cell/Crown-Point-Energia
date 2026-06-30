@@ -29,6 +29,13 @@ const ESG_ICONS: Record<string, React.ReactNode> = {
   ),
 }
 
+export const metadata = {
+  title: 'ESG | Crown Point Energy',
+  description: 'Responsabilidad ambiental, social y de gobierno corporativo de Crown Point Energy.',
+  alternates: { canonical: 'https://crownpointenergy.com/esg' },
+  robots: { index: false, follow: false },
+}
+
 export default async function EsgPage() {
   const [s, pillars] = await Promise.all([
     getCmsState(),

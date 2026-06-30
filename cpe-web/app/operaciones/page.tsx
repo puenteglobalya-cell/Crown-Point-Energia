@@ -19,6 +19,12 @@ const COMMODITY: Record<Commodity, { color: string; es: string; en: string }> = 
   mixed: { color: '#6CAE52', es: 'Petróleo + Gas',  en: 'Oil + Gas' },
 }
 
+export const metadata = {
+  title: 'Operaciones | Crown Point Energy',
+  description: '11 concesiones agrupadas en 6 bloques operativos, en cuatro cuencas argentinas — Austral, San Jorge, Neuquén y Cuyo. Producción de petróleo y gas.',
+  alternates: { canonical: 'https://crownpointenergy.com/operaciones' },
+}
+
 export default async function OperacionesPage() {
   const [s, allBlocks] = await Promise.all([
     getCmsState(),
@@ -115,8 +121,8 @@ export default async function OperacionesPage() {
             <aside className="left-rail">
               <h4><span className="lang-es">Bloques</span><span className="lang-en">Blocks</span></h4>
               <p style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.5, margin: '4px 0 12px' }}>
-                <span className="lang-es">{blocks.length} bloques · {blocks.reduce((acc, b) => acc + (Array.isArray((b as any).concesiones) ? (b as any).concesiones.length : 1), 0) || 9} concesiones agrupadas</span>
-                <span className="lang-en">{blocks.length} blocks · 9 grouped concessions</span>
+                <span className="lang-es">{blocks.length} bloques · 11 concesiones agrupadas</span>
+                <span className="lang-en">{blocks.length} blocks · 11 grouped concessions</span>
               </p>
               <nav>
                 <a href="#mapa" className="active"><span className="lang-es">Mapa general</span><span className="lang-en">Map overview</span></a>

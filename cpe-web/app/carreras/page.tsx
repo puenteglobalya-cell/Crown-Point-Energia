@@ -32,6 +32,12 @@ const CULTURE_ICONS: Record<string, React.ReactNode> = {
   ),
 }
 
+export const metadata = {
+  title: 'Carreras | Crown Point Energy',
+  description: 'Oportunidades laborales en Crown Point Energy — sumate al sector energético argentino. Posiciones técnicas y administrativas.',
+  alternates: { canonical: 'https://crownpointenergy.com/carreras' },
+}
+
 export default async function CarrerasPage() {
   const [s, cultureCards, openPositions] = await Promise.all([
     getCmsState(),

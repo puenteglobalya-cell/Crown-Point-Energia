@@ -5,6 +5,12 @@ import { UbicacionesMap } from './UbicacionesMap'
 
 export const revalidate = 60
 
+export const metadata = {
+  title: 'Contacto | Crown Point Energy',
+  description: 'Contactá a Crown Point Energy — oficinas en Argentina y Canadá, relaciones con inversores y consultas comerciales.',
+  alternates: { canonical: 'https://crownpointenergy.com/contacto' },
+}
+
 export default async function ContactoPage() {
   const s = await getCmsState()
   const f = s.fields

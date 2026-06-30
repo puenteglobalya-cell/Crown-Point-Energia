@@ -301,8 +301,8 @@ export default async function HomePage() {
               <div>
                 <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
                 <h2 className="section-title">
-                  <span className="lang-es">{kpiBlkVal} concesiones<br/>en cuatro cuencas.</span>
-                  <span className="lang-en">{kpiBlkVal} concessions<br/>across four basins.</span>
+                  <span className="lang-es">11 concesiones<br/>en cuatro cuencas.</span>
+                  <span className="lang-en">11 concessions<br/>across four basins.</span>
                 </h2>
               </div>
               <p>

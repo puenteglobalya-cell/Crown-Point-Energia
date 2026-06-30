@@ -3,6 +3,12 @@ import CommercialForm from './CommercialForm'
 
 export const revalidate = 3600
 
+export const metadata = {
+  title: 'Comercial | Crown Point Energy',
+  description: 'Comercialización de petróleo crudo y gas natural de la producción de Crown Point Energy en el mercado argentino y de exportación.',
+  alternates: { canonical: 'https://crownpointenergy.com/comercial' },
+}
+
 export default function ComercialPage() {
   return (
     <>
