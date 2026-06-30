@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
+import { cmsLineBreaks } from '@/lib/cms-html'
 import { fetchEsgPillars } from '@/lib/content-fetch'
 
 export const revalidate = 60
@@ -55,8 +56,8 @@ export default async function EsgPage() {
             <span className="lang-en">Corporate responsibility</span>
           </span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: f['page.esg.h1'] || 'Operar bien.<br/>Reportar con claridad.' }} />
-            <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.esg.h1'] || 'Operate responsibly.<br/>Report with clarity.' }} />
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.esg.h1'] || 'Operar bien.<br/>Reportar con claridad.') }} />
+            <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.esg.h1'] || 'Operate responsibly.<br/>Report with clarity.') }} />
           </h1>
           <p>
             <span className="lang-es">{f['page.esg.lede'] || 'Nuestra estrategia ESG integra la responsabilidad ambiental, el compromiso social y la gobernanza robusta como pilares de creación de valor a largo plazo.'}</span>

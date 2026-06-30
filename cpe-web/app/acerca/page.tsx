@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
+import { cmsLineBreaks } from '@/lib/cms-html'
 import { fetchTeamMembers, fetchStrategyCards, fetchEsgPillars } from '@/lib/content-fetch'
 
 export const revalidate = 60
@@ -102,8 +103,8 @@ export default async function AcercaPage() {
           </div>
           <span className="eyebrow">Crown Point Energy</span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: f['page.acerca.h1'] || 'Producción real,<br/>base sólida,<br/>visión de largo plazo.' }} />
-            <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.acerca.h1'] || 'Real production,<br/>solid foundation,<br/>long-term vision.' }} />
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.acerca.h1'] || 'Producción real,<br/>base sólida,<br/>visión de largo plazo.') }} />
+            <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.acerca.h1'] || 'Real production,<br/>solid foundation,<br/>long-term vision.') }} />
           </h1>
           <p>
             <span className="lang-es">{f['page.acerca.lede'] || 'Crown Point Energy Inc. cotiza en la TSX Venture Exchange bajo el símbolo CWV. La Compañía opera en Argentina a través de su subsidiaria Crown Point Energía S.A. (CPESA), con sede en Buenos Aires.'}</span>

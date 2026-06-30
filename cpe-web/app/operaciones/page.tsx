@@ -3,6 +3,7 @@ import Image from 'next/image'
 import MapSection from './MapSection'
 import type { MapBlockData } from '@/components/ArgentinaMapInteractive'
 import { getCmsState } from '@/lib/cms'
+import { cmsLineBreaks } from '@/lib/cms-html'
 import { fetchOperationsBlocks } from '@/lib/content-fetch'
 
 export const revalidate = 60
@@ -63,8 +64,8 @@ export default async function OperacionesPage() {
           </div>
           <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: f['page.operaciones.h1'] || 'Once concesiones.<br/>Cuatro cuencas.<br/>Un país.' }} />
-            <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.operaciones.h1'] || 'Eleven concessions.<br/>Four basins.<br/>One country.' }} />
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.operaciones.h1'] || 'Once concesiones.<br/>Cuatro cuencas.<br/>Un país.') }} />
+            <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.operaciones.h1'] || 'Eleven concessions.<br/>Four basins.<br/>One country.') }} />
           </h1>
           <p>
             <span className="lang-es">{f['page.operaciones.lede'] || 'Una cartera diversificada de áreas productivas y exploratorias, distribuidas estratégicamente entre el norte y el sur de Argentina.'}</span>

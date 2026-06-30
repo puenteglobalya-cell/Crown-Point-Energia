@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
+import { cmsLineBreaks } from '@/lib/cms-html'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { fetchIrEvents, fetchIrAnalysts, fetchObligaciones, fetchShareholderMeetings, type ShareholderMeeting } from '@/lib/content-fetch'
 import InversoresDocsTabs from './InversoresDocsTabs'
@@ -96,8 +97,8 @@ export default async function InversoresPage() {
           </div>
           <span className="eyebrow"><span className="lang-es">Resumen del inversor</span><span className="lang-en">Investor overview</span></span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: f['page.inversores.h1'] || 'Una historia sólida<br/>de creación de valor.' }} />
-            <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.inversores.h1'] || 'A solid story<br/>of value creation.' }} />
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.inversores.h1'] || 'Una historia sólida<br/>de creación de valor.') }} />
+            <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.inversores.h1'] || 'A solid story<br/>of value creation.') }} />
           </h1>
           <p>
             <span className="lang-es">{f['page.inversores.lede'] || 'Crown Point Energía S.A. es una empresa dedicada al petróleo y gas con cobertura internacional que opera en el mercado argentino.'}</span>
