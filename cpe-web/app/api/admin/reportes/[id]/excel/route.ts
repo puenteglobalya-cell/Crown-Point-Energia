@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isAdminEmail } from '@/lib/admin-auth'
 import { getPermissionsForRole } from '@/lib/roles'
+import { canAccessReport } from '@/lib/report-access'
 import ExcelJS from 'exceljs'
 import type { DatosIngresos } from '@/lib/parsers/ingresos'
 
@@ -30,12 +31,16 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   if (!userWithRole?.activo) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const db = createSupabaseServerAdminClient()
-  const { data, error } = await db.from('reportes').select('titulo, periodo, estado, datos').eq('id', params.id).single()
+  const { data, error } = await db.from('reportes').select('titulo, periodo, estado, type_id, datos').eq('id', params.id).single()
   if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   if (data.estado !== 'publicado') {
     const permissions = await getPermissionsForRole(userWithRole.role)
     if (!permissions.has('view_drafts')) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+  // Object-level access (per-shareholder / per-type) — prevents IDOR
+  if (!await canAccessReport(userWithRole.id, userWithRole.role, params.id, data.type_id ?? null)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
   const d = data.datos as DatosIngresos

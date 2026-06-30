@@ -17,11 +17,11 @@ async function getPortalUser() {
   )
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  if (isAdminEmail(user.email)) return { id: user.id }
+  if (isAdminEmail(user.email)) return { id: user.id, isAdmin: true }
   const db = createSupabaseServerAdminClient()
-  const { data: roleRow } = await db.from('user_roles').select('activo').eq('user_id', user.id).single()
+  const { data: roleRow } = await db.from('user_roles').select('role, activo').eq('user_id', user.id).single()
   if (!roleRow?.activo) return null
-  return { id: user.id }
+  return { id: user.id, isAdmin: roleRow.role === 'admin' }
 }
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -33,11 +33,14 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const db = createSupabaseServerAdminClient()
   const { data: doc, error: docErr } = await db
     .from('documentos')
-    .select('storage_path, file_name, encrypted')
+    .select('storage_path, file_name, encrypted, publico')
     .eq('id', params.id)
     .single()
 
   if (docErr || !doc) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  // Object-level access — non-admins may only download public documents (prevents IDOR)
+  if (!user.isAdmin && !doc.publico) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const { data: blob, error: dlErr } = await db.storage
     .from(BUCKET)

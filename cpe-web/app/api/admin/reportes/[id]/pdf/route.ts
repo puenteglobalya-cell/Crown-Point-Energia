@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAnyActiveUser } from '@/lib/admin-auth'
+import { canAccessReport } from '@/lib/report-access'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 
 // Chromium binary URL for Vercel serverless — pinned to a stable build
@@ -49,6 +50,11 @@ export async function GET(
   if (error || !reporte?.html) {
     console.error('[pdf] db error or no html:', error?.message, 'id:', id)
     return NextResponse.json({ error: 'Reporte no encontrado' }, { status: 404 })
+  }
+
+  // Object-level access (per-shareholder / per-type) — prevents IDOR
+  if (!await canAccessReport(auth.user.id, auth.role, id, reporte.type_id ?? null)) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
   }
 
   // Portal users (non-admin) can only download published reports
