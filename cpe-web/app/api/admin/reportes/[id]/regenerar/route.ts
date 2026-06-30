@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminUser } from '@/lib/admin-auth'
+import { isSameOrigin } from '@/lib/csrf'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { generarReporteHTML } from '@/lib/generador/htmlReport'
 import { generarReporteAccionistaHTML } from '@/lib/generador/htmlReportAccionista'
@@ -13,9 +14,10 @@ import type { DatosGenerico } from '@/lib/parsers/generico'
 const REGENERABLE = ['ingresos', 'accionista', 'facturacion', 'produccion', 'financiero']
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const user = await requireAdminUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 

@@ -18,8 +18,13 @@ export function isSameOrigin(req: NextRequest): boolean {
   // Requests from same-origin (e.g. SSR fetch) have no Origin header — allow.
   if (!origin) return true
 
-  // Check against explicitly configured origins
-  if (ALLOWED_ORIGINS.some(allowed => origin === allowed || origin.startsWith(allowed))) {
+  // Check against explicitly configured origins (exact origin match — never prefix,
+  // or look-alike hosts like "https://crownpointenergy.com.evil.com" would pass).
+  let parsedOrigin: string | null = null
+  try { parsedOrigin = new URL(origin).origin } catch { return false }
+  if (ALLOWED_ORIGINS.some(allowed => {
+    try { return parsedOrigin === new URL(allowed).origin } catch { return false }
+  })) {
     return true
   }
 

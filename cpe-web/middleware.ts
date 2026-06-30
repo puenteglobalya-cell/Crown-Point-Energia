@@ -10,7 +10,7 @@ const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e =
 function buildCsp(nonce: string): string {
   return [
     "default-src 'self'",
-    `script-src 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com`,
+    `script-src 'nonce-${nonce}' 'strict-dynamic' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://crownpointenergy.com https://*.supabase.co https://*.tile.openstreetmap.org",
