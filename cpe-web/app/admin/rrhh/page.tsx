@@ -86,6 +86,7 @@ export default function RrhhPage() {
   const [filterArea, setFilterArea] = useState<string>('todas')
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<'fecha' | 'score'>('fecha')
+  const [view, setView] = useState<'lista' | 'tablero'>('lista')
   const [analyzingId, setAnalyzingId] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
 
@@ -226,6 +227,15 @@ export default function RrhhPage() {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
 
+  // Kanban board: same search/area filter as the list, but grouped by estado (all estados as columns)
+  const boardApps = apps
+    .filter(a => filterArea === 'todas' || a.area === filterArea)
+    .filter(a => {
+      if (!search.trim()) return true
+      const q = search.toLowerCase()
+      return a.nombre.toLowerCase().includes(q) || a.email.toLowerCase().includes(q)
+    })
+
   const sel = selected ? apps.find(a => a.id === selected) : null
 
   const counts = {
@@ -325,6 +335,15 @@ export default function RrhhPage() {
                 <option value="fecha">Ordenar: más reciente</option>
                 <option value="score">Ordenar: mayor score IA</option>
               </select>
+              <div style={{ display: 'inline-flex', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
+                {(['lista', 'tablero'] as const).map(v => (
+                  <button key={v} onClick={() => setView(v)} className="btn" style={{
+                    fontSize: 12, padding: '7px 12px', borderRadius: 0, border: 'none',
+                    background: view === v ? 'var(--accent)' : 'transparent',
+                    color: view === v ? '#fff' : 'var(--fg-soft)', fontWeight: view === v ? 700 : 400,
+                  }}>{v === 'lista' ? 'Lista' : 'Tablero'}</button>
+                ))}
+              </div>
             </div>
 
             {/* Estado filter bar */}
@@ -346,12 +365,47 @@ export default function RrhhPage() {
               ))}
             </div>
 
-            {filteredApps.length === 0 ? (
+            {(view === 'lista' ? filteredApps.length : boardApps.length) === 0 ? (
               <p style={{ color: 'var(--fg-muted)', fontSize: 14, fontStyle: 'italic' }}>No hay postulaciones{filterEstado !== 'todas' ? ` con estado "${filterEstado}"` : ''}.</p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: sel ? '1fr 1.3fr' : '1fr', gap: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: sel && view === 'lista' ? '1fr 1.3fr' : '1fr', gap: 20 }}>
+                {view === 'tablero' && (
+                  <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
+                    {ESTADOS.map(est => {
+                      const col = boardApps.filter(a => a.estado === est)
+                      const ec = ESTADO_CONF[est]
+                      return (
+                        <div key={est} style={{ flex: '1 0 220px', minWidth: 220, background: 'var(--bg-alt)', borderRadius: 'var(--r-md)', border: '1px solid var(--rule)' }}>
+                          <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--rule)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: 2, background: ec.fg }} />
+                            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg-soft)' }}>{ec.label}</span>
+                            <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg-muted)', fontVariantNumeric: 'tabular-nums' }}>{col.length}</span>
+                          </div>
+                          <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '64vh', overflowY: 'auto' }}>
+                            {col.length === 0
+                              ? <p style={{ fontSize: 12, color: 'var(--fg-muted)', fontStyle: 'italic', margin: '6px 8px' }}>—</p>
+                              : col.map(app => (
+                                <div key={app.id} onClick={() => setSelected(app.id)} style={{
+                                  cursor: 'pointer', background: 'var(--surface)', border: `1px solid ${app.id === selected ? ec.fg : 'var(--rule)'}`,
+                                  borderRadius: 'var(--r-sm)', padding: '10px 12px',
+                                }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6, alignItems: 'center' }}>
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{app.nombre}</span>
+                                    {app.score != null && <span style={{ fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-mono)', color: app.score >= 70 ? 'var(--cp-green-deep)' : app.score >= 40 ? 'var(--cp-gold-deep)' : 'var(--cp-negative)' }}>{app.score}</span>}
+                                  </div>
+                                  <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 3, fontFamily: 'var(--font-mono)' }}>
+                                    {AREA_LABELS[app.area] ?? app.area} · hace {daysSince(app.created_at)}d{app.cv_path ? ' · CV' : ''}
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
                 {/* List */}
-                <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--surface)', maxHeight: '70vh', overflowY: 'auto' }}>
+                {view === 'lista' && <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--surface)', maxHeight: '70vh', overflowY: 'auto' }}>
                   {filteredApps.map((app, i) => {
                     const ec = ESTADO_CONF[app.estado] ?? ESTADO_CONF.nueva
                     const age = daysSince(app.created_at)
@@ -397,7 +451,7 @@ export default function RrhhPage() {
                       </div>
                     )
                   })}
-                </div>
+                </div>}
 
                 {/* Detail panel */}
                 {sel && (
