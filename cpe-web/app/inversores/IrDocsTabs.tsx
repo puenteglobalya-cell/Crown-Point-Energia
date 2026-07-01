@@ -97,6 +97,15 @@ export default function IrDocsTabs({
   const years = Array.from(new Set(filtered.map(getYear).filter(Boolean))).sort((a, b) => +b - +a)
   const [openYear, setOpenYear] = useState<string>(years[0] ?? '')
 
+  const [q, setQ] = useState('')
+  const ql = q.trim().toLowerCase()
+  const showSearch = filtered.length > 8
+  const searchResults = ql
+    ? filtered
+        .filter(d => `${d.titulo_es} ${d.titulo_en} ${d.periodo} ${d.tipo} ${d.entidad} ${getYear(d)}`.toLowerCase().includes(ql))
+        .sort((a, b) => (b.fecha ?? '').localeCompare(a.fecha ?? ''))
+    : null
+
   if (byCat.length === 0) {
     return (
       <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
@@ -128,7 +137,25 @@ export default function IrDocsTabs({
         .ir-entidad-tab { font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: var(--r-pill); border: 1px solid var(--rule); background: transparent; cursor: pointer; color: var(--fg-soft); font-family: inherit; transition: all var(--t-fast); }
         .ir-entidad-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
         .ir-entidad-tab:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+        .ir-search { position: relative; margin-bottom: 12px; }
+        .ir-search input { width: 100%; padding: 10px 14px 10px 38px; font: inherit; font-size: 14px; color: var(--fg); background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); }
+        .ir-search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+        .ir-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--fg-muted); pointer-events: none; }
+        .ir-search-count { font-size: 12px; color: var(--fg-muted); margin: 0 0 10px 2px; }
       `}</style>
+
+      {showSearch && (
+        <div className="ir-search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          <input
+            type="search"
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            aria-label="Buscar documentos"
+            placeholder="Buscar por título, período o tipo…"
+          />
+        </div>
+      )}
 
       {showEntidadTabs && entidades.length > 1 && (
         <div className="ir-entidad-tabs">
@@ -144,6 +171,21 @@ export default function IrDocsTabs({
         </div>
       )}
 
+      {searchResults ? (
+        searchResults.length > 0 ? (
+          <>
+            <p className="ir-search-count">{searchResults.length} resultado{searchResults.length !== 1 ? 's' : ''}</p>
+            <ul className="doc-list ir-accordion" style={{ margin: 0, padding: '4px 8px' }}>
+              {searchResults.map(d => <DocRow key={d.id} doc={d} />)}
+            </ul>
+          </>
+        ) : (
+          <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
+            <span className="lang-es">Sin resultados para “{q}”.</span>
+            <span className="lang-en">No results for “{q}”.</span>
+          </p>
+        )
+      ) : (
       <div className="ir-accordion">
         {years.map(year => {
           const yearDocs = filtered.filter(d => getYear(d) === year)
@@ -199,6 +241,7 @@ export default function IrDocsTabs({
           )
         })}
       </div>
+      )}
     </>
   )
 }
