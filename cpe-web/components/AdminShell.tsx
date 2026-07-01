@@ -10,6 +10,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Sitio',
     items: [
+      { href: '/admin/inicio', label: 'Inicio' },
       { href: '/admin', label: 'CMS' },
       { href: '/admin/cms', label: 'Contenido' },
       { href: '/admin/imagenes', label: 'Imágenes' },
