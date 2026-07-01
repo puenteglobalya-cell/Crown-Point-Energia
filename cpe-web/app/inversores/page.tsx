@@ -349,6 +349,7 @@ export default async function InversoresPage() {
                   .fix-accion { font-size: 11px; letter-spacing: 0.08em; font-weight: 700; text-transform: uppercase; padding: 3px 10px; border-radius: var(--r-pill); background: rgba(108,174,82,0.14); color: var(--cp-green-deep); }
                   [data-theme="dark"] .fix-accion { color: #8BD478; }
                 `}</style>
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
                 <table className="fix-table">
                   <thead>
                     <tr>
@@ -378,6 +379,7 @@ export default async function InversoresPage() {
                     </tr>
                   </tbody>
                 </table>
+                </div>
                 <p style={{ marginTop: 'var(--s-4)', fontSize: 12, color: 'var(--fg-muted)' }}>
                   <span className="lang-es">Ver ficha completa en </span>
                   <span className="lang-en">Full report at </span>
@@ -392,7 +394,8 @@ export default async function InversoresPage() {
                   <span className="lang-es">Calificaciones otorgadas por <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer">FIX SCR</a> (afiliada de Fitch Ratings en Argentina). Programa global de emisión autorizado por CNV.</span>
                   <span className="lang-en">Ratings assigned by <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer">FIX SCR</a> (Fitch Ratings affiliate in Argentina). Global issuance program authorized by the CNV.</span>
                 </p>
-                <table className="on-table" style={{ marginTop: 'var(--s-4)' }}>
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', marginTop: 'var(--s-4)' }}>
+                <table className="on-table">
                   <thead>
                     <tr>
                       <th><span className="lang-es">Instrumento</span><span className="lang-en">Instrument</span></th>
@@ -445,6 +448,7 @@ export default async function InversoresPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
                 <p style={{ marginTop: 'var(--s-4)', fontSize: 12, color: 'var(--fg-muted)' }}>
                   <span className="lang-es">Ver ficha completa en </span>
                   <span className="lang-en">Full report at </span>

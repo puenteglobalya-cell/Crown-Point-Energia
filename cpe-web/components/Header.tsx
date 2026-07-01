@@ -294,11 +294,15 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
               <button
                 data-lang-btn="es"
                 className={lang === 'es' ? 'active' : ''}
+                aria-pressed={lang === 'es'}
+                aria-label="Cambiar idioma a español"
                 onClick={() => handleLangSwitch('es')}
               >ES</button>
               <button
                 data-lang-btn="en"
                 className={lang === 'en' ? 'active' : ''}
+                aria-pressed={lang === 'en'}
+                aria-label="Switch language to English"
                 onClick={() => handleLangSwitch('en')}
               >EN</button>
             </div>
