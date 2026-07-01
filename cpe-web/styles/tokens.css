@@ -808,3 +808,8 @@ h1, h2, h3, h4 {
 .ar-map .cc-teal       { fill: var(--block-teal); }
 .ar-map .cc-teal-dark  { fill: var(--block-teal-dark); }
 .ar-map .cc-rust       { fill: var(--block-rust); }
+
+/* ── UX: smooth anchored navigation with fixed-header offset ───────────────── */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+[id] { scroll-margin-top: 88px; }
