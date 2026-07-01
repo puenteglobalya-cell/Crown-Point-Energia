@@ -517,7 +517,7 @@ export default function RrhhPage() {
                         </div>
                       )}
                       {sel.ai_summary && (
-                        <p style={{ fontSize: 13, color: 'var(--fg-soft)', lineHeight: 1.6, margin: 0 }}>{sel.ai_summary}</p>
+                        <p style={{ fontSize: 13, color: 'var(--fg-soft)', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-line' }}>{sel.ai_summary}</p>
                       )}
                       {!sel.ai_summary && !sel.ai_analyzed_at && (
                         <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '8px 0 0', fontStyle: 'italic' }}>
