@@ -24,8 +24,9 @@ export default function ScrollSpy() {
     if (sections.length === 0) return
 
     const setActive = (id: string) => {
-      for (const a of links) a.classList.remove('active')
-      byId.get(id)?.classList.add('active')
+      for (const a of links) { a.classList.remove('active'); a.removeAttribute('aria-current') }
+      const a = byId.get(id)
+      if (a) { a.classList.add('active'); a.setAttribute('aria-current', 'location') }
     }
 
     const visible = new Set<string>()

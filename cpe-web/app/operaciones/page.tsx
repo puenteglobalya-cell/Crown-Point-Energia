@@ -214,6 +214,8 @@ export default async function OperacionesPage() {
                         <img
                           src={blockMap}
                           alt={f[`img.ops.${b.slug}.map.alt`] || `Mapa de ubicación · ${b.titulo}`}
+                          loading="lazy"
+                          decoding="async"
                           style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--rule)', display: 'block' }}
                         />
                         <figcaption style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
@@ -323,6 +325,8 @@ export default async function OperacionesPage() {
                         <img
                           src={blockMap}
                           alt={f[`img.ops.${b.slug}.map.alt`] || `Mapa de ubicación · ${b.titulo}`}
+                          loading="lazy"
+                          decoding="async"
                           style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--rule)', display: 'block' }}
                         />
                         <figcaption style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
