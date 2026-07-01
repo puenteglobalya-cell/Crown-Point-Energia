@@ -8,6 +8,7 @@ import IrDocsTabs, { type IrDocument } from './IrDocsTabs'
 import IrSubscribeForm from './IrSubscribeForm'
 import ReservesTable from './ReservesTable'
 import StockChart from '@/components/StockChart'
+import ScrollSpy from '@/components/ScrollSpy'
 
 export const revalidate = 60
 
@@ -91,6 +92,7 @@ export default async function InversoresPage() {
 
   return (
     <>
+      <ScrollSpy />
       <section
         className={`page-hero${heroImg ? ' has-photo' : ''}`}
         style={heroImg ? { '--hero-photo-url': `url(${heroImg})` } as React.CSSProperties : undefined}

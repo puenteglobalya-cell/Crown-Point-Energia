@@ -5,6 +5,7 @@ import type { MapBlockData } from '@/components/ArgentinaMapInteractive'
 import { getCmsState } from '@/lib/cms'
 import { cmsLineBreaks } from '@/lib/cms-html'
 import { fetchOperationsBlocks } from '@/lib/content-fetch'
+import ScrollSpy from '@/components/ScrollSpy'
 
 export const revalidate = 60
 
@@ -58,6 +59,7 @@ export default async function OperacionesPage() {
 
   return (
     <>
+      <ScrollSpy />
       <section
         className={`page-hero${heroImg ? ' has-photo' : ''}`}
         style={heroImg ? { '--hero-photo-url': `url(${heroImg})` } as React.CSSProperties : undefined}
