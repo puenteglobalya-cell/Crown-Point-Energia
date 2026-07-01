@@ -11,6 +11,7 @@ import {
 import { getCmsState } from '@/lib/cms'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import BackToTop from '@/components/BackToTop'
 import CpeAdapter from '@/components/CpeAdapter'
 import RevealObserver from '@/components/RevealObserver'
 import CookieBanner from '@/components/CookieBanner'
@@ -169,6 +170,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {showSiteChrome && <Footer />}
         <CpeAdapter state={{ ...state, lang }} />
         <RevealObserver />
+        {showSiteChrome && <BackToTop />}
         {showSiteChrome && <CookieBanner />}
       </body>
     </html>
