@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { cookies, headers } from 'next/headers'
 import {
   Montserrat,
@@ -86,7 +86,6 @@ export const metadata: Metadata = {
     images: ['/logo.png'],
   },
   manifest: '/manifest.json',
-  themeColor: '#1F2566',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -95,6 +94,12 @@ export const metadata: Metadata = {
   other: {
     'mobile-web-app-capable': 'yes',
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#1F2566',
+  width: 'device-width',
+  initialScale: 1,
 }
 
 const orgJsonLd = {
