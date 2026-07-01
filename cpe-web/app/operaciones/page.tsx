@@ -92,10 +92,10 @@ export default async function OperacionesPage() {
                 metaEs: f['ops.kpi.wells.meta'] || '+83 inyectores en operación',
                 metaEn: fe['ops.kpi.wells.meta'] || '+83 injectors in operation' },
               { labelEs: 'Producción promedio', labelEn: 'Average production',
-                val: f['ops.kpi.production'] || '3,090', unit: 'boe/d',
+                val: f['ops.kpi.production'] || '8,672', unit: 'boe/d',
                 meta: f['ops.kpi.production.meta'] || 'Q1 2026 · neto' },
               { labelEs: 'Mix producción', labelEn: 'Production mix',
-                val: f['ops.kpi.mix'] || '54/46', unitEs: 'gas / líquidos', unitEn: 'gas / liquids',
+                val: f['ops.kpi.mix'] || '16/84', unitEs: 'gas / líquidos', unitEn: 'gas / liquids',
                 metaEs: 'Balance gas/oil', metaEn: 'Gas/oil balance' },
             ].map((k, i) => (
               <div className="kpi" key={i}>

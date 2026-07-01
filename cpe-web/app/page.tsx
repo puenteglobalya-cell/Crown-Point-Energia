@@ -50,9 +50,9 @@ export default async function HomePage() {
   const vol30  = f['stock.vol30']  || '14,210'
   const cap    = f['stock.cap']    || 'CA $19.8M'
 
-  const kpiProdVal   = f['kpi.production.value'] || '3,090'
+  const kpiProdVal   = f['kpi.production.value'] || '8,672'
   const kpiProdUnit  = f['kpi.production.unit']  || 'boe/d'
-  const kpiProdDelta = f['kpi.production.delta'] || '+68% QoQ'
+  const kpiProdDelta = f['kpi.production.delta'] || '1Q 2026'
   const kpiResVal    = f['kpi.reserves.value']   || '18.6'
   const kpiResUnit   = f['kpi.reserves.unit']    || 'MMboe'
   const kpiResDelta  = f['kpi.reserves.delta']   || 'RLI 16.5y'

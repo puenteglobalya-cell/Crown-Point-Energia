@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin/', '/portal/', '/auth/', '/api/'],
+        disallow: ['/admin/', '/portal/', '/auth/', '/api/', '/biblioteca', '/infografia', '/esg'],
       },
     ],
     sitemap: 'https://crownpointenergy.com/sitemap.xml',
