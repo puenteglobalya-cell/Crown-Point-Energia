@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
 import { cmsLineBreaks } from '@/lib/cms-html'
 import { fetchTeamMembers, fetchStrategyCards, fetchEsgPillars } from '@/lib/content-fetch'
+import ScrollSpy from '@/components/ScrollSpy'
 
 export const revalidate = 60
 
@@ -56,6 +57,7 @@ export default async function AcercaPage() {
 
   return (
     <>
+      <ScrollSpy />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(boardJsonLd) }}

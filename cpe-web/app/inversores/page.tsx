@@ -210,6 +210,11 @@ export default async function InversoresPage() {
                   <span className="lang-es">Reportes auditados según IFRS y compilados gerenciales trimestrales — Crown Point Energy Inc. (CPI, TSXV: CWV). Disponibles también en <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
                   <span className="lang-en">IFRS-audited reports and quarterly management filings — Crown Point Energy Inc. (CPI, TSXV: CWV). Also available on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
                 </p>
+                <a href="/api/inversores/kit" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 'var(--s-4)' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span className="lang-es">Descargar kit del inversor (ZIP)</span>
+                  <span className="lang-en">Download investor kit (ZIP)</span>
+                </a>
                 <InversoresDocsTabs docs={allDocs} tipo="financiero" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
                 {irDocs.filter(d => d.categoria === 'financiero' && d.entidad === 'CPI').length > 0 && (
                   <div style={{ marginTop: 'var(--s-4)' }}>

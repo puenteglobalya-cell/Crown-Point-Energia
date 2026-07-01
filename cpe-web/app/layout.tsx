@@ -115,6 +115,15 @@ const orgJsonLd = {
   },
 }
 
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Crown Point Energy',
+  url: 'https://crownpointenergy.com',
+  inLanguage: ['es-AR', 'en'],
+  publisher: { '@type': 'Organization', name: 'Crown Point Energy Inc.' },
+}
+
 export const revalidate = 60
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -156,6 +165,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           type="application/ld+json"
           nonce={nonce}
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
       </head>
       <body>
