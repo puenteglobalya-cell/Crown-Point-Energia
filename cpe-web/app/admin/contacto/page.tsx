@@ -68,6 +68,19 @@ export default function ContactoAdminPage() {
   const sel = selected ? items.find(i => i.id === selected) : null
   const nuevas = items.filter(i => i.estado === 'nueva').length
 
+  function exportCsv() {
+    const cols: (keyof Submission)[] = ['created_at', 'tipo', 'nombre', 'organizacion', 'email', 'telefono', 'estado', 'mensaje', 'notas']
+    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
+    const rows = [cols.join(','), ...filtered.map(r => cols.map(c => esc(r[c])).join(','))]
+    const blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `contacto-${filter}-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
@@ -82,7 +95,13 @@ export default function ContactoAdminPage() {
                 {nuevas > 0 && <span style={{ marginLeft: 8, background: '#2FA08A', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 'var(--r-pill)' }}>{nuevas} nuevas</span>}
               </p>
             </div>
-            {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
+              <button onClick={exportCsv} className="btn" disabled={filtered.length === 0} style={{ fontSize: 12, padding: '7px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Exportar CSV
+              </button>
+            </div>
           </div>
         </div>
 

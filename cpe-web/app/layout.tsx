@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { cookies, headers } from 'next/headers'
 import {
   Montserrat,
@@ -11,6 +11,7 @@ import {
 import { getCmsState } from '@/lib/cms'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import BackToTop from '@/components/BackToTop'
 import CpeAdapter from '@/components/CpeAdapter'
 import RevealObserver from '@/components/RevealObserver'
 import CookieBanner from '@/components/CookieBanner'
@@ -63,13 +64,28 @@ const fontClasses = [
 ].join(' ')
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://crownpointenergy.com'),
   title: 'Crown Point Energy — TSXV: CWV',
   description: 'Empresa argentina de petróleo y gas. Operamos en cuatro cuencas con producción propia, listada en TSXV: CWV.',
   alternates: {
     canonical: 'https://crownpointenergy.com',
   },
+  openGraph: {
+    type: 'website',
+    siteName: 'Crown Point Energy',
+    title: 'Crown Point Energy — TSXV: CWV',
+    description: 'Empresa argentina de petróleo y gas. Producción propia en cuatro cuencas, listada en TSXV: CWV.',
+    url: 'https://crownpointenergy.com',
+    locale: 'es_AR',
+    images: [{ url: '/logo.png', width: 1200, height: 630, alt: 'Crown Point Energy' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Crown Point Energy — TSXV: CWV',
+    description: 'Empresa argentina de petróleo y gas. Producción propia en cuatro cuencas, listada en TSXV: CWV.',
+    images: ['/logo.png'],
+  },
   manifest: '/manifest.json',
-  themeColor: '#1F2566',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -78,6 +94,12 @@ export const metadata: Metadata = {
   other: {
     'mobile-web-app-capable': 'yes',
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#1F2566',
+  width: 'device-width',
+  initialScale: 1,
 }
 
 const orgJsonLd = {
@@ -96,6 +118,15 @@ const orgJsonLd = {
     email: 'ir@crownpointenergy.com',
     name: 'María Teresa Zappino',
   },
+}
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Crown Point Energy',
+  url: 'https://crownpointenergy.com',
+  inLanguage: ['es-AR', 'en'],
+  publisher: { '@type': 'Organization', name: 'Crown Point Energy Inc.' },
 }
 
 export const revalidate = 60
@@ -140,6 +171,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           nonce={nonce}
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
         />
+        <script
+          type="application/ld+json"
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
       </head>
       <body>
         {showSiteChrome && (
@@ -153,6 +189,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {showSiteChrome && <Footer />}
         <CpeAdapter state={{ ...state, lang }} />
         <RevealObserver />
+        {showSiteChrome && <BackToTop />}
         {showSiteChrome && <CookieBanner />}
       </body>
     </html>

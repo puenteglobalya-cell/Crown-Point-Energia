@@ -3,7 +3,9 @@ import Image from 'next/image'
 import MapSection from './MapSection'
 import type { MapBlockData } from '@/components/ArgentinaMapInteractive'
 import { getCmsState } from '@/lib/cms'
+import { cmsLineBreaks } from '@/lib/cms-html'
 import { fetchOperationsBlocks } from '@/lib/content-fetch'
+import ScrollSpy from '@/components/ScrollSpy'
 
 export const revalidate = 60
 
@@ -16,6 +18,12 @@ const COMMODITY: Record<Commodity, { color: string; es: string; en: string }> = 
   oil:   { color: '#1F2566', es: 'Petróleo',       en: 'Oil' },
   gas:   { color: '#4a8a3a', es: 'Gas natural',     en: 'Natural gas' },
   mixed: { color: '#6CAE52', es: 'Petróleo + Gas',  en: 'Oil + Gas' },
+}
+
+export const metadata = {
+  title: 'Operaciones | Crown Point Energy',
+  description: '11 concesiones agrupadas en 6 bloques operativos, en cuatro cuencas argentinas — Austral, San Jorge, Neuquén y Cuyo. Producción de petróleo y gas.',
+  alternates: { canonical: 'https://crownpointenergy.com/operaciones' },
 }
 
 export default async function OperacionesPage() {
@@ -51,6 +59,7 @@ export default async function OperacionesPage() {
 
   return (
     <>
+      <ScrollSpy />
       <section
         className={`page-hero${heroImg ? ' has-photo' : ''}`}
         style={heroImg ? { '--hero-photo-url': `url(${heroImg})` } as React.CSSProperties : undefined}
@@ -63,8 +72,8 @@ export default async function OperacionesPage() {
           </div>
           <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: f['page.operaciones.h1'] || 'Once concesiones.<br/>Cuatro cuencas.<br/>Un país.' }} />
-            <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.operaciones.h1'] || 'Eleven concessions.<br/>Four basins.<br/>One country.' }} />
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.operaciones.h1'] || 'Once concesiones.<br/>Cuatro cuencas.<br/>Un país.') }} />
+            <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.operaciones.h1'] || 'Eleven concessions.<br/>Four basins.<br/>One country.') }} />
           </h1>
           <p>
             <span className="lang-es">{f['page.operaciones.lede'] || 'Una cartera diversificada de áreas productivas y exploratorias, distribuidas estratégicamente entre el norte y el sur de Argentina.'}</span>
@@ -85,10 +94,10 @@ export default async function OperacionesPage() {
                 metaEs: f['ops.kpi.wells.meta'] || '+83 inyectores en operación',
                 metaEn: fe['ops.kpi.wells.meta'] || '+83 injectors in operation' },
               { labelEs: 'Producción promedio', labelEn: 'Average production',
-                val: f['ops.kpi.production'] || '3,090', unit: 'boe/d',
+                val: f['ops.kpi.production'] || '8,672', unit: 'boe/d',
                 meta: f['ops.kpi.production.meta'] || 'Q1 2026 · neto' },
               { labelEs: 'Mix producción', labelEn: 'Production mix',
-                val: f['ops.kpi.mix'] || '54/46', unitEs: 'gas / líquidos', unitEn: 'gas / liquids',
+                val: f['ops.kpi.mix'] || '16/84', unitEs: 'gas / líquidos', unitEn: 'gas / liquids',
                 metaEs: 'Balance gas/oil', metaEn: 'Gas/oil balance' },
             ].map((k, i) => (
               <div className="kpi" key={i}>
@@ -114,8 +123,8 @@ export default async function OperacionesPage() {
             <aside className="left-rail">
               <h4><span className="lang-es">Bloques</span><span className="lang-en">Blocks</span></h4>
               <p style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.5, margin: '4px 0 12px' }}>
-                <span className="lang-es">{blocks.length} bloques · {blocks.reduce((acc, b) => acc + (Array.isArray((b as any).concesiones) ? (b as any).concesiones.length : 1), 0) || 9} concesiones agrupadas</span>
-                <span className="lang-en">{blocks.length} blocks · 9 grouped concessions</span>
+                <span className="lang-es">{blocks.length} bloques · 11 concesiones agrupadas</span>
+                <span className="lang-en">{blocks.length} blocks · 11 grouped concessions</span>
               </p>
               <nav>
                 <a href="#mapa" className="active"><span className="lang-es">Mapa general</span><span className="lang-en">Map overview</span></a>
@@ -165,6 +174,7 @@ export default async function OperacionesPage() {
               {[...explotacionBlocks, ...otherBlocks].map((b) => {
                 const comm = COMMODITY[b.commodity]
                 const blockImg = f[`img.ops.${b.slug}`] || ''
+                const blockMap = f[`img.ops.${b.slug}.map`] || ''
                 return (
                   <div className="section-block" id={b.slug} key={b.slug}>
                     <span className="eyebrow">{b.eyebrow}</span>
@@ -175,7 +185,7 @@ export default async function OperacionesPage() {
                     </p>
 
                     {/* Block photo — set via CMS field img.ops.{slug} */}
-                    <div className="block-photo">
+                    {(blockImg || !blockMap) && <div className="block-photo">
                       {blockImg ? (
                         <Image
                           src={blockImg}
@@ -197,7 +207,23 @@ export default async function OperacionesPage() {
                           </span>
                         </div>
                       )}
-                    </div>
+                    </div>}
+
+                    {blockMap && (
+                      <figure style={{ margin: 'var(--s-4) 0 0' }}>
+                        <img
+                          src={blockMap}
+                          alt={f[`img.ops.${b.slug}.map.alt`] || `Mapa de ubicación · ${b.titulo}`}
+                          loading="lazy"
+                          decoding="async"
+                          style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--rule)', display: 'block' }}
+                        />
+                        <figcaption style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
+                          <span className="lang-es">Mapa de ubicación</span>
+                          <span className="lang-en">Location map</span>
+                        </figcaption>
+                      </figure>
+                    )}
 
                     <div className="block-card" style={{ borderTop: `3px solid ${comm.color}` }}>
                       <header className="block-card-hd">
@@ -260,6 +286,7 @@ export default async function OperacionesPage() {
               {exploracionBlocks.map((b) => {
                 const comm = COMMODITY[b.commodity]
                 const blockImg = f[`img.ops.${b.slug}`] || ''
+                const blockMap = f[`img.ops.${b.slug}.map`] || ''
                 return (
                   <div className="section-block" id={b.slug} key={b.slug}>
                     <span className="eyebrow">{b.eyebrow}</span>
@@ -269,7 +296,7 @@ export default async function OperacionesPage() {
                       <span className="lang-en">{b.lede_en}</span>
                     </p>
 
-                    <div className="block-photo">
+                    {(blockImg || !blockMap) && <div className="block-photo">
                       {blockImg ? (
                         <Image
                           src={blockImg}
@@ -291,7 +318,23 @@ export default async function OperacionesPage() {
                           </span>
                         </div>
                       )}
-                    </div>
+                    </div>}
+
+                    {blockMap && (
+                      <figure style={{ margin: 'var(--s-4) 0 0' }}>
+                        <img
+                          src={blockMap}
+                          alt={f[`img.ops.${b.slug}.map.alt`] || `Mapa de ubicación · ${b.titulo}`}
+                          loading="lazy"
+                          decoding="async"
+                          style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--rule)', display: 'block' }}
+                        />
+                        <figcaption style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
+                          <span className="lang-es">Mapa de ubicación</span>
+                          <span className="lang-en">Location map</span>
+                        </figcaption>
+                      </figure>
+                    )}
 
                     <div className="block-card" style={{ borderTop: `3px solid ${comm.color}` }}>
                       <header className="block-card-hd">

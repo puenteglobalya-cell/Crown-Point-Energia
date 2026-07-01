@@ -63,7 +63,7 @@ export const getCmsState = unstable_cache(
     }
   },
   ['cms-state'],
-  { tags: ['cms'], revalidate: 3600 },
+  { tags: ['cms'], revalidate: 60 },
 )
 
 export async function patchCmsState(patch: Partial<CMSState>): Promise<void> {

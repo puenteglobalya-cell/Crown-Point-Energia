@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import ApplicationForm from './ApplicationForm'
 import { getCmsState } from '@/lib/cms'
+import { cmsLineBreaks } from '@/lib/cms-html'
 import { fetchCultureCards, fetchOpenPositions } from '@/lib/content-fetch'
 
 export const revalidate = 60
@@ -31,6 +32,12 @@ const CULTURE_ICONS: Record<string, React.ReactNode> = {
   ),
 }
 
+export const metadata = {
+  title: 'Carreras | Crown Point Energy',
+  description: 'Oportunidades laborales en Crown Point Energy — sumate al sector energético argentino. Posiciones técnicas y administrativas.',
+  alternates: { canonical: 'https://crownpointenergy.com/carreras' },
+}
+
 export default async function CarrerasPage() {
   const [s, cultureCards, openPositions] = await Promise.all([
     getCmsState(),
@@ -55,8 +62,8 @@ export default async function CarrerasPage() {
             <span className="lang-en">Join the team</span>
           </span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: f['page.carreras.h1'] || 'Construimos el futuro<br/>del energético argentino.' }} />
-            <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.carreras.h1'] || "Building Argentina's<br/>energy future." }} />
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.carreras.h1'] || 'Construimos el futuro<br/>del energético argentino.') }} />
+            <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.carreras.h1'] || "Building Argentina's<br/>energy future.") }} />
           </h1>
           <p>
             <span className="lang-es">{f['page.carreras.lede'] || 'Crown Point opera en cuatro cuencas. Buscamos profesionales que quieran dejar huella en la industria energética con un equipo técnico de alto nivel.'}</span>

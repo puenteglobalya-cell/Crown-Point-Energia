@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity, getPermissionsForRole } from '@/lib/roles'
 import { isAdminEmail } from '@/lib/admin-auth'
+import { canAccessReport } from '@/lib/report-access'
 import { isSameOrigin } from '@/lib/csrf'
 import { enviarNotificacionReporte, enviarNotificacionIR } from '@/lib/email'
 import { enviarPushNotificacion } from '@/lib/push'
@@ -48,10 +49,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       const permissions = await getPermissionsForRole(userWithRole.role)
       if (!permissions.has('view_drafts')) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
+    // Object-level access (per-shareholder / per-type) — prevents IDOR
+    if (!await canAccessReport(userWithRole.id, userWithRole.role, params.id, data.type_id ?? null)) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
     return NextResponse.json(data)
   }
 
-  const { data, error } = await db.from('reportes').select('html, estado, manual_data').eq('id', params.id).single()
+  const { data, error } = await db.from('reportes').select('html, estado, type_id, manual_data').eq('id', params.id).single()
   if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   // Drafts require view_drafts permission
@@ -60,6 +65,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     if (!permissions.has('view_drafts')) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
+  }
+  // Object-level access (per-shareholder / per-type) — prevents IDOR
+  if (!await canAccessReport(userWithRole.id, userWithRole.role, params.id, data.type_id ?? null)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
   // Inject server-side manual data so the report picks it up on load.

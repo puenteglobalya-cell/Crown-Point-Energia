@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminUser } from '@/lib/admin-auth'
+import { isSameOrigin } from '@/lib/csrf'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { scrapearSeOfertaExport } from '@/lib/se-scraper'
 import { dbError } from '@/lib/api-error'
@@ -7,6 +8,7 @@ import { dbError } from '@/lib/api-error'
 export const maxDuration = 300
 
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const user = await requireAdminUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 

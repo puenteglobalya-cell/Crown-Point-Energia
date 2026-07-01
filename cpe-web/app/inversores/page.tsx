@@ -1,13 +1,14 @@
 import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
+import { cmsLineBreaks } from '@/lib/cms-html'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { getPostgresClient } from '@/lib/postgres-direct'
 import { fetchIrEvents, fetchIrAnalysts, fetchObligaciones, fetchShareholderMeetings, type ShareholderMeeting } from '@/lib/content-fetch'
 import InversoresDocsTabs from './InversoresDocsTabs'
 import IrDocsTabs, { type IrDocument } from './IrDocsTabs'
 import IrSubscribeForm from './IrSubscribeForm'
 import ReservesTable from './ReservesTable'
 import StockChart from '@/components/StockChart'
+import ScrollSpy from '@/components/ScrollSpy'
 
 export const revalidate = 60
 
@@ -23,6 +24,12 @@ type Documento = {
   publico: boolean
 }
 
+export const metadata = {
+  title: 'Inversores | Crown Point Energy (TSXV: CWV)',
+  description: 'Cotización CWV en tiempo real, estados financieros CPE Inc. y CPESA, obligaciones negociables, calificación crediticia y hechos relevantes ante la CNV.',
+  alternates: { canonical: 'https://crownpointenergy.com/inversores' },
+}
+
 export default async function InversoresPage() {
   let s, allDocs: Documento[] = [], irDocs: IrDocument[] = [],
     irEvents: Awaited<ReturnType<typeof fetchIrEvents>> = [],
@@ -34,15 +41,10 @@ export default async function InversoresPage() {
   let cnvHechos: CnvHecho[] = []
 
   const db = createSupabaseServerAdminClient()
-  const sql = getPostgresClient()
 
-  // ir_documents fetched via direct postgres (PostgREST cache workaround)
-  try {
-    irDocs = await sql`SELECT * FROM ir_documents WHERE publicado = true ORDER BY fecha DESC NULLS LAST` as IrDocument[]
-  } catch (e) {
-    console.error('Failed to fetch ir_documents:', e)
-    irDocs = []
-  }
+  // ir_documents fetched independently so a failure here never blanks the rest of the page
+  const irDocsRes = await db.from('ir_documents').select('*').eq('publicado', true).order('fecha', { ascending: false, nullsFirst: false })
+  irDocs = (irDocsRes.data ?? []) as IrDocument[]
 
   try {
     const [sResult, docsResult, evts, anls, obs, cnvRes, mtgs] = await Promise.all([
@@ -59,7 +61,7 @@ export default async function InversoresPage() {
         .select('doc_id,fecha,hora,tipo,descripcion,pdf_url')
         .eq('tipo', 'hecho_relevante')
         .order('fecha', { ascending: false })
-        .limit(30),
+        .limit(100),
       fetchShareholderMeetings(),
     ])
     s = sResult
@@ -76,8 +78,21 @@ export default async function InversoresPage() {
   const fe = s.fieldsEn
   const heroImg = f['hero.inversores.img'] || ''
 
+  // Visibilidad por sección: se auto-ocultan las que no tienen datos
+  const showFinancieros = allDocs.some(d => d.tipo === 'financiero') || irDocs.some(d => d.categoria === 'financiero' && d.entidad === 'CPI')
+  const showCpesa       = irDocs.some(d => d.categoria === 'financiero' && d.entidad === 'CPESA')
+  const showAgm         = irDocs.some(d => d.categoria === 'agm')
+  const showEstma       = irDocs.some(d => d.categoria === 'estma')
+  const showCnv         = cnvHechos.length > 0
+  const showCobertura   = analysts.length > 0
+  const showOn          = obligaciones.length > 0 || irDocs.some(d => d.categoria === 'on')
+  const showGobierno    = allDocs.some(d => d.tipo === 'gobierno') || irDocs.some(d => d.categoria === 'gobierno')
+  const showAsambleas   = meetings.length > 0
+  const showCalendario  = irEvents.length > 0
+
   return (
     <>
+      <ScrollSpy />
       <section
         className={`page-hero${heroImg ? ' has-photo' : ''}`}
         style={heroImg ? { '--hero-photo-url': `url(${heroImg})` } as React.CSSProperties : undefined}
@@ -90,8 +105,8 @@ export default async function InversoresPage() {
           </div>
           <span className="eyebrow"><span className="lang-es">Resumen del inversor</span><span className="lang-en">Investor overview</span></span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: f['page.inversores.h1'] || 'Una historia sólida<br/>de creación de valor.' }} />
-            <span className="lang-en" dangerouslySetInnerHTML={{ __html: fe['page.inversores.h1'] || 'A solid story<br/>of value creation.' }} />
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.inversores.h1'] || 'Una historia sólida<br/>de creación de valor.') }} />
+            <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.inversores.h1'] || 'A solid story<br/>of value creation.') }} />
           </h1>
           <p>
             <span className="lang-es">{f['page.inversores.lede'] || 'Crown Point Energía S.A. es una empresa dedicada al petróleo y gas con cobertura internacional que opera en el mercado argentino.'}</span>
@@ -133,17 +148,17 @@ export default async function InversoresPage() {
               <h4><span className="lang-es">En esta página</span><span className="lang-en">On this page</span></h4>
               <nav>
                 <a href="#porque" className="active"><span className="lang-es">¿Por qué Crown Point?</span><span className="lang-en">Why Crown Point?</span></a>
-                <a href="#financieros"><span className="lang-es">Estados financieros</span><span className="lang-en">Financial statements</span></a>
-                <a href="#cpesa-financieros"><span className="lang-es">EEFF CPESA</span><span className="lang-en">CPESA financials</span></a>
-                <a href="#agm"><span className="lang-es">AGM / Asambleas CPI</span><span className="lang-en">AGM / CPI meetings</span></a>
-                <a href="#estma"><span className="lang-es">ESTMA</span><span className="lang-en">ESTMA</span></a>
-                <a href="#hechos-cnv"><span className="lang-es">Hechos relevantes CNV</span><span className="lang-en">CNV disclosures</span></a>
-                <a href="#cobertura"><span className="lang-es">Cobertura de analistas</span><span className="lang-en">Analyst coverage</span></a>
+                {showFinancieros && <a href="#financieros"><span className="lang-es">EEFF CPE Inc.</span><span className="lang-en">CPE Inc. financials</span></a>}
+                {showCpesa && <a href="#cpesa-financieros"><span className="lang-es">EEFF CPESA</span><span className="lang-en">CPESA financials</span></a>}
+                {showAgm && <a href="#agm"><span className="lang-es">AGM / Asambleas CPI</span><span className="lang-en">AGM / CPI meetings</span></a>}
+                {showEstma && <a href="#estma"><span className="lang-es">ESTMA</span><span className="lang-en">ESTMA</span></a>}
+                {showCnv && <a href="#hechos-cnv"><span className="lang-es">Hechos relevantes CNV</span><span className="lang-en">CNV disclosures</span></a>}
+                {showCobertura && <a href="#cobertura"><span className="lang-es">Cobertura de analistas</span><span className="lang-en">Analyst coverage</span></a>}
                 <a href="#calificacion"><span className="lang-es">Calificación crediticia</span><span className="lang-en">Credit rating</span></a>
-                <a href="#on"><span className="lang-es">Obligaciones negociables</span><span className="lang-en">Notes</span></a>
-                <a href="#gobierno"><span className="lang-es">Gobierno corporativo</span><span className="lang-en">Corporate governance</span></a>
-                <a href="#asambleas"><span className="lang-es">Asambleas de accionistas</span><span className="lang-en">Shareholder meetings</span></a>
-                <a href="#calendario"><span className="lang-es">Calendario financiero</span><span className="lang-en">Financial calendar</span></a>
+                {showOn && <a href="#on"><span className="lang-es">Obligaciones negociables</span><span className="lang-en">Notes</span></a>}
+                {showGobierno && <a href="#gobierno"><span className="lang-es">Gobierno corporativo</span><span className="lang-en">Corporate governance</span></a>}
+                {showAsambleas && <a href="#asambleas"><span className="lang-es">Asambleas de accionistas</span><span className="lang-en">Shareholder meetings</span></a>}
+                {showCalendario && <a href="#calendario"><span className="lang-es">Calendario financiero</span><span className="lang-en">Financial calendar</span></a>}
               </nav>
             </aside>
             <main>
@@ -155,8 +170,8 @@ export default async function InversoresPage() {
                     { n: '01', labelEs: 'Producción', labelEn: 'Production',
                       val: f['inv.thesis.1.val'] || '8,672',
                       unit: f['inv.thesis.1.unit'] || 'boe/d',
-                      metaEs: f['inv.thesis.1.meta'] || '86% petróleo · 14% gas · 1Q 2026',
-                      metaEn: fe['inv.thesis.1.meta'] || '86% oil · 14% gas · 1Q 2026' },
+                      metaEs: f['inv.thesis.1.meta'] || '84% líquidos · 16% gas · Producción 1Q 2026',
+                      metaEn: fe['inv.thesis.1.meta'] || '84% liquids · 16% gas · Production 1Q 2026' },
                     { n: '02', labelEs: 'Costos', labelEn: 'Costs',
                       val: f['inv.thesis.2.val'] || 'US$14.2',
                       unit: f['inv.thesis.2.unit'] || '/boe',
@@ -188,22 +203,27 @@ export default async function InversoresPage() {
                 </p>
               </div>
 
-              <div className="section-block" id="financieros">
+              {showFinancieros && <div className="section-block" id="financieros">
                 <span className="eyebrow"><span className="lang-es">Reportes recientes</span><span className="lang-en">Recent filings</span></span>
-                <h2 style={{ marginTop: 8 }}><span className="lang-es">Estados financieros</span><span className="lang-en">Financial statements</span></h2>
+                <h2 style={{ marginTop: 8 }}><span className="lang-es">Estados financieros — Crown Point Energy Inc.</span><span className="lang-en">Financial statements — Crown Point Energy Inc.</span></h2>
                 <p className="lede">
                   <span className="lang-es">Reportes auditados según IFRS y compilados gerenciales trimestrales — Crown Point Energy Inc. (CPI, TSXV: CWV). Disponibles también en <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
                   <span className="lang-en">IFRS-audited reports and quarterly management filings — Crown Point Energy Inc. (CPI, TSXV: CWV). Also available on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
                 </p>
+                <a href="/api/inversores/kit" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 'var(--s-4)' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span className="lang-es">Descargar kit del inversor (ZIP)</span>
+                  <span className="lang-en">Download investor kit (ZIP)</span>
+                </a>
                 <InversoresDocsTabs docs={allDocs} tipo="financiero" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
                 {irDocs.filter(d => d.categoria === 'financiero' && d.entidad === 'CPI').length > 0 && (
                   <div style={{ marginTop: 'var(--s-4)' }}>
                     <IrDocsTabs docs={irDocs} categoria="financiero" entidad="CPI" />
                   </div>
                 )}
-              </div>
+              </div>}
 
-              <div className="section-block" id="cpesa-financieros">
+              {showCpesa && <div className="section-block" id="cpesa-financieros">
                 <span className="eyebrow">CPESA · <span className="lang-es">Empresa local</span><span className="lang-en">Local entity</span></span>
                 <h2 style={{ marginTop: 8 }}>
                   <span className="lang-es">Estados financieros CPESA</span>
@@ -214,9 +234,9 @@ export default async function InversoresPage() {
                   <span className="lang-en">Financial statements of Crown Point Energía S.A. (CPESA), the Argentine operating entity. Filed with the <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a>.</span>
                 </p>
                 <IrDocsTabs docs={irDocs} categoria="financiero" entidad="CPESA" />
-              </div>
+              </div>}
 
-              <div className="section-block" id="agm">
+              {showAgm && <div className="section-block" id="agm">
                 <span className="eyebrow">CPI · AGM</span>
                 <h2 style={{ marginTop: 8 }}>
                   <span className="lang-es">Materiales de asamblea — CPI</span>
@@ -227,9 +247,9 @@ export default async function InversoresPage() {
                   <span className="lang-en">Information circulars, notices and proxy forms for Crown Point Energy Inc. Annual General Meetings. Filed on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
                 </p>
                 <IrDocsTabs docs={irDocs} categoria="agm" />
-              </div>
+              </div>}
 
-              <div className="section-block" id="estma">
+              {showEstma && <div className="section-block" id="estma">
                 <span className="eyebrow">ESTMA</span>
                 <h2 style={{ marginTop: 8 }}>
                   <span className="lang-es">Reportes ESTMA</span>
@@ -240,9 +260,9 @@ export default async function InversoresPage() {
                   <span className="lang-en">Payments to governments reports under Canada's <em>Extractive Sector Transparency Measures Act</em> (ESTMA). Crown Point Energy Inc. reports annual payments to Argentine governments.</span>
                 </p>
                 <IrDocsTabs docs={irDocs} categoria="estma" />
-              </div>
+              </div>}
 
-              <div className="section-block" id="hechos-cnv">
+              {showCnv && <div className="section-block" id="hechos-cnv">
                 <span className="eyebrow">CNV · AIF</span>
                 <h2 style={{ marginTop: 8 }}>
                   <span className="lang-es">Hechos relevantes</span>
@@ -290,15 +310,10 @@ export default async function InversoresPage() {
                       </tbody>
                     </table>
                   </div>
-                ) : (
-                  <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
-                    <span className="lang-es">Los hechos relevantes se sincronizan automáticamente desde la CNV cada día hábil.</span>
-                    <span className="lang-en">Material disclosures are automatically synced from the CNV each business day.</span>
-                  </p>
-                )}
-              </div>
+                ) : null}
+              </div>}
 
-              <div className="section-block" id="cobertura">
+              {showCobertura && <div className="section-block" id="cobertura">
                 <span className="eyebrow">Equity research</span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Cobertura de analistas</span><span className="lang-en">Analyst coverage</span></h2>
                 <p className="lede"><span className="lang-es">Brokers e instituciones financieras que mantienen cobertura activa sobre el papel.</span><span className="lang-en">Brokers and financial institutions actively covering the stock.</span></p>
@@ -315,13 +330,8 @@ export default async function InversoresPage() {
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="lede" style={{ color: 'var(--fg-muted)', fontStyle: 'italic' }}>
-                    <span className="lang-es">Sin cobertura activa registrada.</span>
-                    <span className="lang-en">No active coverage registered.</span>
-                  </p>
-                )}
-              </div>
+                ) : null}
+              </div>}
 
               <div className="section-block" id="calificacion">
                 <span className="eyebrow"><span className="lang-es">Deuda local</span><span className="lang-en">Local debt</span></span>
@@ -346,6 +356,7 @@ export default async function InversoresPage() {
                   .fix-accion { font-size: 11px; letter-spacing: 0.08em; font-weight: 700; text-transform: uppercase; padding: 3px 10px; border-radius: var(--r-pill); background: rgba(108,174,82,0.14); color: var(--cp-green-deep); }
                   [data-theme="dark"] .fix-accion { color: #8BD478; }
                 `}</style>
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
                 <table className="fix-table">
                   <thead>
                     <tr>
@@ -375,6 +386,7 @@ export default async function InversoresPage() {
                     </tr>
                   </tbody>
                 </table>
+                </div>
                 <p style={{ marginTop: 'var(--s-4)', fontSize: 12, color: 'var(--fg-muted)' }}>
                   <span className="lang-es">Ver ficha completa en </span>
                   <span className="lang-en">Full report at </span>
@@ -382,14 +394,15 @@ export default async function InversoresPage() {
                 </p>
               </div>
 
-              <div className="section-block" id="on">
+              {showOn && <div className="section-block" id="on">
                 <span className="eyebrow"><span className="lang-es">Programa global</span><span className="lang-en">Global program</span></span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Obligaciones negociables activas</span><span className="lang-en">Active notes</span></h2>
                 <p className="lede">
                   <span className="lang-es">Calificaciones otorgadas por <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer">FIX SCR</a> (afiliada de Fitch Ratings en Argentina). Programa global de emisión autorizado por CNV.</span>
                   <span className="lang-en">Ratings assigned by <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer">FIX SCR</a> (Fitch Ratings affiliate in Argentina). Global issuance program authorized by the CNV.</span>
                 </p>
-                <table className="on-table" style={{ marginTop: 'var(--s-4)' }}>
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', marginTop: 'var(--s-4)' }}>
+                <table className="on-table">
                   <thead>
                     <tr>
                       <th><span className="lang-es">Instrumento</span><span className="lang-en">Instrument</span></th>
@@ -442,6 +455,7 @@ export default async function InversoresPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
                 <p style={{ marginTop: 'var(--s-4)', fontSize: 12, color: 'var(--fg-muted)' }}>
                   <span className="lang-es">Ver ficha completa en </span>
                   <span className="lang-en">Full report at </span>
@@ -450,9 +464,14 @@ export default async function InversoresPage() {
                 <div style={{ marginTop: 'var(--s-6)' }}>
                   <InversoresDocsTabs docs={allDocs} tipo="on" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
                 </div>
-              </div>
+                {irDocs.filter(d => d.categoria === 'on').length > 0 && (
+                  <div style={{ marginTop: 'var(--s-6)' }}>
+                    <IrDocsTabs docs={irDocs} categoria="on" />
+                  </div>
+                )}
+              </div>}
 
-              <div className="section-block" id="gobierno">
+              {showGobierno && <div className="section-block" id="gobierno">
                 <span className="eyebrow"><span className="lang-es">Compliance &amp; ESG</span><span className="lang-en">Compliance &amp; ESG</span></span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Gobierno corporativo</span><span className="lang-en">Corporate governance</span></h2>
                 <p className="lede"><span className="lang-es">Crown Point Energy Inc. cotiza en TSX Venture Exchange y reporta bajo las normas canadienses para emisores junior.</span><span className="lang-en">Crown Point Energy Inc. is listed on TSX Venture Exchange and reports under Canadian junior issuer standards.</span></p>
@@ -462,9 +481,15 @@ export default async function InversoresPage() {
                     <IrDocsTabs docs={irDocs} categoria="gobierno" />
                   </div>
                 )}
-              </div>
+                <div style={{ marginTop: 'var(--s-5)', padding: '14px 18px', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', background: 'var(--bg-alt)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: 'var(--fg-muted)' }}>
+                    <span className="lang-es">Línea de denuncias</span><span className="lang-en">Complaint hotline</span>
+                  </span>
+                  <a href="tel:+5491152630361" style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none' }}>+54 911 5263 0361</a>
+                </div>
+              </div>}
 
-              <div className="section-block" id="asambleas">
+              {showAsambleas && <div className="section-block" id="asambleas">
                 <span className="eyebrow"><span className="lang-es">Accionistas</span><span className="lang-en">Shareholders</span></span>
                 <h2 style={{ marginTop: 8 }}>
                   <span className="lang-es">Asambleas de accionistas</span>
@@ -580,15 +605,10 @@ export default async function InversoresPage() {
                       </div>
                     </div>
                   )
-                }) : (
-                  <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic', marginTop: 'var(--s-4)' }}>
-                    <span className="lang-es">No hay asambleas próximas registradas. Los detalles se publican con al menos 21 días de anticipación en SEDAR+.</span>
-                    <span className="lang-en">No upcoming meetings registered. Details are published at least 21 days in advance on SEDAR+.</span>
-                  </p>
-                )}
-              </div>
+                }) : null}
+              </div>}
 
-              <div className="section-block" id="calendario" style={{ borderBottom: 0 }}>
+              {showCalendario && <div className="section-block" id="calendario" style={{ borderBottom: 0 }}>
                 <span className="eyebrow">Investor Relations</span>
                 <h2 style={{ marginTop: 8 }}>
                   <span className="lang-es">Calendario financiero</span>
@@ -634,14 +654,8 @@ export default async function InversoresPage() {
                       </div>
                     </div>
                   ))}
-                  {irEvents.length === 0 && (
-                    <p style={{ color: 'var(--fg-muted)', fontStyle: 'italic', fontSize: 14 }}>
-                      <span className="lang-es">Sin eventos próximos registrados.</span>
-                      <span className="lang-en">No upcoming events registered.</span>
-                    </p>
-                  )}
                 </div>
-              </div>
+              </div>}
             </main>
           </div>
         </div>

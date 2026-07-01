@@ -50,9 +50,9 @@ export default async function HomePage() {
   const vol30  = f['stock.vol30']  || '14,210'
   const cap    = f['stock.cap']    || 'CA $19.8M'
 
-  const kpiProdVal   = f['kpi.production.value'] || '3,090'
+  const kpiProdVal   = f['kpi.production.value'] || '8,672'
   const kpiProdUnit  = f['kpi.production.unit']  || 'boe/d'
-  const kpiProdDelta = f['kpi.production.delta'] || '+68% QoQ'
+  const kpiProdDelta = f['kpi.production.delta'] || '1Q 2026'
   const kpiResVal    = f['kpi.reserves.value']   || '18.6'
   const kpiResUnit   = f['kpi.reserves.unit']    || 'MMboe'
   const kpiResDelta  = f['kpi.reserves.delta']   || 'RLI 16.5y'
@@ -107,7 +107,7 @@ export default async function HomePage() {
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
                 <span className="lang-es">TSXV: CWV · Petróleo y gas · Argentina</span>
-                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Canada</span>
+                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Argentina</span>
               </span>
             </div>
             <h1 className="hero-title">
@@ -231,8 +231,8 @@ export default async function HomePage() {
                 </div>
                 <span className="kpi-meta">
                   <span className="badge" data-cpe-field="kpi.production.delta">{kpiProdDelta}</span>
-                  <span className="lang-es">86% petróleo · 14% gas</span>
-                  <span className="lang-en">86% oil · 14% gas</span>
+                  <span className="lang-es">84% líquidos · 16% gas</span>
+                  <span className="lang-en">84% liquids · 16% gas</span>
                 </span>
               </div>
               <div className="kpi">
@@ -301,8 +301,8 @@ export default async function HomePage() {
               <div>
                 <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
                 <h2 className="section-title">
-                  <span className="lang-es">{kpiBlkVal} concesiones<br/>en cuatro cuencas.</span>
-                  <span className="lang-en">{kpiBlkVal} concessions<br/>across four basins.</span>
+                  <span className="lang-es">11 concesiones<br/>en cuatro cuencas.</span>
+                  <span className="lang-en">11 concessions<br/>across four basins.</span>
                 </h2>
               </div>
               <p>

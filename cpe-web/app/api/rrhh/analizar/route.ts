@@ -79,16 +79,20 @@ Considerá para el score:
 - Disponibilidad y flexibilidad (relocation, inicio inmediato) (20%)
 - Idiomas y perfil global (10%)
 
-Respondé EXACTAMENTE en este formato JSON (sin markdown, sin explicaciones extra):
+Respondé EXACTAMENTE en este formato JSON (sin markdown, sin explicaciones extra). El campo "resumen" debe ser texto en español argentino con estas 4 partes separadas por saltos de línea:
+1. Una oración de perfil y fit con Crown Point.
+2. "Fortalezas: " con 2-3 puntos fuertes.
+3. "A validar: " con 1-2 gaps o dudas a chequear.
+4. "Preguntas sugeridas: " con 2 preguntas concretas para la entrevista.
 {
   "score": <número entre 0 y 100>,
-  "resumen": "<2-3 oraciones en español argentino describiendo el perfil, sus fortalezas y fit con Crown Point>"
+  "resumen": "<texto con las 4 partes, usando saltos de línea \\n>"
 }`
 
   try {
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
+      max_tokens: 650,
       messages: [{ role: 'user', content: userPrompt }],
       system: systemPrompt,
     })
