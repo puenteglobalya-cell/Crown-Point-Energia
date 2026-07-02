@@ -168,13 +168,22 @@ export default function ReportesAdminPage() {
             </h1>
             <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: 0 }}>Gestión de todos los tipos de reportes</p>
           </div>
-          <Link
-            href="/portal/subir"
-            className="btn btn-primary"
-            style={{ textDecoration: 'none', padding: '10px 20px', fontSize: 13 }}
-          >
-            + Subir reporte
-          </Link>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Link
+              href="/admin/reportes/comparar"
+              className="btn"
+              style={{ textDecoration: 'none', padding: '10px 18px', fontSize: 13 }}
+            >
+              ⇄ Comparar ingresos
+            </Link>
+            <Link
+              href="/portal/subir"
+              className="btn btn-primary"
+              style={{ textDecoration: 'none', padding: '10px 20px', fontSize: 13 }}
+            >
+              + Subir reporte
+            </Link>
+          </div>
         </div>
 
         {msg && (
