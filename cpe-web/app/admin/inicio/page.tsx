@@ -1,8 +1,12 @@
 import Link from 'next/link'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
+import { Sparkline } from './Sparkline'
 
 export const dynamic = 'force-dynamic'
+
+const WEEKS = 8
+const WEEK_MS = 7 * 86_400_000
 
 async function count(table: string, filter?: (q: any) => any): Promise<number> {
   const db = createSupabaseServerAdminClient()
@@ -11,6 +15,22 @@ async function count(table: string, filter?: (q: any) => any): Promise<number> {
   if (filter) q = filter(q)
   const { count } = await q
   return count ?? 0
+}
+
+// Bucket rows' created_at into the last WEEKS weekly counts (oldest → newest).
+async function weeklyTrend(table: string): Promise<number[]> {
+  const db = createSupabaseServerAdminClient()
+  const since = new Date(Date.now() - WEEKS * WEEK_MS).toISOString()
+  const { data } = await db.from(table).select('created_at').gte('created_at', since)
+  const buckets = new Array(WEEKS).fill(0)
+  const now = Date.now()
+  for (const row of data ?? []) {
+    const t = new Date((row as { created_at: string }).created_at).getTime()
+    if (Number.isNaN(t)) continue
+    const idx = WEEKS - 1 - Math.floor((now - t) / WEEK_MS)
+    if (idx >= 0 && idx < WEEKS) buckets[idx]++
+  }
+  return buckets
 }
 
 function fmtDate(s: string | null) {
@@ -25,6 +45,7 @@ export default async function AdminInicioPage() {
   const [
     appsNuevas, appsTotal, contactoNuevas, contactoTotal, subsActivos, reportesPub, posicionesAbiertas,
     recentApps, recentContacto, recentReportes,
+    trendApps, trendContacto, trendSubs,
   ] = await Promise.all([
     count('job_applications', q => q.eq('estado', 'nueva')),
     count('job_applications'),
@@ -36,7 +57,16 @@ export default async function AdminInicioPage() {
     db.from('job_applications').select('id,nombre,area,estado,score,created_at').order('created_at', { ascending: false }).limit(5),
     db.from('contact_submissions').select('id,nombre,tipo,estado,created_at').order('created_at', { ascending: false }).limit(5),
     db.from('reportes').select('id,titulo,periodo,estado,created_at').order('created_at', { ascending: false }).limit(5),
+    weeklyTrend('job_applications'),
+    weeklyTrend('contact_submissions'),
+    weeklyTrend('ir_subscribers'),
   ])
+
+  const trends = [
+    { label: 'Postulaciones', data: trendApps, href: '/admin/rrhh', stroke: '#2FA08A' },
+    { label: 'Consultas de contacto', data: trendContacto, href: '/admin/contacto', stroke: '#C9A24A' },
+    { label: 'Altas de suscriptores IR', data: trendSubs, href: '/admin/suscriptores', stroke: '#6CAE52' },
+  ]
 
   const stats = [
     { label: 'Postulaciones nuevas', value: appsNuevas, sub: `${appsTotal} en total`, href: '/admin/rrhh', accent: '#2FA08A' },
@@ -62,6 +92,22 @@ export default async function AdminInicioPage() {
             <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>{s.sub}</div>
           </Link>
         ))}
+      </div>
+
+      {/* Weekly trends */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14, marginTop: 26 }}>
+        {trends.map(t => {
+          const total = t.data.reduce((a, b) => a + b, 0)
+          return (
+            <Link key={t.label} href={t.href} style={{ ...card, textDecoration: 'none', display: 'block' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-soft)' }}>{t.label}</span>
+                <span style={{ fontSize: 12, color: 'var(--fg-muted)', fontVariantNumeric: 'tabular-nums' }}>{total} en {WEEKS} sem.</span>
+              </div>
+              <Sparkline data={t.data} stroke={t.stroke} fill={`color-mix(in oklab, ${t.stroke} 14%, transparent)`} />
+            </Link>
+          )
+        })}
       </div>
 
       {/* Recent activity */}

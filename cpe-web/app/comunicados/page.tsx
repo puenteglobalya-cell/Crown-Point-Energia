@@ -7,7 +7,10 @@ export const revalidate = 60
 export const metadata = {
   title: 'Comunicados | Crown Point Energy',
   description: 'Comunicados de prensa, hechos relevantes y novedades corporativas de Crown Point Energy (TSXV: CWV).',
-  alternates: { canonical: 'https://crownpointenergy.com/comunicados' },
+  alternates: {
+    canonical: 'https://crownpointenergy.com/comunicados',
+    types: { 'application/rss+xml': 'https://crownpointenergy.com/comunicados/rss.xml' },
+  },
 }
 
 export default async function ComunicadosPage() {
