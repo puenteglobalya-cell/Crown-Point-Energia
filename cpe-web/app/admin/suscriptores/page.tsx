@@ -50,20 +50,24 @@ export default function SuscriptoresAdminPage() {
     }
   }
 
-  function exportCsv() {
-    const active = items.filter(i => i.activo)
-    const csv = 'nombre,email,fecha\n' + active.map(i =>
-      `"${i.nombre.replace(/"/g, '""')}","${i.email}","${i.created_at}"`
-    ).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = `suscriptores-ir-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click(); URL.revokeObjectURL(url)
-  }
-
   const filtered = filter === 'todas' ? items : items.filter(i => filter === 'activas' ? i.activo : !i.activo)
   const activas = items.filter(i => i.activo).length
+
+  function exportCsv() {
+    const cols: { key: keyof Subscriber; label: string }[] = [
+      { key: 'nombre', label: 'nombre' }, { key: 'email', label: 'email' },
+      { key: 'activo', label: 'estado' }, { key: 'created_at', label: 'fecha_alta' },
+    ]
+    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
+    const cell = (i: Subscriber, k: keyof Subscriber) => k === 'activo' ? (i.activo ? 'activo' : 'inactivo') : i[k]
+    const rows = [cols.map(c => c.label).join(','), ...filtered.map(i => cols.map(c => esc(cell(i, c.key))).join(','))]
+    // UTF-8 BOM so Excel renders accented characters correctly
+    const blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `suscriptores-ir-${filter}-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click(); URL.revokeObjectURL(url)
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
