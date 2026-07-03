@@ -58,7 +58,13 @@ export default function SuscriptoresAdminPage() {
       { key: 'nombre', label: 'nombre' }, { key: 'email', label: 'email' },
       { key: 'activo', label: 'estado' }, { key: 'created_at', label: 'fecha_alta' },
     ]
-    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
+    // Prefijo anti-fórmula: neutraliza CSV/formula injection en Excel/Sheets
+    // ante valores que empiezan con = + - @ (o tab/CR) provenientes de forms públicos.
+    const esc = (v: unknown) => {
+      let s = String(v ?? '')
+      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`
+      return `"${s.replace(/"/g, '""')}"`
+    }
     const cell = (i: Subscriber, k: keyof Subscriber) => k === 'activo' ? (i.activo ? 'activo' : 'inactivo') : i[k]
     const rows = [cols.map(c => c.label).join(','), ...filtered.map(i => cols.map(c => esc(cell(i, c.key))).join(','))]
     // UTF-8 BOM so Excel renders accented characters correctly

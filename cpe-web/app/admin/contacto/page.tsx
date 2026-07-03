@@ -70,7 +70,13 @@ export default function ContactoAdminPage() {
 
   function exportCsv() {
     const cols: (keyof Submission)[] = ['created_at', 'tipo', 'nombre', 'organizacion', 'email', 'telefono', 'estado', 'mensaje', 'notas']
-    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
+    // Prefijo anti-fórmula: neutraliza CSV/formula injection en Excel/Sheets
+    // ante valores que empiezan con = + - @ (o tab/CR) provenientes de forms públicos.
+    const esc = (v: unknown) => {
+      let s = String(v ?? '')
+      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`
+      return `"${s.replace(/"/g, '""')}"`
+    }
     const rows = [cols.join(','), ...filtered.map(r => cols.map(c => esc(r[c])).join(','))]
     const blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
