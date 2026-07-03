@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import HoneypotFields from '@/components/HoneypotFields'
+import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 
 type FormState = 'idle' | 'submitting' | 'done' | 'error'
 
@@ -22,6 +24,8 @@ export default function ContactForm() {
       email: (form.elements.namedItem('email') as HTMLInputElement)?.value ?? '',
       telefono: (form.elements.namedItem('telefono') as HTMLInputElement)?.value ?? '',
       mensaje: (form.elements.namedItem('mensaje') as HTMLTextAreaElement)?.value ?? '',
+      [HONEYPOT_FIELD]: (form.elements.namedItem(HONEYPOT_FIELD) as HTMLInputElement)?.value ?? '',
+      [TIMESTAMP_FIELD]: (form.elements.namedItem(TIMESTAMP_FIELD) as HTMLInputElement)?.value ?? '',
     }
 
     try {
@@ -57,6 +61,7 @@ export default function ContactForm() {
 
   return (
     <form className="contact-form" onSubmit={handleSubmit}>
+      <HoneypotFields />
       {errMsg && (
         <div style={{ fontSize: 13, color: 'var(--cp-negative)', padding: '10px 14px', background: 'rgba(179,59,46,0.08)', borderRadius: 'var(--r-md)', marginBottom: 12 }}>
           {errMsg}

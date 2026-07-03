@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isSameOrigin } from '@/lib/csrf'
 import { checkRateLimit } from '@/lib/ratelimit'
+import { looksLikeBot, HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const { nombre, email } = body
+
+    // Bot defense: honeypot + submit timing. Feign success so bots don't learn.
+    if (looksLikeBot(body[HONEYPOT_FIELD], body[TIMESTAMP_FIELD])) {
+      return NextResponse.json({ ok: true })
+    }
 
     const emailVal = email?.trim().toLowerCase() ?? ''
     if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {

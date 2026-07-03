@@ -3,6 +3,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireHrUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { checkRateLimit } from '@/lib/ratelimit'
+import { looksLikeBot, HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 import { dbError } from '@/lib/api-error'
 import { enviarConfirmacionPostulacion } from '@/lib/email'
 
@@ -30,6 +31,11 @@ export async function POST(req: NextRequest) {
     const area     = g('area')
     const mensaje  = g('mensaje')
     const cv       = form.get('cv') as File | null
+
+    // Bot defense: honeypot + submit timing. Feign success so bots don't learn.
+    if (looksLikeBot(form.get(HONEYPOT_FIELD), form.get(TIMESTAMP_FIELD))) {
+      return NextResponse.json({ ok: true })
+    }
 
     if (!nombre || !email || !area) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useRef, useState } from 'react'
+import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -105,6 +106,8 @@ export default function ApplicationForm() {
   const [errMsg, setErrMsg] = useState('')
   const [cvName, setCvName] = useState('')
   const cvRef = useRef<HTMLInputElement>(null)
+  const [hp, setHp] = useState('')            // honeypot — must stay empty
+  const formTs = useRef(Date.now())           // form render time for timing check
 
   function set(field: keyof StepData, val: string) {
     setData(prev => ({ ...prev, [field]: val }))
@@ -128,6 +131,8 @@ export default function ApplicationForm() {
 
     const form = new FormData()
     Object.entries(data).forEach(([k, v]) => form.append(k, v))
+    form.append(HONEYPOT_FIELD, hp)
+    form.append(TIMESTAMP_FIELD, String(formTs.current))
     const cvFile = cvRef.current?.files?.[0]
     if (cvFile) form.append('cv', cvFile)
 
@@ -172,6 +177,18 @@ export default function ApplicationForm() {
   return (
     <div>
       <StepBar step={step} />
+
+      {/* Honeypot — hidden from humans; bots that fill it are rejected */}
+      <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
+        <input
+          type="text"
+          name={HONEYPOT_FIELD}
+          tabIndex={-1}
+          autoComplete="off"
+          value={hp}
+          onChange={e => setHp(e.target.value)}
+        />
+      </div>
 
       {errMsg && (
         <div style={{ fontSize: 13, color: 'var(--cp-negative)', padding: '10px 14px', background: 'rgba(179,59,46,0.08)', borderRadius: 'var(--r-md)', marginBottom: 16 }}>
