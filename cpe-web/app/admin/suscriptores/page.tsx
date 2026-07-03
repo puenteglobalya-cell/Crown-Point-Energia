@@ -53,28 +53,6 @@ export default function SuscriptoresAdminPage() {
   const filtered = filter === 'todas' ? items : items.filter(i => filter === 'activas' ? i.activo : !i.activo)
   const activas = items.filter(i => i.activo).length
 
-  function exportCsv() {
-    const cols: { key: keyof Subscriber; label: string }[] = [
-      { key: 'nombre', label: 'nombre' }, { key: 'email', label: 'email' },
-      { key: 'activo', label: 'estado' }, { key: 'created_at', label: 'fecha_alta' },
-    ]
-    // Prefijo anti-fórmula: neutraliza CSV/formula injection en Excel/Sheets
-    // ante valores que empiezan con = + - @ (o tab/CR) provenientes de forms públicos.
-    const esc = (v: unknown) => {
-      let s = String(v ?? '')
-      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`
-      return `"${s.replace(/"/g, '""')}"`
-    }
-    const cell = (i: Subscriber, k: keyof Subscriber) => k === 'activo' ? (i.activo ? 'activo' : 'inactivo') : i[k]
-    const rows = [cols.map(c => c.label).join(','), ...filtered.map(i => cols.map(c => esc(cell(i, c.key))).join(','))]
-    // UTF-8 BOM so Excel renders accented characters correctly
-    const blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = `suscriptores-ir-${filter}-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click(); URL.revokeObjectURL(url)
-  }
-
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
@@ -91,9 +69,9 @@ export default function SuscriptoresAdminPage() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>&#10003; {msg}</span>}
-              <button onClick={exportCsv} className="btn btn-primary" style={{ fontSize: 12, padding: '8px 16px' }}>
-                Exportar CSV
-              </button>
+              <a href={`/api/admin/suscriptores/export?filter=${filter}`} className="btn btn-primary" style={{ fontSize: 12, padding: '8px 16px', textDecoration: 'none' }}>
+                Exportar Excel
+              </a>
             </div>
           </div>
         </div>
