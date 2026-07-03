@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import HoneypotFields from '@/components/HoneypotFields'
+import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 
 type State = 'idle' | 'submitting' | 'done' | 'error'
 
@@ -16,12 +18,14 @@ export default function IrSubscribeForm() {
     const form = e.currentTarget
     const nombre = (form.elements.namedItem('nombre') as HTMLInputElement)?.value ?? ''
     const email = (form.elements.namedItem('email') as HTMLInputElement)?.value ?? ''
+    const hp = (form.elements.namedItem(HONEYPOT_FIELD) as HTMLInputElement)?.value ?? ''
+    const ts = (form.elements.namedItem(TIMESTAMP_FIELD) as HTMLInputElement)?.value ?? ''
 
     try {
       const res = await fetch('/api/ir-subscribe', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ nombre, email }),
+        body: JSON.stringify({ nombre, email, [HONEYPOT_FIELD]: hp, [TIMESTAMP_FIELD]: ts }),
       })
       if (!res.ok) throw new Error('Error')
       setState('done')
@@ -49,6 +53,7 @@ export default function IrSubscribeForm() {
 
   return (
     <form className="ir-subscribe" onSubmit={handleSubmit}>
+      <HoneypotFields />
       {errMsg && (
         <div style={{ fontSize: 13, color: '#FF8A80', padding: '8px 12px', background: 'rgba(179,59,46,0.15)', borderRadius: 'var(--r-md)' }}>
           {errMsg}
