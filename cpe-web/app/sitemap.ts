@@ -1,8 +1,12 @@
 import { MetadataRoute } from 'next'
+import { createSupabaseServerAdminClient } from '@/lib/supabase'
 
 const BASE = 'https://crownpointenergy.com'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+// Revalidate the sitemap hourly so newly published releases appear.
+export const revalidate = 3600
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -19,5 +23,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/legal/avisos`,     lastModified: now, changeFrequency: 'yearly',  priority: 0.3 },
   ]
 
-  return staticRoutes
+  // Published press releases — resilient if the table doesn't exist yet.
+  let comunicados: MetadataRoute.Sitemap = []
+  try {
+    const { data } = await createSupabaseServerAdminClient()
+      .from('comunicados')
+      .select('id, fecha, updated_at')
+      .eq('publicado', true)
+      .order('fecha', { ascending: false })
+      .limit(500)
+    comunicados = (data ?? []).map((c: { id: string; fecha: string | null; updated_at: string | null }) => ({
+      url: `${BASE}/comunicados/${c.id}`,
+      lastModified: c.updated_at ? new Date(c.updated_at) : c.fecha ? new Date(c.fecha + 'T12:00:00Z') : now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    }))
+  } catch {
+    comunicados = []
+  }
+
+  return [...staticRoutes, ...comunicados]
 }
