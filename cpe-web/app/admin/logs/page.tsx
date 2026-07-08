@@ -110,7 +110,7 @@ export default async function LogsPage({
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
 
         {/* Header */}
-        <div style={{ marginBottom: 28 }}>
+        <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
               Log de actividad
@@ -119,6 +119,13 @@ export default async function LogsPage({
               Registro de acciones por sección · Solo visible para administradores
             </p>
           </div>
+          <a
+            href={`/api/admin/logs/export?section=${section}&days=${days}`}
+            className="btn btn-primary"
+            style={{ fontSize: 12, padding: '8px 16px', textDecoration: 'none' }}
+          >
+            Exportar Excel
+          </a>
         </div>
 
         {/* Filters */}
