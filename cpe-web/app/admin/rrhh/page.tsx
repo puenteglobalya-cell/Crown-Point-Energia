@@ -262,7 +262,18 @@ export default function RrhhPage() {
                 Gestión de búsquedas y postulaciones
               </p>
             </div>
-            {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
+              {tab === 'postulaciones' && (
+                <a
+                  href={`/api/carreras/export?estado=${filterEstado}&area=${encodeURIComponent(filterArea)}`}
+                  className="btn btn-primary"
+                  style={{ fontSize: 12, padding: '8px 16px', textDecoration: 'none' }}
+                >
+                  Exportar Excel
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
