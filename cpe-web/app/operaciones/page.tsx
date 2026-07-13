@@ -95,7 +95,8 @@ export default async function OperacionesPage() {
                 metaEn: fe['ops.kpi.wells.meta'] || '+83 injectors in operation' },
               { labelEs: 'Producción promedio', labelEn: 'Average production',
                 val: f['ops.kpi.production'] || '8,672', unit: 'boe/d',
-                meta: f['ops.kpi.production.meta'] || 'Q1 2026 · neto' },
+                metaEs: f['ops.kpi.production.meta'] || 'Q1 2026 · neto',
+                metaEn: fe['ops.kpi.production.meta'] || 'Q1 2026 · net' },
               { labelEs: 'Mix producción', labelEn: 'Production mix',
                 val: f['ops.kpi.mix'] || '16/84', unitEs: 'gas / líquidos', unitEn: 'gas / liquids',
                 metaEs: 'Balance gas/oil', metaEn: 'Gas/oil balance' },
@@ -108,7 +109,6 @@ export default async function OperacionesPage() {
                   {k.unitEs && <span className="kpi-unit"><span className="lang-es">{k.unitEs}</span><span className="lang-en">{k.unitEn}</span></span>}
                 </div>
                 <span className="kpi-meta">
-                  {k.meta && k.meta}
                   {k.metaEs && <><span className="lang-es">{k.metaEs}</span><span className="lang-en">{k.metaEn}</span></>}
                 </span>
               </div>

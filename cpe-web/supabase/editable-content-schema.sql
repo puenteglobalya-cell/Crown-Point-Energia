@@ -161,7 +161,7 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
     'The area sits in the northern Vaca Muerta play, with conventional prospects in the Tordillo, Quintuco and Mulichinco formations. 3D seismic acquired in 2023 confirmed hydrocarbon presence across four independent structures.',
     'The 2026–2027 development plan covers 4 exploration wells and 2 delineation wells, with estimated capex of USD 18M.'
   ],
-  '[{"label_es":"Superficie","label_en":"Acreage","val":"101,208 ha"},{"label_es":"Profundidad objetivo","label_en":"Target depth","val":"2,800–3,600 m"},{"label_es":"Producción actual","label_en":"Current production","val":"—"},{"label_es":"Próximo hito","label_en":"Next milestone","val":"Pozo CdLL.x-1 · Q3 2026"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza"}]',
+  '[{"label_es":"Superficie","label_en":"Acreage","val":"101,208 ha"},{"label_es":"Profundidad objetivo","label_en":"Target depth","val":"2,800–3,600 m"},{"label_es":"Producción actual","label_en":"Current production","val":"—"},{"label_es":"Próximo hito","label_en":"Next milestone","val":"CdLL.x-1 · Q3 2026"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza"}]',
   '[{"label_es":"WI","label_en":"WI","val":"100%"},{"label_es":"Superficie","label_en":"Acreage","val":"101,208 ha"},{"label_es":"Estado","label_en":"Status","val":"Exploratorio / Exploration"},{"label_es":"Próximo hito","label_en":"Next milestone","val":"CdLL.x-1 · Q3 2026"}]'
 ),
 (
@@ -218,8 +218,8 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
     'Crown Point holds a 48.3% non-operated working interest in the 3 exploitation concessions of Río Cullen, La Angostura and Las Violetas in the Austral Basin of Tierra del Fuego, representing a total of 489,000 gross acres (169,880 net acres). Crown Point''s strategy is to grow production from its Tierra del Fuego assets through exploration and development drilling, supported by extensive 3D seismic coverage.',
     'The processing plants are connected to the TGS gas pipeline system and to the regional crude and condensate pipeline.'
   ],
-  '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"242 Bbl/d"},{"label_es":"Producción LPG","label_en":"LPG production","val":"4 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"3,821 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Superficie bruta","label_en":"Gross acreage","val":"489,000 acres"},{"label_es":"Superficie neta","label_en":"Net acreage","val":"169,880 acres"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Ago 2026"}]',
-  '[{"label_es":"WI","label_en":"WI","val":"48.3%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"242 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"3,821 Mcf/d"},{"label_es":"Total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Ago 2026"}]'
+  '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"242 Bbl/d"},{"label_es":"Producción LPG","label_en":"LPG production","val":"4 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"3,821 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Superficie bruta","label_en":"Gross acreage","val":"489,000 acres"},{"label_es":"Superficie neta","label_en":"Net acreage","val":"169,880 acres"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Aug 2026"}]',
+  '[{"label_es":"WI","label_en":"WI","val":"48.3%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"242 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"3,821 Mcf/d"},{"label_es":"Total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Aug 2026"}]'
 )
 ON CONFLICT (slug) DO NOTHING;
 
