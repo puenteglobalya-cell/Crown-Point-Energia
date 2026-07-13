@@ -116,7 +116,7 @@ UPDATE operations_blocks SET
   lede_en      = 'Producing concession in central Mendoza, medium crude (31.94° API). Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A.',
   card_title_es = 'Crudo mediano',
   card_title_en = 'Medium crude',
-  chips        = '["Crudo mediano", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb,
+  chips        = '["Medium crude · Crudo mediano", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb,
   body_es      = ARRAY[
     'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza. El operador es Tango Energy Argentina S.A. El bloque produce crudo mediano de 31.94° API con infraestructura conectada al oleoducto Allanito–Luján de Cuyo.',
     'El programa de workover 2026 contempla la intervención de pozos productores con un objetivo de incremento de producción.'
@@ -140,7 +140,7 @@ UPDATE operations_blocks SET
   lede_en      = 'Producing concession adjacent to Chañares Herrados, in central Mendoza. Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A. Light crude at 33.7° API.',
   card_title_es = 'Crudo liviano',
   card_title_en = 'Light crude',
-  chips        = '["Crudo liviano", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb,
+  chips        = '["Light crude · Crudo liviano", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb,
   body_es      = ARRAY[
     'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza, colindante con la concesión Chañares Herrados. El operador es Tango Energy Argentina S.A. El bloque produce crudo liviano de 33.7° API con infraestructura integrada en la zona.',
     'El programa de workover 2026 contempla la intervención de pozos productores para incrementar la producción del área.'
@@ -149,8 +149,8 @@ UPDATE operations_blocks SET
     'Crown Point holds a 50% working interest in this block in the Cuyana Basin, Mendoza province, adjacent to the Chañares Herrados concession. Operator is Tango Energy Argentina S.A. The block produces 33.7° API light crude with integrated area infrastructure.',
     'The 2026 workover program targets well interventions to increase production across the area.'
   ],
-  stats        = '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"33.7° API · Liviano"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]'::jsonb,
-  map_stats    = '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Tipo","label_en":"Type","val":"Crudo liviano"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'::jsonb
+  stats        = '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"33.7° API · Light"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]'::jsonb,
+  map_stats    = '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Tipo","label_en":"Type","val":"Light crude"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'::jsonb
 WHERE slug = 'ppc';
 
 -- El Tordillo (slug = 'tordillo')
@@ -187,7 +187,7 @@ UPDATE operations_blocks SET
   eyebrow      = '05 · Cuenca Austral · Tierra del Fuego',
   lede_es      = 'Tres concesiones de explotación en la Cuenca Austral de Tierra del Fuego. Crown Point tiene una participación no operada del 48.3%, con producción de petróleo y gas. Vencimiento: agosto 2026.',
   lede_en      = 'Three exploitation concessions in the Austral Basin of Tierra del Fuego. Crown Point holds a 48.3% non-operated working interest, producing oil and gas. Expiry: August 2026.',
-  chips        = '["48.3% WI", "Participación / Working interest", "Petróleo & Gas / Oil & Gas", "Vence Ago 2026"]'::jsonb,
+  chips        = '["48.3% WI", "Participación / Working interest", "Petróleo & Gas / Oil & Gas", "Expires Aug 2026 · Vence Ago 2026"]'::jsonb,
   body_es      = ARRAY[
     'Crown Point tiene una participación no operada del 48.3% en las 3 concesiones de explotación de Río Cullen, La Angostura y Las Violetas en la Cuenca Austral de Tierra del Fuego, lo que representa un total de 489,000 acres brutos (169,880 acres netos). La estrategia de Crown Point es aumentar la producción de sus activos en Tierra del Fuego mediante perforación de exploración y desarrollo, respaldada por una amplia cobertura sísmica 3D.',
     'Producción 1Q 2026: 242 Bbl/d de petróleo, 4 Bbl/d de LPG y 3.821 Mcf/d de gas natural (883 boe/d totales). Las plantas de tratamiento están conectadas al sistema TGS para entrega de gas, y al oleoducto regional para crudo y condensado. Las concesiones vencen en agosto de 2026.'

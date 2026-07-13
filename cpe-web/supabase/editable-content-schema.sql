@@ -114,7 +114,7 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
   'Concesión productiva contigua a Chañares Herrados, en el centro de Mendoza. Crown Point participa con el 50% del working interest; el operador es Tango Energy Argentina S.A.',
   'Producing concession adjacent to Chañares Herrados, in central Mendoza. Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A.',
   'Crudo liviano', 'Light crude',
-  '["Crudo liviano", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]',
+  '["Light crude · Crudo liviano", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]',
   ARRAY[
     'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza, colindante con la concesión Chañares Herrados. El operador es Tango Energy Argentina S.A. El bloque produce crudo liviano de 33.7° API con infraestructura integrada en la zona.',
     'El programa de workover 2026 contempla la intervención de pozos productores para incrementar la producción del área.'
@@ -123,8 +123,8 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
     'Crown Point holds a 50% working interest in this block in the Cuyana Basin, Mendoza province, adjacent to the Chañares Herrados concession. Operator is Tango Energy Argentina S.A. The block produces 33.7° API light crude with integrated area infrastructure.',
     'The 2026 workover program targets well interventions to increase production across the area.'
   ],
-  '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"33.7° API · Liviano"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]',
-  '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Tipo","label_en":"Type","val":"Crudo liviano"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'
+  '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"33.7° API · Light"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]',
+  '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Tipo","label_en":"Type","val":"Light crude"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'
 ),
 (
   'chanares', 2, 'oil',
@@ -133,7 +133,7 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
   'Concesión productiva en el centro de Mendoza, con crudo mediano (31.94° API). Crown Point participa con el 50% del working interest; el operador es Tango Energy Argentina S.A.',
   'Producing concession in central Mendoza, medium crude (31.94° API). Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A.',
   'Crudo mediano', 'Medium crude',
-  '["Crudo mediano", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]',
+  '["Medium crude · Crudo mediano", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]',
   ARRAY[
     'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza. El operador es Tango Energy Argentina S.A. El bloque produce crudo mediano de 31.94° API con infraestructura conectada al oleoducto Allanito–Luján de Cuyo.',
     'El programa de workover 2026 contempla la intervención de pozos productores con un objetivo de incremento de producción.'
@@ -161,7 +161,7 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
     'The area sits in the northern Vaca Muerta play, with conventional prospects in the Tordillo, Quintuco and Mulichinco formations. 3D seismic acquired in 2023 confirmed hydrocarbon presence across four independent structures.',
     'The 2026–2027 development plan covers 4 exploration wells and 2 delineation wells, with estimated capex of USD 18M.'
   ],
-  '[{"label_es":"Superficie","label_en":"Acreage","val":"101,208 ha"},{"label_es":"Profundidad objetivo","label_en":"Target depth","val":"2,800–3,600 m"},{"label_es":"Producción actual","label_en":"Current production","val":"—"},{"label_es":"Próximo hito","label_en":"Next milestone","val":"Pozo CdLL.x-1 · Q3 2026"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza"}]',
+  '[{"label_es":"Superficie","label_en":"Acreage","val":"101,208 ha"},{"label_es":"Profundidad objetivo","label_en":"Target depth","val":"2,800–3,600 m"},{"label_es":"Producción actual","label_en":"Current production","val":"—"},{"label_es":"Próximo hito","label_en":"Next milestone","val":"CdLL.x-1 · Q3 2026"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza"}]',
   '[{"label_es":"WI","label_en":"WI","val":"100%"},{"label_es":"Superficie","label_en":"Acreage","val":"101,208 ha"},{"label_es":"Estado","label_en":"Status","val":"Exploratorio / Exploration"},{"label_es":"Próximo hito","label_en":"Next milestone","val":"CdLL.x-1 · Q3 2026"}]'
 ),
 (
@@ -218,8 +218,8 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
     'Crown Point holds a 48.3% non-operated working interest in the 3 exploitation concessions of Río Cullen, La Angostura and Las Violetas in the Austral Basin of Tierra del Fuego, representing a total of 489,000 gross acres (169,880 net acres). Crown Point''s strategy is to grow production from its Tierra del Fuego assets through exploration and development drilling, supported by extensive 3D seismic coverage.',
     'The processing plants are connected to the TGS gas pipeline system and to the regional crude and condensate pipeline.'
   ],
-  '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"242 Bbl/d"},{"label_es":"Producción LPG","label_en":"LPG production","val":"4 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"3,821 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Superficie bruta","label_en":"Gross acreage","val":"489,000 acres"},{"label_es":"Superficie neta","label_en":"Net acreage","val":"169,880 acres"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Ago 2026"}]',
-  '[{"label_es":"WI","label_en":"WI","val":"48.3%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"242 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"3,821 Mcf/d"},{"label_es":"Total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Ago 2026"}]'
+  '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"242 Bbl/d"},{"label_es":"Producción LPG","label_en":"LPG production","val":"4 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"3,821 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Superficie bruta","label_en":"Gross acreage","val":"489,000 acres"},{"label_es":"Superficie neta","label_en":"Net acreage","val":"169,880 acres"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Aug 2026"}]',
+  '[{"label_es":"WI","label_en":"WI","val":"48.3%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"242 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"3,821 Mcf/d"},{"label_es":"Total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Aug 2026"}]'
 )
 ON CONFLICT (slug) DO NOTHING;
 
