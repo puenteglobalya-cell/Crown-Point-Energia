@@ -174,14 +174,14 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
   '["95% WI", "Operador / Operator", "Crudo & Gas / Oil & Gas"]',
   ARRAY[
     'Tres concesiones operadas por Crown Point Energía S.A. con el 95% del working interest: El Tordillo, La Tapera y Puesto Quiroga, en la provincia de Chubut, flanco norte de la Cuenca del Golfo San Jorge. Área total de 430 km² netos.',
-    'Producción 1Q 2026: 4.382 Bbl/d de petróleo y 6.880 Mcf/d de gas natural (5.529 boe/d totales). Cuenta con 283 pozos activos y 88 pozos inyectores. La concesión vence el 14/11/2027 con extensión acordada por 20 años (hasta noviembre de 2047).'
+    'Producción 1Q 2026: 4.164 Bbl/d de petróleo y 3.451 Mcf/d de gas natural (4.739 boe/d totales). Cuenta con 264 pozos activos y 88 pozos inyectores. La concesión vence el 14/11/2027 con extensión acordada por 20 años (hasta noviembre de 2047).'
   ],
   ARRAY[
     'Three concessions operated by Crown Point Energía S.A. with a 95% working interest: El Tordillo, La Tapera and Puesto Quiroga, in Chubut province, northern flank of the San Jorge Gulf Basin. Total net area of 430 km².',
-    'Q1 2026 production: 4,382 Bbl/d of oil and 6,880 Mcf/d of natural gas (5,529 boe/d total). The block has 283 active producers and 88 injector wells. Concession expires 14/11/2027 with an agreed 20-year extension (to November 2047).'
+    'Q1 2026 production: 4,164 Bbl/d of oil and 3,451 Mcf/d of natural gas (4,739 boe/d total). The block has 264 active producers and 88 injector wells. Concession expires 14/11/2027 with an agreed 20-year extension (to November 2047).'
   ],
-  '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"4,382 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"6,880 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"5,529 Boe/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"283"},{"label_es":"Pozos inyectores","label_en":"Injector wells","val":"88"},{"label_es":"Superficie","label_en":"Acreage","val":"113,325 acres · 430 km²"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Nov 2047 (ext.)"}]',
-  '[{"label_es":"WI","label_en":"WI","val":"95%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"4,382 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"6,880 Mcf/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"283"}]'
+  '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"4,164 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"3,451 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"4,739 Boe/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"264"},{"label_es":"Pozos inyectores","label_en":"Injector wells","val":"88"},{"label_es":"Superficie","label_en":"Acreage","val":"113,325 acres · 430 km²"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Nov 2047 (ext.)"}]',
+  '[{"label_es":"WI","label_en":"WI","val":"95%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"4,164 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"3,451 Mcf/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"264"}]'
 ),
 (
   'piedra', 4, 'oil',
@@ -199,8 +199,8 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
     'Crown Point holds a 100% operated working interest in the Piedra Clavada Koluel Kaike Exploitation Concession, representing a total of 71,660 net acres in the San Jorge Basin. Crown Point''s strategy is to increase production through well drilling and workovers, and facilities optimisation.',
     'Crude is delivered to local buyers connected to the San Jorge Basin infrastructure in Santa Cruz province.'
   ],
-  '[{"label_es":"Superficie","label_en":"Acreage","val":"8,840 ha"},{"label_es":"Pozos productores","label_en":"Producing wells","val":"22"},{"label_es":"Producción neta","label_en":"Net production","val":"342 boe/d"},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"21° API"},{"label_es":"Vencimiento","label_en":"Expiry","val":"2049"}]',
-  '[{"label_es":"WI","label_en":"WI","val":"100%"},{"label_es":"Producción neta","label_en":"Net production","val":"342 boe/d"},{"label_es":"Calidad","label_en":"Quality","val":"21° API"},{"label_es":"Vencimiento","label_en":"Expiry","val":"2049"}]'
+  '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"2,568 Bbl/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"403"},{"label_es":"Pozos inyectores","label_en":"Injector wells","val":"143"},{"label_es":"Superficie","label_en":"Acreage","val":"8,840 ha"},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"21° API"},{"label_es":"Vencimiento","label_en":"Expiry","val":"2049"}]',
+  '[{"label_es":"WI","label_en":"WI","val":"100%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"2,568 Bbl/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"403"},{"label_es":"Vencimiento","label_en":"Expiry","val":"2049"}]'
 ),
 (
   'tdf', 5, 'mixed',
@@ -218,8 +218,8 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
     'Crown Point holds a 48.3% non-operated working interest in the 3 exploitation concessions of Río Cullen, La Angostura and Las Violetas in the Austral Basin of Tierra del Fuego, representing a total of 489,000 gross acres (169,880 net acres). Crown Point''s strategy is to grow production from its Tierra del Fuego assets through exploration and development drilling, supported by extensive 3D seismic coverage.',
     'The processing plants are connected to the TGS gas pipeline system and to the regional crude and condensate pipeline.'
   ],
-  '[{"label_es":"Concesiones","label_en":"Concessions","val":"3"},{"label_es":"Pozos activos","label_en":"Active wells","val":"52"},{"label_es":"Producción neta","label_en":"Net production","val":"1,210 boe/d"},{"label_es":"Mix","label_en":"Mix","val":"78% gas · 22% líquidos"},{"label_es":"Vencimiento","label_en":"Expiry","val":"2041"}]',
-  '[{"label_es":"WI","label_en":"WI","val":"48.3%"},{"label_es":"Producción neta","label_en":"Net production","val":"1,210 boe/d"},{"label_es":"Mix","label_en":"Mix","val":"78% gas · 22% líquidos"},{"label_es":"Vencimiento","label_en":"Expiry","val":"2041"}]'
+  '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"242 Bbl/d"},{"label_es":"Producción LPG","label_en":"LPG production","val":"4 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"3,821 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Superficie bruta","label_en":"Gross acreage","val":"489,000 acres"},{"label_es":"Superficie neta","label_en":"Net acreage","val":"169,880 acres"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Ago 2026"}]',
+  '[{"label_es":"WI","label_en":"WI","val":"48.3%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"242 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"3,821 Mcf/d"},{"label_es":"Total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Ago 2026"}]'
 )
 ON CONFLICT (slug) DO NOTHING;
 

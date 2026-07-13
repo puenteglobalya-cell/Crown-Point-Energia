@@ -99,14 +99,14 @@ UPDATE operations_blocks SET
   chips        = '["95% WI", "Operador / Operator", "Crudo & Gas / Oil & Gas"]'::jsonb,
   body_es      = ARRAY[
     'Tres concesiones operadas por Crown Point Energía S.A. con el 95% del working interest: El Tordillo, La Tapera y Puesto Quiroga, en la provincia de Chubut, flanco norte de la Cuenca del Golfo San Jorge. Área total de 430 km² netos.',
-    'Producción 1Q 2026: 4.382 Bbl/d de petróleo y 6.880 Mcf/d de gas natural (5.529 boe/d totales). Cuenta con 283 pozos activos y 88 pozos inyectores. La concesión vence el 14/11/2027 con extensión acordada por 20 años (hasta noviembre de 2047).'
+    'Producción 1Q 2026: 4.164 Bbl/d de petróleo y 3.451 Mcf/d de gas natural (4.739 boe/d totales). Cuenta con 264 pozos activos y 88 pozos inyectores. La concesión vence el 14/11/2027 con extensión acordada por 20 años (hasta noviembre de 2047).'
   ],
   body_en      = ARRAY[
     'Three concessions operated by Crown Point Energía S.A. with a 95% working interest: El Tordillo, La Tapera and Puesto Quiroga, in Chubut province, northern flank of the San Jorge Gulf Basin. Total net area of 430 km².',
-    'Q1 2026 production: 4,382 Bbl/d of oil and 6,880 Mcf/d of natural gas (5,529 boe/d total). The block has 283 active producers and 88 injector wells. Concession expires 14/11/2027 with an agreed 20-year extension (to November 2047).'
+    'Q1 2026 production: 4,164 Bbl/d of oil and 3,451 Mcf/d of natural gas (4,739 boe/d total). The block has 264 active producers and 88 injector wells. Concession expires 14/11/2027 with an agreed 20-year extension (to November 2047).'
   ],
-  stats        = '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"4,382 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"6,880 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"5,529 Boe/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"283"},{"label_es":"Pozos inyectores","label_en":"Injector wells","val":"88"},{"label_es":"Superficie","label_en":"Acreage","val":"113,325 acres · 430 km²"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Nov 2047 (ext.)"}]'::jsonb,
-  map_stats    = '[{"label_es":"WI","label_en":"WI","val":"95%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"4,382 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"6,880 Mcf/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"283"}]'::jsonb
+  stats        = '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"4,164 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"3,451 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"4,739 Boe/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"264"},{"label_es":"Pozos inyectores","label_en":"Injector wells","val":"88"},{"label_es":"Superficie","label_en":"Acreage","val":"113,325 acres · 430 km²"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Nov 2047 (ext.)"}]'::jsonb,
+  map_stats    = '[{"label_es":"WI","label_en":"WI","val":"95%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"4,164 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"3,451 Mcf/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"264"}]'::jsonb
 WHERE slug = 'tordillo';
 
 -- Chañares Herrados (slug = 'chanares')
@@ -185,16 +185,16 @@ UPDATE operations_blocks SET
   commodity    = 'mixed',
   orden        = 5,
   eyebrow      = '05 · Cuenca Austral · Tierra del Fuego',
-  lede_es      = 'Tres concesiones de explotación en la Cuenca Austral de Tierra del Fuego. Crown Point tiene una participación no operada del 48.3%, con producción de petróleo y gas.',
-  lede_en      = 'Three exploitation concessions in the Austral Basin of Tierra del Fuego. Crown Point holds a 48.3% non-operated working interest, producing oil and gas.',
-  chips        = '["48.3% WI", "Participación / Working interest", "Petróleo & Gas / Oil & Gas"]'::jsonb,
+  lede_es      = 'Tres concesiones de explotación en la Cuenca Austral de Tierra del Fuego. Crown Point tiene una participación no operada del 48.3%, con producción de petróleo y gas. Vencimiento: agosto 2026.',
+  lede_en      = 'Three exploitation concessions in the Austral Basin of Tierra del Fuego. Crown Point holds a 48.3% non-operated working interest, producing oil and gas. Expiry: August 2026.',
+  chips        = '["48.3% WI", "Participación / Working interest", "Petróleo & Gas / Oil & Gas", "Vence Ago 2026"]'::jsonb,
   body_es      = ARRAY[
     'Crown Point tiene una participación no operada del 48.3% en las 3 concesiones de explotación de Río Cullen, La Angostura y Las Violetas en la Cuenca Austral de Tierra del Fuego, lo que representa un total de 489,000 acres brutos (169,880 acres netos). La estrategia de Crown Point es aumentar la producción de sus activos en Tierra del Fuego mediante perforación de exploración y desarrollo, respaldada por una amplia cobertura sísmica 3D.',
-    'Las plantas de tratamiento están conectadas al sistema TGS para entrega de gas, y al oleoducto regional para crudo y condensado.'
+    'Producción 1Q 2026: 242 Bbl/d de petróleo, 4 Bbl/d de LPG y 3.821 Mcf/d de gas natural (883 boe/d totales). Las plantas de tratamiento están conectadas al sistema TGS para entrega de gas, y al oleoducto regional para crudo y condensado. Las concesiones vencen en agosto de 2026.'
   ],
   body_en      = ARRAY[
     'Crown Point holds a 48.3% non-operated working interest in the 3 exploitation concessions of Río Cullen, La Angostura and Las Violetas in the Austral Basin of Tierra del Fuego, representing a total of 489,000 gross acres (169,880 net acres). Crown Point''s strategy is to grow production from its Tierra del Fuego assets through exploration and development drilling, supported by extensive 3D seismic coverage.',
-    'The processing plants are connected to the TGS gas pipeline system and to the regional crude and condensate pipeline.'
+    'Q1 2026 production: 242 Bbl/d of oil, 4 Bbl/d of LPG and 3,821 Mcf/d of natural gas (883 boe/d total). The processing plants are connected to the TGS gas pipeline system and to the regional crude and condensate pipeline. The concessions expire in August 2026.'
   ]
 WHERE slug = 'tdf';
 
