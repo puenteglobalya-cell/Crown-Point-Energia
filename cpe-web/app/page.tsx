@@ -116,15 +116,15 @@ export default async function HomePage() {
                 : <span className="lang-es">Energía que sostiene<br/>la matriz productiva<br/>argentina.</span>}
               {heroTitleEn
                 ? <span className="lang-en">{heroTitleEn}</span>
-                : <span className="lang-en">Energy that sustains<br/>Argentina&apos;s productive<br/>energy matrix.</span>}
+                : <span className="lang-en">Energy that sustains<br/>Argentina&apos;s productive<br/>matrix.</span>}
             </h1>
             <p className="hero-lede">
               {heroLedeEs
                 ? <span className="lang-es">{heroLedeEs}</span>
-                : <span className="lang-es">Operamos en dos de las cuencas más relevantes del país con 11 concesiones — producción propia, cartera de proyectos de bajo riesgo y estructura financiera prudente.</span>}
+                : <span className="lang-es">Operamos en cuatro de las cuencas más relevantes del país — producción propia, cartera de proyectos de bajo riesgo y estructura financiera prudente.</span>}
               {heroLedeEn
                 ? <span className="lang-en">{heroLedeEn}</span>
-                : <span className="lang-en">We operate in two of the country&apos;s most relevant basins — our own production, a low-risk project portfolio and a prudent financial structure.</span>}
+                : <span className="lang-en">We operate in four of the country&apos;s most relevant basins — our own production, a low-risk project portfolio and a prudent financial structure.</span>}
             </p>
             <div className="hero-cta">
               <Link className="btn btn-primary" href="/inversores">
@@ -306,7 +306,7 @@ export default async function HomePage() {
                 </h2>
               </div>
               <p>
-                <span className="lang-es">Cartera diversificada de activos con foco en petróleo convencional y gas natural.</span>
+                <span className="lang-es">Cartera diversificada de áreas convencionales y no convencionales, con foco en gas natural y crudo liviano.</span>
                 <span className="lang-en">A diversified portfolio of assets focused on conventional oil and natural gas.</span>
               </p>
             </div>

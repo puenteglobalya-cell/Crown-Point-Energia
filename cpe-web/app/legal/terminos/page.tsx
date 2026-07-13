@@ -60,7 +60,7 @@ export default function TerminosPage() {
             <p>All content on this site (text, images, trademarks, logos) is owned by the Company or by third parties who have authorized its use. Partial or total reproduction is prohibited without express authorization.</p>
 
             <h2>Jurisdiction</h2>
-            <p>These terms are governed by the laws of Canada. Any dispute shall be submitted to the courts of Alberta.</p>
+            <p>These terms are governed by the laws of the Argentine Republic. Any dispute shall be submitted to the ordinary courts of the City of Buenos Aires.</p>
           </div>
         </div>
       </section>

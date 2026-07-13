@@ -131,7 +131,7 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
   '02 · Cuenca Cuyana',
   'Chañares Herrados',
   'Concesión productiva en el centro de Mendoza, con crudo mediano (31.94° API). Crown Point participa con el 50% del working interest; el operador es Tango Energy Argentina S.A.',
-  'Producing concession in central Mendoza, medium crude (31.94° API). Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A.',
+  'Producing oil concession located in the Cuyana Basin, Mendoza Province, medium crude (31.94° API). Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A. Net 10.5 km² (2,520 net acres).',
   'Crudo mediano', 'Medium crude',
   '["Medium crude · Crudo mediano", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]',
   ARRAY[
@@ -142,7 +142,7 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
     'Crown Point holds a 50% working interest in this block located in the Cuyana Basin, Mendoza province. Operator is Tango Energy Argentina S.A. The block produces 31.94° API medium crude with infrastructure connected to the Allanito–Luján de Cuyo pipeline.',
     'The 2026 workover program targets well interventions for production uplift.'
   ],
-  '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"31.94° API"},{"label_es":"Superficie","label_en":"Acreage","val":"5,040 acres · 21 km²"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]',
+  '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"31.94° API"},{"label_es":"Superficie","label_en":"Acreage","val":"2,520 acres · 10.5 km²"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]',
   '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Calidad","label_en":"Quality","val":"31.94° API"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'
 ),
 (
@@ -150,19 +150,19 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
   '03 · Cuenca Neuquina',
   'Cerro de Los Leones',
   'Bloque exploratorio de 101.208 hectáreas en el norte de la Cuenca Neuquina, provincia de Mendoza, con potencial convencional y no convencional.',
-  '101,208-hectare exploration block in the northern Neuquén Basin, Mendoza province, with conventional and unconventional potential.',
+  '101,208-hectare exploration block in the northern Neuquén Basin, Mendoza province, with both conventional and unconventional potential.',
   'Estructura del bloque', 'Block structure',
   '["100% Operador / Operator", "Exploratorio / Exploration"]',
   ARRAY[
     'El área se encuentra en la parte norte del play Vaca Muerta, con prospectos convencionales en formaciones Tordillo, Quintuco y Mulichinco. Los estudios sísmicos 3D adquiridos en 2023 confirmaron presencia de hidrocarburos en cuatro estructuras independientes.',
-    'El plan de desarrollo 2026–2027 contempla la perforación de 4 pozos exploratorios y 2 pozos de delineación, con un capex estimado de USD 18M.'
+    'Permiso CLL: el 18 de mayo de 2026, el Ministerio de Energía y Ambiente de la Provincia de Mendoza emitió la Resolución N.° 86/2026, que otorga una prórroga de un año del plazo del Permiso CLL hasta el 18 de mayo de 2027, sujeta a que la Compañía cumpla con todas las condiciones vigentes del permiso, incluida la presentación de un programa de trabajo revisado.'
   ],
   ARRAY[
-    'The area sits in the northern Vaca Muerta play, with conventional prospects in the Tordillo, Quintuco and Mulichinco formations. 3D seismic acquired in 2023 confirmed hydrocarbon presence across four independent structures.',
-    'The 2026–2027 development plan covers 4 exploration wells and 2 delineation wells, with estimated capex of USD 18M.'
+    'The area sits within the northern extension of the unconventional Vaca Muerta shale play; conventional prospects are found in the Tordillo, Quintuco and Mulichinco formations. 3D seismic acquired in 2023 identified indicators of hydrocarbon presence across four independent structures.',
+    'CLL Permit: On May 18, 2026, the Ministry of Energy and Environment of the Province of Mendoza issued Resolution No. 86/2026, which grants a one-year extension of the term of the CLL Permit until May 18, 2027 subject to the Company complying with all existing conditions under the permit including the submission of a revised work program.'
   ],
-  '[{"label_es":"Superficie","label_en":"Acreage","val":"101,208 ha"},{"label_es":"Profundidad objetivo","label_en":"Target depth","val":"2,800–3,600 m"},{"label_es":"Producción actual","label_en":"Current production","val":"—"},{"label_es":"Próximo hito","label_en":"Next milestone","val":"CdLL.x-1 · Q3 2026"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza"}]',
-  '[{"label_es":"WI","label_en":"WI","val":"100%"},{"label_es":"Superficie","label_en":"Acreage","val":"101,208 ha"},{"label_es":"Estado","label_en":"Status","val":"Exploratorio / Exploration"},{"label_es":"Próximo hito","label_en":"Next milestone","val":"CdLL.x-1 · Q3 2026"}]'
+  '[{"label_es":"Superficie","label_en":"Acreage","val":"101,208 ha"},{"label_es":"Profundidad objetivo","label_en":"Target depth","val":"2,800–3,600 m"},{"label_es":"Producción actual","label_en":"Current production","val":"—"},{"label_es":"Prórroga permiso","label_en":"Permit extension","val":"May 2027"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza"}]',
+  '[{"label_es":"WI","label_en":"WI","val":"100%"},{"label_es":"Superficie","label_en":"Acreage","val":"101,208 ha"},{"label_es":"Estado","label_en":"Status","val":"Exploratorio / Exploration"},{"label_es":"Prórroga permiso","label_en":"Permit extension","val":"May 2027"}]'
 ),
 (
   'tordillo', 3, 'mixed',
@@ -196,7 +196,7 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
     'El crudo se entrega a compradores locales conectados a la infraestructura de la Cuenca San Jorge en la provincia de Santa Cruz.'
   ],
   ARRAY[
-    'Crown Point holds a 100% operated working interest in the Piedra Clavada Koluel Kaike Exploitation Concession, representing a total of 71,660 net acres in the San Jorge Basin. Crown Point''s strategy is to increase production through well drilling and workovers, and facilities optimisation.',
+    'Crown Point holds a 100% operated working interest in the Piedra Clavada Koluel Kaike Exploitation Concession, representing a total of net 290 km² (71,660 net acres) in the San Jorge Basin. Crown Point''s strategy is to increase production through well drilling and workovers, and facilities optimisation.',
     'Crude is delivered to local buyers connected to the San Jorge Basin infrastructure in Santa Cruz province.'
   ],
   '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"2,568 Bbl/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"403"},{"label_es":"Pozos inyectores","label_en":"Injector wells","val":"143"},{"label_es":"Superficie","label_en":"Acreage","val":"8,840 ha"},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"21° API"},{"label_es":"Vencimiento","label_en":"Expiry","val":"2049"}]',
@@ -215,7 +215,7 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
     'Las plantas de tratamiento están conectadas al sistema TGS para entrega de gas, y al oleoducto regional para crudo y condensado.'
   ],
   ARRAY[
-    'Crown Point holds a 48.3275% non-operated working interest in the 3 exploitation concessions of Río Cullen, La Angostura and Las Violetas in the Austral Basin of Tierra del Fuego, representing a total of 489,000 gross acres (169,880 net acres). Crown Point''s strategy is to grow production from its Tierra del Fuego assets through exploration and development drilling, supported by extensive 3D seismic coverage.',
+    'Crown Point holds a 48.3275% non-operated working interest in the 3 exploitation concessions of Río Cullen, La Angostura and Las Violetas in the Austral Basin of Tierra del Fuego, representing a total of 688 km² (169,880 net acres). Crown Point''s strategy is to grow production from its Tierra del Fuego assets through exploration and development drilling, supported by extensive 3D seismic coverage.',
     'The processing plants are connected to the TGS gas pipeline system and to the regional crude and condensate pipeline.'
   ],
   '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"242 Bbl/d"},{"label_es":"Producción LPG","label_en":"LPG production","val":"4 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"3,821 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Superficie bruta","label_en":"Gross acreage","val":"489,000 acres"},{"label_es":"Superficie neta","label_en":"Net acreage","val":"169,880 acres"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Aug 2026"}]',
