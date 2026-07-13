@@ -183,16 +183,20 @@ export default async function AcercaPage() {
                   </span>
                   <ul className="advantages-list">
                     <li>
+                      <span className="lang-es">Fuerte compromiso del accionista controlante</span>
+                      <span className="lang-en">Strong commitment from the controlling shareholder</span>
+                    </li>
+                    <li>
                       <span className="lang-es">Alto conocimiento y experiencia en Argentina del accionista y management</span>
                       <span className="lang-en">Management&apos;s deep knowledge of, and operating experience in Argentina</span>
                     </li>
                     <li>
                       <span className="lang-es">Rápida capacidad de respuesta</span>
-                      <span className="lang-en">&quot;On the ground&quot; fast response capacity</span>
+                      <span className="lang-en">Fast response capacity</span>
                     </li>
                     <li>
                       <span className="lang-es">Menor burocracia y estructura más eficiente</span>
-                      <span className="lang-en">Absence of bureaucracy and more efficient structure</span>
+                      <span className="lang-en">Less bureaucracy and more efficient structure</span>
                     </li>
                     <li>
                       <span className="lang-es">Foco en el negocio principal</span>
