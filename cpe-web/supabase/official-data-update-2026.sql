@@ -99,58 +99,58 @@ UPDATE operations_blocks SET
   chips        = '["95% WI", "Operador / Operator", "Crudo & Gas / Oil & Gas"]'::jsonb,
   body_es      = ARRAY[
     'Tres concesiones operadas por Crown Point Energía S.A. con el 95% del working interest: El Tordillo, La Tapera y Puesto Quiroga, en la provincia de Chubut, flanco norte de la Cuenca del Golfo San Jorge. Área total de 430 km² netos.',
-    'Producción 1Q 2026: 4.382 Bbl/d de petróleo y 6.880 Mcf/d de gas natural (5.529 boe/d totales). Cuenta con 283 pozos activos y 88 pozos inyectores. La concesión vence el 14/11/2027 con extensión acordada por 20 años (hasta noviembre de 2047).'
+    'Producción 1Q 2026: 4.164 Bbl/d de petróleo y 3.451 Mcf/d de gas natural (4.739 boe/d totales). Cuenta con 264 pozos activos y 88 pozos inyectores. La concesión vence el 14/11/2027 con extensión acordada por 20 años (hasta noviembre de 2047).'
   ],
   body_en      = ARRAY[
     'Three concessions operated by Crown Point Energía S.A. with a 95% working interest: El Tordillo, La Tapera and Puesto Quiroga, in Chubut province, northern flank of the San Jorge Gulf Basin. Total net area of 430 km².',
-    'Q1 2026 production: 4,382 Bbl/d of oil and 6,880 Mcf/d of natural gas (5,529 boe/d total). The block has 283 active producers and 88 injector wells. Concession expires 14/11/2027 with an agreed 20-year extension (to November 2047).'
+    'Q1 2026 production: 4,164 Bbl/d of oil and 3,451 Mcf/d of natural gas (4,739 boe/d total). The block has 264 active producers and 88 injector wells. Concession expires 14/11/2027 with an agreed 20-year extension (to November 2047).'
   ],
-  stats        = '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"4,382 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"6,880 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"5,529 Boe/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"283"},{"label_es":"Pozos inyectores","label_en":"Injector wells","val":"88"},{"label_es":"Superficie","label_en":"Acreage","val":"113,325 acres · 430 km²"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Nov 2047 (ext.)"}]'::jsonb,
-  map_stats    = '[{"label_es":"WI","label_en":"WI","val":"95%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"4,382 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"6,880 Mcf/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"283"}]'::jsonb
+  stats        = '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"4,164 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"3,451 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"4,739 Boe/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"264"},{"label_es":"Pozos inyectores","label_en":"Injector wells","val":"88"},{"label_es":"Superficie","label_en":"Acreage","val":"113,325 acres · 430 km²"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Nov 2047 (ext.)"}]'::jsonb,
+  map_stats    = '[{"label_es":"WI","label_en":"WI","val":"95%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"4,164 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"3,451 Mcf/d"},{"label_es":"Pozos activos","label_en":"Active wells","val":"264"}]'::jsonb
 WHERE slug = 'tordillo';
 
 -- Chañares Herrados (slug = 'chanares')
--- WI corregido: 75.8% → 50% | Operador: Tango Energy Argentina S.A. | card_title → Crudo pesado
+-- WI corregido: 75.8% → 50% | Operador: Tango Energy Argentina S.A. | 31.94° API → Crudo mediano
 UPDATE operations_blocks SET
-  lede_es      = 'Concesión productiva en el centro de Mendoza, con crudo liviano (38° API). Crown Point participa con el 50% del working interest; el operador es Tango Energy Argentina S.A.',
-  lede_en      = 'Producing concession in central Mendoza, light crude (38° API). Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A.',
-  card_title_es = 'Crudo pesado',
-  card_title_en = 'Heavy crude',
-  chips        = '["Crudo pesado", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb,
+  lede_es      = 'Concesión productiva en el centro de Mendoza, con crudo mediano (31.94° API). Crown Point participa con el 50% del working interest; el operador es Tango Energy Argentina S.A.',
+  lede_en      = 'Producing concession in central Mendoza, medium crude (31.94° API). Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A.',
+  card_title_es = 'Crudo mediano',
+  card_title_en = 'Medium crude',
+  chips        = '["Crudo mediano", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb,
   body_es      = ARRAY[
-    'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza. El operador es Tango Energy Argentina S.A. El bloque produce crudo liviano de 38° API con infraestructura conectada al oleoducto Allanito–Luján de Cuyo.',
+    'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza. El operador es Tango Energy Argentina S.A. El bloque produce crudo mediano de 31.94° API con infraestructura conectada al oleoducto Allanito–Luján de Cuyo.',
     'El programa de workover 2026 contempla la intervención de pozos productores con un objetivo de incremento de producción.'
   ],
   body_en      = ARRAY[
-    'Crown Point holds a 50% working interest in this block located in the Cuyana Basin, Mendoza province. Operator is Tango Energy Argentina S.A. The block produces 38° API light crude with infrastructure connected to the Allanito–Luján de Cuyo pipeline.',
+    'Crown Point holds a 50% working interest in this block located in the Cuyana Basin, Mendoza province. Operator is Tango Energy Argentina S.A. The block produces 31.94° API medium crude with infrastructure connected to the Allanito–Luján de Cuyo pipeline.',
     'The 2026 workover program targets well interventions for production uplift.'
   ],
-  stats        = '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"38° API"},{"label_es":"Superficie","label_en":"Acreage","val":"5,040 acres · 21 km²"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]'::jsonb,
-  map_stats    = '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Calidad","label_en":"Quality","val":"38° API"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'::jsonb
+  stats        = '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"31.94° API"},{"label_es":"Superficie","label_en":"Acreage","val":"5,040 acres · 21 km²"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]'::jsonb,
+  map_stats    = '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Calidad","label_en":"Quality","val":"31.94° API"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'::jsonb
 WHERE slug = 'chanares';
 
 -- ── Bloques adicionales — correcciones oficiales ─────────────────────────────
 
 -- Puesto Pozo Cercado Oriental (slug = 'ppc')
--- Cambia de exploratorio a productivo | 50% WI | JV Tango Energy | Cuyana | Crudo pesado
+-- Cambia de exploratorio a productivo | 50% WI | JV Tango Energy | Cuyana | 33.7° API → Crudo liviano
 UPDATE operations_blocks SET
   eyebrow      = '01 · Cuenca Cuyana',
   orden        = 1,
-  lede_es      = 'Concesión productiva contigua a Chañares Herrados, en el centro de Mendoza. Crown Point participa con el 50% del working interest; el operador es Tango Energy Argentina S.A.',
-  lede_en      = 'Producing concession adjacent to Chañares Herrados, in central Mendoza. Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A.',
-  card_title_es = 'Crudo pesado',
-  card_title_en = 'Heavy crude',
-  chips        = '["Crudo pesado", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb,
+  lede_es      = 'Concesión productiva contigua a Chañares Herrados, en el centro de Mendoza. Crown Point participa con el 50% del working interest; el operador es Tango Energy Argentina S.A. Crudo liviano de 33.7° API.',
+  lede_en      = 'Producing concession adjacent to Chañares Herrados, in central Mendoza. Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A. Light crude at 33.7° API.',
+  card_title_es = 'Crudo liviano',
+  card_title_en = 'Light crude',
+  chips        = '["Crudo liviano", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb,
   body_es      = ARRAY[
-    'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza, colindante con la concesión Chañares Herrados. El operador es Tango Energy Argentina S.A. El bloque produce crudo pesado con infraestructura integrada en la zona.',
+    'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza, colindante con la concesión Chañares Herrados. El operador es Tango Energy Argentina S.A. El bloque produce crudo liviano de 33.7° API con infraestructura integrada en la zona.',
     'El programa de workover 2026 contempla la intervención de pozos productores para incrementar la producción del área.'
   ],
   body_en      = ARRAY[
-    'Crown Point holds a 50% working interest in this block in the Cuyana Basin, Mendoza province, adjacent to the Chañares Herrados concession. Operator is Tango Energy Argentina S.A. The block produces heavy crude with integrated area infrastructure.',
+    'Crown Point holds a 50% working interest in this block in the Cuyana Basin, Mendoza province, adjacent to the Chañares Herrados concession. Operator is Tango Energy Argentina S.A. The block produces 33.7° API light crude with integrated area infrastructure.',
     'The 2026 workover program targets well interventions to increase production across the area.'
   ],
-  stats        = '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"Crudo pesado / Heavy crude"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]'::jsonb,
-  map_stats    = '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Tipo","label_en":"Type","val":"Crudo pesado"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'::jsonb
+  stats        = '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"33.7° API · Liviano"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]'::jsonb,
+  map_stats    = '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Tipo","label_en":"Type","val":"Crudo liviano"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'::jsonb
 WHERE slug = 'ppc';
 
 -- El Tordillo (slug = 'tordillo')
@@ -185,16 +185,16 @@ UPDATE operations_blocks SET
   commodity    = 'mixed',
   orden        = 5,
   eyebrow      = '05 · Cuenca Austral · Tierra del Fuego',
-  lede_es      = 'Tres concesiones de explotación en la Cuenca Austral de Tierra del Fuego. Crown Point tiene una participación no operada del 48.3%, con producción de petróleo y gas.',
-  lede_en      = 'Three exploitation concessions in the Austral Basin of Tierra del Fuego. Crown Point holds a 48.3% non-operated working interest, producing oil and gas.',
-  chips        = '["48.3% WI", "Participación / Working interest", "Petróleo & Gas / Oil & Gas"]'::jsonb,
+  lede_es      = 'Tres concesiones de explotación en la Cuenca Austral de Tierra del Fuego. Crown Point tiene una participación no operada del 48.3%, con producción de petróleo y gas. Vencimiento: agosto 2026.',
+  lede_en      = 'Three exploitation concessions in the Austral Basin of Tierra del Fuego. Crown Point holds a 48.3% non-operated working interest, producing oil and gas. Expiry: August 2026.',
+  chips        = '["48.3% WI", "Participación / Working interest", "Petróleo & Gas / Oil & Gas", "Vence Ago 2026"]'::jsonb,
   body_es      = ARRAY[
     'Crown Point tiene una participación no operada del 48.3% en las 3 concesiones de explotación de Río Cullen, La Angostura y Las Violetas en la Cuenca Austral de Tierra del Fuego, lo que representa un total de 489,000 acres brutos (169,880 acres netos). La estrategia de Crown Point es aumentar la producción de sus activos en Tierra del Fuego mediante perforación de exploración y desarrollo, respaldada por una amplia cobertura sísmica 3D.',
-    'Las plantas de tratamiento están conectadas al sistema TGS para entrega de gas, y al oleoducto regional para crudo y condensado.'
+    'Producción 1Q 2026: 242 Bbl/d de petróleo, 4 Bbl/d de LPG y 3.821 Mcf/d de gas natural (883 boe/d totales). Las plantas de tratamiento están conectadas al sistema TGS para entrega de gas, y al oleoducto regional para crudo y condensado. Las concesiones vencen en agosto de 2026.'
   ],
   body_en      = ARRAY[
     'Crown Point holds a 48.3% non-operated working interest in the 3 exploitation concessions of Río Cullen, La Angostura and Las Violetas in the Austral Basin of Tierra del Fuego, representing a total of 489,000 gross acres (169,880 net acres). Crown Point''s strategy is to grow production from its Tierra del Fuego assets through exploration and development drilling, supported by extensive 3D seismic coverage.',
-    'The processing plants are connected to the TGS gas pipeline system and to the regional crude and condensate pipeline.'
+    'Q1 2026 production: 242 Bbl/d of oil, 4 Bbl/d of LPG and 3,821 Mcf/d of natural gas (883 boe/d total). The processing plants are connected to the TGS gas pipeline system and to the regional crude and condensate pipeline. The concessions expire in August 2026.'
   ]
 WHERE slug = 'tdf';
 
@@ -248,13 +248,8 @@ ON CONFLICT (key) DO UPDATE SET
   value_en   = EXCLUDED.value_en,
   updated_at = now();
 
--- Chañares Herrados — corregir card_title y chips: crudo liviano (no pesado)
--- lede_es y body_es ya dicen "38° API / crudo liviano" — alinear chip y card_title
-UPDATE operations_blocks SET
-  card_title_es = 'Crudo liviano',
-  card_title_en = 'Light crude',
-  chips         = '["Crudo liviano · 38° API", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb
-WHERE slug = 'chanares';
+-- Chañares Herrados — card_title y chips actualizados en 20260713_crude_classification_fix.sql
+-- 31.94° API → Crudo mediano (no pesado ni liviano)
 
 -- ── Asambleas de accionistas ──────────────────────────────────────────────────
 -- Requiere haber ejecutado shareholder-meetings-schema.sql primero (CREATE TABLE).

@@ -72,7 +72,7 @@ export default async function OperacionesPage() {
           </div>
           <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.operaciones.h1'] || 'Once concesiones.<br/>Cuatro cuencas.<br/>Un país.') }} />
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.operaciones.h1'] || 'Seis bloques.<br/>Cuatro cuencas.<br/>Un país.') }} />
             <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.operaciones.h1'] || 'Eleven concessions.<br/>Four basins.<br/>One country.') }} />
           </h1>
           <p>

@@ -225,8 +225,8 @@ function buildSections(
   section('KPIs', 'Página principal · KPIs', [
     { label: 'Período',     es: f['kpis.periodo.es'] || 'Q1 2026 · Cifras clave',  en: f['kpis.periodo.en'] || 'Q1 2026 · Key figures' },
     { label: 'Producción',  es: `${f['kpi.production.value'] || '3,090'} ${f['kpi.production.unit'] || 'boe/d'}`, en: `${f['kpi.production.value'] || '3,090'} ${f['kpi.production.unit'] || 'boe/d'}` },
-    { label: 'Reservas',    es: `${f['kpi.reserves.value'] || '18.6'} ${f['kpi.reserves.unit'] || 'MMboe'}`,     en: `${f['kpi.reserves.value'] || '18.6'} ${f['kpi.reserves.unit'] || 'MMboe'}` },
-    { label: 'EBITDA',      es: `${f['kpi.ebitda.value'] || '18.4'} ${f['kpi.ebitda.unit'] || 'USD M'}`,        en: `${f['kpi.ebitda.value'] || '18.4'} ${f['kpi.ebitda.unit'] || 'USD M'}` },
+    { label: 'Reservas',    es: `${f['kpi.reserves.value'] || '36.996'} ${f['kpi.reserves.unit'] || 'MMboe'}`,     en: `${f['kpi.reserves.value'] || '36.996'} ${f['kpi.reserves.unit'] || 'MMboe'}` },
+    { label: 'EBITDA',      es: `${f['kpi.ebitda.value'] || '18'} ${f['kpi.ebitda.unit'] || 'USD M'}`,        en: `${f['kpi.ebitda.value'] || '18'} ${f['kpi.ebitda.unit'] || 'USD M'}` },
     { label: 'Bloques',     es: `${f['kpi.blocks.value'] || '6'} ${f['kpi.blocks.unit'] || 'en 4 cuencas'}`,    en: `${f['kpi.blocks.value'] || '6'} in 4 basins` },
   ])
 
