@@ -248,13 +248,8 @@ ON CONFLICT (key) DO UPDATE SET
   value_en   = EXCLUDED.value_en,
   updated_at = now();
 
--- Chañares Herrados — corregir card_title y chips: crudo liviano (no pesado)
--- lede_es y body_es ya dicen "38° API / crudo liviano" — alinear chip y card_title
-UPDATE operations_blocks SET
-  card_title_es = 'Crudo liviano',
-  card_title_en = 'Light crude',
-  chips         = '["Crudo liviano · 38° API", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]'::jsonb
-WHERE slug = 'chanares';
+-- Chañares Herrados — card_title y chips actualizados en 20260713_crude_classification_fix.sql
+-- 31.94° API → Crudo mediano (no pesado ni liviano)
 
 -- ── Asambleas de accionistas ──────────────────────────────────────────────────
 -- Requiere haber ejecutado shareholder-meetings-schema.sql primero (CREATE TABLE).
