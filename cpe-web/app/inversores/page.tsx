@@ -170,20 +170,20 @@ export default async function InversoresPage() {
                     { n: '01', labelEs: 'Producción', labelEn: 'Production',
                       val: f['inv.thesis.1.val'] || '8,672',
                       unit: f['inv.thesis.1.unit'] || 'boe/d',
-                      metaEs: f['inv.thesis.1.meta'] || '84% líquidos · 16% gas · Producción 1Q 2026',
-                      metaEn: fe['inv.thesis.1.meta'] || '84% liquids · 16% gas · Production 1Q 2026' },
+                      metaEs: f['inv.thesis.1.meta'] || '86% petróleo · 14% gas · Producción 1Q 2026',
+                      metaEn: fe['inv.thesis.1.meta'] || '86% oil · 14% gas · Production 1Q 2026' },
                     { n: '02', labelEs: 'Costos', labelEn: 'Costs',
-                      val: f['inv.thesis.2.val'] || 'US$14.2',
+                      val: f['inv.thesis.2.val'] || 'US$38.8',
                       unit: f['inv.thesis.2.unit'] || '/boe',
                       metaEs: f['inv.thesis.2.meta'] || 'Opex total LTM',
                       metaEn: fe['inv.thesis.2.meta'] || 'Total opex LTM' },
                     { n: '03', labelEs: 'Apalancamiento', labelEn: 'Leverage',
-                      val: f['inv.thesis.3.val'] || '1.2x',
+                      val: f['inv.thesis.3.val'] || '2.9x',
                       unit: f['inv.thesis.3.unit'] || 'Net debt / EBITDA',
                       metaEs: f['inv.thesis.3.meta'] || 'Estructura prudente',
                       metaEn: fe['inv.thesis.3.meta'] || 'Prudent capital structure' },
                     { n: '04', labelEs: 'Pipeline', labelEn: 'Pipeline',
-                      val: f['inv.thesis.4.val'] || '12',
+                      val: f['inv.thesis.4.val'] || '13',
                       unitEs: f['inv.thesis.4.unit'] || 'pozos planeados',
                       unitEn: fe['inv.thesis.4.unit'] || 'planned wells',
                       metaEs: f['inv.thesis.4.meta'] || '2026–2027',
@@ -198,7 +198,7 @@ export default async function InversoresPage() {
                 </div>
                 <ReservesTable />
                 <p className="pull">
-                  <span className="lang-es">&ldquo;Once concesiones en cuatro cuencas — diversificación geológica real con un solo país.&rdquo;</span>
+                  <span className="lang-es">&ldquo;Seis bloques en cuatro cuencas — diversificación geológica real con un solo país.&rdquo;</span>
                   <span className="lang-en">&ldquo;Eleven concessions across four basins — real geological diversification within a single country.&rdquo;</span>
                 </p>
               </div>

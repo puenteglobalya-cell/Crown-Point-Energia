@@ -113,37 +113,37 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
   'Puesto Pozo Cercado Oriental',
   'Concesión productiva contigua a Chañares Herrados, en el centro de Mendoza. Crown Point participa con el 50% del working interest; el operador es Tango Energy Argentina S.A.',
   'Producing concession adjacent to Chañares Herrados, in central Mendoza. Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A.',
-  'Crudo pesado', 'Heavy crude',
-  '["Crudo pesado", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]',
+  'Crudo liviano', 'Light crude',
+  '["Crudo liviano", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]',
   ARRAY[
-    'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza, colindante con la concesión Chañares Herrados. El operador es Tango Energy Argentina S.A. El bloque produce crudo pesado con infraestructura integrada en la zona.',
+    'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza, colindante con la concesión Chañares Herrados. El operador es Tango Energy Argentina S.A. El bloque produce crudo liviano de 33.7° API con infraestructura integrada en la zona.',
     'El programa de workover 2026 contempla la intervención de pozos productores para incrementar la producción del área.'
   ],
   ARRAY[
-    'Crown Point holds a 50% working interest in this block in the Cuyana Basin, Mendoza province, adjacent to the Chañares Herrados concession. Operator is Tango Energy Argentina S.A. The block produces heavy crude with integrated area infrastructure.',
+    'Crown Point holds a 50% working interest in this block in the Cuyana Basin, Mendoza province, adjacent to the Chañares Herrados concession. Operator is Tango Energy Argentina S.A. The block produces 33.7° API light crude with integrated area infrastructure.',
     'The 2026 workover program targets well interventions to increase production across the area.'
   ],
-  '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"Crudo pesado / Heavy crude"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]',
-  '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Tipo","label_en":"Type","val":"Crudo pesado"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'
+  '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"33.7° API · Liviano"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]',
+  '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Tipo","label_en":"Type","val":"Crudo liviano"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'
 ),
 (
   'chanares', 2, 'oil',
   '02 · Cuenca Cuyana',
   'Chañares Herrados',
-  'Concesión productiva en el centro de Mendoza, con crudo liviano (38° API). Crown Point participa con el 50% del working interest; el operador es Tango Energy Argentina S.A.',
-  'Producing concession in central Mendoza, light crude (38° API). Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A.',
-  'Crudo pesado', 'Heavy crude',
-  '["Crudo pesado", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]',
+  'Concesión productiva en el centro de Mendoza, con crudo mediano (31.94° API). Crown Point participa con el 50% del working interest; el operador es Tango Energy Argentina S.A.',
+  'Producing concession in central Mendoza, medium crude (31.94° API). Crown Point holds a 50% working interest; operator is Tango Energy Argentina S.A.',
+  'Crudo mediano', 'Medium crude',
+  '["Crudo mediano", "50% WI", "JV · Tango Energy Argentina", "Mendoza / Cuyana"]',
   ARRAY[
-    'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza. El operador es Tango Energy Argentina S.A. El bloque produce crudo liviano de 38° API con infraestructura conectada al oleoducto Allanito–Luján de Cuyo.',
+    'Crown Point participa con el 50% del working interest en este bloque ubicado en la Cuenca Cuyana, provincia de Mendoza. El operador es Tango Energy Argentina S.A. El bloque produce crudo mediano de 31.94° API con infraestructura conectada al oleoducto Allanito–Luján de Cuyo.',
     'El programa de workover 2026 contempla la intervención de pozos productores con un objetivo de incremento de producción.'
   ],
   ARRAY[
-    'Crown Point holds a 50% working interest in this block located in the Cuyana Basin, Mendoza province. Operator is Tango Energy Argentina S.A. The block produces 38° API light crude with infrastructure connected to the Allanito–Luján de Cuyo pipeline.',
+    'Crown Point holds a 50% working interest in this block located in the Cuyana Basin, Mendoza province. Operator is Tango Energy Argentina S.A. The block produces 31.94° API medium crude with infrastructure connected to the Allanito–Luján de Cuyo pipeline.',
     'The 2026 workover program targets well interventions for production uplift.'
   ],
-  '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"38° API"},{"label_es":"Superficie","label_en":"Acreage","val":"5,040 acres · 21 km²"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]',
-  '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Calidad","label_en":"Quality","val":"38° API"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'
+  '[{"label_es":"Participación WI","label_en":"Working interest","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy Argentina S.A."},{"label_es":"Calidad de crudo","label_en":"Crude quality","val":"31.94° API"},{"label_es":"Superficie","label_en":"Acreage","val":"5,040 acres · 21 km²"},{"label_es":"Provincia","label_en":"Province","val":"Mendoza / Cuyana"}]',
+  '[{"label_es":"WI","label_en":"WI","val":"50%"},{"label_es":"Operador","label_en":"Operator","val":"Tango Energy"},{"label_es":"Calidad","label_en":"Quality","val":"31.94° API"},{"label_es":"Cuenca","label_en":"Basin","val":"Cuyana"}]'
 ),
 (
   'cerro', 6, 'oil',
