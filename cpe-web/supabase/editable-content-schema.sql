@@ -206,20 +206,20 @@ INSERT INTO operations_blocks (slug, orden, commodity, eyebrow, titulo, lede_es,
   'tdf', 5, 'mixed',
   '05 · Cuenca Austral · Tierra del Fuego',
   'Río Cullen · Las Violetas · La Angostura',
-  'Tres concesiones de explotación en la Cuenca Austral de Tierra del Fuego. Crown Point tiene una participación no operada del 48.3%, con producción de petróleo y gas.',
-  'Three exploitation concessions in the Austral Basin of Tierra del Fuego. Crown Point holds a 48.3% non-operated working interest, producing oil and gas.',
+  'Tres concesiones de explotación en la Cuenca Austral de Tierra del Fuego. Crown Point tiene una participación no operada del 48.3275%, con producción de petróleo y gas.',
+  'Three exploitation concessions in the Austral Basin of Tierra del Fuego. Crown Point holds a 48.3275% non-operated working interest, producing oil and gas.',
   'Operación productiva', 'Producing operation',
-  '["48.3% WI", "Participación / Working interest", "Petróleo & Gas / Oil & Gas"]',
+  '["48.3275% WI", "Participación / Working interest", "Petróleo & Gas / Oil & Gas"]',
   ARRAY[
-    'Crown Point tiene una participación no operada del 48.3% en las 3 concesiones de explotación de Río Cullen, La Angostura y Las Violetas en la Cuenca Austral de Tierra del Fuego, lo que representa un total de 489,000 acres brutos (169,880 acres netos). La estrategia de Crown Point es aumentar la producción de sus activos en Tierra del Fuego mediante perforación de exploración y desarrollo, respaldada por una amplia cobertura sísmica 3D.',
+    'Crown Point tiene una participación no operada del 48.3275% en las 3 concesiones de explotación de Río Cullen, La Angostura y Las Violetas en la Cuenca Austral de Tierra del Fuego, lo que representa un total de 489,000 acres brutos (169,880 acres netos). La estrategia de Crown Point es aumentar la producción de sus activos en Tierra del Fuego mediante perforación de exploración y desarrollo, respaldada por una amplia cobertura sísmica 3D.',
     'Las plantas de tratamiento están conectadas al sistema TGS para entrega de gas, y al oleoducto regional para crudo y condensado.'
   ],
   ARRAY[
-    'Crown Point holds a 48.3% non-operated working interest in the 3 exploitation concessions of Río Cullen, La Angostura and Las Violetas in the Austral Basin of Tierra del Fuego, representing a total of 489,000 gross acres (169,880 net acres). Crown Point''s strategy is to grow production from its Tierra del Fuego assets through exploration and development drilling, supported by extensive 3D seismic coverage.',
+    'Crown Point holds a 48.3275% non-operated working interest in the 3 exploitation concessions of Río Cullen, La Angostura and Las Violetas in the Austral Basin of Tierra del Fuego, representing a total of 489,000 gross acres (169,880 net acres). Crown Point''s strategy is to grow production from its Tierra del Fuego assets through exploration and development drilling, supported by extensive 3D seismic coverage.',
     'The processing plants are connected to the TGS gas pipeline system and to the regional crude and condensate pipeline.'
   ],
   '[{"label_es":"Producción petróleo","label_en":"Oil production","val":"242 Bbl/d"},{"label_es":"Producción LPG","label_en":"LPG production","val":"4 Bbl/d"},{"label_es":"Producción gas","label_en":"Gas production","val":"3,821 Mcf/d"},{"label_es":"Producción total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Superficie bruta","label_en":"Gross acreage","val":"489,000 acres"},{"label_es":"Superficie neta","label_en":"Net acreage","val":"169,880 acres"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Aug 2026"}]',
-  '[{"label_es":"WI","label_en":"WI","val":"48.3%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"242 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"3,821 Mcf/d"},{"label_es":"Total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Aug 2026"}]'
+  '[{"label_es":"WI","label_en":"WI","val":"48.3275%"},{"label_es":"Prod. petróleo","label_en":"Oil prod.","val":"242 Bbl/d"},{"label_es":"Prod. gas","label_en":"Gas prod.","val":"3,821 Mcf/d"},{"label_es":"Total boe","label_en":"Total boe","val":"883 Boe/d"},{"label_es":"Vencimiento","label_en":"Expiry","val":"Aug 2026"}]'
 )
 ON CONFLICT (slug) DO NOTHING;
 
@@ -419,15 +419,15 @@ INSERT INTO cms_fields (key, value_es, value_en) VALUES
   -- Inversores
   ('page.inversores.h1',   'Una historia sólida<br/>de creación de valor.',              'A solid story<br/>of value creation.'),
   ('page.inversores.lede', 'Crown Point Energía S.A. es una empresa dedicada al petróleo y gas con cobertura internacional que opera en el mercado argentino. Su empresa holding Crown Point Energy Inc. cotiza en el Toronto Stock Exchange Venture (TSXV) bajo el símbolo "CWV". La Compañía está constituida en Canadá y tiene su sede central en Buenos Aires, Argentina.',
-                            'Crown Point Energía S.A. is an internationally covered oil & gas company operating in the Argentine market. Its holding company Crown Point Energy Inc. is listed on the Toronto Stock Exchange Venture (TSXV) under the symbol "CWV". The Company is incorporated in Canada and has its headquarters in Buenos Aires, Argentina.'),
+                            'Crown Point Energy Inc. is a public company incorporated in Alberta, Canada and listed on the Toronto Stock Exchange Venture (TSXV) under the symbol "CWV". Crown Point operates in Argentina through its wholly owned subsidiary Crown Point Energía S.A. headquartered in Buenos Aires.'),
   -- Operaciones
-  ('page.operaciones.h1',   'Seis bloques.<br/>Cuatro cuencas.<br/>Un país.',            'Six blocks.<br/>Four basins.<br/>One country.'),
+  ('page.operaciones.h1',   'Once concesiones.<br/>Cuatro cuencas.<br/>Un país.',            'Eleven concessions.<br/>Four basins.<br/>One country.'),
   ('page.operaciones.lede', 'Una cartera diversificada de áreas productivas y exploratorias, distribuidas estratégicamente entre el norte y el sur de Argentina.',
                              'A diversified portfolio of producing and exploration areas, strategically distributed across northern and southern Argentina.'),
   -- Acerca de
   ('page.acerca.h1',   'Producción real,<br/>base sólida,<br/>visión de largo plazo.',  'Real production,<br/>solid foundation,<br/>long-term vision.'),
   ('page.acerca.lede', 'Crown Point Energía S.A. opera en el mercado argentino con casa matriz internacional. Dedicada al petróleo y gas con sede en Buenos Aires, genera flujo de caja de su propia producción y mantiene una cartera de oportunidades en las cuencas Austral, Neuquina y Cuyana. La empresa holding Crown Point Energy Inc. cotiza en TSXV: CWV.',
-                        'Crown Point Energía S.A. operates in the Argentine market with international headquarters. Dedicated to oil & gas and based in Buenos Aires, it generates cash flow from its own production and maintains a portfolio of opportunities in the Austral, Neuquén and Cuyana basins. Holding company Crown Point Energy Inc. is listed on TSXV: CWV.'),
+                        'Crown Point Energy Inc. is listed on TSX Venture Exchange: CWV. The Company operates in Argentina through its wholly owned subsidiary, Crown Point Energía S.A. (CPESA), headquartered in Buenos Aires.'),
   -- ESG
   ('page.esg.h1',   'Operar bien.<br/>Reportar con claridad.',  'Operate responsibly.<br/>Report with clarity.'),
   ('page.esg.lede', 'Nuestra estrategia ESG integra la responsabilidad ambiental, el compromiso social y la gobernanza robusta como pilares de creación de valor a largo plazo.',

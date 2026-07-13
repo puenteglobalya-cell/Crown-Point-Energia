@@ -164,7 +164,7 @@ export default async function AcercaPage() {
                     <h4><span className="lang-es">Visión</span><span className="lang-en">Vision</span></h4>
                     <p>
                       <span className="lang-es">Ser una compañía del sector energético, reconocida por su calidad de gestión y el respeto y cuidado del medio ambiente.</span>
-                      <span className="lang-en">Be an energy sector company recognized for its management quality and its respect and care for the environment.</span>
+                      <span className="lang-en">To be an energy sector company recognized for its management quality and ethics, and respect and care for the environment.</span>
                     </p>
                   </div>
                   <div className="mvp-card">
@@ -184,11 +184,19 @@ export default async function AcercaPage() {
                   <ul className="advantages-list">
                     <li>
                       <span className="lang-es">Alto conocimiento y experiencia en Argentina del accionista y management</span>
-                      <span className="lang-en">Deep knowledge and experience in Argentina from both shareholders and management</span>
+                      <span className="lang-en">Management&apos;s deep knowledge of, and operating experience in Argentina</span>
                     </li>
                     <li>
                       <span className="lang-es">Rápida capacidad de respuesta</span>
-                      <span className="lang-en">Fast response capacity</span>
+                      <span className="lang-en">&quot;On the ground&quot; fast response capacity</span>
+                    </li>
+                    <li>
+                      <span className="lang-es">Menor burocracia y estructura más eficiente</span>
+                      <span className="lang-en">Absence of bureaucracy and more efficient structure</span>
+                    </li>
+                    <li>
+                      <span className="lang-es">Foco en el negocio principal</span>
+                      <span className="lang-en">Focus on core business</span>
                     </li>
                   </ul>
                 </div>

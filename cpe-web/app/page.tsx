@@ -59,8 +59,8 @@ export default async function HomePage() {
   const kpiEbVal     = f['kpi.ebitda.value']     || '18'
   const kpiEbUnit    = f['kpi.ebitda.unit']      || 'USD M'
   const kpiEbDelta   = f['kpi.ebitda.delta']     || 'LTM'
-  const kpiBlkVal    = f['kpi.blocks.value']     || '6'
-  const kpiBlkUnit   = f['kpi.blocks.unit']      || 'en 4 cuencas'
+  const kpiBlkVal    = f['kpi.blocks.value']     || '11'
+  const kpiBlkUnit   = f['kpi.blocks.unit']      || 'concesiones en 4 cuencas'
   const kpiBlkDelta  = f['kpi.blocks.delta']     || '372k ha'
 
   const stockHigh52  = f['stock.high52']  || 'CA $0.31'
@@ -107,7 +107,7 @@ export default async function HomePage() {
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
                 <span className="lang-es">TSXV: CWV · Petróleo y gas · Argentina</span>
-                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Argentina</span>
+                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Canada</span>
               </span>
             </div>
             <h1 className="hero-title">
@@ -116,15 +116,15 @@ export default async function HomePage() {
                 : <span className="lang-es">Energía que sostiene<br/>la matriz productiva<br/>argentina.</span>}
               {heroTitleEn
                 ? <span className="lang-en">{heroTitleEn}</span>
-                : <span className="lang-en">Energy that powers<br/>Argentina&apos;s productive<br/>backbone.</span>}
+                : <span className="lang-en">Energy that sustains<br/>Argentina&apos;s productive<br/>energy matrix.</span>}
             </h1>
             <p className="hero-lede">
               {heroLedeEs
                 ? <span className="lang-es">{heroLedeEs}</span>
-                : <span className="lang-es">Operamos en dos de las cuencas más relevantes del país con seis bloques — producción propia, cartera de proyectos de bajo riesgo y estructura financiera prudente.</span>}
+                : <span className="lang-es">Operamos en dos de las cuencas más relevantes del país con 11 concesiones — producción propia, cartera de proyectos de bajo riesgo y estructura financiera prudente.</span>}
               {heroLedeEn
                 ? <span className="lang-en">{heroLedeEn}</span>
-                : <span className="lang-en">We operate in two of the country&apos;s most relevant basins with six blocks — our own production, a low-risk project portfolio and a prudent financial structure.</span>}
+                : <span className="lang-en">We operate in two of the country&apos;s most relevant basins — our own production, a low-risk project portfolio and a prudent financial structure.</span>}
             </p>
             <div className="hero-cta">
               <Link className="btn btn-primary" href="/inversores">
@@ -260,12 +260,12 @@ export default async function HomePage() {
                 </span>
               </div>
               <div className="kpi">
-                <span className="kpi-label"><span className="lang-es">Áreas operativas</span><span className="lang-en">Operating areas</span></span>
+                <span className="kpi-label"><span className="lang-es">Concesiones</span><span className="lang-en">Concessions</span></span>
                 <div>
                   <span className="kpi-value num" data-cpe-field="kpi.blocks.value">{kpiBlkVal}</span>
                   <span className="kpi-unit" data-cpe-field="kpi.blocks.unit">
                     <span className="lang-es">{kpiBlkUnit}</span>
-                    <span className="lang-en">across four basins</span>
+                    <span className="lang-en">concessions in 4 basins</span>
                   </span>
                 </div>
                 <span className="kpi-meta">
@@ -301,7 +301,7 @@ export default async function HomePage() {
               <div>
                 <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
                 <h2 className="section-title">
-                  <span className="lang-es">6 bloques<br/>en cuatro cuencas.</span>
+                  <span className="lang-es">11 concesiones<br/>en cuatro cuencas.</span>
                   <span className="lang-en">11 concessions<br/>across four basins.</span>
                 </h2>
               </div>
