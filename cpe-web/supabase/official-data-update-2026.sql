@@ -185,15 +185,15 @@ UPDATE operations_blocks SET
   commodity    = 'mixed',
   orden        = 5,
   eyebrow      = '05 · Cuenca Austral · Tierra del Fuego',
-  lede_es      = 'Tres concesiones de explotación en la Cuenca Austral de Tierra del Fuego. Crown Point tiene una participación no operada del 48.3%, con producción de petróleo y gas. Vencimiento: agosto 2026.',
-  lede_en      = 'Three exploitation concessions in the Austral Basin of Tierra del Fuego. Crown Point holds a 48.3% non-operated working interest, producing oil and gas. Expiry: August 2026.',
-  chips        = '["48.3% WI", "Participación / Working interest", "Petróleo & Gas / Oil & Gas", "Expires Aug 2026 · Vence Ago 2026"]'::jsonb,
+  lede_es      = 'Tres concesiones de explotación en la Cuenca Austral de Tierra del Fuego. Crown Point tiene una participación no operada del 48.3275%, con producción de petróleo y gas. Vencimiento: agosto 2026.',
+  lede_en      = 'Three exploitation concessions in the Austral Basin of Tierra del Fuego. Crown Point holds a 48.3275% non-operated working interest, producing oil and gas. Expiry: August 2026.',
+  chips        = '["48.3275% WI", "Participación / Working interest", "Petróleo & Gas / Oil & Gas", "Expires Aug 2026 · Vence Ago 2026"]'::jsonb,
   body_es      = ARRAY[
-    'Crown Point tiene una participación no operada del 48.3% en las 3 concesiones de explotación de Río Cullen, La Angostura y Las Violetas en la Cuenca Austral de Tierra del Fuego, lo que representa un total de 489,000 acres brutos (169,880 acres netos). La estrategia de Crown Point es aumentar la producción de sus activos en Tierra del Fuego mediante perforación de exploración y desarrollo, respaldada por una amplia cobertura sísmica 3D.',
+    'Crown Point tiene una participación no operada del 48.3275% en las 3 concesiones de explotación de Río Cullen, La Angostura y Las Violetas en la Cuenca Austral de Tierra del Fuego, lo que representa un total de 489,000 acres brutos (169,880 acres netos). La estrategia de Crown Point es aumentar la producción de sus activos en Tierra del Fuego mediante perforación de exploración y desarrollo, respaldada por una amplia cobertura sísmica 3D.',
     'Producción 1Q 2026: 242 Bbl/d de petróleo, 4 Bbl/d de LPG y 3.821 Mcf/d de gas natural (883 boe/d totales). Las plantas de tratamiento están conectadas al sistema TGS para entrega de gas, y al oleoducto regional para crudo y condensado. Las concesiones vencen en agosto de 2026.'
   ],
   body_en      = ARRAY[
-    'Crown Point holds a 48.3% non-operated working interest in the 3 exploitation concessions of Río Cullen, La Angostura and Las Violetas in the Austral Basin of Tierra del Fuego, representing a total of 489,000 gross acres (169,880 net acres). Crown Point''s strategy is to grow production from its Tierra del Fuego assets through exploration and development drilling, supported by extensive 3D seismic coverage.',
+    'Crown Point holds a 48.3275% non-operated working interest in the 3 exploitation concessions of Río Cullen, La Angostura and Las Violetas in the Austral Basin of Tierra del Fuego, representing a total of 489,000 gross acres (169,880 net acres). Crown Point''s strategy is to grow production from its Tierra del Fuego assets through exploration and development drilling, supported by extensive 3D seismic coverage.',
     'Q1 2026 production: 242 Bbl/d of oil, 4 Bbl/d of LPG and 3,821 Mcf/d of natural gas (883 boe/d total). The processing plants are connected to the TGS gas pipeline system and to the regional crude and condensate pipeline. The concessions expire in August 2026.'
   ]
 WHERE slug = 'tdf';
