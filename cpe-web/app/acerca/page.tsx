@@ -156,7 +156,7 @@ export default async function AcercaPage() {
                   <div className="mvp-card">
                     <h4><span className="lang-es">Misión</span><span className="lang-en">Mission</span></h4>
                     <p>
-                      <span className="lang-es">Generar valor para los accionistas haciendo un uso racional de los recursos, estableciendo relaciones a largo plazo y contribuyendo a mejorar la calidad de vida de las comunidades donde operamos y nuestros socios estratégicos.</span>
+                      <span className="lang-es">Generar valor para los accionistas haciendo un uso racional de los recursos, estableciendo relaciones a largo plazo y contribuyendo a mejorar la calidad de vida de las comunidades donde operamos.</span>
                       <span className="lang-en">Add shareholder value by focusing on assets with low lifting costs, long reserve life, repeatable drilling inventory and strong netbacks.</span>
                     </p>
                   </div>
@@ -170,7 +170,7 @@ export default async function AcercaPage() {
                   <div className="mvp-card">
                     <h4><span className="lang-es">Principios</span><span className="lang-en">Principles</span></h4>
                     <ul>
-                      <li><span className="lang-es">Ética y responsabilidad en las decisiones</span><span className="lang-en">Ethics and responsibility in decisions</span></li>
+                      <li><span className="lang-es">Ética y responsabilidad</span><span className="lang-en">Ethics and responsibility</span></li>
                       <li><span className="lang-es">Transparencia y acceso a la información</span><span className="lang-en">Transparency and access to information</span></li>
                       <li><span className="lang-es">Trabajo en equipo</span><span className="lang-en">Teamwork</span></li>
                     </ul>
