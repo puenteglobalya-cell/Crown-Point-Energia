@@ -61,9 +61,12 @@ const BLOQUE_ORDER = ['ET','PCKK','CH','PPC','ENA','Gas','Financiero','Admin','V
 
 // ─── Pivot HTML builder (SSR) ─────────────────────────────────────────────────
 
+const EXCL_CATS_DEFAULT = new Set(['Impuestos','Diferencia de Cambio','Intereses','Venta de materiales','Recupero de gastos'])
+
 function buildPivotHTML(meses: string[], mes_labels: Record<string, string>, pivot: PivotRow[]): string {
   const byCat: Record<string, PivotRow[]> = {}
   for (const r of pivot) {
+    if (EXCL_CATS_DEFAULT.has(r.categoria)) continue
     if (!byCat[r.categoria]) byCat[r.categoria] = []
     byCat[r.categoria].push(r)
   }
@@ -708,7 +711,7 @@ table.precios .ptot td{font-weight:700;border-top:1.5px solid #E8EAEF;background
       <div class="tipo-dd" id="tipoDd">
         <button class="tipo-dd-btn" id="tipoBtn" onclick="toggleTipoDd(event)">Todos los tipos ▾</button>
         <div class="tipo-dd-panel" id="tipoDdPanel">
-          ${allCategorias.map(c => `<label class="tipo-dd-item"><input type="checkbox" class="tipo-cb" value="${enc(c)}" checked onchange="onTipoCbChange()"><span class="tipo-dd-dot" style="background:${CAT_COLORS[c] ?? '#CBD5E0'}"></span>${enc(c)}</label>`).join('')}
+          ${allCategorias.map(c => { const excl = ['Impuestos','Diferencia de Cambio','Intereses','Venta de materiales','Recupero de gastos']; return `<label class="tipo-dd-item"><input type="checkbox" class="tipo-cb" value="${enc(c)}"${excl.includes(c) ? '' : ' checked'} onchange="onTipoCbChange()"><span class="tipo-dd-dot" style="background:${CAT_COLORS[c] ?? '#CBD5E0'}"></span>${enc(c)}</label>` }).join('')}
           <div class="tipo-dd-footer">
             <button onclick="toggleAllTipos(true)">Todos</button>
             <button onclick="toggleAllTipos(false)">Ninguno</button>
@@ -792,7 +795,8 @@ var ALL_CATEGORIAS  = ${j(allCategorias)};
 var AUTO_GROUPS     = ${j(autoGroups)};
 
 var activeMeses    = new Set(MESES);
-var activeTipos    = new Set(ALL_CATEGORIAS);
+var EXCL_DEFAULT   = ['Impuestos','Diferencia de Cambio','Intereses','Venta de materiales','Recupero de gastos'];
+var activeTipos    = new Set(ALL_CATEGORIAS.filter(function(c){ return EXCL_DEFAULT.indexOf(c) < 0; }));
 var collapsedMeses = new Set();  // start all expanded
 var showManualCols = true;
 var sortState      = { col: null, dir: 1 };
@@ -1501,6 +1505,7 @@ function toggleManualCols() {
 
 // ── Sorting ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
+  updateTipoBtn();
   document.querySelectorAll('#fiscal-table th.sortable').forEach(function(th) {
     th.addEventListener('click', function() {
       var col = th.getAttribute('data-col');
