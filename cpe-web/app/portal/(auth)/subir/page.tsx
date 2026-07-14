@@ -190,7 +190,12 @@ export default function PortalSubirPage() {
           .from('documents')
           .upload(`reportes/${tipo}-${periodo}-${Date.now()}.${ext}`, file,
             { upsert: false, contentType: file.type || 'application/octet-stream' })
-        if (!storageErr) storedPath = `reportes/${tipo}-${periodo}-${Date.now()}.${ext}`
+        if (storageErr) {
+          console.warn('[subir] Storage upload failed:', storageErr.message)
+          setErr('⚠ El reporte se guardó pero el archivo original no se pudo subir al storage. Contactá al administrador.')
+        } else {
+          storedPath = `reportes/${tipo}-${periodo}-${Date.now()}.${ext}`
+        }
       }
 
       // For cumulative facturación: PATCH existing report instead of creating new

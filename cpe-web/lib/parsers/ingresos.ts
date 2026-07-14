@@ -236,14 +236,15 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   await wb.xlsx.load(buffer as any)
 
   const resumen  = leerHoja(wb, 'Resumen')
-  const detalle  = leerHoja(wb, '2026-05') || leerHojaConFecha(wb)
+  const detalle  = leerHojaConFecha(wb)
 
   if (!resumen || !detalle) {
     throw new Error('El archivo no tiene el formato esperado. Verificá que sea un Revenue estimado.')
   }
 
   const periodoRaw = encontrarPeriodo(wb, resumen)
-  const periodo = periodoRaw || '2026-00'
+  if (!periodoRaw) throw new Error('No se pudo determinar el período del archivo. Verificá que contenga una hoja con formato YYYY-MM o una celda de fecha en Resumen.')
+  const periodo = periodoRaw
   const mes = formatearMes(periodo)
 
   const ventas_MM  = buscarValor(resumen, 'VENTAS ESTIMADAS', 1) ?? 0
@@ -251,7 +252,8 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   const vol_venta  = buscarValor(resumen, 'Volumen Ventas', 1)    ?? 0
   const precio_oil = buscarValor(resumen, 'Oil', 3)               ?? 0
   const precio_gas = buscarValor(resumen, 'Gas', 3)               ?? 0
-  const dias       = Number(buscarCelda(detalle, 0, 3))           || 30
+  const diasRaw    = Number(buscarCelda(detalle, 0, 3))
+  const dias       = diasRaw > 0 && diasRaw <= 31 ? diasRaw : (() => { throw new Error(`Días del período inválido (${diasRaw}). Verificá la celda de días en la hoja de detalle.`) })()
 
   const brent_ref = buscarValor(detalle, 'mes', 1)      ?? 0
   const medanito  = buscarValor(detalle, 'MEDANITO', 1) ?? 0
