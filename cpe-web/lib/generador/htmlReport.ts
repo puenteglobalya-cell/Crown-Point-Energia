@@ -101,6 +101,25 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot):
   const brentLegend  = macroPrevBrent ? 'true' : 'false'
   const hhLegend     = macroPrevHH    ? 'true' : 'false'
 
+  // ── DDEE export rights effective rate table ─────────────────────────────
+  const IIBB = 0.03
+  const ddeeRows = [55, 58, 60, 62, 64, 65, 66, 68, 70, 72, 75, 78, 80, 85, 90].map(p => {
+    const ddee = p <= 60 ? 0 : p >= 80 ? 0.08 : 0.08 * (p - 60) / 20
+    const neta = (ddee - IIBB) / (1 - IIBB)
+    return { precio: p, ddee, neta }
+  })
+  const brentRef = datos.brent_prom
+  const closestDdee = ddeeRows.reduce((best, r) =>
+    Math.abs(r.precio - brentRef) < Math.abs(best.precio - brentRef) ? r : best
+  )
+  const ddeeTableRows = ddeeRows.map(r => {
+    const highlight = r.precio === closestDdee.precio
+    const cls = highlight ? ' style="background:#F5F0E0;font-weight:600"' : ''
+    const marker = highlight ? ' ◄' : ''
+    const s = 'padding:6px 10px;border-bottom:1px solid #DCDAE6'
+    return `<tr${cls}><td style="${s}">US$ ${r.precio}</td><td style="${s}">${(r.ddee * 100).toFixed(2)}%</td><td style="${s}">${(IIBB * 100).toFixed(0)}%</td><td style="${s}">${(r.neta * 100).toFixed(2)}%${marker}</td></tr>`
+  }).join('\n')
+
   const oilProd = datos.oil_pct_prod > 0 ? datos.oil_pct_prod.toFixed(1) : null
   const gasProd = datos.gas_pct_prod > 0 ? datos.gas_pct_prod.toFixed(1) : null
   const oilVend = datos.oil_pct_vend > 0 ? datos.oil_pct_vend.toFixed(1) : null
@@ -499,6 +518,33 @@ ${hasMacro ? `
 </div>
 <p style="font-size:10px;color:var(--muted2);text-align:right;margin-bottom:32px">Futuros próximos 12 meses · ${macroDate}${macroPrevNote} · ICE Futures Europe + CME Group</p>
 ` : ''}
+
+<div class="sec">Alícuota Efectiva — Derechos de Exportación (DDEE)</div>
+<div class="card" style="padding:22px 20px">
+  <div class="card-hdr">Alícuota neta de DDEE según precio Brent <span class="card-hdr-val">incluye grossing-up con IIBB</span></div>
+  <p style="font-size:11px;color:var(--muted2);line-height:1.6;margin:8px 0 14px">
+    Los Derechos de Exportación (DDEE) se aplican con tasa progresiva entre <strong>US$ 60</strong> y <strong>US$ 80</strong> de Brent
+    (0% por debajo de US$ 60, escala lineal hasta 8% en US$ 80 y superiores).<br>
+    Al exportar crudo, se realiza el <em>grossing-up</em> con Ingresos Brutos (IIBB = 3%) para obtener la alícuota efectiva neta:<br>
+    <code style="font-size:10px;background:#F0EEF5;padding:2px 6px;border-radius:3px">Alícuota Neta = (Tasa DDEE − Tasa IIBB) / (1 − Tasa IIBB)</code>
+  </p>
+  <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'JetBrains Mono','Courier New',monospace">
+    <thead>
+      <tr style="border-bottom:2px solid var(--border);text-align:left">
+        <th style="padding:8px 10px">Precio Brent</th>
+        <th style="padding:8px 10px">Tasa DDEE</th>
+        <th style="padding:8px 10px">Tasa IIBB</th>
+        <th style="padding:8px 10px">Alícuota Neta</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${ddeeTableRows}
+    </tbody>
+  </table>
+  <p style="font-size:10px;color:var(--muted2);margin-top:10px;text-align:right">
+    ◄ Precio Brent de referencia del período: US$ ${f(brentRef, 2)}
+  </p>
+</div>
 
 <div class="footer">Crown Point Energía &middot; Generado ${fechaGen}</div>
 </div><!-- /wrap -->
