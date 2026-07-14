@@ -48,7 +48,7 @@ export default function ComercialClient({
   const [sortDir, setSortDir] = useState<1 | -1>(1)
 
   // Planta de entrega filter
-  const [plantaFilter, setPlantaFilter] = useState('')
+  const [plantaFilter, setPlantaFilter] = useState<Set<string>>(new Set())
 
   // Expandable observaciones per row
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
@@ -132,8 +132,8 @@ export default function ComercialClient({
     let rows = soloAceites
       ? se.filas.filter(row => Object.values(row).some(v => /aceites?\s+crudos/i.test(v)))
       : se.filas
-    if (plantaFilter && hPlanta) {
-      rows = rows.filter(row => row[hPlanta] === plantaFilter)
+    if (plantaFilter.size > 0 && hPlanta) {
+      rows = rows.filter(row => plantaFilter.has(row[hPlanta] ?? ''))
     }
     if (!sortCol) return rows
     return [...rows].sort((a, b) => {
@@ -442,21 +442,41 @@ export default function ComercialClient({
                   Solo Aceites Crudos
                 </button>
                 {hPlanta && plantaOptions.length > 0 && (
-                  <select
-                    value={plantaFilter}
-                    onChange={e => setPlantaFilter(e.target.value)}
-                    style={{
-                      fontSize: 11, fontWeight: 600, padding: '3px 10px',
-                      borderRadius: 6, border: '1px solid var(--rule)',
-                      background: 'var(--surface)', color: 'var(--fg)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <option value="">Todas las plantas</option>
-                    {plantaOptions.map(p => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
+                  <>
+                    <span style={{ fontSize: 11, color: '#8e91b0', fontWeight: 600 }}>Planta:</span>
+                    {plantaOptions.map(p => {
+                      const active = plantaFilter.has(p)
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => setPlantaFilter(prev => {
+                            const next = new Set(prev)
+                            next.has(p) ? next.delete(p) : next.add(p)
+                            return next
+                          })}
+                          style={{
+                            fontSize: 10, fontWeight: 700, padding: '2px 10px',
+                            borderRadius: 999, border: '1px solid',
+                            cursor: 'pointer',
+                            background: active ? '#1F2566' : 'var(--surface)',
+                            color: active ? '#fff' : 'var(--fg-soft)',
+                            borderColor: active ? '#1F2566' : 'var(--rule)',
+                            transition: 'all .15s',
+                          }}
+                        >
+                          {p}
+                        </button>
+                      )
+                    })}
+                    {plantaFilter.size > 0 && (
+                      <button
+                        onClick={() => setPlantaFilter(new Set())}
+                        style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--rule)', background: 'var(--surface)', color: '#8e91b0', cursor: 'pointer' }}
+                      >
+                        ✕ todas
+                      </button>
+                    )}
+                  </>
                 )}
                 <span style={{ fontSize: 11, color: '#8e91b0' }}>
                   {filasVisible.length} de {se.filas.length} filas
