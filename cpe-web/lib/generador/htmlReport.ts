@@ -23,6 +23,10 @@ function j(v: number[], d = 4): string {
   return JSON.stringify(v.map(x => parseFloat(x.toFixed(d))))
 }
 
+function esc(s: string): string {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
 export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot): string {
   const { areas, gas, mensual_historico } = datos
 
@@ -107,7 +111,7 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ingresos Estimados — ${datos.mes}</title>
+<title>Ingresos Estimados — ${esc(datos.mes)}</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
@@ -309,17 +313,17 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
 <!-- HEADER -->
 <header>
   <div class="h-left">
-    <h1>Ingresos <em>Estimados</em><br>${datos.mes}</h1>
+    <h1>Ingresos <em>Estimados</em><br>${esc(datos.mes)}</h1>
     <p>Petróleo &amp; Gas · Sales, Volume &amp; Price Analysis</p>
   </div>
   <div class="h-right">
     <div class="badge"><div class="dot"></div>Estimado</div>
-    <div class="h-date">Período: ${datos.periodo} · ${datos.dias} días</div>
+    <div class="h-date">Período: ${esc(datos.periodo)} · ${datos.dias} días</div>
   </div>
 </header>
 
 <!-- KPIs -->
-<div class="sec">Indicadores Clave — ${datos.mes}</div>
+<div class="sec">Indicadores Clave — ${esc(datos.mes)}</div>
 <div class="kpi-row">
 
   <div class="kpi">
@@ -364,7 +368,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
 <div class="sec">Composición del Ingreso</div>
 <div class="g2">
   <div class="card">
-    <div class="card-hdr">Ingresos por Área y Tipo <span class="card-hdr-val">us$ — ${datos.mes}</span></div>
+    <div class="card-hdr">Ingresos por Área y Tipo <span class="card-hdr-val">us$ — ${esc(datos.mes)}</span></div>
     <div class="ch"><canvas id="cBarras"></canvas></div>
   </div>
   <div class="card">

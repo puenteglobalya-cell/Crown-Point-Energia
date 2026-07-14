@@ -120,7 +120,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Admin auth ───────────────────────────────────────────────────────────
-  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login') && !pathname.startsWith('/admin/reset-password')) {
     const isAdminEmailFlag = user?.email && CMS_ADMIN_EMAILS.includes(user.email)
     if (!isAdminEmailFlag) {
       let userRole: string | null = null

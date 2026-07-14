@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminUser } from '@/lib/admin-auth'
+import { isSameOrigin } from '@/lib/csrf'
 import { parseKpiExcel } from '@/lib/parsers/kpi-excel'
 import { parseKpiWord } from '@/lib/parsers/kpi-word'
 
@@ -9,6 +10,7 @@ const MAX = 50 * 1024 * 1024 // 50 MB
 
 // POST /api/admin/kpi — upload Excel + Word, return unified preview
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const user = await requireAdminUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

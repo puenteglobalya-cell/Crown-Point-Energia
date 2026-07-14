@@ -22,7 +22,10 @@ export default function AdminLoginPage() {
       setError('Email o contraseña incorrectos.')
       setLoading(false)
     } else {
-      window.location.href = '/admin'
+      const { data: { user: u } } = await supabase.auth.getUser()
+      const meta = u?.app_metadata
+      const role = meta?.role as string | undefined
+      window.location.href = role === 'rrhh' ? '/admin/rrhh' : '/admin'
     }
   }
 
