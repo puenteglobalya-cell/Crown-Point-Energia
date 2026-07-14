@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
 
   if (action === 'set_carpeta_grupos') {
     const { carpeta_id, grupo_ids } = body
+    if (!Array.isArray(grupo_ids)) return NextResponse.json({ error: 'grupo_ids debe ser un array' }, { status: 400 })
     await db.from('bib_carpeta_grupos').delete().eq('carpeta_id', carpeta_id)
     if (grupo_ids.length > 0) {
       const { error } = await db.from('bib_carpeta_grupos').insert(
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
 
   if (action === 'set_usuario_grupos') {
     const { user_id, grupo_ids } = body
+    if (!Array.isArray(grupo_ids)) return NextResponse.json({ error: 'grupo_ids debe ser un array' }, { status: 400 })
     await db.from('bib_usuario_grupos').delete().eq('user_id', user_id)
     if (grupo_ids.length > 0) {
       const { error } = await db.from('bib_usuario_grupos').insert(

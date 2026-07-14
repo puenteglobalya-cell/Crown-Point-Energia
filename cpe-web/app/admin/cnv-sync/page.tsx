@@ -24,6 +24,7 @@ export default function CnvSyncPage() {
     try {
       const res = await fetch('/api/admin/cnv-sync', { method: 'POST' })
       const json = await res.json()
+      if (!res.ok) { setResult({ error: json.error ?? 'Error de sincronización' }); return }
       setResult(json)
       if (json.ok) await loadHechos()
     } catch (e) {

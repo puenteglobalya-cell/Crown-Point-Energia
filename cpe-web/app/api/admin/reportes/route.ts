@@ -122,7 +122,10 @@ export async function POST(req: NextRequest) {
     : null
 
   const VALID_TYPES = ['ingresos', 'produccion', 'financiero', 'accionista', 'henry_hub', 'ice_brent', 'facturacion']
-  const typeIdFinal = typeof type_id === 'string' && VALID_TYPES.includes(type_id) ? type_id : 'ingresos'
+  if (typeof type_id !== 'string' || !VALID_TYPES.includes(type_id)) {
+    return NextResponse.json({ error: `Tipo de reporte inválido: ${type_id}` }, { status: 400 })
+  }
+  const typeIdFinal = type_id
 
   const db = createSupabaseServerAdminClient()
   const { data, error } = await db.from('reportes').insert({

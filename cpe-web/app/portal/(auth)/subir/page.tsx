@@ -55,6 +55,7 @@ export default function PortalSubirPage() {
   const [datosMacro, setDatosMacro] = useState<DatosMacro | null>(null)
   const [datosFacturacion, setDatosFacturacion] = useState<DatosFacturacion | null>(null)
   const [macroSnap, setMacroSnap]   = useState<MacroSnapshot | null>(null)
+  const [macroLoading, setMacroLoading] = useState(false)
   const [includeMacro, setIncludeMacro] = useState(true)
   const [titulo, setTitulo] = useState('')
   const [doneId, setDoneId] = useState('')
@@ -75,10 +76,10 @@ export default function PortalSubirPage() {
         const parsed = await parsearIngresosExcel(f)
         setDatosIngresos(parsed)
         setTitulo(`Ingresos Estimados — ${parsed.mes}`)
-        // Fetch current macro snapshot for optional inclusion in the report
+        setMacroLoading(true)
         fetch('/api/macro').then(r => r.ok ? r.json() : null).then(m => {
           if (m && (m.hasHH || m.hasBrent)) setMacroSnap(m as MacroSnapshot)
-        }).catch(() => {})
+        }).catch(() => {}).finally(() => setMacroLoading(false))
       } else if (tipo === 'facturacion') {
         const parsed = await parsearFacturacionExcel(f)
         setDatosFacturacion(parsed)
@@ -117,7 +118,10 @@ export default function PortalSubirPage() {
       }
       setStep('preview')
     } catch (e) {
-      setErr((e as Error).message)
+      const msg = (e as Error).message
+      setErr(msg.includes('Invalid') || msg.includes('signature') || msg.includes('Unexpected')
+        ? 'El archivo no pudo leerse. Verificá que sea un archivo válido (.xlsx / .pptx / .docx).'
+        : msg)
       setStep('select')
     }
   }
@@ -190,7 +194,12 @@ export default function PortalSubirPage() {
           .from('documents')
           .upload(`reportes/${tipo}-${periodo}-${Date.now()}.${ext}`, file,
             { upsert: false, contentType: file.type || 'application/octet-stream' })
-        if (!storageErr) storedPath = `reportes/${tipo}-${periodo}-${Date.now()}.${ext}`
+        if (storageErr) {
+          console.warn('[subir] Storage upload failed:', storageErr.message)
+          setErr('⚠ El reporte se guardó pero el archivo original no se pudo subir al storage. Contactá al administrador.')
+        } else {
+          storedPath = `reportes/${tipo}-${periodo}-${Date.now()}.${ext}`
+        }
       }
 
       // For cumulative facturación: PATCH existing report instead of creating new
@@ -569,10 +578,10 @@ td{padding:6px 12px;border-bottom:1px solid #eee;font-family:monospace}</style><
               <input type="text" value={titulo} onChange={e => setTitulo(e.target.value)} />
             </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <button className="btn btn-primary" style={{ padding: '13px 28px', flex: 1, minWidth: 180 }} onClick={() => handleSave('publicado')}>
-                {isMacroType(tipo) ? 'Guardar y publicar' : 'Subir y publicar'}
+              <button className="btn btn-primary" style={{ padding: '13px 28px', flex: 1, minWidth: 180 }} disabled={macroLoading} onClick={() => handleSave('publicado')}>
+                {macroLoading ? 'Cargando datos macro…' : isMacroType(tipo) ? 'Guardar y publicar' : 'Subir y publicar'}
               </button>
-              <button className="btn" style={{ padding: '13px 24px' }} onClick={() => handleSave('borrador')}>
+              <button className="btn" style={{ padding: '13px 24px' }} disabled={macroLoading} onClick={() => handleSave('borrador')}>
                 Guardar borrador
               </button>
               <button className="btn" style={{ padding: '13px 16px' }} onClick={reset}>

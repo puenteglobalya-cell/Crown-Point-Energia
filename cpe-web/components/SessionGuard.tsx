@@ -3,13 +3,11 @@
 import { useEffect, useRef } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-// Hard session limit: 1 hour from login, regardless of activity.
-// Applies only to portal users — admin layout does NOT include this component.
-const SESSION_MAX_MS = 60 * 60 * 1000
-const STORAGE_PREFIX = 'cpe_session_start_'
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000
+const STORAGE_KEY = 'cpe_last_activity'
 
-async function forceLogout(userId: string) {
-  localStorage.removeItem(STORAGE_PREFIX + userId)
+async function forceLogout() {
+  localStorage.removeItem(STORAGE_KEY)
   const supabase = createSupabaseBrowserClient()
   await supabase.auth.signOut()
   window.location.href = '/portal/login?expirada=1'
@@ -19,35 +17,30 @@ export default function SessionGuard() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    const supabase = createSupabaseBrowserClient()
-
-    async function init() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const key = STORAGE_PREFIX + user.id
-      const stored = localStorage.getItem(key)
-      const now    = Date.now()
-
-      // First load after this login — set the session start timestamp
-      const sessionStart = stored ? parseInt(stored, 10) : now
-      if (!stored) localStorage.setItem(key, String(sessionStart))
-
-      const remaining = SESSION_MAX_MS - (now - sessionStart)
-
-      if (remaining <= 0) {
-        // Already past 1 hour (e.g. tab was left open)
-        forceLogout(user.id)
-        return
-      }
-
-      timerRef.current = setTimeout(() => forceLogout(user.id), remaining)
+    function resetTimer() {
+      localStorage.setItem(STORAGE_KEY, String(Date.now()))
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(forceLogout, IDLE_TIMEOUT_MS)
     }
 
-    init()
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      const elapsed = Date.now() - parseInt(stored, 10)
+      if (elapsed >= IDLE_TIMEOUT_MS) {
+        forceLogout()
+        return
+      }
+      timerRef.current = setTimeout(forceLogout, IDLE_TIMEOUT_MS - elapsed)
+    } else {
+      resetTimer()
+    }
+
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'] as const
+    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }))
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
+      events.forEach(e => window.removeEventListener(e, resetTimer))
     }
   }, [])
 

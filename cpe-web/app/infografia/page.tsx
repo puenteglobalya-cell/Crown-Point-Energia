@@ -1,4 +1,9 @@
+import type { Metadata } from 'next'
 import { getCmsState } from '@/lib/cms'
+
+export const metadata: Metadata = {
+  title: 'Infografía — Crown Point Energía',
+}
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import InfografiaClient from './InfografiaClient'
 
