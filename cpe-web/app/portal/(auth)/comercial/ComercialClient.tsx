@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 
 type SeRow = {
   id: string
@@ -47,6 +47,12 @@ export default function ComercialClient({
   const [sortCol, setSortCol] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<1 | -1>(1)
 
+  // Planta de entrega filter
+  const [plantaFilter, setPlantaFilter] = useState('')
+
+  // Expandable observaciones per row
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
+
   // Admin sync form state — default to last 30 days
   const defaultHasta = new Date().toISOString().slice(0, 10)
   const defaultDesde = new Date(Date.now() - 14 * 86_400_000).toISOString().slice(0, 10)
@@ -65,6 +71,37 @@ export default function ComercialClient({
   const ddeeHeader = se?.headers.find(h =>
     /d\.?d\.?e\.?e/i.test(h) || /descuento/i.test(h)
   ) ?? null
+
+  const findHeader = (pattern: RegExp) => se?.headers.find(h => pattern.test(h)) ?? null
+  const hPlanta = findHeader(/planta/i)
+  const hObservaciones = findHeader(/observ/i)
+  const hProducto = findHeader(/producto/i)
+
+  const PREFERRED_ORDER: RegExp[] = [
+    /^id$/i, /fecha(?!.*desde|.*hasta)/i, /empresa/i, /volumen/i,
+    /precio\s*estim/i, /f\.?\s*desde|fecha.*desde/i, /f\.?\s*hasta|fecha.*hasta/i,
+  ]
+
+  const orderedHeaders = useMemo(() => {
+    if (!se) return []
+    const hidden = new Set([hObservaciones, hProducto].filter(Boolean) as string[])
+    const remaining = se.headers.filter(h => !hidden.has(h))
+    const ordered: string[] = []
+    for (const pat of PREFERRED_ORDER) {
+      const found = remaining.find(h => pat.test(h) && !ordered.includes(h))
+      if (found) ordered.push(found)
+    }
+    for (const h of remaining) {
+      if (!ordered.includes(h)) ordered.push(h)
+    }
+    return ordered
+  }, [se, hObservaciones, hProducto])
+
+  const plantaOptions = useMemo(() => {
+    if (!se || !hPlanta) return []
+    const vals = new Set(se.filas.map(r => r[hPlanta]).filter(Boolean))
+    return [...vals].sort((a, b) => a.localeCompare(b, 'es-AR'))
+  }, [se, hPlanta])
 
   function parseDDEE(val: string): number | null {
     if (!val) return null
@@ -95,6 +132,9 @@ export default function ComercialClient({
     let rows = soloAceites
       ? se.filas.filter(row => Object.values(row).some(v => /aceites?\s+crudos/i.test(v)))
       : se.filas
+    if (plantaFilter && hPlanta) {
+      rows = rows.filter(row => row[hPlanta] === plantaFilter)
+    }
     if (!sortCol) return rows
     return [...rows].sort((a, b) => {
       const av = a[sortCol] ?? ''
@@ -104,11 +144,11 @@ export default function ComercialClient({
       if (!isNaN(an) && !isNaN(bn)) return (an - bn) * sortDir
       return av.localeCompare(bv, 'es-AR') * sortDir
     })
-  }, [se, soloAceites, sortCol, sortDir])
+  }, [se, soloAceites, sortCol, sortDir, plantaFilter, hPlanta])
 
   function downloadCSV() {
     if (!se) return
-    const cols = ddeeHeader ? [...se.headers, 'Precio calc.'] : se.headers
+    const cols = ddeeHeader ? [...se.headers, 'Precio calc.'] : se.headers // CSV exports all columns
     const lines = [
       cols.map(h => `"${h.replace(/"/g, '""')}"`).join(','),
       ...filasVisible.map(row =>
@@ -401,6 +441,23 @@ export default function ComercialClient({
                 >
                   Solo Aceites Crudos
                 </button>
+                {hPlanta && plantaOptions.length > 0 && (
+                  <select
+                    value={plantaFilter}
+                    onChange={e => setPlantaFilter(e.target.value)}
+                    style={{
+                      fontSize: 11, fontWeight: 600, padding: '3px 10px',
+                      borderRadius: 6, border: '1px solid var(--rule)',
+                      background: 'var(--surface)', color: 'var(--fg)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="">Todas las plantas</option>
+                    {plantaOptions.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                )}
                 <span style={{ fontSize: 11, color: '#8e91b0' }}>
                   {filasVisible.length} de {se.filas.length} filas
                 </span>
@@ -418,7 +475,8 @@ export default function ComercialClient({
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
                     <tr style={{ background: 'var(--bg-alt)' }}>
-                      {se.headers.map((h, i) => (
+                      {(hObservaciones || hProducto) && <th style={{ ...thBase, cursor: 'default', width: 32 }} />}
+                      {orderedHeaders.map((h, i) => (
                         <th
                           key={i}
                           onClick={() => handleHeaderClick(h)}
@@ -438,7 +496,7 @@ export default function ComercialClient({
                         <th style={{
                           ...thBase,
                           textAlign: 'right',
-                          color: sortCol === '__precio' ? '#1F2566' : '#1F2566',
+                          color: '#1F2566',
                           background: 'rgba(31,37,102,.04)',
                           cursor: 'default',
                         }}>
@@ -448,33 +506,60 @@ export default function ComercialClient({
                     </tr>
                   </thead>
                   <tbody>
-                    {filasVisible.map((row, ri) => (
-                      <tr
-                        key={ri}
-                        style={{ borderBottom: ri < filasVisible.length - 1 ? '1px solid var(--rule)' : 'none' }}
-                      >
-                        {se.headers.map((h, ci) => (
-                          <td key={ci} style={{
-                            padding: '8px 12px',
-                            color: 'var(--fg)',
-                            fontFamily: ci === 0 ? undefined : 'var(--font-mono)',
-                            fontSize: 12,
-                            whiteSpace: 'nowrap',
-                          }}>
-                            {row[h] ?? '—'}
-                          </td>
-                        ))}
-                        {ddeeHeader && (
-                          <td style={{
-                            padding: '8px 12px', textAlign: 'right',
-                            fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
-                            color: '#1F2566', background: 'rgba(31,37,102,.03)',
-                          }}>
-                            {row[ddeeHeader] ? `US$ ${calcPrecio(row[ddeeHeader])}` : '—'}
-                          </td>
-                        )}
-                      </tr>
-                    ))}
+                    {filasVisible.map((row, ri) => {
+                      const hasDetail = (hObservaciones && row[hObservaciones]) || (hProducto && row[hProducto])
+                      const isExpanded = expandedRows.has(ri)
+                      const totalCols = orderedHeaders.length + (ddeeHeader ? 1 : 0) + ((hObservaciones || hProducto) ? 1 : 0)
+                      return (
+                        <React.Fragment key={ri}>
+                          <tr style={{ borderBottom: isExpanded ? 'none' : '1px solid var(--rule)' }}>
+                            {(hObservaciones || hProducto) && (
+                              <td style={{ padding: '8px 4px 8px 12px', textAlign: 'center', cursor: hasDetail ? 'pointer' : 'default', color: '#8e91b0', fontSize: 10 }}
+                                onClick={() => hasDetail && setExpandedRows(prev => {
+                                  const next = new Set(prev)
+                                  next.has(ri) ? next.delete(ri) : next.add(ri)
+                                  return next
+                                })}
+                              >
+                                {hasDetail ? (isExpanded ? '▼' : '▶') : ''}
+                              </td>
+                            )}
+                            {orderedHeaders.map((h, ci) => (
+                              <td key={ci} style={{
+                                padding: '8px 12px',
+                                color: 'var(--fg)',
+                                fontFamily: ci === 0 ? undefined : 'var(--font-mono)',
+                                fontSize: 12,
+                                whiteSpace: 'nowrap',
+                              }}>
+                                {row[h] ?? '—'}
+                              </td>
+                            ))}
+                            {ddeeHeader && (
+                              <td style={{
+                                padding: '8px 12px', textAlign: 'right',
+                                fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
+                                color: '#1F2566', background: 'rgba(31,37,102,.03)',
+                              }}>
+                                {row[ddeeHeader] ? `US$ ${calcPrecio(row[ddeeHeader])}` : '—'}
+                              </td>
+                            )}
+                          </tr>
+                          {isExpanded && hasDetail && (
+                            <tr style={{ borderBottom: '1px solid var(--rule)', background: 'var(--bg-alt)' }}>
+                              <td colSpan={totalCols} style={{ padding: '6px 18px 10px', fontSize: 11, color: 'var(--fg-soft)', lineHeight: 1.6 }}>
+                                {hProducto && row[hProducto] && (
+                                  <span><strong style={{ color: '#8e91b0' }}>Producto:</strong> {row[hProducto]}  </span>
+                                )}
+                                {hObservaciones && row[hObservaciones] && (
+                                  <span><strong style={{ color: '#8e91b0' }}>Obs:</strong> {row[hObservaciones]}</span>
+                                )}
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
