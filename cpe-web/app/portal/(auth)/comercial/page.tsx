@@ -54,7 +54,7 @@ export default async function ComercialPage() {
           Portal
         </p>
         <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-display)', margin: 0 }}>
-          Comercial
+          Reportes Comerciales
         </h1>
       </div>
 

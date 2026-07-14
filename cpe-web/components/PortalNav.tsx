@@ -91,7 +91,7 @@ export default function PortalNav({
 
         {canViewComercial && (
           <Link href="/portal/comercial" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
-            Comercial
+            Reportes Comerciales
           </Link>
         )}
 
