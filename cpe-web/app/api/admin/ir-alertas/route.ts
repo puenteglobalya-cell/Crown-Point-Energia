@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { createSupabaseServerClient } from '@/lib/supabase'
 import { isSameOrigin } from '@/lib/csrf'
+import { dbError } from '@/lib/api-error'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,7 @@ export async function GET() {
     .select('*')
     .order('created_at', { ascending: true })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json(data)
 }
 

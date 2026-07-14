@@ -96,7 +96,7 @@ export async function middleware(request: NextRequest) {
 
   // ── Portal auth ──────────────────────────────────────────────────────────
   if (
-    pathname.startsWith('/portal') &&
+    (pathname === '/portal' || pathname.startsWith('/portal/')) &&
     !pathname.startsWith('/portal/login') &&
     !pathname.startsWith('/portal/mfa') &&
     !pathname.startsWith('/portal/reset-password')
@@ -120,7 +120,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Admin auth ───────────────────────────────────────────────────────────
-  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login') && !pathname.startsWith('/admin/reset-password')) {
+  if ((pathname === '/admin' || pathname.startsWith('/admin/')) && !pathname.startsWith('/admin/login') && !pathname.startsWith('/admin/reset-password')) {
     const isAdminEmailFlag = user?.email && CMS_ADMIN_EMAILS.includes(user.email)
     if (!isAdminEmailFlag) {
       let userRole: string | null = null

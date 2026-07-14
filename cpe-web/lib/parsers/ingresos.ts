@@ -117,12 +117,6 @@ function worksheetToGrid(ws: ExcelJS.Worksheet): any[][] {
 
 // ---------------------------------------------------------------------------
 
-function excelSerialToMesLabel(serial: number): string {
-  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
-  const d = new Date(Math.round((serial - 25569) * 86400 * 1000))
-  return `${meses[d.getUTCMonth()]}-${String(d.getUTCFullYear()).slice(2)}`
-}
-
 function parsearSalesVolume(
   wb: ExcelJS.Workbook,
   currentPrices: { ET: number; PCKK: number; CH: number; RCLV: number }
@@ -535,6 +529,8 @@ function buscarValor(data: any[][], patron: string, offset: number): number | nu
       if (celda.toLowerCase().includes(patron.toLowerCase())) {
         const val = row[i + offset]
         if (typeof val === 'number') return val
+        const n = Number(val)
+        if (val != null && !isNaN(n)) return n
       }
     }
   }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { createSupabaseServerClient } from '@/lib/supabase'
 import { isSameOrigin } from '@/lib/csrf'
+import { dbError } from '@/lib/api-error'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +25,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json(data)
 }
 
@@ -36,6 +37,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
   const sb = createSupabaseServerClient()
   const { error } = await sb.from('ir_alert_recipients').delete().eq('id', params.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
   return NextResponse.json({ ok: true })
 }

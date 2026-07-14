@@ -109,10 +109,11 @@ function EditDrawer({
   }
 
   async function toggleBib(grupoId: number, checked: boolean) {
-    await fetch('/api/admin/biblioteca', {
+    const res = await fetch('/api/admin/biblioteca', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ action: checked ? 'add_user_grupo' : 'remove_user_grupo', userId: user.id, grupoId }),
     })
+    if (!res.ok) { flash('Error al actualizar biblioteca', 'err'); return }
     setBibSet(prev => { const s = new Set(prev); checked ? s.add(grupoId) : s.delete(grupoId); return s })
   }
 

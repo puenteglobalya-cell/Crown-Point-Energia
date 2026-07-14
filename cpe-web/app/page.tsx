@@ -466,7 +466,7 @@ export default async function HomePage() {
               <ul className="press-list reveal">
                 {latestComunicados.map(item => {
                   const label = CAT_LABEL[item.tipo] ?? { es: item.tipo, en: item.tipo }
-                  const href = item.url || '/comunicados'
+                  const href = item.url || `/comunicados/${item.id}`
                   return (
                     <li className="press-item" key={item.id}>
                       <span className="press-date num">{fmtFechaHome(item.fecha)}</span>
