@@ -54,27 +54,28 @@ function parseTable(
   const root = parse(html)
   const results: CnvHecho[] = []
 
-  // Find the accordion/panel that contains the keyword
-  const panels = root.querySelectorAll('h3, h4, div[class*="panel"], div[class*="header"], span, th')
+  // The CNV page uses Bootstrap accordion panels. Each section has:
+  //   <div class="panel-heading"> → <h4> → <a> → <strong>TITLE</strong>
+  //   <div class="panel-collapse">  (sibling of panel-heading)
+  //     <table class="tabla-hechos-relevantes">
+  // We match <strong> text, walk up to panel-heading, then read its sibling.
+  const strongs = root.querySelectorAll('h4 strong, h4 a strong')
   let targetTable: ReturnType<typeof root.querySelector> | null = null
 
-  for (const el of panels) {
-    if (el.text.toLowerCase().includes(sectionKeyword.toLowerCase())) {
-      // Look for the next table sibling (up to 5 parent levels)
-      let node = el as typeof el | null
-      for (let i = 0; i < 6 && node; i++) {
-        const tbl = node.querySelector('table')
-        if (tbl) { targetTable = tbl; break }
-        const nextSibling = node.nextElementSibling
-        if (nextSibling) {
-          const tbl2 = nextSibling.tagName === 'TABLE'
-            ? nextSibling
-            : nextSibling.querySelector('table')
-          if (tbl2) { targetTable = tbl2; break }
-        }
-        node = node.parentNode as typeof el | null
-      }
-      if (targetTable) break
+  for (const el of strongs) {
+    if (!el.text.toLowerCase().includes(sectionKeyword.toLowerCase())) continue
+
+    let heading = el.parentNode as typeof el | null
+    while (heading && !(heading.getAttribute?.('class') ?? '').includes('panel-heading')) {
+      heading = heading.parentNode as typeof el | null
+    }
+    if (!heading) continue
+
+    const collapse = heading.nextElementSibling
+    const tbl = collapse?.querySelector?.('table')
+    if (tbl) {
+      const trs = tbl.querySelectorAll('tr').filter(tr => tr.querySelectorAll('td').length >= 4)
+      if (trs.length > 0) { targetTable = tbl; break }
     }
   }
 
@@ -92,9 +93,12 @@ function parseTable(
 
     if (!rawFecha || !rawDoc || !/^\d{4,}$/.test(rawDoc)) continue
 
-    // Build PDF/document URL — CNV uses this pattern for AIF documents
-    const docId  = parseInt(rawDoc, 10)
-    const pdfUrl = `${CNV_BASE}/SitioWeb/Empresas/HechoRelevante/${docId}`
+    const docId = parseInt(rawDoc, 10)
+
+    // Extract real AIF link from the VER column if available
+    const verCell = cells.length >= 5 ? cells[4] : null
+    const aifLink = verCell?.querySelector('a')?.getAttribute('href') ?? null
+    const pdfUrl  = aifLink || `${CNV_BASE}/SitioWeb/Empresas/HechoRelevante/${docId}`
 
     results.push({
       doc_id:      docId,
@@ -116,12 +120,24 @@ const HECHO_RELEVANTE_RE = /hecho relevante|otra informaci[oó]n del adm|convoca
 
 export async function scrapeCnvHechos(): Promise<CnvHecho[]> {
   const html = await fetchCnvHtml()
-  const hechos  = parseTable(html, 'hechos relevantes',   'hecho_relevante')
-  const estados = parseTable(html, 'estados contables',   'estado_contable')
-  const reclasificados = estados.map(h =>
+
+  // Parse from three sections and dedupe by doc_id
+  const ultima  = parseTable(html, 'última información recibida', 'hecho_relevante')
+  const hechos  = parseTable(html, 'hechos relevantes',           'hecho_relevante')
+  const estados = parseTable(html, 'estados contables',           'estado_contable')
+
+  const reclasificados = [...ultima, ...estados].map(h =>
     HECHO_RELEVANTE_RE.test(h.descripcion) ? { ...h, tipo: 'hecho_relevante' as const } : h
   )
-  return [...hechos, ...reclasificados]
+
+  const seen = new Set<number>()
+  const all: CnvHecho[] = []
+  for (const h of [...hechos, ...reclasificados]) {
+    if (seen.has(h.doc_id)) continue
+    seen.add(h.doc_id)
+    all.push(h)
+  }
+  return all
 }
 
 // ── Supabase upsert ───────────────────────────────────────────────────────────
