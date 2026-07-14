@@ -148,13 +148,12 @@ export default async function InversoresPage() {
               <h4><span className="lang-es">En esta página</span><span className="lang-en">On this page</span></h4>
               <nav>
                 <a href="#porque" className="active"><span className="lang-es">¿Por qué Crown Point?</span><span className="lang-en">Why Crown Point?</span></a>
-                {showFinancieros && <a href="#financieros"><span className="lang-es">EEFF CPE Inc.</span><span className="lang-en">CPE Inc. financials</span></a>}
-                {showCpesa && <a href="#cpesa-financieros"><span className="lang-es">EEFF CPESA</span><span className="lang-en">CPESA financials</span></a>}
+                <a href="#calificacion"><span className="lang-es">Calificación crediticia</span><span className="lang-en">Credit rating</span></a>
+                {(showFinancieros || showCpesa) && <a href="#financieros"><span className="lang-es">Estados financieros</span><span className="lang-en">Financial statements</span></a>}
                 {showAgm && <a href="#agm"><span className="lang-es">AGM / Asambleas CPI</span><span className="lang-en">AGM / CPI meetings</span></a>}
                 {showEstma && <a href="#estma"><span className="lang-es">ESTMA</span><span className="lang-en">ESTMA</span></a>}
                 {showCnv && <a href="#hechos-cnv"><span className="lang-es">Hechos relevantes CNV</span><span className="lang-en">CNV disclosures</span></a>}
                 {showCobertura && <a href="#cobertura"><span className="lang-es">Cobertura de analistas</span><span className="lang-en">Analyst coverage</span></a>}
-                <a href="#calificacion"><span className="lang-es">Calificación crediticia</span><span className="lang-en">Credit rating</span></a>
                 {showOn && <a href="#on"><span className="lang-es">Obligaciones negociables</span><span className="lang-en">Notes</span></a>}
                 {showGobierno && <a href="#gobierno"><span className="lang-es">Gobierno corporativo</span><span className="lang-en">Corporate governance</span></a>}
                 {showAsambleas && <a href="#asambleas"><span className="lang-es">Asambleas de accionistas</span><span className="lang-en">Shareholder meetings</span></a>}
@@ -203,37 +202,81 @@ export default async function InversoresPage() {
                 </p>
               </div>
 
-              {showFinancieros && <div className="section-block" id="financieros">
-                <span className="eyebrow"><span className="lang-es">Reportes recientes</span><span className="lang-en">Recent filings</span></span>
-                <h2 style={{ marginTop: 8 }}><span className="lang-es">Estados financieros — Crown Point Energy Inc.</span><span className="lang-en">Financial statements — Crown Point Energy Inc.</span></h2>
+              <div className="section-block" id="calificacion">
+                <span className="eyebrow"><span className="lang-es">Deuda local</span><span className="lang-en">Local debt</span></span>
+                <h2 style={{ marginTop: 8 }}>
+                  <span className="lang-es">Calificación crediticia</span>
+                  <span className="lang-en">Credit rating</span>
+                </h2>
                 <p className="lede">
-                  <span className="lang-es">Reportes auditados según IFRS y compilados gerenciales trimestrales — Crown Point Energy Inc. (CPI, TSXV: CWV). Disponibles también en <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
-                  <span className="lang-en">IFRS-audited reports and quarterly management filings — Crown Point Energy Inc. (CPI, TSXV: CWV). Also available on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
+                  <span className="lang-es">Calificación otorgada por <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer">FIX SCR</a> (afiliada de Fitch Ratings en Argentina) sobre obligaciones de largo plazo.</span>
+                  <span className="lang-en">Rating assigned by <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer">FIX SCR</a> (Fitch Ratings affiliate in Argentina) on long-term obligations.</span>
+                </p>
+                <style>{`
+                  .fix-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: var(--s-4); }
+                  .fix-table th { text-align: left; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-muted); font-weight: 600; padding: 10px 12px; border-bottom: 1px solid var(--rule); }
+                  .fix-table td { padding: 14px 12px; color: var(--fg-soft); vertical-align: middle; border-bottom: 0; }
+                  .fix-rating-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(31,37,102,.08); border: 1px solid rgba(31,37,102,.18); padding: 6px 14px; border-radius: var(--r-pill); }
+                  [data-theme="dark"] .fix-rating-badge { background: rgba(78,126,196,.13); border-color: rgba(78,126,196,.3); }
+                  .fix-rating-value { font-family: var(--font-mono); font-size: 20px; font-weight: 700; color: var(--accent-deep); letter-spacing: -0.01em; }
+                  [data-theme="dark"] .fix-rating-value { color: var(--cp-blue-light, #7EB3FF); }
+                  .fix-perspectiva { display: inline-flex; align-items: center; gap: 6px; }
+                  .fix-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cp-green-deep); flex-shrink: 0; }
+                  .fix-accion { font-size: 11px; letter-spacing: 0.08em; font-weight: 700; text-transform: uppercase; padding: 3px 10px; border-radius: var(--r-pill); background: rgba(108,174,82,0.14); color: var(--cp-green-deep); }
+                  [data-theme="dark"] .fix-accion { color: #8BD478; }
+                `}</style>
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table className="fix-table">
+                  <thead>
+                    <tr>
+                      <th><span className="lang-es">Fecha</span><span className="lang-en">Date</span></th>
+                      <th><span className="lang-es">Plazo</span><span className="lang-en">Tenor</span></th>
+                      <th>Rating</th>
+                      <th><span className="lang-es">Perspectiva</span><span className="lang-en">Outlook</span></th>
+                      <th><span className="lang-es">Acción</span><span className="lang-en">Action</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>08-may-26</td>
+                      <td><span className="lang-es">Largo Plazo</span><span className="lang-en">Long Term</span></td>
+                      <td>
+                        <span className="fix-rating-badge">
+                          <span className="fix-rating-value">BBB(arg)</span>
+                        </span>
+                      </td>
+                      <td>
+                        <span className="fix-perspectiva">
+                          <span className="fix-dot" />
+                          <span className="lang-es">Estable</span><span className="lang-en">Stable</span>
+                        </span>
+                      </td>
+                      <td><span className="fix-accion"><span className="lang-es">Confirma</span><span className="lang-en">Affirmed</span></span></td>
+                    </tr>
+                  </tbody>
+                </table>
+                </div>
+                <p style={{ marginTop: 'var(--s-4)', fontSize: 12, color: 'var(--fg-muted)' }}>
+                  <span className="lang-es">Ver ficha completa en </span>
+                  <span className="lang-en">Full report at </span>
+                  <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>fixscr.com →</a>
+                </p>
+              </div>
+
+              {(showFinancieros || showCpesa) && <div className="section-block" id="financieros">
+                <span className="eyebrow"><span className="lang-es">Reportes recientes</span><span className="lang-en">Recent filings</span></span>
+                <h2 style={{ marginTop: 8 }}><span className="lang-es">Estados financieros</span><span className="lang-en">Financial statements</span></h2>
+                <p className="lede">
+                  <span className="lang-es">Reportes auditados según IFRS (CPI, TSXV: CWV) y estados contables de CPESA ante la <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a>. Disponibles también en <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
+                  <span className="lang-en">IFRS-audited reports (CPI, TSXV: CWV) and CPESA financial statements filed with the <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a>. Also available on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
                 </p>
                 <a href="/api/inversores/kit" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 'var(--s-4)' }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   <span className="lang-es">Descargar kit del inversor (ZIP)</span>
                   <span className="lang-en">Download investor kit (ZIP)</span>
                 </a>
-                <InversoresDocsTabs docs={allDocs} tipo="financiero" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
-                {irDocs.filter(d => d.categoria === 'financiero' && d.entidad === 'CPI').length > 0 && (
-                  <div style={{ marginTop: 'var(--s-4)' }}>
-                    <IrDocsTabs docs={irDocs} categoria="financiero" entidad="CPI" />
-                  </div>
-                )}
-              </div>}
-
-              {showCpesa && <div className="section-block" id="cpesa-financieros">
-                <span className="eyebrow">CPESA · <span className="lang-es">Empresa local</span><span className="lang-en">Local entity</span></span>
-                <h2 style={{ marginTop: 8 }}>
-                  <span className="lang-es">Estados financieros CPESA</span>
-                  <span className="lang-en">CPESA Financial Statements</span>
-                </h2>
-                <p className="lede">
-                  <span className="lang-es">Estados contables de Crown Point Energía S.A. (CPESA), entidad argentina operadora de las concesiones. Presentados ante la <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a>.</span>
-                  <span className="lang-en">Financial statements of Crown Point Energía S.A. (CPESA), the Argentine operating entity. Filed with the <a href="https://www.cnv.gob.ar" target="_blank" rel="noreferrer">CNV</a>.</span>
-                </p>
-                <IrDocsTabs docs={irDocs} categoria="financiero" entidad="CPESA" />
+                {showFinancieros && <InversoresDocsTabs docs={allDocs} tipo="financiero" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />}
+                <IrDocsTabs docs={irDocs} categoria="financiero" showEntidadTabs />
               </div>}
 
               {showAgm && <div className="section-block" id="agm">
@@ -332,67 +375,6 @@ export default async function InversoresPage() {
                   </div>
                 ) : null}
               </div>}
-
-              <div className="section-block" id="calificacion">
-                <span className="eyebrow"><span className="lang-es">Deuda local</span><span className="lang-en">Local debt</span></span>
-                <h2 style={{ marginTop: 8 }}>
-                  <span className="lang-es">Calificación crediticia</span>
-                  <span className="lang-en">Credit rating</span>
-                </h2>
-                <p className="lede">
-                  <span className="lang-es">Calificación otorgada por <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer">FIX SCR</a> (afiliada de Fitch Ratings en Argentina) sobre obligaciones de largo plazo.</span>
-                  <span className="lang-en">Rating assigned by <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer">FIX SCR</a> (Fitch Ratings affiliate in Argentina) on long-term obligations.</span>
-                </p>
-                <style>{`
-                  .fix-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: var(--s-4); }
-                  .fix-table th { text-align: left; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-muted); font-weight: 600; padding: 10px 12px; border-bottom: 1px solid var(--rule); }
-                  .fix-table td { padding: 14px 12px; color: var(--fg-soft); vertical-align: middle; border-bottom: 0; }
-                  .fix-rating-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(31,37,102,.08); border: 1px solid rgba(31,37,102,.18); padding: 6px 14px; border-radius: var(--r-pill); }
-                  [data-theme="dark"] .fix-rating-badge { background: rgba(78,126,196,.13); border-color: rgba(78,126,196,.3); }
-                  .fix-rating-value { font-family: var(--font-mono); font-size: 20px; font-weight: 700; color: var(--accent-deep); letter-spacing: -0.01em; }
-                  [data-theme="dark"] .fix-rating-value { color: var(--cp-blue-light, #7EB3FF); }
-                  .fix-perspectiva { display: inline-flex; align-items: center; gap: 6px; }
-                  .fix-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cp-green-deep); flex-shrink: 0; }
-                  .fix-accion { font-size: 11px; letter-spacing: 0.08em; font-weight: 700; text-transform: uppercase; padding: 3px 10px; border-radius: var(--r-pill); background: rgba(108,174,82,0.14); color: var(--cp-green-deep); }
-                  [data-theme="dark"] .fix-accion { color: #8BD478; }
-                `}</style>
-                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <table className="fix-table">
-                  <thead>
-                    <tr>
-                      <th><span className="lang-es">Fecha</span><span className="lang-en">Date</span></th>
-                      <th><span className="lang-es">Plazo</span><span className="lang-en">Tenor</span></th>
-                      <th>Rating</th>
-                      <th><span className="lang-es">Perspectiva</span><span className="lang-en">Outlook</span></th>
-                      <th><span className="lang-es">Acción</span><span className="lang-en">Action</span></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>08-may-26</td>
-                      <td><span className="lang-es">Largo Plazo</span><span className="lang-en">Long Term</span></td>
-                      <td>
-                        <span className="fix-rating-badge">
-                          <span className="fix-rating-value">BBB(arg)</span>
-                        </span>
-                      </td>
-                      <td>
-                        <span className="fix-perspectiva">
-                          <span className="fix-dot" />
-                          <span className="lang-es">Estable</span><span className="lang-en">Stable</span>
-                        </span>
-                      </td>
-                      <td><span className="fix-accion"><span className="lang-es">Confirma</span><span className="lang-en">Affirmed</span></span></td>
-                    </tr>
-                  </tbody>
-                </table>
-                </div>
-                <p style={{ marginTop: 'var(--s-4)', fontSize: 12, color: 'var(--fg-muted)' }}>
-                  <span className="lang-es">Ver ficha completa en </span>
-                  <span className="lang-en">Full report at </span>
-                  <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>fixscr.com →</a>
-                </p>
-              </div>
 
               {showOn && <div className="section-block" id="on">
                 <span className="eyebrow"><span className="lang-es">Programa global</span><span className="lang-en">Global program</span></span>

@@ -77,7 +77,7 @@ export default async function ContactoPage() {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
                 <a href={`tel:${arPhone.replace(/\s/g,'')}`} style={{ fontSize: 13, color: 'var(--fg-soft)' }}>{arPhone}</a>
-                <a href={`mailto:${arEmail}`} style={{ fontSize: 13, color: 'var(--accent)', wordBreak: 'break-all' }}>{arEmail}</a>
+                <a href={`mailto:${arEmail}`} style={{ fontSize: 11, color: 'var(--accent)', overflowWrap: 'anywhere' }}>{arEmail}</a>
               </div>
             </div>
 
@@ -97,7 +97,7 @@ export default async function ContactoPage() {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
                 <a href={`tel:${caPhone.replace(/\s/g,'')}`} style={{ fontSize: 13, color: 'var(--fg-soft)' }}>{caPhone}</a>
-                <a href={`mailto:${caEmail}`} style={{ fontSize: 13, color: 'var(--accent)', wordBreak: 'break-all' }}>{caEmail}</a>
+                <a href={`mailto:${caEmail}`} style={{ fontSize: 13, color: 'var(--accent)', overflowWrap: 'anywhere' }}>{caEmail}</a>
               </div>
             </div>
 
@@ -140,7 +140,7 @@ export default async function ContactoPage() {
                   <span className="lang-en">TSXV: CWV</span>
                 </p>
               </div>
-              <a href={`mailto:${irEmail}`} style={{ fontSize: 13, color: 'var(--accent)', wordBreak: 'break-all', marginTop: 4 }}>{irEmail}</a>
+              <a href={`mailto:${irEmail}`} style={{ fontSize: 13, color: 'var(--accent)', overflowWrap: 'anywhere', marginTop: 4 }}>{irEmail}</a>
             </div>
           </div>
 

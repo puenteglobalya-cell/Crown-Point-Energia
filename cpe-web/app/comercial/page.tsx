@@ -14,10 +14,11 @@ export default function ComercialPage() {
     <>
       <section className="page-hero">
         <div className="container">
-          <nav className="breadcrumb">
+          <div className="crumbs">
             <Link href="/"><span className="lang-es">Inicio</span><span className="lang-en">Home</span></Link>
+            <span>/</span>
             <span><span className="lang-es">Comercial</span><span className="lang-en">Commercial</span></span>
-          </nav>
+          </div>
           <span className="eyebrow">
             <span className="lang-es">Comercialización de hidrocarburos</span>
             <span className="lang-en">Hydrocarbon trading</span>
