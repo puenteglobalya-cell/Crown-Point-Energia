@@ -95,7 +95,7 @@ export default function IrDocsTabs({
     : byCat
 
   const years = Array.from(new Set(filtered.map(getYear).filter(Boolean))).sort((a, b) => +b - +a)
-  const [openYear, setOpenYear] = useState<string>(years[0] ?? '')
+  const [openYear, setOpenYear] = useState<string>('')
 
   const [q, setQ] = useState('')
   const ql = q.trim().toLowerCase()
@@ -163,7 +163,7 @@ export default function IrDocsTabs({
             <button
               key={e}
               className={`ir-entidad-tab${activeEntidad === e ? ' active' : ''}`}
-              onClick={() => { setActiveEntidad(e); setOpenYear(years[0] ?? '') }}
+              onClick={() => { setActiveEntidad(e); setOpenYear('') }}
             >
               {e === 'CPI' ? 'Crown Point Energy Inc.' : e === 'CPESA' ? 'Crown Point Energía S.A.' : e}
             </button>

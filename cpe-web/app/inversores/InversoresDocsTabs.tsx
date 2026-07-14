@@ -70,7 +70,7 @@ export default function InversoresDocsTabs({
 }) {
   const filtered = docs.filter(d => d.tipo === tipo)
   const years = Array.from(new Set(filtered.map(getYear).filter(Boolean))).sort((a, b) => +b - +a)
-  const [openYear, setOpenYear] = useState<string>(years[0] ?? '')
+  const [openYear, setOpenYear] = useState<string>('')
   const [downloading, setDownloading] = useState(false)
 
   if (filtered.length === 0) {
