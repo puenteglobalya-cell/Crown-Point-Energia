@@ -56,6 +56,7 @@ export default function PortalSubirPage() {
   const [datosFacturacion, setDatosFacturacion] = useState<DatosFacturacion | null>(null)
   const [macroSnap, setMacroSnap]   = useState<MacroSnapshot | null>(null)
   const [macroLoading, setMacroLoading] = useState(false)
+  const [cclRate, setCclRate] = useState<number | null>(null)
   const [includeMacro, setIncludeMacro] = useState(true)
   const [titulo, setTitulo] = useState('')
   const [doneId, setDoneId] = useState('')
@@ -80,6 +81,9 @@ export default function PortalSubirPage() {
         fetch('/api/macro').then(r => r.ok ? r.json() : null).then(m => {
           if (m && (m.hasHH || m.hasBrent)) setMacroSnap(m as MacroSnapshot)
         }).catch(() => {}).finally(() => setMacroLoading(false))
+        fetch('/api/ccl').then(r => r.ok ? r.json() : null).then(d => {
+          if (d?.indexValue) setCclRate(d.indexValue)
+        }).catch(() => {})
       } else if (tipo === 'facturacion') {
         const parsed = await parsearFacturacionExcel(f)
         setDatosFacturacion(parsed)
@@ -152,7 +156,7 @@ export default function PortalSubirPage() {
 
       if (tipo === 'ingresos' && datosIngresos) {
         datos   = datosIngresos
-        html    = generarReporteHTML(datosIngresos, includeMacro && macroSnap ? macroSnap : undefined)
+        html    = generarReporteHTML(datosIngresos, includeMacro && macroSnap ? macroSnap : undefined, cclRate)
         periodo = datosIngresos.periodo
       } else if (tipo === 'facturacion' && datosFacturacion) {
         let mergedDatos = datosFacturacion
@@ -243,7 +247,7 @@ export default function PortalSubirPage() {
   function reset() {
     setStep('type'); setFile(null); setMacroText('')
     setDatosIngresos(null); setDatosAccionista(null); setDatosGenerico(null); setDatosMacro(null); setDatosFacturacion(null)
-    setMacroSnap(null); setIncludeMacro(true)
+    setMacroSnap(null); setIncludeMacro(true); setCclRate(null)
     setTitulo(''); setDoneId(''); setErr('')
     setExistingFactId(null); setExistingLineas(null); setMergeStats(null)
     setShowPreview(false); setPreviewHtml('')
@@ -252,7 +256,7 @@ export default function PortalSubirPage() {
 
   function buildPreviewHtml(): string {
     if (tipo === 'ingresos' && datosIngresos)
-      return generarReporteHTML(datosIngresos, includeMacro && macroSnap ? macroSnap : undefined)
+      return generarReporteHTML(datosIngresos, includeMacro && macroSnap ? macroSnap : undefined, cclRate)
     if (tipo === 'facturacion' && datosFacturacion)
       return generarReporteFacturacionHTML(datosFacturacion)
     if (tipo === 'accionista' && datosAccionista)

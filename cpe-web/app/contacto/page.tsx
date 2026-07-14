@@ -77,7 +77,7 @@ export default async function ContactoPage() {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
                 <a href={`tel:${arPhone.replace(/\s/g,'')}`} style={{ fontSize: 13, color: 'var(--fg-soft)' }}>{arPhone}</a>
-                <a href={`mailto:${arEmail}`} style={{ fontSize: 13, color: 'var(--accent)', overflowWrap: 'anywhere' }}>{arEmail}</a>
+                <a href={`mailto:${arEmail}`} style={{ fontSize: 11, color: 'var(--accent)', overflowWrap: 'anywhere' }}>{arEmail}</a>
               </div>
             </div>
 

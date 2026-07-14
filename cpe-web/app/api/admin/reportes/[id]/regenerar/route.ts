@@ -3,6 +3,7 @@ import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { generarReporteHTML } from '@/lib/generador/htmlReport'
+import { fetchCclRate } from '@/lib/matbarofex'
 import { generarReporteAccionistaHTML } from '@/lib/generador/htmlReportAccionista'
 import { generarReporteFacturacionHTML } from '@/lib/generador/htmlReportFacturacion'
 import { generarReporteGenericoHTML } from '@/lib/generador/htmlReportGenerico'
@@ -73,8 +74,10 @@ export async function POST(
 
   try {
     switch (type_id) {
-      case 'ingresos':
-        html = generarReporteHTML(datos as DatosIngresos, macro)
+      case 'ingresos': {
+        const ccl = await fetchCclRate()
+        html = generarReporteHTML(datos as DatosIngresos, macro, ccl?.indexValue ?? null)
+      }
         break
       case 'accionista':
         html = generarReporteAccionistaHTML(datos as DatosAccionista)

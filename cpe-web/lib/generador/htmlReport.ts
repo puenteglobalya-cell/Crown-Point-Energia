@@ -27,7 +27,7 @@ function esc(s: string): string {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 }
 
-export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot): string {
+export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, cclRate?: number | null): string {
   const { areas, gas, mensual_historico } = datos
 
   const ingOilET   = areas.ET.ingreso
@@ -546,6 +546,37 @@ ${hasMacro ? `
   </p>
 </div>
 
+${cclRate ? `
+<div class="sec">Simulador de Ingresos en AR$ — Futuros</div>
+<div class="card" style="padding:20px 18px">
+  <div class="card-hdr">Conversión a pesos argentinos <span class="card-hdr-val">TC CCL MtR: $ ${fN(cclRate)}</span></div>
+  <p style="font-size:11px;color:var(--muted2);line-height:1.5;margin:6px 0 14px">
+    Tipo de cambio CCL (Índice MtR — Matba Rofex). Ingreso estimado del período en AR$
+    aplicando distintos escenarios de tipo de cambio sobre los US$ ${(totalUS / 1e6).toFixed(2).replace('.', ',')} MM facturados.
+  </p>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+    <label style="font-size:11px;font-weight:600;color:var(--muted)">TC CCL (AR$/US$):</label>
+    <input id="cclInput" type="number" value="${Math.round(cclRate)}" step="50" min="100"
+      style="width:110px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:13px;text-align:right" />
+    <button onclick="resetCcl()" style="font-size:10px;padding:4px 10px;border:1px solid var(--border);border-radius:4px;background:#F8F7FC;cursor:pointer;color:var(--muted)">Reset</button>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead>
+      <tr style="border-bottom:2px solid var(--border)">
+        <th style="text-align:left;padding:8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Concepto</th>
+        <th style="text-align:right;padding:8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">US$</th>
+        <th style="text-align:right;padding:8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">AR$ (MM)</th>
+      </tr>
+    </thead>
+    <tbody id="futTbody">
+    </tbody>
+  </table>
+  <p style="font-size:9px;color:var(--muted2);margin-top:10px">
+    Fuente TC: Índice CCL MtR — <a href="https://matbarofex.com.ar/IndiceCCLMTR" style="color:var(--muted2)">matbarofex.com.ar</a>
+  </p>
+</div>
+` : ''}
+
 <div class="footer">Crown Point Energía &middot; Generado ${fechaGen}</div>
 </div><!-- /wrap -->
 
@@ -944,6 +975,37 @@ function pedirPDF(btn){
   render(0);
 })();
 </script>
+
+${cclRate ? `<script>
+(function(){
+  var totalUS = ${totalUS.toFixed(2)};
+  var oilUS = ${(ingOilET + ingOilPCKK + ingOilCH + ingOilRCLV).toFixed(2)};
+  var gasUS = ${ingGasTotal.toFixed(2)};
+  var defaultCcl = ${Math.round(cclRate)};
+  var inp = document.getElementById('cclInput');
+  var tbody = document.getElementById('futTbody');
+  window.resetCcl = function(){ inp.value = defaultCcl; render(); };
+  function fmt(n){ return (n/1e6).toFixed(2).replace('.',','); }
+  function fmtU(n){ return n.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+  function render(){
+    var tc = parseFloat(inp.value) || defaultCcl;
+    var rows = [
+      ['Petróleo', oilUS, oilUS * tc],
+      ['Gas', gasUS, gasUS * tc],
+      ['<strong>Total facturado</strong>', totalUS, totalUS * tc],
+    ];
+    var s = 'padding:8px 10px;border-bottom:1px solid var(--border)';
+    tbody.innerHTML = rows.map(function(r,i){
+      var bold = i === rows.length - 1 ? 'font-weight:700;' : '';
+      return '<tr><td style=\"'+s+';'+bold+'\">'+r[0]+'</td>'
+        +'<td style=\"'+s+';text-align:right;font-family:monospace;'+bold+'\">'+fmtU(r[1])+'</td>'
+        +'<td style=\"'+s+';text-align:right;font-family:monospace;'+bold+'\">'+fmt(r[2])+'</td></tr>';
+    }).join('');
+  }
+  inp.addEventListener('input', render);
+  render();
+})();
+</script>` : ''}
 
 </body>
 </html>`
