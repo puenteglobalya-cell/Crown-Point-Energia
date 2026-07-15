@@ -53,6 +53,7 @@ export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
   const [orderModal, setOrderModal] = useState(false)
   const [orderedIds, setOrderedIds] = useState<string[]>([])
   const [generating, setGenerating] = useState(false)
+  const [generateError, setGenerateError] = useState<string | null>(null)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [copiedId, setCopiedId] = useState('')
 
@@ -93,6 +94,7 @@ export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
 
   async function handleGenerate() {
     setGenerating(true)
+    setGenerateError(null)
     try {
       const htmls = await Promise.all(
         orderedIds.map(id =>
@@ -111,7 +113,7 @@ export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
       const win = window.open(url, '_blank')
       if (win) setTimeout(() => URL.revokeObjectURL(url), 120_000)
     } catch {
-      alert('Error al generar el reporte combinado')
+      setGenerateError('Error al generar el reporte combinado')
     } finally {
       setGenerating(false)
     }
@@ -431,6 +433,11 @@ export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
               ))}
             </div>
 
+            {generateError && (
+              <p style={{ color: 'var(--cp-negative, #C0392B)', fontSize: 12, textAlign: 'right', margin: '0 0 10px' }}>
+                ✗ {generateError}
+              </p>
+            )}
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn" style={{ padding: '10px 20px' }} onClick={() => setOrderModal(false)}>
                 Cancelar

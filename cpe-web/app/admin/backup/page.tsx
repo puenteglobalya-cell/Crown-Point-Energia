@@ -14,9 +14,11 @@ const totalIncluded = BACKUP_TABLES.filter(t => t.included && t.table !== 'stora
 export default function BackupPage() {
   const [downloading, setDownloading] = useState(false)
   const [lastDownload, setLastDownload] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleDownload() {
     setDownloading(true)
+    setError(null)
     try {
       const res = await fetch('/api/admin/backup')
       if (!res.ok) throw new Error('Error al generar backup')
@@ -29,7 +31,7 @@ export default function BackupPage() {
       URL.revokeObjectURL(url)
       setLastDownload(new Date().toLocaleString('es-AR'))
     } catch (e) {
-      alert((e as Error).message)
+      setError((e as Error).message)
     } finally {
       setDownloading(false)
     }
@@ -67,6 +69,11 @@ export default function BackupPage() {
             {lastDownload && (
               <div style={{ marginTop: 6, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                 ✓ Última descarga: {lastDownload}
+              </div>
+            )}
+            {error && (
+              <div style={{ marginTop: 6, color: 'var(--cp-negative, #C0392B)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                ✗ {error}
               </div>
             )}
           </div>
