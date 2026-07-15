@@ -46,7 +46,7 @@ const NAV = [
       { href: '/portal',    es: 'Intranet',              en: 'Intranet' },
       { href: '/portal',    es: 'Personal',               en: 'Personnel' },
       { href: 'https://portal-prd-wz-jjj48h3j.launchpad.cfapps.us10.hana.ondemand.com/site?siteId=46512124-2cbc-41d8-8d70-001d6718bd39#portal-display?sap-ui-app-id-hint=saas_approuter_crown.portal', es: 'Portal de proveedores', en: 'Supplier portal', external: true },
-      { href: '/biblioteca',es: 'VDR',                    en: 'VDR' },
+      { href: '/biblioteca',es: 'Virtual Room',           en: 'Virtual Room' },
     ]
   },
 ]
