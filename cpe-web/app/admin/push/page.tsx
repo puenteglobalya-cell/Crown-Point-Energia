@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 export default function PushPage() {
   const [title, setTitle] = useState('')
@@ -9,10 +10,15 @@ export default function PushPage() {
   const [sending, setSending] = useState(false)
   const [result,  setResult]  = useState<{ sent: number; failed: number; stale: number } | null>(null)
   const [err, setErr] = useState('')
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim() || !body.trim()) return
+    setConfirmOpen(true)
+  }
+
+  async function doSend() {
     setSending(true)
     setResult(null)
     setErr('')
@@ -31,6 +37,7 @@ export default function PushPage() {
       setErr((e as Error).message)
     }
     setSending(false)
+    setConfirmOpen(false)
   }
 
   return (
@@ -128,6 +135,17 @@ export default function PushPage() {
         recibirán un mensaje en su celular o computadora, incluso con el navegador cerrado.
         Si tocaron "Bloquear" al pedirles permiso, no recibirán la notificación.
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Enviar notificación push"
+        message={`Se enviará a todos los dispositivos suscritos: "${title}" — "${body}". No se puede retirar una vez enviada.`}
+        confirmLabel="Sí, enviar"
+        tone="warning"
+        busy={sending}
+        onConfirm={doSend}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   )
 }

@@ -162,6 +162,7 @@ export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
   }
 
   async function deleteComment(reporteId: string, commentId: string) {
+    if (!confirm('¿Eliminar este comentario?')) return
     const res = await fetch(`/api/portal/comentarios/${reporteId}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },

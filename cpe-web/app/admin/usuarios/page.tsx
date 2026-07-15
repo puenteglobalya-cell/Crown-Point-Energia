@@ -410,6 +410,7 @@ export default function UsuariosPage() {
 
   async function quickBan(u: User) {
     const newActivo = u.activo !== true
+    if (!newActivo && !confirm(`¿Banear a ${u.email}? Se lo desconectará de su sesión actual.`)) return
     const res = await fetch(`/api/admin/usuarios/${u.id}`, {
       method: 'PATCH', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ activo: newActivo }),

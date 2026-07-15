@@ -9,6 +9,7 @@ export const PERMISSIONS = {
   view_drafts:     'Ver reportes borrador',
   upload_reports:  'Subir reportes',
   publish_reports: 'Publicar / despublicar reportes',
+  delete_reports:  'Eliminar reportes',
   manage_users:    'Gestionar usuarios',
   manage_cms:      'Panel CMS / Admin',
 } as const
