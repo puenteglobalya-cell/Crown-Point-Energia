@@ -4,13 +4,13 @@ import MapSection from './MapSection'
 import type { MapBlockData } from '@/components/ArgentinaMapInteractive'
 import { getCmsState } from '@/lib/cms'
 import { cmsLineBreaks } from '@/lib/cms-html'
-import { fetchOperationsBlocks } from '@/lib/content-fetch'
+import { fetchOperationsBlocks, sumWellsFromBlocks } from '@/lib/content-fetch'
 import ScrollSpy from '@/components/ScrollSpy'
 
 export const revalidate = 60
 
 // Display order per section
-const EXPLOTACION_ORDER = ['tordillo', 'piedra', 'chanares', 'ppc', 'tdf']
+const EXPLOTACION_ORDER = ['tordillo', 'piedra', 'chanares', 'tdf']
 const EXPLORACION_SLUGS = new Set(['cerro'])
 
 type Commodity = 'oil' | 'gas' | 'mixed'
@@ -31,6 +31,8 @@ export default async function OperacionesPage() {
     getCmsState(),
     fetchOperationsBlocks(),
   ])
+
+  const wells = sumWellsFromBlocks(allBlocks)
 
   // Split and sort into two groups
   const explotacionBlocks = EXPLOTACION_ORDER
@@ -90,9 +92,9 @@ export default async function OperacionesPage() {
                 val: f['ops.kpi.acreage'] || '372k', unit: 'ha',
                 metaEs: `${f['kpi.blocks.value'] || '11'} concesiones`, metaEn: `${f['kpi.blocks.value'] || '11'} concessions` },
               { labelEs: 'Pozos productores', labelEn: 'Producing wells',
-                val: f['ops.kpi.wells'] || '357', unitEs: 'activos', unitEn: 'active',
-                metaEs: f['ops.kpi.wells.meta'] || '+83 inyectores en operación',
-                metaEn: fe['ops.kpi.wells.meta'] || '+83 injectors in operation' },
+                val: String(wells.activos), unitEs: 'activos', unitEn: 'active',
+                metaEs: `+${wells.inyectores} inyectores en operación`,
+                metaEn: `+${wells.inyectores} injectors in operation` },
               { labelEs: 'Producción promedio', labelEn: 'Average production',
                 val: f['ops.kpi.production'] || '8,672', unit: 'boe/d',
                 metaEs: f['ops.kpi.production.meta'] || 'Q1 2026 · neto',

@@ -4,6 +4,7 @@ import { getCmsState } from '@/lib/cms'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import ArgentinaMap from '@/components/ArgentinaMap'
 import { DroneHud } from '@/components/DroneHud'
+import { sumWellsFromBlocks } from '@/lib/content-fetch'
 
 export const revalidate = 60
 
@@ -32,12 +33,13 @@ export default async function HomePage() {
       .order('fecha', { ascending: false })
       .limit(4),
     db.from('operations_blocks')
-      .select('id,slug,titulo,subtitulo_es,subtitulo_en,commodity,wi,operador,chips_es,chips_en')
+      .select('id,slug,titulo,subtitulo_es,subtitulo_en,commodity,wi,operador,chips_es,chips_en,stats')
       .eq('activo', true)
       .order('orden'),
   ])
 
   const opsBlocks = blocksRes.data ?? []
+  const wells = sumWellsFromBlocks(blocksRes.data ?? [])
 
   const latestComunicados = comunicadosRes.data ?? []
 
@@ -187,8 +189,8 @@ export default async function HomePage() {
         <div className="container">
           <div className="nums-grid">
             {[
-              { val: f['stats.pozos']      || '357',  es: 'pozos productivos',     en: 'producing wells' },
-              { val: f['stats.inyectores'] || '83',   es: 'pozos inyectores',      en: 'injection wells' },
+              { val: String(wells.activos),     es: 'pozos productivos',     en: 'producing wells' },
+              { val: String(wells.inyectores),  es: 'pozos inyectores',      en: 'injection wells' },
               { val: f['stats.cuencas']    || '4',    es: 'cuencas productoras',   en: 'producing basins' },
               { val: f['stats.ha']         || '372k', es: 'hectáreas operadas',    en: 'operated hectares' },
               { val: f['stats.anios']      || '25+',  es: 'años en upstream arg.', en: 'yrs Argentine upstream' },

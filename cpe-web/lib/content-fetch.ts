@@ -109,6 +109,30 @@ export async function fetchOperationsBlocks(): Promise<OperationsBlock[]> {
   return safeQuery(() => db().from('operations_blocks').select('*').eq('activo', true).order('orden'))
 }
 
+/**
+ * Sums "Pozos activos" / "Pozos inyectores" across all active operations
+ * blocks, instead of relying on separately-maintained CMS fields that can
+ * drift out of sync with the per-block data (as stats.pozos/ops.kpi.wells
+ * did). Areas with no well-count stat entry simply contribute 0 — this
+ * total is only as complete as the underlying block data.
+ */
+export function sumWellsFromBlocks(blocks: { stats: StatRow[] }[]): { activos: number; inyectores: number } {
+  let activos = 0
+  let inyectores = 0
+  for (const block of blocks) {
+    for (const stat of block.stats ?? []) {
+      const n = parseInt(stat.val.replace(/[^\d]/g, ''), 10)
+      if (isNaN(n)) continue
+      if (/pozos activos|active wells/i.test(stat.label_es) || /pozos activos|active wells/i.test(stat.label_en)) {
+        activos += n
+      } else if (/pozos inyectores|injector wells/i.test(stat.label_es) || /pozos inyectores|injector wells/i.test(stat.label_en)) {
+        inyectores += n
+      }
+    }
+  }
+  return { activos, inyectores }
+}
+
 export async function fetchShareholderMeetings(): Promise<ShareholderMeeting[]> {
   return safeQuery(() =>
     db().from('shareholder_meetings')
