@@ -35,23 +35,12 @@ export default async function HomePage() {
     fetchOperationsBlocks(),
   ])
 
-  // Home "Nuestras operaciones" preview cards want a lede/quality subtitle —
-  // derive it from the block's own stats (Operador / WI) rather than
-  // subtitulo_es/wi/operador columns, which don't exist in operations_blocks
-  // and made this query silently return nothing (opsBlocks was always empty).
-  const opsBlocks = opsBlocksFull.map(b => {
-    const operadorStat = b.stats.find(st => /operador|operator/i.test(st.label_es))
-    const wiStat = b.stats.find(st => /participaci[oó]n wi|working interest/i.test(st.label_es))
-    return {
-      id: b.slug,
-      slug: b.slug,
-      titulo: b.titulo,
-      operador: operadorStat?.val ?? '',
-      wi: wiStat?.val ?? '',
-      subtitulo_es: b.lede_es,
-      subtitulo_en: b.lede_en,
-    }
-  })
+  // NOTE: the "Nuestras operaciones" preview cards below (opsBlocks) render
+  // an empty list for now — populating it from real data caused a React
+  // hydration mismatch (#425/#422) that blanked out the whole page. Keeping
+  // it empty like before while the wells KPI (the thing that was actually
+  // reported broken) uses the correct, real per-area data.
+  const opsBlocks: { id: string; slug: string; titulo: string; operador: string; wi: string; subtitulo_es: string; subtitulo_en: string }[] = []
   const wells = sumWellsFromBlocks(opsBlocksFull)
 
   const latestComunicados = comunicadosRes.data ?? []
