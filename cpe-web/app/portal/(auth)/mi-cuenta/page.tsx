@@ -223,9 +223,13 @@ export default function MiCuentaPage() {
             </span>
           )}
         </div>
-        <p style={{ fontSize: 13, color: 'var(--fg-soft)', marginBottom: 20 }}>
-          Protegé tu cuenta con una aplicación autenticadora (Google Authenticator, Authy, etc.).
-          Cada vez que inicies sesión, se te pedirá un código de 6 dígitos.
+        <p style={{ fontSize: 13, color: 'var(--fg-soft)', marginBottom: 8 }}>
+          Protegé tu cuenta con una aplicación autenticadora (Google Authenticator, Microsoft
+          Authenticator, Authy, etc.). Cada vez que inicies sesión, se te pedirá un código de 6 dígitos.
+        </p>
+        <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 20 }}>
+          Las cuentas de administrador la tienen obligatoria: si la desactivás, se te va a
+          pedir configurarla de nuevo la próxima vez que entres al panel de administración.
         </p>
 
         {mfaOk && (

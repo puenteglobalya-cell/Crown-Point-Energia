@@ -1,9 +1,13 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-export default function MfaVerifyPage() {
+function MfaVerifyInner() {
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next') || '/portal'
+
   const [factorId, setFactorId]     = useState<string | null>(null)
   const [code, setCode]             = useState('')
   const [loading, setLoading]       = useState(false)
@@ -18,7 +22,7 @@ export default function MfaVerifyPage() {
       // If already at aal2, no need for MFA challenge
       const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
       if (aal?.currentLevel === 'aal2') {
-        window.location.href = '/portal'
+        window.location.href = next
         return
       }
 
@@ -27,7 +31,7 @@ export default function MfaVerifyPage() {
       const totp = factors?.totp?.find(f => f.status === 'verified')
       if (!totp) {
         // No verified factor — shouldn't be on this page
-        window.location.href = '/portal'
+        window.location.href = next
         return
       }
 
@@ -36,7 +40,7 @@ export default function MfaVerifyPage() {
       setTimeout(() => inputRef.current?.focus(), 100)
     }
     init()
-  }, [])
+  }, [next])
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault()
@@ -67,7 +71,7 @@ export default function MfaVerifyPage() {
       return
     }
 
-    window.location.href = '/portal'
+    window.location.href = next
   }
 
   if (initializing) return null
@@ -150,5 +154,13 @@ export default function MfaVerifyPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function MfaVerifyPage() {
+  return (
+    <Suspense fallback={null}>
+      <MfaVerifyInner />
+    </Suspense>
   )
 }

@@ -122,6 +122,7 @@ export async function middleware(request: NextRequest) {
   // ── Admin auth ───────────────────────────────────────────────────────────
   if ((pathname === '/admin' || pathname.startsWith('/admin/')) && !pathname.startsWith('/admin/login') && !pathname.startsWith('/admin/reset-password')) {
     const isAdminEmailFlag = user?.email && CMS_ADMIN_EMAILS.includes(user.email)
+    let isAdminUser = !!isAdminEmailFlag
     if (!isAdminEmailFlag) {
       let userRole: string | null = null
       if (user) {
@@ -137,6 +138,19 @@ export async function middleware(request: NextRequest) {
         if (userRole !== 'admin') {
           return NextResponse.redirect(new URL('/admin/login', request.url))
         }
+      }
+      isAdminUser = userRole === 'admin'
+    }
+
+    // Mandatory 2FA for admin accounts — no verified TOTP factor → forced setup;
+    // verified factor but not stepped up this session → step-up challenge.
+    if (isAdminUser && user) {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (aal?.nextLevel !== 'aal2') {
+        return NextResponse.redirect(new URL(`/portal/mfa/setup?next=${encodeURIComponent(pathname)}`, request.url))
+      }
+      if (aal.currentLevel !== 'aal2') {
+        return NextResponse.redirect(new URL(`/portal/mfa?next=${encodeURIComponent(pathname)}`, request.url))
       }
     }
   }
