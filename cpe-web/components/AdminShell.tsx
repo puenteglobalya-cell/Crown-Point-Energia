@@ -5,20 +5,20 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-type NavItem = { href: string; label: string; icon: IconName; roles?: string[] }
+type NavItem = { href: string; label: string; icon: IconName; roles?: string[]; hint?: string }
 
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Sitio',
     items: [
       { href: '/admin/inicio', label: 'Inicio', icon: 'home' },
-      { href: '/admin', label: 'CMS', icon: 'sliders' },
-      { href: '/admin/cms', label: 'Contenido', icon: 'edit' },
+      { href: '/admin', label: 'Visibilidad y textos', icon: 'sliders', hint: 'Mostrar/ocultar secciones y editar textos cortos del sitio' },
+      { href: '/admin/cms', label: 'Editor de contenido', icon: 'edit', hint: 'Editor completo: inversores, operaciones, compañía, ESG, carreras' },
       { href: '/admin/imagenes', label: 'Imágenes', icon: 'image' },
       { href: '/admin/bloques-fotos', label: 'Fotos de bloques', icon: 'image' },
-      { href: '/admin/documentos', label: 'Documentos', icon: 'file' },
-      { href: '/admin/ir-docs', label: 'IR Documents', icon: 'folder' },
-      { href: '/admin/biblioteca', label: 'Biblioteca', icon: 'book' },
+      { href: '/admin/documentos', label: 'Documentos públicos', icon: 'file', hint: 'Balances, reportes y legales visibles para cualquier visitante' },
+      { href: '/admin/ir-docs', label: 'Documentos IR (inversores)', icon: 'folder', hint: 'EE.FF., MD&A, AGM, ESTMA, gobierno corporativo' },
+      { href: '/admin/biblioteca', label: 'Biblioteca restringida', icon: 'book', hint: 'Documentos con acceso limitado por usuario o grupo' },
       { href: '/admin/marca', label: 'Manual de marca', icon: 'bookmark' },
       { href: '/admin/word-export', label: 'Exportar Word', icon: 'download' },
     ],
@@ -220,6 +220,15 @@ export function AdminShell({
 
         {/* Nav groups */}
         <nav style={{ flex: 1, padding: '4px 0' }}>
+          {!collapsed && userRole === 'rrhh' && (
+            <div style={{
+              margin: '0 12px 10px', padding: '8px 10px', borderRadius: 8,
+              background: 'rgba(201,80,40,.08)', border: '1px solid rgba(201,80,40,.2)',
+              fontSize: 11, color: '#b03010', lineHeight: 1.4,
+            }}>
+              Vista restringida a RRHH — el resto del panel de administración no está disponible para tu rol.
+            </div>
+          )}
           {visibleGroups.map((group, gi) => (
             <div key={group.label} style={{ marginBottom: 4 }}>
               {collapsed ? (
@@ -238,7 +247,7 @@ export function AdminShell({
                   <Link
                     key={item.href}
                     href={item.href}
-                    title={collapsed ? item.label : undefined}
+                    title={collapsed ? item.label : item.hint}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 11,
                       justifyContent: collapsed ? 'center' : 'flex-start',
