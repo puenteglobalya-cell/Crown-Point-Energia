@@ -125,6 +125,16 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   const oilVend = datos.oil_pct_vend > 0 ? datos.oil_pct_vend.toFixed(1) : null
   const gasVend = datos.gas_pct_vend > 0 ? datos.gas_pct_vend.toFixed(1) : null
 
+  // Valorización de producción: % oil (BOE≈bbl) × precio oil + % gas (convertido
+  // de BOE a Mcf con el factor estándar de la industria, 6 Mcf = 1 BOE) × precio gas
+  const BOE_TO_MCF = 6
+  const oilVolBbld = datos.vol_producido_boed * (datos.oil_pct_prod / 100)
+  const gasVolMcfd = datos.vol_producido_boed * (datos.gas_pct_prod / 100) * BOE_TO_MCF
+  const valorizadoOilDia = oilVolBbld * datos.precio_neto_oil
+  const valorizadoGasDia = gasVolMcfd * datos.precio_neto_gas
+  const valorizadoDia = valorizadoOilDia + valorizadoGasDia
+  const valorizadoMes = valorizadoDia * datos.dias
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -183,7 +193,7 @@ header{
 .sec::after{content:'';flex:1;height:1px;background:var(--border);}
 
 /* ── KPIs ───────────────────────────────────────────────── */
-.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:32px;}
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:32px;}
 .kpi{
   background:var(--card);border:1px solid var(--border);border-radius:var(--r);
   padding:22px 20px 18px;box-shadow:0 2px 10px var(--shadow);
@@ -379,6 +389,12 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="kpi-lbl">Precio Neto Gas</div>
     <div class="kpi-val">${f(datos.precio_neto_gas)}<span class="kpi-unit">us$/mcf</span></div>
     <div class="kpi-sub"><span class="tag mu">ET + RCLV promedio</span></div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-lbl">Producción Valorizada</div>
+    <div class="kpi-val">${fN(valorizadoDia)}<span class="kpi-unit">us$/d</span></div>
+    <div class="kpi-sub"><span class="tag mu">${f(valorizadoMes / 1_000_000)} MM us$ en el mes</span></div>
   </div>
 
 </div>
