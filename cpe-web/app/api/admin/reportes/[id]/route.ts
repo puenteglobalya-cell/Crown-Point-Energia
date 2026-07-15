@@ -10,6 +10,7 @@ import { isSameOrigin } from '@/lib/csrf'
 import { enviarNotificacionReporte, enviarNotificacionIR } from '@/lib/email'
 import { enviarPushNotificacion } from '@/lib/push'
 import { dbError } from '@/lib/api-error'
+import { FINANZAS_REPORT_TYPES } from '@/lib/permissions-config'
 
 async function getUserWithRole() {
   const cookieStore = await cookies()
@@ -29,7 +30,7 @@ async function getUserWithRole() {
   const { data: roleRow } = await db.from('user_roles').select('role, activo').eq('user_id', user.id).single()
   if (!roleRow) return null
 
-  return { id: user.id, email: user.email, role: roleRow.role as 'viewer' | 'uploader' | 'admin', activo: roleRow.activo }
+  return { id: user.id, email: user.email, role: roleRow.role as 'viewer' | 'uploader' | 'admin' | 'rrhh' | 'accionista' | 'finanzas', activo: roleRow.activo }
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -138,6 +139,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!uploadPerms.has('upload_reports')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // 'finanzas' is sandboxed to its own sub-portal — can only touch financial report types
+    if (userWithRole.role === 'finanzas') {
+      const { data: existing } = await db.from('reportes').select('type_id').eq('id', params.id).single()
+      if (!existing || !(FINANZAS_REPORT_TYPES as readonly string[]).includes(existing.type_id ?? '')) {
+        return NextResponse.json({ error: 'Tu rol solo puede gestionar reportes Financiero o Facturación' }, { status: 403 })
+      }
+    }
+
     const { datos, html, titulo, periodo, estado: newEstado } = body
     if (!datos || !html) return NextResponse.json({ error: 'Faltan datos o html' }, { status: 400 })
 
@@ -145,7 +155,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const patch: Record<string, unknown> = { datos, html, updated_at: new Date().toISOString() }
     if (titulo) patch.titulo = String(titulo).slice(0, 500)
     if (periodo) patch.periodo = String(periodo).slice(0, 40)
-    if (newEstado && VALID_ESTADOS.includes(newEstado)) patch.estado = newEstado
+    // Publishing (not just drafting) via this merge path requires publish_reports too —
+    // previously any uploader could self-publish here regardless of that permission.
+    if (newEstado && VALID_ESTADOS.includes(newEstado) && (newEstado === 'borrador' || canPublish(uploadPerms))) {
+      patch.estado = newEstado
+    }
 
     await snapshotReportVersion(params.id, userWithRole.email ?? null)
 

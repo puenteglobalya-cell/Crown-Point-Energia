@@ -127,6 +127,12 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/portal/login', request.url))
       }
       portalIsAdmin = roleRow.role === 'admin'
+
+      // Sandbox 'finanzas' to its own sub-portal — same pattern as 'rrhh' → /admin/rrhh
+      const FINANZAS_ALLOWED = ['/portal/finanzas', '/portal/mi-cuenta']
+      if (roleRow.role === 'finanzas' && !FINANZAS_ALLOWED.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+        return NextResponse.redirect(new URL('/portal/finanzas', request.url))
+      }
     }
     const mfaRedirect = await enforceAdminMfa(portalIsAdmin)
     if (mfaRedirect) return mfaRedirect

@@ -77,28 +77,36 @@ export default function PortalNav({
 
         <div style={{ width: 1, height: 18, background: 'var(--rule)' }} />
 
-        {canViewDashboard && (
-          <Link href="/portal/dashboard" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
-            Dashboard
+        {role === 'finanzas' ? (
+          <Link href="/portal/finanzas" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
+            Finanzas
           </Link>
-        )}
+        ) : (
+          <>
+            {canViewDashboard && (
+              <Link href="/portal/dashboard" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
+                Dashboard
+              </Link>
+            )}
 
-        {canViewReports && (
-          <Link href="/portal" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
-            Reportes
-          </Link>
-        )}
+            {canViewReports && (
+              <Link href="/portal" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
+                Reportes
+              </Link>
+            )}
 
-        {canViewComercial && (
-          <Link href="/portal/comercial" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
-            Reportes Comerciales
-          </Link>
-        )}
+            {canViewComercial && (
+              <Link href="/portal/comercial" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
+                Reportes Comerciales
+              </Link>
+            )}
 
-        {canUpload && (
-          <Link href="/portal/subir" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
-            Subir reporte
-          </Link>
+            {canUpload && (
+              <Link href="/portal/subir" style={{ fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none', fontWeight: 500 }}>
+                Subir reporte
+              </Link>
+            )}
+          </>
         )}
       </div>
 

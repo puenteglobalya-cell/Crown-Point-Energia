@@ -28,4 +28,11 @@ export const DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
   admin:      PERMISSION_KEYS,
   rrhh:       ['view_reports', 'view_dashboard'],
   accionista: ['view_reports', 'view_dashboard', 'view_comercial'],
+  finanzas:   ['view_reports', 'view_dashboard', 'view_drafts', 'upload_reports'],
 }
+
+// Report types the 'finanzas' role can see/upload in its sandboxed sub-portal
+// (/portal/finanzas) — everything else (Comercial, Producción, Seguimiento…)
+// is out of scope for that role, the same way /admin/rrhh is the only admin
+// screen an 'rrhh' user can reach.
+export const FINANZAS_REPORT_TYPES = ['financiero', 'facturacion'] as const

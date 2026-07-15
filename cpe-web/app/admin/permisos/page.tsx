@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista'] as const
+const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas'] as const
 type Role = typeof ROLES[number]
 const ROLE_LABELS: Record<Role, string> = {
-  viewer: 'Consulta', uploader: 'Carga', admin: 'Admin', rrhh: 'RRHH', accionista: 'Accionista',
+  viewer: 'Consulta', uploader: 'Carga', admin: 'Admin', rrhh: 'RRHH', accionista: 'Accionista', finanzas: 'Finanzas',
 }
 
 const PERMISSION_LABELS: Record<string, string> = {
