@@ -226,33 +226,33 @@ export default function StockChart({ lang = 'es' }: { lang?: 'es' | 'en' }) {
         </div>
       </div>
 
-      {/* Price history chart */}
-      {!err && (
+      {/* Price history chart — hidden when there's no history to plot (e.g. CMS fallback) */}
+      {loading && (
         <div className="sc-chart-wrap">
           <div className="sc-chart-inner">
             <div className="sc-chart-title">
               {lang === 'es' ? 'Historial de precio · CWV.V · 2 años' : 'Price history · CWV.V · 2 years'}
             </div>
-            {loading ? (
-              <div className="sc-skel" style={{ height: 120, width: '100%' }} />
-            ) : d && d.history.length > 0 ? (
-              <PriceLine history={d.history} />
-            ) : (
-              <div style={{ height: 80, display: 'flex', alignItems: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
-                {lang === 'es' ? 'Sin datos históricos.' : 'No historical data.'}
-              </div>
-            )}
+            <div className="sc-skel" style={{ height: 120, width: '100%' }} />
           </div>
-          {d && (
-            <div style={{ padding: '10px 24px', borderTop: '1px solid var(--rule)', fontSize: 11, color: 'var(--fg-muted)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-              <span>
-                {lang === 'es'
-                  ? 'Fuente: Yahoo Finance (datos diferidos). No constituye asesoramiento de inversión.'
-                  : 'Source: Yahoo Finance (delayed data). Not investment advice.'}
-              </span>
-              <span>{new Date(d.ts).toLocaleTimeString(lang === 'es' ? 'es-AR' : 'en-CA', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Toronto' })} ET</span>
+        </div>
+      )}
+      {!loading && !err && d && d.history.length > 0 && (
+        <div className="sc-chart-wrap">
+          <div className="sc-chart-inner">
+            <div className="sc-chart-title">
+              {lang === 'es' ? 'Historial de precio · CWV.V · 2 años' : 'Price history · CWV.V · 2 years'}
             </div>
-          )}
+            <PriceLine history={d.history} />
+          </div>
+          <div style={{ padding: '10px 24px', borderTop: '1px solid var(--rule)', fontSize: 11, color: 'var(--fg-muted)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <span>
+              {lang === 'es'
+                ? 'Fuente: Yahoo Finance (datos diferidos). No constituye asesoramiento de inversión.'
+                : 'Source: Yahoo Finance (delayed data). Not investment advice.'}
+            </span>
+            <span>{new Date(d.ts).toLocaleTimeString(lang === 'es' ? 'es-AR' : 'en-CA', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Toronto' })} ET</span>
+          </div>
         </div>
       )}
     </>
