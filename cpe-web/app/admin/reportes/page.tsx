@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 type ReporteItem = {
   id: string
@@ -60,6 +61,9 @@ export default function ReportesAdminPage() {
   const [msgType, setMsgType]         = useState<'ok' | 'err' | 'info'>('info')
   const [regenIds, setRegenIds]       = useState<Set<string>>(new Set())
   const [copiedId, setCopiedId]       = useState('')
+  const [confirmPublish, setConfirmPublish] = useState<ReporteItem | null>(null)
+  const [confirmRegen, setConfirmRegen]     = useState<ReporteItem | null>(null)
+  const [publishing, setPublishing]         = useState(false)
 
   // Permissions matrix
   const [types, setTypes]       = useState<TypeRow[]>([])
@@ -85,12 +89,23 @@ export default function ReportesAdminPage() {
 
   async function toggleEstado(item: ReporteItem) {
     const nuevoEstado = item.estado === 'publicado' ? 'borrador' : 'publicado'
-    const res = await fetch(`/api/admin/reportes/${item.id}`, {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ estado: nuevoEstado }),
-    })
-    if (res.ok) setItems(prev => prev.map(r => r.id === item.id ? { ...r, estado: nuevoEstado } : r))
+    setPublishing(true)
+    try {
+      const res = await fetch(`/api/admin/reportes/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ estado: nuevoEstado }),
+      })
+      if (res.ok) {
+        setItems(prev => prev.map(r => r.id === item.id ? { ...r, estado: nuevoEstado } : r))
+        flash(nuevoEstado === 'publicado' ? '✓ Publicado' : '↙ Vuelto a borrador', 'ok')
+      } else {
+        flash('✗ Error al cambiar estado', 'err')
+      }
+    } finally {
+      setPublishing(false)
+      setConfirmPublish(null)
+    }
   }
 
   async function handleDelete(item: ReporteItem) {
@@ -276,11 +291,14 @@ export default function ReportesAdminPage() {
                   {/* Actions */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <button
-                      onClick={() => toggleEstado(item)}
+                      onClick={() => item.estado === 'publicado' ? toggleEstado(item) : setConfirmPublish(item)}
                       style={{
                         fontSize: 11, padding: '5px 11px', cursor: 'pointer',
-                        background: 'none', border: '1px solid var(--rule)',
-                        borderRadius: 'var(--r-sm)', color: 'var(--fg-soft)',
+                        background: 'none',
+                        border: `1px solid ${item.estado === 'publicado' ? 'var(--rule)' : 'var(--cp-green-deep, #2C7A5B)'}`,
+                        borderRadius: 'var(--r-sm)',
+                        color: item.estado === 'publicado' ? 'var(--fg-soft)' : 'var(--cp-green-deep, #2C7A5B)',
+                        fontWeight: item.estado === 'publicado' ? 400 : 700,
                       }}
                       title={item.estado === 'publicado' ? 'Pasar a borrador' : 'Publicar'}
                     >
@@ -313,7 +331,7 @@ export default function ReportesAdminPage() {
                       Ver / PDF
                     </a>
                     <button
-                      onClick={() => handleRegenerar(item)}
+                      onClick={() => setConfirmRegen(item)}
                       disabled={regenIds.has(item.id)}
                       style={{
                         background: 'none', border: '1px solid var(--rule)',
@@ -330,7 +348,7 @@ export default function ReportesAdminPage() {
                     </button>
                     <button
                       onClick={() => handleDelete(item)}
-                      style={{ background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', padding: '5px 9px', cursor: 'pointer', fontSize: 12, color: 'var(--fg-muted)' }}
+                      style={{ background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', padding: '5px 9px', cursor: 'pointer', fontSize: 12, color: 'var(--cp-negative, #C0392B)' }}
                       title="Eliminar"
                     >
                       🗑
@@ -411,6 +429,27 @@ export default function ReportesAdminPage() {
         )}
 
       </div>
+
+      <ConfirmDialog
+        open={!!confirmPublish}
+        title="Publicar reporte"
+        message={`Publicar "${confirmPublish?.titulo}" enviará un email a los suscriptores IR y una notificación push a los usuarios del portal. Esta acción no se puede deshacer (los mensajes ya enviados no se pueden retirar).`}
+        confirmLabel="Sí, publicar"
+        tone="warning"
+        busy={publishing}
+        onConfirm={() => confirmPublish && toggleEstado(confirmPublish)}
+        onCancel={() => setConfirmPublish(null)}
+      />
+
+      <ConfirmDialog
+        open={!!confirmRegen}
+        title="Regenerar HTML"
+        message={`Se va a regenerar el HTML de "${confirmRegen?.titulo}" a partir de los datos guardados, sobrescribiendo el HTML actual. Si hubo ediciones manuales posteriores, se perderán.`}
+        confirmLabel="Sí, regenerar"
+        tone="warning"
+        onConfirm={() => { if (confirmRegen) { handleRegenerar(confirmRegen); setConfirmRegen(null) } }}
+        onCancel={() => setConfirmRegen(null)}
+      />
     </div>
   )
 }
