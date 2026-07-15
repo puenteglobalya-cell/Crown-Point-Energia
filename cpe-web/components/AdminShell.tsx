@@ -285,7 +285,36 @@ export function AdminShell({
   const [pinned, setPinned] = useState<string[]>([])
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [siteInMaintenance, setSiteInMaintenance] = useState(false)
+  const [isDark, setIsDark] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
+
+  // Poll maintenance-mode flag so the banner shows across every admin page
+  useEffect(() => {
+    let cancelled = false
+    async function check() {
+      try {
+        const res = await fetch('/api/cms/state', { cache: 'no-store' })
+        if (!res.ok || cancelled) return
+        const s = await res.json()
+        if (!cancelled) setSiteInMaintenance(!!s.maintenance)
+      } catch { /* ignore */ }
+    }
+    check()
+    const id = setInterval(check, 30_000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [])
+
+  // Personal theme toggle (Área 2, punto 14) — same cookie the public site reads
+  useEffect(() => {
+    setIsDark(document.documentElement.getAttribute('data-theme') === 'dark')
+  }, [])
+  function toggleTheme() {
+    const next = isDark ? 'light' : 'dark'
+    document.documentElement.setAttribute('data-theme', next)
+    document.cookie = `cpe_theme=${next};path=/;max-age=31536000`
+    setIsDark(!isDark)
+  }
 
   // Restore preferences after mount (avoids SSR hydration mismatch)
   useEffect(() => {
@@ -406,22 +435,41 @@ export function AdminShell({
               <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 1, whiteSpace: 'nowrap' }}>Administración</div>
             </div>
           )}
-          <button
-            onClick={toggleCollapsed}
-            title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-            aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-            aria-expanded={!collapsed}
-            style={{
-              display: 'grid', placeItems: 'center',
-              width: 30, height: 30, flexShrink: 0,
-              background: 'none', border: '1px solid var(--rule)',
-              borderRadius: 'var(--r-sm, 6px)', cursor: 'pointer', color: 'var(--fg-soft)',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.16s' }}>
-              <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <button
+              onClick={toggleTheme}
+              title={isDark ? 'Modo claro (solo tu vista)' : 'Modo oscuro (solo tu vista)'}
+              aria-label="Cambiar tema del panel"
+              style={{
+                display: 'grid', placeItems: 'center',
+                width: 30, height: 30, flexShrink: 0,
+                background: 'none', border: '1px solid var(--rule)',
+                borderRadius: 'var(--r-sm, 6px)', cursor: 'pointer', color: 'var(--fg-soft)',
+              }}
+            >
+              {isDark ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              ) : (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              )}
+            </button>
+            <button
+              onClick={toggleCollapsed}
+              title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+              aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+              aria-expanded={!collapsed}
+              style={{
+                display: 'grid', placeItems: 'center',
+                width: 30, height: 30, flexShrink: 0,
+                background: 'none', border: '1px solid var(--rule)',
+                borderRadius: 'var(--r-sm, 6px)', cursor: 'pointer', color: 'var(--fg-soft)',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.16s' }}>
+                <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Quick search trigger */}
@@ -636,6 +684,19 @@ export function AdminShell({
 
       {/* Main content — pages manage their own padding */}
       <main style={{ marginLeft: W, flex: 1, minWidth: 0, minHeight: '100vh', transition: ready ? 'margin-left 0.16s ease' : undefined }}>
+        {siteInMaintenance && (
+          <div style={{
+            background: '#F5C518', color: '#3D2E00', fontSize: 12.5, fontWeight: 700,
+            padding: '8px 24px', display: 'flex', alignItems: 'center', gap: 8,
+            position: 'sticky', top: 0, zIndex: 30,
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17h.01"/></svg>
+            El sitio público está en modo mantenimiento — los visitantes no pueden verlo.
+            <Link href="/admin" style={{ color: '#3D2E00', textDecoration: 'underline', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+              Desactivar →
+            </Link>
+          </div>
+        )}
         <Breadcrumbs pathname={pathname} />
         {children}
       </main>
