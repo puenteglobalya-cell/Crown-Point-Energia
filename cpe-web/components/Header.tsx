@@ -35,10 +35,10 @@ const NAV = [
       { href: '/acerca#estrategia', es: 'Estrategia', en: 'Strategy' },
       { href: '/acerca#management', es: 'Management', en: 'Management' },
       { href: '/acerca#directorio-cpi', es: 'Directorio CPE Inc.', en: 'CPE Inc. Board' },
-      { href: '/carreras', es: 'Carreras', en: 'Careers' },
     ]
   },
   { key: 'comercial', href: '/comercial', es: 'Comercial', en: 'Commercial', menu: null },
+  { key: 'carreras', href: '/carreras', es: 'Carreras', en: 'Careers', menu: null },
   { key: 'contacto', href: '/contacto', es: 'Contacto', en: 'Contact', menu: null },
   {
     key: 'portal', href: '/portal', es: 'Acceso', en: 'Access', cta: true,

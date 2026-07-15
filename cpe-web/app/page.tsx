@@ -4,7 +4,7 @@ import { getCmsState } from '@/lib/cms'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import ArgentinaMap from '@/components/ArgentinaMap'
 import { DroneHud } from '@/components/DroneHud'
-import { sumWellsFromBlocks } from '@/lib/content-fetch'
+import { sumWellsFromBlocks, fetchOperationsBlocks } from '@/lib/content-fetch'
 
 export const revalidate = 60
 
@@ -25,21 +25,34 @@ function fmtFechaHome(iso: string) {
 
 export default async function HomePage() {
   const db = createSupabaseServerAdminClient()
-  const [s, comunicadosRes, blocksRes] = await Promise.all([
+  const [s, comunicadosRes, opsBlocksFull] = await Promise.all([
     getCmsState(),
     db.from('comunicados')
       .select('id,fecha,titulo_es,titulo_en,resumen_es,resumen_en,url,tipo')
       .eq('publicado', true)
       .order('fecha', { ascending: false })
       .limit(4),
-    db.from('operations_blocks')
-      .select('id,slug,titulo,subtitulo_es,subtitulo_en,commodity,wi,operador,chips_es,chips_en,stats')
-      .eq('activo', true)
-      .order('orden'),
+    fetchOperationsBlocks(),
   ])
 
-  const opsBlocks = blocksRes.data ?? []
-  const wells = sumWellsFromBlocks(blocksRes.data ?? [])
+  // Home "Nuestras operaciones" preview cards want a lede/quality subtitle —
+  // derive it from the block's own stats (Operador / WI) rather than
+  // subtitulo_es/wi/operador columns, which don't exist in operations_blocks
+  // and made this query silently return nothing (opsBlocks was always empty).
+  const opsBlocks = opsBlocksFull.map(b => {
+    const operadorStat = b.stats.find(st => /operador|operator/i.test(st.label_es))
+    const wiStat = b.stats.find(st => /participaci[oó]n wi|working interest/i.test(st.label_es))
+    return {
+      id: b.slug,
+      slug: b.slug,
+      titulo: b.titulo,
+      operador: operadorStat?.val ?? '',
+      wi: wiStat?.val ?? '',
+      subtitulo_es: b.lede_es,
+      subtitulo_en: b.lede_en,
+    }
+  })
+  const wells = sumWellsFromBlocks(opsBlocksFull)
 
   const latestComunicados = comunicadosRes.data ?? []
 
@@ -315,10 +328,10 @@ export default async function HomePage() {
             <div className="ops-layout reveal">
               <div className="ops-map"><ArgentinaMap /></div>
               <ul className="ops-list">
-                {opsBlocks.map(b => (
+                {opsBlocks.map((b, i) => (
                   <li className="ops-card" data-pin={b.slug} key={b.id}>
                     <div className="ops-card-hd">
-                      <span className="ops-card-num num">{b.id}</span>
+                      <span className="ops-card-num num">{String(i + 1).padStart(2, '0')}</span>
                       <span className="chip">
                         <span className="lang-es">{b.operador ? 'Operador' : 'Participación'}</span>
                         <span className="lang-en">{b.operador ? 'Operator' : 'Working interest'}</span>
