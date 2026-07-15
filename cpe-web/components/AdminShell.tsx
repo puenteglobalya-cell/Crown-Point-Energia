@@ -37,6 +37,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: 'Gestión',
     items: [
       { href: '/admin/usuarios', label: 'Usuarios', icon: 'users' },
+      { href: '/admin/permisos', label: 'Permisos por rol', icon: 'sliders' },
       { href: '/admin/suscriptores', label: 'Suscriptores IR', icon: 'mail' },
       { href: '/admin/ir-alertas', label: 'Alertas IR', icon: 'bell' },
       { href: '/admin/rrhh', label: 'RRHH', icon: 'briefcase', roles: ['rrhh', 'admin'] },

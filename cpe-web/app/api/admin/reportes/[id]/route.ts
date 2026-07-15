@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { logActivity, getPermissionsForRole } from '@/lib/roles'
+import { logActivity, getPermissionsForRole, canPublish } from '@/lib/roles'
 import { isAdminEmail } from '@/lib/admin-auth'
 import { canAccessReport } from '@/lib/report-access'
 import { isSameOrigin } from '@/lib/csrf'
@@ -161,8 +161,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ ok: true, id: params.id })
   }
 
-  // Branch: estado-only update (admin only)
-  if (userWithRole.role !== 'admin') {
+  // Branch: estado-only update — requires publish_reports permission
+  const publishPerms = await getPermissionsForRole(userWithRole.role)
+  if (!canPublish(publishPerms)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -254,7 +255,11 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const userWithRole = await getUserWithRole()
 
-  if (!userWithRole?.activo || userWithRole.role !== 'admin') {
+  if (!userWithRole?.activo) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  const deletePerms = await getPermissionsForRole(userWithRole.role)
+  if (!deletePerms.has('delete_reports')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
