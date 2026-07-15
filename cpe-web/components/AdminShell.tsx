@@ -269,6 +269,37 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
   )
 }
 
+// ─── Keyboard shortcuts cheat sheet (Área 5, punto 29) ────────────────────────
+const SHORTCUTS: { keys: string; desc: string }[] = [
+  { keys: 'Ctrl/⌘ + K', desc: 'Abrir el buscador rápido de secciones' },
+  { keys: '?',          desc: 'Mostrar esta ayuda' },
+  { keys: 'Esc',        desc: 'Cerrar el diálogo o panel abierto' },
+]
+
+function ShortcutsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null
+  return (
+    <div role="dialog" aria-modal="true" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 360, background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 12, padding: '20px 22px', boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>Atajos de teclado</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 16, color: 'var(--fg-muted)', cursor: 'pointer' }}>✕</button>
+        </div>
+        <div style={{ display: 'grid', gap: 10 }}>
+          {SHORTCUTS.map(s => (
+            <div key={s.keys} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 13, color: 'var(--fg-soft)' }}>{s.desc}</span>
+              <kbd style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--fg)', border: '1px solid var(--rule)', borderRadius: 5, padding: '2px 8px', background: 'var(--bg-alt)', whiteSpace: 'nowrap' }}>
+                {s.keys}
+              </kbd>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function AdminShell({
   children,
   userEmail = '',
@@ -287,6 +318,8 @@ export function AdminShell({
   const [profileOpen, setProfileOpen] = useState(false)
   const [siteInMaintenance, setSiteInMaintenance] = useState(false)
   const [isDark, setIsDark] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
 
   // Poll maintenance-mode flag so the banner shows across every admin page
@@ -334,17 +367,27 @@ export function AdminShell({
     setReady(true)
   }, [])
 
-  // Global Ctrl+K / Cmd+K shortcut
+  // Global Ctrl+K / Cmd+K (search) and ? (shortcuts cheat sheet)
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement
+      const typing = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setPaletteOpen(v => !v)
+        return
+      }
+      if (e.key === '?' && !typing) {
+        e.preventDefault()
+        setShortcutsOpen(v => !v)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  // Close mobile drawer on navigation
+  useEffect(() => { setMobileNavOpen(false) }, [pathname])
 
   // Close profile menu on outside click
   useEffect(() => {
@@ -401,9 +444,43 @@ export function AdminShell({
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+
+      {/* Mobile nav toggle — visible only under 860px via CSS below */}
+      <button
+        className="cpe-mobile-nav-toggle"
+        onClick={() => setMobileNavOpen(v => !v)}
+        aria-label="Abrir menú"
+        style={{
+          display: 'none', position: 'fixed', top: 12, left: 12, zIndex: 60,
+          width: 38, height: 38, borderRadius: 8, border: '1px solid var(--rule)',
+          background: 'var(--surface)', color: 'var(--fg)', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      {mobileNavOpen && (
+        <div
+          className="cpe-mobile-nav-overlay"
+          onClick={() => setMobileNavOpen(false)}
+          style={{ display: 'none', position: 'fixed', inset: 0, zIndex: 45, background: 'rgba(0,0,0,.4)' }}
+        />
+      )}
+      <style>{`
+        @media (max-width: 860px) {
+          .cpe-mobile-nav-toggle { display: flex !important; }
+          .cpe-admin-sidebar {
+            transform: translateX(${mobileNavOpen ? '0' : '-100%'});
+            transition: transform .2s ease;
+            box-shadow: ${mobileNavOpen ? '0 0 40px rgba(0,0,0,.3)' : 'none'};
+          }
+          .cpe-mobile-nav-overlay { display: block !important; }
+          .cpe-admin-main { margin-left: 0 !important; padding-top: 52px; }
+        }
+      `}</style>
 
       {/* Sidebar */}
-      <aside style={{
+      <aside className="cpe-admin-sidebar" style={{
         width: W,
         flexShrink: 0,
         position: 'fixed',
@@ -416,8 +493,8 @@ export function AdminShell({
         borderRight: '1px solid var(--rule)',
         display: 'flex',
         flexDirection: 'column',
+        zIndex: 50,
         padding: '14px 0',
-        zIndex: 40,
         transition: ready ? 'width 0.16s ease' : undefined,
       }}>
         {/* Logo / brand + collapse toggle */}
@@ -683,7 +760,7 @@ export function AdminShell({
       </aside>
 
       {/* Main content — pages manage their own padding */}
-      <main style={{ marginLeft: W, flex: 1, minWidth: 0, minHeight: '100vh', transition: ready ? 'margin-left 0.16s ease' : undefined }}>
+      <main className="cpe-admin-main" style={{ marginLeft: W, flex: 1, minWidth: 0, minHeight: '100vh', transition: ready ? 'margin-left 0.16s ease' : undefined }}>
         {siteInMaintenance && (
           <div style={{
             background: '#F5C518', color: '#3D2E00', fontSize: 12.5, fontWeight: 700,

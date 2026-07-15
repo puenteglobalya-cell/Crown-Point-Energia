@@ -76,16 +76,27 @@ const SECTION_COLORS: Record<string, { bg: string; fg: string }> = {
   user:       { bg: 'rgba(179,59,46,.12)',   fg: '#b33b2e' },
 }
 
+type Severity = 'error' | 'warning' | 'info'
+const SEVERITY_COLORS: Record<Severity, string> = { error: '#C0392B', warning: '#D69E2E', info: '#2563a8' }
+const SEVERITY_LABELS: Record<Severity, string> = { error: 'Error', warning: 'Aviso', info: 'Info' }
+
+function severityOf(action: string): Severity {
+  if (/error|alerta/.test(action)) return action.includes('alerta') ? 'warning' : 'error'
+  if (action.startsWith('delete_')) return 'warning'
+  return 'info'
+}
+
 export default async function LogsPage({
   searchParams,
 }: {
-  searchParams: { section?: string; days?: string }
+  searchParams: { section?: string; days?: string; severity?: string }
 }) {
   const user = await requireAdminUser()
   if (!user) redirect('/admin/login')
 
   const section = searchParams.section ?? 'all'
   const days = parseInt(searchParams.days ?? '30', 10)
+  const severity = searchParams.severity ?? 'all'
 
   const db = createSupabaseServerAdminClient()
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
@@ -103,7 +114,10 @@ export default async function LogsPage({
   }
 
   const { data } = await q
-  const entries: Entry[] = (data ?? []) as Entry[]
+  let entries: Entry[] = (data ?? []) as Entry[]
+  if (severity !== 'all') {
+    entries = entries.filter(e => severityOf(e.action) === severity)
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
@@ -135,7 +149,7 @@ export default async function LogsPage({
             {SECTIONS.map(s => (
               <Link
                 key={s.key}
-                href={`/admin/logs?section=${s.key}&days=${days}`}
+                href={`/admin/logs?section=${s.key}&days=${days}&severity=${severity}`}
                 style={{
                   fontSize: 12, padding: '6px 14px', borderRadius: 'var(--r-md)', textDecoration: 'none',
                   fontWeight: section === s.key ? 700 : 400,
@@ -149,12 +163,45 @@ export default async function LogsPage({
             ))}
           </div>
 
+          {/* Severity chips */}
+          <div style={{ display: 'flex', gap: 4 }}>
+            <Link
+              href={`/admin/logs?section=${section}&days=${days}&severity=all`}
+              style={{
+                fontSize: 11, padding: '5px 12px', borderRadius: 'var(--r-md)', textDecoration: 'none',
+                fontWeight: severity === 'all' ? 700 : 400,
+                background: severity === 'all' ? 'var(--bg-alt)' : 'var(--surface)',
+                color: severity === 'all' ? 'var(--fg)' : 'var(--fg-muted)',
+                border: '1px solid var(--rule)',
+              }}
+            >
+              Todos
+            </Link>
+            {(['error', 'warning', 'info'] as const).map(s => (
+              <Link
+                key={s}
+                href={`/admin/logs?section=${section}&days=${days}&severity=${s}`}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  fontSize: 11, padding: '5px 12px', borderRadius: 'var(--r-md)', textDecoration: 'none',
+                  fontWeight: severity === s ? 700 : 400,
+                  background: severity === s ? 'var(--bg-alt)' : 'var(--surface)',
+                  color: severity === s ? SEVERITY_COLORS[s] : 'var(--fg-muted)',
+                  border: '1px solid var(--rule)',
+                }}
+              >
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: SEVERITY_COLORS[s], flexShrink: 0 }} />
+                {SEVERITY_LABELS[s]}
+              </Link>
+            ))}
+          </div>
+
           {/* Day range */}
           <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
             {[7, 30, 90, 180].map(d => (
               <Link
                 key={d}
-                href={`/admin/logs?section=${section}&days=${d}`}
+                href={`/admin/logs?section=${section}&days=${d}&severity=${severity}`}
                 style={{
                   fontSize: 11, padding: '5px 12px', borderRadius: 'var(--r-md)', textDecoration: 'none',
                   fontWeight: days === d ? 700 : 400,
@@ -199,7 +246,8 @@ export default async function LogsPage({
                     borderBottom: i < entries.length - 1 ? '1px solid var(--rule)' : 'none',
                   }}
                 >
-                  <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span title={SEVERITY_LABELS[severityOf(e.action)]} style={{ width: 7, height: 7, borderRadius: '50%', background: SEVERITY_COLORS[severityOf(e.action)], flexShrink: 0 }} />
                     {fmtDate(e.created_at)}
                   </span>
                   <div>

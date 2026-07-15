@@ -1,7 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BACKUP_TABLES, CATEGORY_LABELS, CATEGORY_ORDER } from '@/lib/backup-tables'
+
+const LAST_BACKUP_KEY = 'cpe-admin-last-backup'
+
+function fmtBytes(b: number) {
+  return b < 1_048_576 ? `${Math.round(b / 1024)} KB` : `${(b / 1_048_576).toFixed(1)} MB`
+}
 
 const byCategory = CATEGORY_ORDER.map(cat => ({
   cat,
@@ -14,7 +20,15 @@ const totalIncluded = BACKUP_TABLES.filter(t => t.included && t.table !== 'stora
 export default function BackupPage() {
   const [downloading, setDownloading] = useState(false)
   const [lastDownload, setLastDownload] = useState<string | null>(null)
+  const [lastSize, setLastSize] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LAST_BACKUP_KEY) ?? 'null')
+      if (saved?.at) { setLastDownload(saved.at); setLastSize(saved.size ?? null) }
+    } catch { /* ignore */ }
+  }, [])
 
   async function handleDownload() {
     setDownloading(true)
@@ -29,7 +43,10 @@ export default function BackupPage() {
       a.download = `cpe-backup-${new Date().toISOString().slice(0, 10)}.json`
       a.click()
       URL.revokeObjectURL(url)
-      setLastDownload(new Date().toLocaleString('es-AR'))
+      const at = new Date().toLocaleString('es-AR')
+      setLastDownload(at)
+      setLastSize(blob.size)
+      localStorage.setItem(LAST_BACKUP_KEY, JSON.stringify({ at, size: blob.size }))
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -68,7 +85,12 @@ export default function BackupPage() {
             </div>
             {lastDownload && (
               <div style={{ marginTop: 6, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                ✓ Última descarga: {lastDownload}
+                ✓ Último backup exitoso: {lastDownload}{lastSize != null ? ` · ${fmtBytes(lastSize)}` : ''}
+              </div>
+            )}
+            {!lastDownload && (
+              <div style={{ marginTop: 6, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                Sin backups registrados desde este navegador todavía.
               </div>
             )}
             {error && (
@@ -86,7 +108,7 @@ export default function BackupPage() {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            {downloading ? 'Generando…' : 'Descargar backup'}
+            {downloading ? 'Generando…' : 'Ejecutar backup manual ahora'}
           </button>
         </div>
       </div>
