@@ -6,13 +6,14 @@ import { logActivity, getPermissionsForRole } from '@/lib/roles'
 import { isAdminEmail } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
+import { FINANZAS_REPORT_TYPES } from '@/lib/permissions-config'
 
 const MAX_FILE_SIZE = 52_428_800 // 50 MB — matches Supabase bucket limit
 
 type UserWithRole = {
   id: string
   email: string | undefined
-  role: 'viewer' | 'uploader' | 'admin' | null
+  role: 'viewer' | 'uploader' | 'admin' | 'rrhh' | 'accionista' | 'finanzas' | null
   activo: boolean
 }
 
@@ -37,7 +38,7 @@ async function getUserWithRole(): Promise<UserWithRole | null> {
   return {
     id: user.id,
     email: user.email,
-    role: roleRow.role as 'viewer' | 'uploader' | 'admin',
+    role: roleRow.role as 'viewer' | 'uploader' | 'admin' | 'rrhh' | 'accionista' | 'finanzas',
     activo: roleRow.activo,
   }
 }
@@ -124,6 +125,10 @@ export async function POST(req: NextRequest) {
   const VALID_TYPES = ['ingresos', 'produccion', 'financiero', 'accionista', 'henry_hub', 'ice_brent', 'facturacion']
   if (typeof type_id !== 'string' || !VALID_TYPES.includes(type_id)) {
     return NextResponse.json({ error: `Tipo de reporte inválido: ${type_id}` }, { status: 400 })
+  }
+  // 'finanzas' is sandboxed to its own sub-portal — can only touch financial report types
+  if (userWithRole.role === 'finanzas' && !(FINANZAS_REPORT_TYPES as readonly string[]).includes(type_id)) {
+    return NextResponse.json({ error: 'Tu rol solo puede subir reportes Financiero o Facturación' }, { status: 403 })
   }
   const typeIdFinal = type_id
 
