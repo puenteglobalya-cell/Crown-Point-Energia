@@ -67,12 +67,17 @@ export default function PortalSubirPage() {
   const [previewHtml, setPreviewHtml] = useState('')
 
   const tipoMeta = TYPES.find(t => t.id === tipo)!
+  const [parsingStage, setParsingStage] = useState<'leyendo' | 'procesando' | 'generando'>('leyendo')
 
   async function handleFile(f: File) {
     setFile(f)
     setErr('')
     setStep('parsing')
+    setParsingStage('leyendo')
     try {
+      // Staged progress feedback — these steps mirror what the parsers actually do
+      await new Promise(r => setTimeout(r, 200))
+      setParsingStage('procesando')
       if (tipo === 'ingresos') {
         const parsed = await parsearIngresosExcel(f)
         setDatosIngresos(parsed)
@@ -120,6 +125,8 @@ export default function PortalSubirPage() {
         const tipoLabel = tipo === 'produccion' ? 'Reporte de Producción' : 'Reporte Financiero'
         setTitulo(`${tipoLabel} — ${parsed.periodo}`)
       }
+      setParsingStage('generando')
+      await new Promise(r => setTimeout(r, 150))
       setStep('preview')
     } catch (e) {
       const msg = (e as Error).message
@@ -458,6 +465,23 @@ td{padding:6px 12px;border-bottom:1px solid #eee;font-family:monospace}</style><
         {/* STEP: parsing */}
         {step === 'parsing' && (
           <div style={{ padding: '56px 40px', textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', marginBottom: 40 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 18, marginBottom: 18 }}>
+              {([
+                ['leyendo',    'Leyendo archivo'],
+                ['procesando', 'Procesando filas'],
+                ['generando',  'Generando informe'],
+              ] as const).map(([key, label], i) => {
+                const order = ['leyendo', 'procesando', 'generando']
+                const done = order.indexOf(parsingStage) > i
+                const current = key === parsingStage
+                return (
+                  <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontFamily: 'var(--font-mono)', color: current ? 'var(--accent)' : done ? 'var(--cp-green-deep, #2C7A5B)' : 'var(--fg-muted)', fontWeight: current ? 700 : 400 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: current ? 'var(--accent)' : done ? 'var(--cp-green-deep, #2C7A5B)' : 'var(--rule)', display: 'inline-block' }} />
+                    {label}
+                  </div>
+                )
+              })}
+            </div>
             <div style={{ fontSize: 13, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>
               Procesando {tipo === 'accionista' ? 'PowerPoint' : 'Excel'}…
             </div>

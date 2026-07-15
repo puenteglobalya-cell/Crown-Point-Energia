@@ -93,6 +93,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: roleError.message }, { status: 500 })
   }
 
+  // Also produce a shareable one-time access link (Área 4, punto 23) — the
+  // invite email above may bounce or land in spam; this lets the admin
+  // share it directly over Slack/WhatsApp/etc. as a fallback.
+  let inviteLink: string | null = null
+  try {
+    const { data: linkData } = await db.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      options: { redirectTo: `${siteUrl}/portal/reset-password` },
+    })
+    inviteLink = linkData?.properties?.action_link ?? null
+  } catch { /* best-effort — invite email was already sent regardless */ }
+
   await logActivity({
     userId: adminUser.id,
     userEmail: adminUser.email ?? null,
@@ -102,5 +115,5 @@ export async function POST(req: NextRequest) {
     metadata: { email, role },
   })
 
-  return NextResponse.json({ id: userId, email, role }, { status: 201 })
+  return NextResponse.json({ id: userId, email, role, inviteLink }, { status: 201 })
 }

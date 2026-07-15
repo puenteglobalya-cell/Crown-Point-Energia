@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import type { CMSState } from '@/lib/cms'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 // ─── Schema ────────────────────────────────────────────────────────────────
 
@@ -334,6 +335,9 @@ export default function AdminPage() {
   const [iframeKey, setIframeKey] = useState(0)
   const [refreshingStock, setRefreshingStock] = useState(false)
   const [stockMsg, setStockMsg] = useState('')
+  const [confirmMaintenance, setConfirmMaintenance] = useState(false)
+  const [propagatingUntil, setPropagatingUntil] = useState<number | null>(null)
+  const [propagatePct, setPropagatePct] = useState(0)
 
   const loadState = useCallback(async () => {
     const res = await fetch('/api/cms/state', { cache: 'no-store' })
@@ -350,6 +354,7 @@ export default function AdminPage() {
 
   async function save(patch: Partial<CMSState>) {
     setSaving(true)
+    setSavedMsg('')
     const res = await fetch('/api/cms/state', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -359,9 +364,30 @@ export default function AdminPage() {
       await loadState()
       setSavedMsg('Guardado')
       setTimeout(() => setSavedMsg(''), 2000)
+      // Propagation countdown — changes take up to 60s to reach the public site
+      const PROPAGATION_MS = 60_000
+      const until = Date.now() + PROPAGATION_MS
+      setPropagatingUntil(until)
+      setPropagatePct(0)
     }
     setSaving(false)
   }
+
+  // Tick the propagation progress bar
+  useEffect(() => {
+    if (!propagatingUntil) return
+    const PROPAGATION_MS = 60_000
+    const start = propagatingUntil - PROPAGATION_MS
+    const id = setInterval(() => {
+      const pct = Math.min(100, ((Date.now() - start) / PROPAGATION_MS) * 100)
+      setPropagatePct(pct)
+      if (pct >= 100) {
+        clearInterval(id)
+        setTimeout(() => setPropagatingUntil(null), 600)
+      }
+    }, 400)
+    return () => clearInterval(id)
+  }, [propagatingUntil])
 
   async function saveFields() {
     await save({ fields: draftFields, fieldsEn: draftFieldsEn })
@@ -411,11 +437,31 @@ export default function AdminPage() {
                 Los cambios se reflejan en el sitio público en hasta 60&nbsp;s.
               </p>
             </div>
-            {savedMsg && (
-              <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                ✓ {savedMsg}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+              <span style={{
+                fontSize: 12, fontFamily: 'var(--font-mono)', fontWeight: 600,
+                color: saving ? 'var(--fg-muted)' : savedMsg ? 'var(--cp-green)' : 'var(--fg-muted)',
+                display: 'flex', alignItems: 'center', gap: 5,
+              }}>
+                {saving ? (
+                  <>⟳ Guardando…</>
+                ) : savedMsg ? (
+                  <>✓ {savedMsg}</>
+                ) : (
+                  <>● Sincronizado</>
+                )}
               </span>
-            )}
+              {propagatingUntil && (
+                <div style={{ width: 160 }}>
+                  <div style={{ height: 3, background: 'var(--rule)', borderRadius: 2, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${propagatePct}%`, background: 'var(--accent)', transition: 'width .4s linear' }} />
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--fg-muted)', textAlign: 'right', marginTop: 2 }}>
+                    {propagatePct >= 100 ? 'Visible en el sitio público' : 'Propagando al sitio público…'}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -452,9 +498,9 @@ export default function AdminPage() {
               label="Dirección visual"
               value={state.direction}
               options={[
-                { value: 'corporativo', label: 'Corporativo', desc: 'Azul navy — comunicación institucional' },
-                { value: 'editorial',   label: 'Editorial',   desc: 'Tipografía prominente — press / IR' },
-                { value: 'industrial',  label: 'Industrial',  desc: 'Grid denso — foco técnico operaciones' },
+                { value: 'corporativo', label: 'Corporativo', desc: 'Azul navy — comunicación institucional', tooltip: 'Usar para anuncios oficiales, balances y comunicados formales. Tipografía sobria, paleta azul navy.' },
+                { value: 'editorial',   label: 'Editorial',   desc: 'Tipografía prominente — press / IR', tooltip: 'Usar para notas de prensa y contenido de relaciones con inversores. Titulares grandes, más aire.' },
+                { value: 'industrial',  label: 'Industrial',  desc: 'Grid denso — foco técnico operaciones', tooltip: 'Usar para reportes técnicos y de producción. Grilla densa, foco en datos y cifras.' },
               ]}
               onChange={v => save({ direction: v as CMSState['direction'] })}
               saving={saving}
@@ -511,7 +557,7 @@ export default function AdminPage() {
                     background: state.maintenance ? 'var(--cp-negative)' : 'var(--rule)',
                     position: 'relative', transition: 'background 0.2s',
                   }}
-                  onClick={() => !saving && save({ maintenance: !state.maintenance })}
+                  onClick={() => !saving && setConfirmMaintenance(true)}
                 >
                   <div style={{
                     position: 'absolute', top: 3, left: state.maintenance ? 25 : 3,
@@ -523,6 +569,21 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        <ConfirmDialog
+          open={confirmMaintenance}
+          title={state.maintenance ? 'Volver a poner el sitio en línea' : 'Ocultar el sitio público'}
+          message={
+            state.maintenance
+              ? 'Los visitantes van a volver a ver el sitio normalmente. ¿Confirmás?'
+              : 'Todos los visitantes van a ver la página de mantenimiento en vez del sitio real hasta que lo desactives. El panel /admin sigue accesible. ¿Confirmás que querés ocultar el sitio ahora?'
+          }
+          confirmLabel={state.maintenance ? 'Sí, volver a publicar' : 'Sí, ocultar el sitio'}
+          tone={state.maintenance ? 'warning' : 'danger'}
+          busy={saving}
+          onConfirm={() => { save({ maintenance: !state.maintenance }); setConfirmMaintenance(false) }}
+          onCancel={() => setConfirmMaintenance(false)}
+        />
 
         {/* ── Tab: Visibilidad ──────────────────────────────────────────── */}
         {tab === 'visibilidad' && (
@@ -886,7 +947,7 @@ function RadioGroup({
 }: {
   label: string
   value: string
-  options: { value: string; label: string; desc?: string }[]
+  options: { value: string; label: string; desc?: string; tooltip?: string }[]
   onChange: (v: string) => void
   saving: boolean
 }) {
@@ -916,6 +977,18 @@ function RadioGroup({
                 flexShrink: 0,
               }} />
               <span style={{ fontSize: 14, fontWeight: 500 }}>{opt.label}</span>
+              {opt.tooltip && (
+                <span
+                  title={opt.tooltip}
+                  style={{
+                    display: 'grid', placeItems: 'center', width: 14, height: 14, borderRadius: '50%',
+                    border: '1px solid var(--fg-muted)', color: 'var(--fg-muted)', fontSize: 9, fontWeight: 700,
+                    fontStyle: 'italic', cursor: 'help', flexShrink: 0,
+                  }}
+                >
+                  i
+                </span>
+              )}
             </div>
             {opt.desc && (
               <span style={{ fontSize: 12, color: 'var(--fg-muted)', marginLeft: 24 }}>{opt.desc}</span>

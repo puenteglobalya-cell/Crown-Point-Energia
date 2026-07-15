@@ -298,10 +298,12 @@ function InviteForm({ onInvited }: { onInvited: (u: User) => void }) {
   const [role,  setRole]  = useState('viewer')
   const [busy,  setBusy]  = useState(false)
   const [err,   setErr]   = useState('')
+  const [inviteLink, setInviteLink] = useState('')
+  const [copied, setCopied] = useState(false)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    setBusy(true); setErr('')
+    setBusy(true); setErr(''); setInviteLink(''); setCopied(false)
     const res = await fetch('/api/admin/usuarios', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email: email.trim(), role }),
@@ -312,24 +314,45 @@ function InviteForm({ onInvited }: { onInvited: (u: User) => void }) {
       onInvited({ ...data, created_at: new Date().toISOString(), last_sign_in_at: null,
         dni: '', nombre: '', apellido: '', ubicacion: '', sector: '', telefono: '', notas: '' })
       setEmail('')
+      if (data.inviteLink) setInviteLink(data.inviteLink)
     } else {
       const j = await res.json()
       setErr(j.error ?? 'Error al invitar')
     }
   }
 
+  async function copyLink() {
+    await navigator.clipboard.writeText(inviteLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
-    <form onSubmit={submit} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-      <input value={email} onChange={e => setEmail(e.target.value)} placeholder="email@empresa.com"
-        type="email" required style={{ fontSize: 13, flex: '1 1 220px' }} />
-      <select value={role} onChange={e => setRole(e.target.value)} style={{ fontSize: 13 }}>
-        {ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-      </select>
-      <button className="btn btn-primary" type="submit" disabled={busy} style={{ fontSize: 13, padding: '8px 18px' }}>
-        {busy ? 'Invitando…' : 'Invitar'}
-      </button>
-      {err && <span style={{ fontSize: 12, color: 'var(--cp-negative)', alignSelf: 'center' }}>{err}</span>}
-    </form>
+    <div>
+      <form onSubmit={submit} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="email@empresa.com"
+          type="email" required style={{ fontSize: 13, flex: '1 1 220px' }} />
+        <select value={role} onChange={e => setRole(e.target.value)} style={{ fontSize: 13 }}>
+          {ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+        </select>
+        <button className="btn btn-primary" type="submit" disabled={busy} style={{ fontSize: 13, padding: '8px 18px' }}>
+          {busy ? 'Invitando…' : 'Invitar'}
+        </button>
+        {err && <span style={{ fontSize: 12, color: 'var(--cp-negative)', alignSelf: 'center' }}>{err}</span>}
+      </form>
+      {inviteLink && (
+        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--fg-soft)' }}>
+          <span>Se envió un email de invitación. Si preferís compartirlo vos directamente:</span>
+          <button
+            type="button"
+            onClick={copyLink}
+            style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', border: '1px solid var(--rule)', borderRadius: 6, background: copied ? 'var(--cp-green-deep, #2C7A5B)' : 'var(--surface)', color: copied ? '#fff' : 'var(--fg)', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            {copied ? '✓ Copiado' : '🔗 Copiar enlace de acceso'}
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -503,10 +526,34 @@ export default function UsuariosPage() {
               placeholder="Buscar por DNI, nombre, email… ( / )"
               style={{ width: '100%', boxSizing: 'border-box', paddingLeft: 30, fontSize: 13 }} />
           </div>
-          <select value={fRole} onChange={e => setFRole(e.target.value)} style={{ fontSize: 12, padding: '7px 10px' }}>
-            <option value="">Todos los roles</option>
-            {ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-          </select>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setFRole('')}
+              style={{
+                fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 999, border: '1px solid',
+                cursor: 'pointer', background: !fRole ? '#1F2566' : 'var(--surface)',
+                color: !fRole ? '#fff' : 'var(--fg-soft)', borderColor: !fRole ? '#1F2566' : 'var(--rule)',
+              }}
+            >
+              Todos
+            </button>
+            {ROLES.map(r => {
+              const active = fRole === r
+              return (
+                <button
+                  key={r}
+                  onClick={() => setFRole(active ? '' : r)}
+                  style={{
+                    fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 999, border: '1px solid',
+                    cursor: 'pointer', background: active ? '#1F2566' : 'var(--surface)',
+                    color: active ? '#fff' : 'var(--fg-soft)', borderColor: active ? '#1F2566' : 'var(--rule)',
+                  }}
+                >
+                  {ROLE_LABELS[r]}
+                </button>
+              )
+            })}
+          </div>
           <select value={fStatus} onChange={e => setFStatus(e.target.value)} style={{ fontSize: 12, padding: '7px 10px' }}>
             <option value="">Todos los estados</option>
             <option value="activo">Activos</option>

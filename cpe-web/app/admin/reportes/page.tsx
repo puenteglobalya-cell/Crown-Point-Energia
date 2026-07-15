@@ -17,6 +17,7 @@ type ReporteItem = {
 
 type AccessRow = { type_id: string; role: string; can_view: boolean; can_upload: boolean }
 type TypeRow   = { id: string; nombre: string }
+type VersionRow = { id: string; titulo: string; periodo: string; estado: string; created_at: string; created_by: string | null }
 
 const ROLES = ['viewer', 'uploader', 'admin'] as const
 type Role = typeof ROLES[number]
@@ -64,6 +65,11 @@ export default function ReportesAdminPage() {
   const [confirmPublish, setConfirmPublish] = useState<ReporteItem | null>(null)
   const [confirmRegen, setConfirmRegen]     = useState<ReporteItem | null>(null)
   const [publishing, setPublishing]         = useState(false)
+  const [historyItem, setHistoryItem]       = useState<ReporteItem | null>(null)
+  const [versions, setVersions]             = useState<VersionRow[]>([])
+  const [versionsLoading, setVersionsLoading] = useState(false)
+  const [restoringId, setRestoringId]       = useState('')
+  const [confirmRestore, setConfirmRestore] = useState<VersionRow | null>(null)
 
   // Permissions matrix
   const [types, setTypes]       = useState<TypeRow[]>([])
@@ -136,6 +142,37 @@ export default function ReportesAdminPage() {
   async function handleCopy(id: string) {
     await navigator.clipboard.writeText(`${window.location.origin}/api/admin/reportes/${id}`)
     setCopiedId(id); setTimeout(() => setCopiedId(''), 1800)
+  }
+
+  async function openHistory(item: ReporteItem) {
+    setHistoryItem(item)
+    setVersionsLoading(true)
+    setVersions([])
+    const res = await fetch(`/api/admin/reportes/${item.id}/versiones`)
+    if (res.ok) setVersions(await res.json())
+    setVersionsLoading(false)
+  }
+
+  async function doRestore(version: VersionRow) {
+    if (!historyItem) return
+    setRestoringId(version.id)
+    try {
+      const res = await fetch(`/api/admin/reportes/${historyItem.id}/versiones`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ versionId: version.id }),
+      })
+      if (res.ok) {
+        flash('✓ Versión restaurada', 'ok')
+        await loadList()
+        await openHistory(historyItem)
+      } else {
+        flash('✗ Error al restaurar', 'err')
+      }
+    } finally {
+      setRestoringId('')
+      setConfirmRestore(null)
+    }
   }
 
   async function handleAccessChange(type_id: string, role: string, level: Level) {
@@ -347,6 +384,13 @@ export default function ReportesAdminPage() {
                       {regenIds.has(item.id) ? '⟳ Generando…' : '↺ Regen.'}
                     </button>
                     <button
+                      onClick={() => openHistory(item)}
+                      style={{ background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', padding: '5px 10px', cursor: 'pointer', fontSize: 11, color: 'var(--fg-soft)' }}
+                      title="Historial de versiones"
+                    >
+                      🕘 Historial
+                    </button>
+                    <button
                       onClick={() => handleDelete(item)}
                       style={{ background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', padding: '5px 9px', cursor: 'pointer', fontSize: 12, color: 'var(--cp-negative, #C0392B)' }}
                       title="Eliminar"
@@ -449,6 +493,61 @@ export default function ReportesAdminPage() {
         tone="warning"
         onConfirm={() => { if (confirmRegen) { handleRegenerar(confirmRegen); setConfirmRegen(null) } }}
         onCancel={() => setConfirmRegen(null)}
+      />
+
+      {historyItem && (
+        <div
+          role="dialog" aria-modal="true"
+          onClick={() => setHistoryItem(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, maxHeight: '80vh', display: 'flex', flexDirection: 'column', background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--rule)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>Historial de versiones</div>
+                <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{historyItem.titulo}</div>
+              </div>
+              <button onClick={() => setHistoryItem(null)} style={{ background: 'none', border: 'none', fontSize: 16, color: 'var(--fg-muted)', cursor: 'pointer' }}>✕</button>
+            </div>
+            <div style={{ overflowY: 'auto', padding: '8px 0' }}>
+              {versionsLoading && <p style={{ padding: '20px', fontSize: 13, color: 'var(--fg-muted)' }}>Cargando…</p>}
+              {!versionsLoading && versions.length === 0 && (
+                <p style={{ padding: '20px', fontSize: 13, color: 'var(--fg-muted)' }}>
+                  Todavía no hay versiones anteriores guardadas para este reporte — se registran automáticamente cada vez que se sobrescribe (regenerar, editar).
+                </p>
+              )}
+              {versions.map(v => (
+                <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', borderBottom: '1px solid var(--rule)' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, color: 'var(--fg)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.titulo}</div>
+                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
+                      {new Date(v.created_at).toLocaleString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {v.created_by ? ` · ${v.created_by}` : ''} · {v.estado}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setConfirmRestore(v)}
+                    disabled={restoringId === v.id}
+                    style={{ fontSize: 11, fontWeight: 600, padding: '5px 12px', border: '1px solid var(--rule)', borderRadius: 6, background: 'var(--bg-alt)', color: 'var(--accent)', cursor: restoringId === v.id ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                  >
+                    {restoringId === v.id ? 'Restaurando…' : 'Restaurar'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!confirmRestore}
+        title="Restaurar versión anterior"
+        message={`Se va a reemplazar el contenido actual de "${historyItem?.titulo}" por la versión del ${confirmRestore ? new Date(confirmRestore.created_at).toLocaleString('es-AR') : ''}. El estado actual también queda guardado en el historial, así que esto es reversible.`}
+        confirmLabel="Sí, restaurar"
+        tone="warning"
+        busy={!!restoringId}
+        onConfirm={() => confirmRestore && doRestore(confirmRestore)}
+        onCancel={() => setConfirmRestore(null)}
       />
     </div>
   )

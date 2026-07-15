@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { SITE_SECTIONS, AREA_LABELS, AREA_ORDER, type SiteArea } from '@/lib/site-sections'
 
 const AREA_COLORS: Record<SiteArea, string> = {
@@ -18,6 +19,7 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 export default function SitemapPage() {
+  const router = useRouter()
   const byArea = AREA_ORDER.map(area => ({
     area,
     sections: SITE_SECTIONS.filter(s => s.area === area),
@@ -82,13 +84,25 @@ export default function SitemapPage() {
             {/* Sections table */}
             <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
               {sections.map((s, i) => (
-                <div key={s.path} style={{
-                  display: 'grid',
-                  gridTemplateColumns: '200px 1fr auto',
-                  gap: 0,
-                  borderBottom: i < sections.length - 1 ? '1px solid var(--rule)' : 'none',
-                  background: i % 2 === 0 ? 'var(--surface)' : 'var(--bg)',
-                }}>
+                <div
+                  key={s.path}
+                  onClick={() => router.push(s.path)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter') router.push(s.path) }}
+                  title={`Ir a ${s.path}`}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '200px 1fr auto',
+                    gap: 0,
+                    borderBottom: i < sections.length - 1 ? '1px solid var(--rule)' : 'none',
+                    background: i % 2 === 0 ? 'var(--surface)' : 'var(--bg)',
+                    cursor: 'pointer',
+                    transition: 'background .1s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in oklab, var(--accent) 6%, var(--surface))'}
+                  onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'var(--surface)' : 'var(--bg)'}
+                >
                   {/* Path + label */}
                   <div style={{ padding: '14px 16px', borderRight: '1px solid var(--rule)' }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', marginBottom: 3 }}>

@@ -1,15 +1,17 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
 type NavItem = { href: string; label: string; icon: IconName; roles?: string[]; hint?: string }
 
-const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+// ─── 4 top-level categories (Área 1, punto 1) ────────────────────────────────
+const NAV_GROUPS: { key: string; label: string; items: NavItem[] }[] = [
   {
-    label: 'Sitio',
+    key: 'contenido-web',
+    label: 'Contenido Web',
     items: [
       { href: '/admin/inicio', label: 'Inicio', icon: 'home' },
       { href: '/admin', label: 'Visibilidad y textos', icon: 'sliders', hint: 'Mostrar/ocultar secciones y editar textos cortos del sitio' },
@@ -24,7 +26,8 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
-    label: 'Publicaciones',
+    key: 'publicaciones-datos',
+    label: 'Publicaciones y Datos',
     items: [
       { href: '/admin/reportes', label: 'Reportes', icon: 'chart' },
       { href: '/admin/kpi', label: 'KPIs Excel', icon: 'grid' },
@@ -34,7 +37,8 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
-    label: 'Gestión',
+    key: 'gestion-accesos',
+    label: 'Gestión de Accesos',
     items: [
       { href: '/admin/usuarios', label: 'Usuarios', icon: 'users' },
       { href: '/admin/permisos', label: 'Permisos por rol', icon: 'sliders' },
@@ -46,6 +50,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
+    key: 'sistema',
     label: 'Sistema',
     items: [
       { href: '/admin/sitemap', label: 'Sitemap', icon: 'map' },
@@ -53,6 +58,8 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     ],
   },
 ]
+
+const ALL_ITEMS: NavItem[] = NAV_GROUPS.flatMap(g => g.items)
 
 const ROLE_LABELS: Record<string, string> = {
   admin:      'Admin',
@@ -70,14 +77,17 @@ const EXTERNAL = [
 ]
 
 const SHELL_EXCLUDED = ['/admin/login', '/admin/reset-password']
-const STORAGE_KEY = 'cpe-admin-sidebar-collapsed'
+const STORAGE_KEY       = 'cpe-admin-sidebar-collapsed'
+const GROUPS_STATE_KEY  = 'cpe-admin-sidebar-groups'
+const PINNED_KEY        = 'cpe-admin-sidebar-pinned'
+const MAX_PINNED = 4
 
 // ── Icons ─────────────────────────────────────────────────────────
 type IconName =
   | 'home' | 'sliders' | 'edit' | 'image' | 'file' | 'folder' | 'book'
   | 'bookmark' | 'download' | 'chart' | 'grid' | 'megaphone' | 'alert'
   | 'bell' | 'users' | 'mail' | 'briefcase' | 'message' | 'activity'
-  | 'map' | 'database'
+  | 'map' | 'database' | 'pin' | 'search' | 'chevron'
 
 const ICON_PATHS: Record<IconName, string> = {
   home:      'M3 10.5 12 3l9 7.5M5 9.5V20h14V9.5',
@@ -101,11 +111,14 @@ const ICON_PATHS: Record<IconName, string> = {
   activity:  'M22 12h-4l-3 9L9 3l-3 9H2',
   map:       'M9 3 3 6v15l6-3 6 3 6-3V3l-6 3zM9 3v15M15 6v15',
   database:  'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
+  pin:       'M12 2 12 9M8 9h8l1 4H7l1-4zM10 13v9M14 13v9',
+  search:    'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35',
+  chevron:   'M6 9l6 6 6-6',
 }
 
-function Icon({ name }: { name: IconName }) {
+function Icon({ name, size = 17 }: { name: IconName; size?: number }) {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }} aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }} aria-hidden="true">
       <path d={ICON_PATHS[name]} stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
@@ -120,6 +133,173 @@ function getVisibleGroups(role: string): typeof NAV_GROUPS {
   return NAV_GROUPS
 }
 
+function isActiveHref(pathname: string, href: string) {
+  if (href === '/admin') return pathname === '/admin'
+  return pathname === href || pathname.startsWith(href + '/')
+}
+
+// ─── Breadcrumbs (Área 1, punto 7) ────────────────────────────────────────────
+function findNavItem(pathname: string): { group: string; item: NavItem } | null {
+  // Exact match first, then longest-prefix match, so nested routes (e.g.
+  // /admin/reportes/comparar) still resolve to their parent nav entry.
+  let best: { group: string; item: NavItem } | null = null
+  for (const group of NAV_GROUPS) {
+    for (const item of group.items) {
+      if (isActiveHref(pathname, item.href)) {
+        if (!best || item.href.length > best.item.href.length) {
+          best = { group: group.label, item }
+        }
+      }
+    }
+  }
+  return best
+}
+
+function Breadcrumbs({ pathname }: { pathname: string }) {
+  const match = findNavItem(pathname)
+  const extra = match && pathname !== match.item.href
+    ? pathname.slice(match.item.href.length).replace(/^\//, '').split('/')[0]
+    : null
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
+      padding: '14px 24px 0', fontSize: 12, color: 'var(--fg-muted)',
+    }}>
+      <Link href="/admin/inicio" style={{ color: 'var(--fg-muted)', textDecoration: 'none' }}>Admin</Link>
+      {match && (
+        <>
+          <span style={{ opacity: 0.5 }}>/</span>
+          <span>{match.group}</span>
+          <span style={{ opacity: 0.5 }}>/</span>
+          <Link href={match.item.href} style={{ color: extra ? 'var(--fg-muted)' : 'var(--fg)', fontWeight: extra ? 400 : 600, textDecoration: 'none' }}>
+            {match.item.label}
+          </Link>
+        </>
+      )}
+      {extra && (
+        <>
+          <span style={{ opacity: 0.5 }}>/</span>
+          <span style={{ color: 'var(--fg)', fontWeight: 600, textTransform: 'capitalize' }}>{extra.replace(/-/g, ' ')}</span>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Command palette (Área 1, punto 2) ────────────────────────────────────────
+function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const router = useRouter()
+  const [query, setQuery] = useState('')
+  const [index, setIndex] = useState(0)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return ALL_ITEMS.slice(0, 8)
+    return ALL_ITEMS.filter(i => i.label.toLowerCase().includes(q) || i.href.toLowerCase().includes(q)).slice(0, 8)
+  }, [query])
+
+  useEffect(() => {
+    if (open) {
+      setQuery('')
+      setIndex(0)
+      setTimeout(() => inputRef.current?.focus(), 30)
+    }
+  }, [open])
+
+  useEffect(() => { setIndex(0) }, [query])
+
+  if (!open) return null
+
+  function go(item: NavItem) {
+    router.push(item.href)
+    onClose()
+  }
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Escape') { onClose(); return }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setIndex(i => Math.min(i + 1, results.length - 1)); return }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setIndex(i => Math.max(i - 1, 0)); return }
+    if (e.key === 'Enter') { e.preventDefault(); if (results[index]) go(results[index]); return }
+  }
+
+  return (
+    <div
+      role="dialog" aria-modal="true"
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '12vh' }}
+    >
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,.3)', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid var(--rule)' }}>
+          <Icon name="search" size={16} />
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="Buscar una sección del panel…"
+            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 14, color: 'var(--fg)' }}
+          />
+          <kbd style={{ fontSize: 10, color: 'var(--fg-muted)', border: '1px solid var(--rule)', borderRadius: 4, padding: '1px 6px' }}>Esc</kbd>
+        </div>
+        <div style={{ maxHeight: 320, overflowY: 'auto', padding: 6 }}>
+          {results.length === 0 && (
+            <div style={{ padding: '16px', fontSize: 13, color: 'var(--fg-muted)', textAlign: 'center' }}>Sin resultados</div>
+          )}
+          {results.map((item, i) => (
+            <button
+              key={item.href}
+              onClick={() => go(item)}
+              onMouseEnter={() => setIndex(i)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                padding: '9px 12px', border: 'none', borderRadius: 8, cursor: 'pointer',
+                background: i === index ? 'var(--accent-soft, color-mix(in oklab, var(--accent) 10%, var(--surface)))' : 'transparent',
+                color: i === index ? 'var(--accent)' : 'var(--fg)', fontSize: 13.5, textAlign: 'left',
+              }}
+            >
+              <Icon name={item.icon} size={15} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Keyboard shortcuts cheat sheet (Área 5, punto 29) ────────────────────────
+const SHORTCUTS: { keys: string; desc: string }[] = [
+  { keys: 'Ctrl/⌘ + K', desc: 'Abrir el buscador rápido de secciones' },
+  { keys: '?',          desc: 'Mostrar esta ayuda' },
+  { keys: 'Esc',        desc: 'Cerrar el diálogo o panel abierto' },
+]
+
+function ShortcutsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null
+  return (
+    <div role="dialog" aria-modal="true" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 360, background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 12, padding: '20px 22px', boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>Atajos de teclado</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 16, color: 'var(--fg-muted)', cursor: 'pointer' }}>✕</button>
+        </div>
+        <div style={{ display: 'grid', gap: 10 }}>
+          {SHORTCUTS.map(s => (
+            <div key={s.keys} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 13, color: 'var(--fg-soft)' }}>{s.desc}</span>
+              <kbd style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--fg)', border: '1px solid var(--rule)', borderRadius: 5, padding: '2px 8px', background: 'var(--bg-alt)', whiteSpace: 'nowrap' }}>
+                {s.keys}
+              </kbd>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function AdminShell({
   children,
   userEmail = '',
@@ -132,17 +312,114 @@ export function AdminShell({
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [ready, setReady] = useState(false)
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
+  const [pinned, setPinned] = useState<string[]>([])
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [siteInMaintenance, setSiteInMaintenance] = useState(false)
+  const [isDark, setIsDark] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
 
-  // Restore preference after mount (avoids SSR hydration mismatch)
+  // Poll maintenance-mode flag so the banner shows across every admin page
+  useEffect(() => {
+    let cancelled = false
+    async function check() {
+      try {
+        const res = await fetch('/api/cms/state', { cache: 'no-store' })
+        if (!res.ok || cancelled) return
+        const s = await res.json()
+        if (!cancelled) setSiteInMaintenance(!!s.maintenance)
+      } catch { /* ignore */ }
+    }
+    check()
+    const id = setInterval(check, 30_000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [])
+
+  // Personal theme toggle (Área 2, punto 14) — same cookie the public site reads
+  useEffect(() => {
+    setIsDark(document.documentElement.getAttribute('data-theme') === 'dark')
+  }, [])
+  function toggleTheme() {
+    const next = isDark ? 'light' : 'dark'
+    document.documentElement.setAttribute('data-theme', next)
+    document.cookie = `cpe_theme=${next};path=/;max-age=31536000`
+    setIsDark(!isDark)
+  }
+
+  // Restore preferences after mount (avoids SSR hydration mismatch)
   useEffect(() => {
     setCollapsed(localStorage.getItem(STORAGE_KEY) === '1')
+    try {
+      const savedGroups = JSON.parse(localStorage.getItem(GROUPS_STATE_KEY) ?? '{}')
+      setOpenGroups({
+        'contenido-web': true, 'publicaciones-datos': true, 'gestion-accesos': true, 'sistema': true,
+        ...savedGroups,
+      })
+    } catch {
+      setOpenGroups({ 'contenido-web': true, 'publicaciones-datos': true, 'gestion-accesos': true, 'sistema': true })
+    }
+    try {
+      setPinned(JSON.parse(localStorage.getItem(PINNED_KEY) ?? '[]'))
+    } catch { /* ignore */ }
     setReady(true)
+  }, [])
+
+  // Global Ctrl+K / Cmd+K (search) and ? (shortcuts cheat sheet)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement
+      const typing = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen(v => !v)
+        return
+      }
+      if (e.key === '?' && !typing) {
+        e.preventDefault()
+        setShortcutsOpen(v => !v)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  // Close mobile drawer on navigation
+  useEffect(() => { setMobileNavOpen(false) }, [pathname])
+
+  // Close profile menu on outside click
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
   }, [])
 
   function toggleCollapsed() {
     setCollapsed(prev => {
       const next = !prev
       localStorage.setItem(STORAGE_KEY, next ? '1' : '0')
+      return next
+    })
+  }
+
+  function toggleGroup(key: string) {
+    setOpenGroups(prev => {
+      const next = { ...prev, [key]: !prev[key] }
+      localStorage.setItem(GROUPS_STATE_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  function togglePin(href: string) {
+    setPinned(prev => {
+      const next = prev.includes(href)
+        ? prev.filter(h => h !== href)
+        : [...prev, href].slice(-MAX_PINNED)
+      localStorage.setItem(PINNED_KEY, JSON.stringify(next))
       return next
     })
   }
@@ -157,18 +434,53 @@ export function AdminShell({
     window.location.href = '/admin/login'
   }
 
-  function isActive(href: string) {
-    if (href === '/admin') return pathname === '/admin'
-    return pathname === href || pathname.startsWith(href + '/')
-  }
-
   const visibleGroups = getVisibleGroups(userRole)
-  const W = collapsed ? 64 : 220
+  const pinnedItems = pinned
+    .map(href => ALL_ITEMS.find(i => i.href === href))
+    .filter((i): i is NavItem => !!i)
+  const W = collapsed ? 64 : 240
+  const initials = (userEmail || '?').slice(0, 2).toUpperCase()
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+
+      {/* Mobile nav toggle — visible only under 860px via CSS below */}
+      <button
+        className="cpe-mobile-nav-toggle"
+        onClick={() => setMobileNavOpen(v => !v)}
+        aria-label="Abrir menú"
+        style={{
+          display: 'none', position: 'fixed', top: 12, left: 12, zIndex: 60,
+          width: 38, height: 38, borderRadius: 8, border: '1px solid var(--rule)',
+          background: 'var(--surface)', color: 'var(--fg)', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      {mobileNavOpen && (
+        <div
+          className="cpe-mobile-nav-overlay"
+          onClick={() => setMobileNavOpen(false)}
+          style={{ display: 'none', position: 'fixed', inset: 0, zIndex: 45, background: 'rgba(0,0,0,.4)' }}
+        />
+      )}
+      <style>{`
+        @media (max-width: 860px) {
+          .cpe-mobile-nav-toggle { display: flex !important; }
+          .cpe-admin-sidebar {
+            transform: translateX(${mobileNavOpen ? '0' : '-100%'});
+            transition: transform .2s ease;
+            box-shadow: ${mobileNavOpen ? '0 0 40px rgba(0,0,0,.3)' : 'none'};
+          }
+          .cpe-mobile-nav-overlay { display: block !important; }
+          .cpe-admin-main { margin-left: 0 !important; padding-top: 52px; }
+        }
+      `}</style>
+
       {/* Sidebar */}
-      <aside style={{
+      <aside className="cpe-admin-sidebar" style={{
         width: W,
         flexShrink: 0,
         position: 'fixed',
@@ -181,8 +493,8 @@ export function AdminShell({
         borderRight: '1px solid var(--rule)',
         display: 'flex',
         flexDirection: 'column',
+        zIndex: 50,
         padding: '14px 0',
-        zIndex: 40,
         transition: ready ? 'width 0.16s ease' : undefined,
       }}>
         {/* Logo / brand + collapse toggle */}
@@ -200,23 +512,60 @@ export function AdminShell({
               <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 1, whiteSpace: 'nowrap' }}>Administración</div>
             </div>
           )}
-          <button
-            onClick={toggleCollapsed}
-            title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-            aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-            aria-expanded={!collapsed}
-            style={{
-              display: 'grid', placeItems: 'center',
-              width: 30, height: 30, flexShrink: 0,
-              background: 'none', border: '1px solid var(--rule)',
-              borderRadius: 'var(--r-sm, 6px)', cursor: 'pointer', color: 'var(--fg-soft)',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.16s' }}>
-              <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <button
+              onClick={toggleTheme}
+              title={isDark ? 'Modo claro (solo tu vista)' : 'Modo oscuro (solo tu vista)'}
+              aria-label="Cambiar tema del panel"
+              style={{
+                display: 'grid', placeItems: 'center',
+                width: 30, height: 30, flexShrink: 0,
+                background: 'none', border: '1px solid var(--rule)',
+                borderRadius: 'var(--r-sm, 6px)', cursor: 'pointer', color: 'var(--fg-soft)',
+              }}
+            >
+              {isDark ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              ) : (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              )}
+            </button>
+            <button
+              onClick={toggleCollapsed}
+              title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+              aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+              aria-expanded={!collapsed}
+              style={{
+                display: 'grid', placeItems: 'center',
+                width: 30, height: 30, flexShrink: 0,
+                background: 'none', border: '1px solid var(--rule)',
+                borderRadius: 'var(--r-sm, 6px)', cursor: 'pointer', color: 'var(--fg-soft)',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.16s' }}>
+                <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
         </div>
+
+        {/* Quick search trigger */}
+        <button
+          onClick={() => setPaletteOpen(true)}
+          title="Buscar (Ctrl+K)"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            margin: collapsed ? '0 10px 10px' : '0 12px 10px',
+            padding: collapsed ? '7px 0' : '7px 10px',
+            fontSize: 12.5, color: 'var(--fg-muted)',
+            background: 'var(--bg-alt)', border: '1px solid var(--rule)', borderRadius: 8,
+            cursor: 'pointer', width: collapsed ? 34 : undefined,
+          }}
+        >
+          <Icon name="search" size={14} />
+          {!collapsed && <><span style={{ flex: 1, textAlign: 'left' }}>Buscar…</span><kbd style={{ fontSize: 10, border: '1px solid var(--rule)', borderRadius: 4, padding: '1px 5px' }}>⌘K</kbd></>}
+        </button>
 
         {/* Nav groups */}
         <nav style={{ flex: 1, padding: '4px 0' }}>
@@ -229,45 +578,95 @@ export function AdminShell({
               Vista restringida a RRHH — el resto del panel de administración no está disponible para tu rol.
             </div>
           )}
-          {visibleGroups.map((group, gi) => (
-            <div key={group.label} style={{ marginBottom: 4 }}>
-              {collapsed ? (
-                gi > 0 && <div style={{ height: 1, background: 'var(--rule)', margin: '8px 14px' }} />
-              ) : (
-                <div style={{
-                  padding: '8px 16px 4px', fontSize: 10, fontWeight: 700,
-                  letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)',
-                }}>
-                  {group.label}
-                </div>
-              )}
-              {group.items.map(item => {
-                const active = isActive(item.href)
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    title={collapsed ? item.label : item.hint}
+
+          {/* Favoritos / anclados */}
+          {!collapsed && pinnedItems.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ padding: '4px 16px 4px', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)' }}>
+                Favoritos
+              </div>
+              {pinnedItems.map(item => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 11, padding: '7px 16px',
+                    fontSize: 13, fontWeight: isActiveHref(pathname, item.href) ? 600 : 400,
+                    color: isActiveHref(pathname, item.href) ? 'var(--accent)' : 'var(--fg-soft)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <Icon name={item.icon} />
+                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {visibleGroups.map(group => {
+            const isOpen = collapsed ? true : (openGroups[group.key] ?? true)
+            return (
+              <div key={group.key} style={{ marginBottom: 4 }}>
+                {collapsed ? (
+                  <div style={{ height: 1, background: 'var(--rule)', margin: '8px 14px' }} />
+                ) : (
+                  <button
+                    onClick={() => toggleGroup(group.key)}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 11,
-                      justifyContent: collapsed ? 'center' : 'flex-start',
-                      padding: collapsed ? '9px 0' : '8px 16px',
-                      fontSize: 13,
-                      fontWeight: active ? 600 : 400,
-                      color: active ? 'var(--accent)' : 'var(--fg-soft)',
-                      textDecoration: 'none',
-                      background: active ? 'color-mix(in oklab, var(--accent) 8%, var(--surface))' : 'transparent',
-                      borderLeft: `2px solid ${active ? 'var(--accent)' : 'transparent'}`,
-                      transition: 'background 0.1s',
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 16px 4px', background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)',
                     }}
                   >
-                    <Icon name={item.icon} />
-                    {!collapsed && <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>}
-                  </Link>
-                )
-              })}
-            </div>
-          ))}
+                    {group.label}
+                    <span style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform .15s', display: 'inline-flex' }}>
+                      <Icon name="chevron" size={11} />
+                    </span>
+                  </button>
+                )}
+                {isOpen && group.items.map(item => {
+                  const active = isActiveHref(pathname, item.href)
+                  const isPinned = pinned.includes(item.href)
+                  return (
+                    <div key={item.href} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <Link
+                        href={item.href}
+                        title={collapsed ? item.label : item.hint}
+                        style={{
+                          flex: 1, display: 'flex', alignItems: 'center', gap: 11,
+                          justifyContent: collapsed ? 'center' : 'flex-start',
+                          padding: collapsed ? '9px 0' : '8px 16px',
+                          fontSize: 13,
+                          fontWeight: active ? 600 : 400,
+                          color: active ? 'var(--accent)' : 'var(--fg-soft)',
+                          textDecoration: 'none',
+                          background: active ? 'color-mix(in oklab, var(--accent) 8%, var(--surface))' : 'transparent',
+                          borderLeft: `2px solid ${active ? 'var(--accent)' : 'transparent'}`,
+                          transition: 'background 0.1s',
+                        }}
+                      >
+                        <Icon name={item.icon} />
+                        {!collapsed && <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>}
+                      </Link>
+                      {!collapsed && (
+                        <button
+                          onClick={() => togglePin(item.href)}
+                          title={isPinned ? 'Quitar de favoritos' : 'Anclar a favoritos'}
+                          style={{
+                            position: 'absolute', right: 8, background: 'none', border: 'none', cursor: 'pointer',
+                            color: isPinned ? 'var(--gold, #9C7A2E)' : 'var(--fg-muted)',
+                            opacity: isPinned ? 1 : 0.35, padding: 2, display: 'flex',
+                          }}
+                        >
+                          <Icon name="pin" size={12} />
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
         </nav>
 
         {/* External links */}
@@ -299,50 +698,83 @@ export function AdminShell({
           ))}
         </div>
 
-        {/* Active user display */}
-        {userEmail && !collapsed && (
-          <div style={{ padding: '10px 16px', borderTop: '1px solid var(--rule)' }}>
-            <div style={{
-              fontSize: 11, color: 'var(--fg-muted)', marginBottom: 5,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              {userEmail}
-            </div>
-            <span style={{
-              fontSize: 10, fontFamily: 'var(--font-mono)', fontWeight: 700,
-              letterSpacing: '0.08em', textTransform: 'uppercase',
-              padding: '2px 7px', borderRadius: 'var(--r-pill)',
-              background: 'var(--bg-alt)', color: 'var(--fg-muted)', border: '1px solid var(--rule)',
-            }}>
-              {ROLE_LABELS[userRole] ?? userRole}
-            </span>
-          </div>
-        )}
-
-        {/* Sign out */}
-        <div style={{ padding: collapsed ? '12px 0' : '12px 16px', borderTop: '1px solid var(--rule)', display: 'flex', justifyContent: 'center' }}>
+        {/* Unified profile menu (Área 1, punto 6) */}
+        <div ref={profileRef} style={{ position: 'relative', padding: collapsed ? '12px 0' : '12px 16px', borderTop: '1px solid var(--rule)' }}>
           <button
-            onClick={signOut}
-            title="Cerrar sesión"
-            aria-label="Cerrar sesión"
+            onClick={() => setProfileOpen(v => !v)}
             style={{
-              width: collapsed ? 34 : '100%', height: collapsed ? 34 : undefined,
-              padding: collapsed ? 0 : '8px 12px',
-              display: collapsed ? 'grid' : 'block', placeItems: 'center',
-              fontSize: 12, color: 'var(--fg-muted)', background: 'none',
-              border: '1px solid var(--rule)', borderRadius: 'var(--r-md, 8px)',
-              cursor: 'pointer', textAlign: 'left',
+              display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
             }}
           >
-            {collapsed ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            ) : 'Cerrar sesión'}
+            <div style={{
+              width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+              background: 'var(--accent-soft, color-mix(in oklab, var(--accent) 12%, var(--surface)))',
+              color: 'var(--accent)', fontSize: 11, fontWeight: 700,
+              display: 'grid', placeItems: 'center',
+            }}>
+              {initials}
+            </div>
+            {!collapsed && (
+              <div style={{ minWidth: 0, textAlign: 'left', flex: 1 }}>
+                <div style={{ fontSize: 12, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {userEmail}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                  {ROLE_LABELS[userRole] ?? userRole}
+                </div>
+              </div>
+            )}
           </button>
+
+          {profileOpen && (
+            <div style={{
+              position: 'absolute', bottom: '100%', left: collapsed ? 0 : 16, right: collapsed ? undefined : 16,
+              marginBottom: 8, background: 'var(--surface)', border: '1px solid var(--rule)',
+              borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,.15)', overflow: 'hidden', minWidth: collapsed ? 200 : undefined,
+              zIndex: 50,
+            }}>
+              <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--rule)' }}>
+                <div style={{ fontSize: 12, color: 'var(--fg)', wordBreak: 'break-all' }}>{userEmail}</div>
+                <span style={{
+                  display: 'inline-block', marginTop: 4, fontSize: 10, fontFamily: 'var(--font-mono)', fontWeight: 700,
+                  letterSpacing: '0.08em', textTransform: 'uppercase', padding: '2px 7px', borderRadius: 'var(--r-pill)',
+                  background: 'var(--bg-alt)', color: 'var(--fg-muted)', border: '1px solid var(--rule)',
+                }}>
+                  {ROLE_LABELS[userRole] ?? userRole}
+                </span>
+              </div>
+              <Link href="/portal/mi-cuenta" style={{ display: 'block', padding: '9px 14px', fontSize: 13, color: 'var(--fg-soft)', textDecoration: 'none' }}>
+                Mi cuenta
+              </Link>
+              <button
+                onClick={signOut}
+                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 13, color: 'var(--cp-negative, #C0392B)', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
       {/* Main content — pages manage their own padding */}
-      <main style={{ marginLeft: W, flex: 1, minWidth: 0, minHeight: '100vh', transition: ready ? 'margin-left 0.16s ease' : undefined }}>
+      <main className="cpe-admin-main" style={{ marginLeft: W, flex: 1, minWidth: 0, minHeight: '100vh', transition: ready ? 'margin-left 0.16s ease' : undefined }}>
+        {siteInMaintenance && (
+          <div style={{
+            background: '#F5C518', color: '#3D2E00', fontSize: 12.5, fontWeight: 700,
+            padding: '8px 24px', display: 'flex', alignItems: 'center', gap: 8,
+            position: 'sticky', top: 0, zIndex: 30,
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17h.01"/></svg>
+            El sitio público está en modo mantenimiento — los visitantes no pueden verlo.
+            <Link href="/admin" style={{ color: '#3D2E00', textDecoration: 'underline', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+              Desactivar →
+            </Link>
+          </div>
+        )}
+        <Breadcrumbs pathname={pathname} />
         {children}
       </main>
     </div>

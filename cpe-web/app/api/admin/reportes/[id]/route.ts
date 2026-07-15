@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity, getPermissionsForRole, canPublish } from '@/lib/roles'
+import { snapshotReportVersion } from '@/lib/report-versions'
 import { isAdminEmail } from '@/lib/admin-auth'
 import { canAccessReport } from '@/lib/report-access'
 import { isSameOrigin } from '@/lib/csrf'
@@ -145,6 +146,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (titulo) patch.titulo = String(titulo).slice(0, 500)
     if (periodo) patch.periodo = String(periodo).slice(0, 40)
     if (newEstado && VALID_ESTADOS.includes(newEstado)) patch.estado = newEstado
+
+    await snapshotReportVersion(params.id, userWithRole.email ?? null)
 
     const { error } = await db.from('reportes').update(patch).eq('id', params.id)
     if (error) return dbError(error)
