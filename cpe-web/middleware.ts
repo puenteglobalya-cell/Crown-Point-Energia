@@ -94,6 +94,21 @@ export async function middleware(request: NextRequest) {
     return _roleRow
   }
 
+  // Mandatory 2FA for admin accounts — no verified TOTP factor → forced setup;
+  // verified factor but not stepped up this session → step-up challenge.
+  // Shared by both /portal and /admin so an admin can't dodge it by staying on /portal.
+  async function enforceAdminMfa(isAdminUser: boolean): Promise<NextResponse | null> {
+    if (!isAdminUser || !user) return null
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+    if (aal?.nextLevel !== 'aal2') {
+      return NextResponse.redirect(new URL(`/portal/mfa/setup?next=${encodeURIComponent(pathname)}`, request.url))
+    }
+    if (aal.currentLevel !== 'aal2') {
+      return NextResponse.redirect(new URL(`/portal/mfa?next=${encodeURIComponent(pathname)}`, request.url))
+    }
+    return null
+  }
+
   // ── Portal auth ──────────────────────────────────────────────────────────
   if (
     (pathname === '/portal' || pathname.startsWith('/portal/')) &&
@@ -105,12 +120,16 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/portal/login', request.url))
     }
     const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
+    let portalIsAdmin = !!isAdminEmail
     if (!isAdminEmail) {
       const roleRow = await getRole()
       if (!roleRow?.activo) {
         return NextResponse.redirect(new URL('/portal/login', request.url))
       }
+      portalIsAdmin = roleRow.role === 'admin'
     }
+    const mfaRedirect = await enforceAdminMfa(portalIsAdmin)
+    if (mfaRedirect) return mfaRedirect
   }
 
   // Logged-in admin on /portal/login → redirect to /portal
@@ -142,17 +161,8 @@ export async function middleware(request: NextRequest) {
       isAdminUser = userRole === 'admin'
     }
 
-    // Mandatory 2FA for admin accounts — no verified TOTP factor → forced setup;
-    // verified factor but not stepped up this session → step-up challenge.
-    if (isAdminUser && user) {
-      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-      if (aal?.nextLevel !== 'aal2') {
-        return NextResponse.redirect(new URL(`/portal/mfa/setup?next=${encodeURIComponent(pathname)}`, request.url))
-      }
-      if (aal.currentLevel !== 'aal2') {
-        return NextResponse.redirect(new URL(`/portal/mfa?next=${encodeURIComponent(pathname)}`, request.url))
-      }
-    }
+    const mfaRedirect = await enforceAdminMfa(isAdminUser)
+    if (mfaRedirect) return mfaRedirect
   }
 
   // Logged-in admin on /admin/login → redirect to /admin

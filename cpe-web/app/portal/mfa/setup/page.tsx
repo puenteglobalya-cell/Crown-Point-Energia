@@ -6,7 +6,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
 function MfaSetupInner() {
   const searchParams = useSearchParams()
-  const next = searchParams.get('next') || '/admin'
+  const next = searchParams.get('next') || '/portal'
 
   const [qrUrl, setQrUrl]           = useState<string | null>(null)
   const [totpSecret, setTotpSecret] = useState<string | null>(null)
