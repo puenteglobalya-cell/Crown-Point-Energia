@@ -7,6 +7,7 @@ import { fetchCclRate } from '@/lib/matbarofex'
 import { generarReporteAccionistaHTML } from '@/lib/generador/htmlReportAccionista'
 import { generarReporteFacturacionHTML } from '@/lib/generador/htmlReportFacturacion'
 import { generarReporteGenericoHTML } from '@/lib/generador/htmlReportGenerico'
+import { snapshotReportVersion } from '@/lib/report-versions'
 import type { DatosIngresos } from '@/lib/parsers/ingresos'
 import type { MacroSnapshot } from '@/lib/generador/htmlReport'
 import type { DatosAccionista } from '@/lib/parsers/accionista'
@@ -96,6 +97,8 @@ export async function POST(
     console.error('[regenerar]', genError)
     return NextResponse.json({ error: 'Error al generar HTML' }, { status: 500 })
   }
+
+  await snapshotReportVersion(id, user.email ?? null)
 
   const { error: updateError } = await db
     .from('reportes')
