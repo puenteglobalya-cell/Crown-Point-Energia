@@ -401,13 +401,13 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
 
   <div class="kpi">
     <div class="kpi-lbl">Producción Valorizada</div>
-    <div class="kpi-val">${fN(valorizadoProducidoDia)}<span class="kpi-unit">us$/d</span></div>
+    <div class="kpi-val">${fN(datos.vol_producido_boed * datos.dias)}<span class="kpi-unit">BOE/mes</span></div>
     <div class="kpi-sub"><span class="tag mu">${f(valorizadoProducidoMes / 1_000_000)} MM us$ en el mes</span></div>
   </div>
 
   <div class="kpi">
     <div class="kpi-lbl">Ventas Valorizadas</div>
-    <div class="kpi-val">${fN(valorizadoVendidoDia)}<span class="kpi-unit">us$/d</span></div>
+    <div class="kpi-val">${fN(datos.vol_vendido_boed * datos.dias)}<span class="kpi-unit">BOE/mes</span></div>
     <div class="kpi-sub"><span class="tag mu">${f(valorizadoVendidoMes / 1_000_000)} MM us$ en el mes</span></div>
   </div>
 
