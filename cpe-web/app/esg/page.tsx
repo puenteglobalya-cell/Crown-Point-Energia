@@ -127,17 +127,24 @@ export default async function EsgPage() {
                   { es: 'Código de conducta y ética empresarial', en: 'Code of conduct & business ethics', href: '/biblioteca?cat=gobierno-corporativo' },
                   { es: 'Política de uso de información privilegiada', en: 'Insider trading policy', href: '/biblioteca?cat=gobierno-corporativo' },
                   { es: 'Política de denuncia de irregularidades', en: 'Whistleblower policy', href: '/biblioteca?cat=gobierno-corporativo' },
-                  { es: 'Formulario de denuncias e irregularidades', en: 'Reporting form', href: '/biblioteca?cat=gobierno-corporativo', isLink: true },
+                  { es: 'Formulario de denuncias e irregularidades', en: 'Reporting form', href: 'https://docs.google.com/forms/d/e/1FAIpQLSceRgaaMfvPO7ndB2v_5UHpUna9tmV0om4JEDEl5cIqUasQJA/viewform?pli=1', isLink: true, external: true },
                 ].map((doc, i) => (
                   <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--rule)', fontSize: 14 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: 'var(--cp-green)' }}>
                       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="currentColor" strokeWidth="1.8"/>
                       <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
                     </svg>
-                    <Link href={doc.href} style={{ color: 'var(--fg)', textDecoration: 'none', flex: 1 }}>
-                      <span className="lang-es">{doc.es}</span>
-                      <span className="lang-en">{doc.en}</span>
-                    </Link>
+                    {doc.external ? (
+                      <a href={doc.href} target="_blank" rel="noreferrer" style={{ color: 'var(--fg)', textDecoration: 'none', flex: 1 }}>
+                        <span className="lang-es">{doc.es}</span>
+                        <span className="lang-en">{doc.en}</span>
+                      </a>
+                    ) : (
+                      <Link href={doc.href} style={{ color: 'var(--fg)', textDecoration: 'none', flex: 1 }}>
+                        <span className="lang-es">{doc.es}</span>
+                        <span className="lang-en">{doc.en}</span>
+                      </Link>
+                    )}
                     <span style={{ fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>
                       {doc.isLink ? 'enlace' : 'PDF'}
                     </span>
