@@ -125,11 +125,13 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   const oilVend = datos.oil_pct_vend > 0 ? datos.oil_pct_vend.toFixed(1) : null
   const gasVend = datos.gas_pct_vend > 0 ? datos.gas_pct_vend.toFixed(1) : null
 
-  // Valorización de producción: % oil (BOE≈bbl) × precio oil + % gas (convertido
-  // de BOE a Mcf con el factor estándar de la industria, 6 Mcf = 1 BOE) × precio gas
+  // Valorización de ventas: % oil (BOE≈bbl) × precio oil + % gas (convertido
+  // de BOE a Mcf con el factor estándar de la industria, 6 Mcf = 1 BOE) × precio gas.
+  // Usa el volumen VENDIDO (no producido) porque este reporte valoriza ingresos
+  // por ventas — el volumen producido incluye stock que aún no se vendió.
   const BOE_TO_MCF = 6
-  const oilVolBbld = datos.vol_producido_boed * (datos.oil_pct_prod / 100)
-  const gasVolMcfd = datos.vol_producido_boed * (datos.gas_pct_prod / 100) * BOE_TO_MCF
+  const oilVolBbld = datos.vol_vendido_boed * (datos.oil_pct_vend / 100)
+  const gasVolMcfd = datos.vol_vendido_boed * (datos.gas_pct_vend / 100) * BOE_TO_MCF
   const valorizadoOilDia = oilVolBbld * datos.precio_neto_oil
   const valorizadoGasDia = gasVolMcfd * datos.precio_neto_gas
   const valorizadoDia = valorizadoOilDia + valorizadoGasDia
@@ -392,7 +394,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
   </div>
 
   <div class="kpi">
-    <div class="kpi-lbl">Producción Valorizada</div>
+    <div class="kpi-lbl">Ventas Valorizadas</div>
     <div class="kpi-val">${fN(valorizadoDia)}<span class="kpi-unit">us$/d</span></div>
     <div class="kpi-sub"><span class="tag mu">${f(valorizadoMes / 1_000_000)} MM us$ en el mes</span></div>
   </div>
