@@ -9,15 +9,6 @@ import { sumWellsFromBlocks, fetchOperationsBlocks } from '@/lib/content-fetch'
 
 export const revalidate = 60
 
-const CAT_LABEL: Record<string, { es: string; en: string }> = {
-  resultados:  { es: 'Resultados',          en: 'Results' },
-  operaciones: { es: 'Operaciones',          en: 'Operations' },
-  mercados:    { es: 'Mercado de capitales', en: 'Capital markets' },
-  esg:         { es: 'ESG',                  en: 'ESG' },
-  gobierno:    { es: 'Gobierno corporativo', en: 'Governance' },
-  general:     { es: 'General',              en: 'General' },
-}
-
 function fmtFechaHome(iso: string) {
   const d = new Date(iso + 'T12:00:00Z')
   const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
@@ -26,13 +17,13 @@ function fmtFechaHome(iso: string) {
 
 export default async function HomePage() {
   const db = createSupabaseServerAdminClient()
-  const [s, comunicadosRes, opsBlocksFull] = await Promise.all([
+  const [s, hechosRes, opsBlocksFull] = await Promise.all([
     getCmsState(),
-    db.from('comunicados')
-      .select('id,fecha,titulo_es,titulo_en,resumen_es,resumen_en,url,tipo')
-      .eq('publicado', true)
+    db.from('cnv_hechos')
+      .select('doc_id,fecha,hora,tipo,descripcion,pdf_url')
+      .eq('tipo', 'hecho_relevante')
       .order('fecha', { ascending: false })
-      .limit(4),
+      .limit(3),
     fetchOperationsBlocks(),
   ])
 
@@ -44,7 +35,7 @@ export default async function HomePage() {
   const opsBlocks: { id: string; slug: string; titulo: string; operador: string; wi: string; subtitulo_es: string; subtitulo_en: string }[] = []
   const wells = sumWellsFromBlocks(opsBlocksFull)
 
-  const latestComunicados = comunicadosRes.data ?? []
+  const latestHechos = hechosRes.data ?? []
 
   const lang = getEffectiveLang(s.lang as 'es' | 'en')
   const f = s.fields
@@ -460,54 +451,43 @@ export default async function HomePage() {
           <div className="container">
             <div className="section-head reveal">
               <div>
-                <span className="eyebrow"><span className="lang-es">Sala de prensa</span><span className="lang-en">Newsroom</span></span>
+                <span className="eyebrow"><span className="lang-es">Hechos relevantes CNV</span><span className="lang-en">CNV material facts</span></span>
                 <h2 className="section-title">
                   <span className="lang-es">Últimas novedades.</span>
                   <span className="lang-en">Latest releases.</span>
                 </h2>
               </div>
-              <Link className="btn-ghost" href="/comunicados"><span className="lang-es">Todos los comunicados</span><span className="lang-en">All press releases</span></Link>
+              <Link className="btn-ghost" href="/inversores#hechos-cnv"><span className="lang-es">Todos los hechos relevantes</span><span className="lang-en">All material facts</span></Link>
             </div>
-            {latestComunicados.length > 0 ? (
+            {latestHechos.length > 0 ? (
               <ul className="press-list reveal">
-                {latestComunicados.map(item => {
-                  const label = CAT_LABEL[item.tipo] ?? { es: item.tipo, en: item.tipo }
-                  const href = item.url || `/comunicados/${item.id}`
-                  return (
-                    <li className="press-item" key={item.id}>
-                      <span className="press-date num">{fmtFechaHome(item.fecha)}</span>
-                      <div>
-                        <span className="chip">
-                          <span className="lang-es">{label.es}</span>
-                          <span className="lang-en">{label.en}</span>
-                        </span>
-                        <h3>
-                          <span className="lang-es">{item.titulo_es}</span>
-                          <span className="lang-en">{item.titulo_en}</span>
-                        </h3>
-                        {(item.resumen_es || item.resumen_en) && (
-                          <p>
-                            <span className="lang-es">{item.resumen_es}</span>
-                            <span className="lang-en">{item.resumen_en}</span>
-                          </p>
-                        )}
-                      </div>
-                      <a className="press-arrow" href={href} target={item.url ? '_blank' : undefined} rel={item.url ? 'noreferrer' : undefined} aria-label="Leer comunicado">
+                {latestHechos.map(item => (
+                  <li className="press-item" key={item.doc_id}>
+                    <span className="press-date num">{fmtFechaHome(item.fecha)}</span>
+                    <div>
+                      <span className="chip">
+                        <span className="lang-es">Hecho relevante</span>
+                        <span className="lang-en">Material fact</span>
+                      </span>
+                      <h3>{item.descripcion}</h3>
+                    </div>
+                    {item.pdf_url && (
+                      <a className="press-arrow" href={item.pdf_url} target="_blank" rel="noreferrer" aria-label="Ver PDF en CNV">
                         <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11h12M12 5l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
                       </a>
-                    </li>
-                  )
-                })}
+                    )}
+                  </li>
+                ))}
               </ul>
             ) : (
               <div style={{ padding: 'var(--s-6) 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
                 <p style={{ color: 'var(--fg-muted)', fontSize: 14, margin: 0 }}>
-                  <span className="lang-es">No hay comunicados recientes. Consultá el archivo completo.</span>
-                  <span className="lang-en">No recent press releases. See the full archive.</span>
+                  <span className="lang-es">No hay hechos relevantes recientes. Consultá el archivo completo.</span>
+                  <span className="lang-en">No recent material facts. See the full archive.</span>
                 </p>
-                <a href="/comunicados" style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                  <span className="lang-es">Ver todos los comunicados →</span>
-                  <span className="lang-en">View all releases →</span>
+                <a href="/inversores#hechos-cnv" style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                  <span className="lang-es">Ver hechos relevantes →</span>
+                  <span className="lang-en">See material facts →</span>
                 </a>
               </div>
             )}

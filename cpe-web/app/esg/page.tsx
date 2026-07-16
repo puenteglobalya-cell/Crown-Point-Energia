@@ -2,6 +2,15 @@ import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
 import { cmsLineBreaks } from '@/lib/cms-html'
 import { fetchEsgPillars } from '@/lib/content-fetch'
+import { createSupabaseServerAdminClient } from '@/lib/supabase'
+
+type PoliticaDoc = {
+  id: string
+  titulo_es: string
+  titulo_en: string
+  storage_path: string
+  file_name: string
+}
 
 export const revalidate = 60
 
@@ -30,17 +39,24 @@ const ESG_ICONS: Record<string, React.ReactNode> = {
 }
 
 export const metadata = {
-  title: 'ESG | Crown Point Energy',
-  description: 'Responsabilidad ambiental, social y de gobierno corporativo de Crown Point Energy.',
+  title: 'ESG / Políticas | Crown Point Energy',
+  description: 'Responsabilidad ambiental, social y de gobierno corporativo de Crown Point Energy, y políticas corporativas públicas.',
   alternates: { canonical: 'https://crownpointenergy.com/esg' },
-  robots: { index: false, follow: false },
 }
 
 export default async function EsgPage() {
-  const [s, pillars] = await Promise.all([
+  const db = createSupabaseServerAdminClient()
+  const [s, pillars, politicasRes] = await Promise.all([
     getCmsState(),
     fetchEsgPillars(),
+    db.from('documentos')
+      .select('id,titulo_es,titulo_en,storage_path,file_name')
+      .eq('tipo', 'politica')
+      .eq('publico', true)
+      .order('titulo_es'),
   ])
+  const politicas = (politicasRes.data ?? []) as PoliticaDoc[]
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
   const f = s.fields
   const fe = s.fieldsEn
@@ -179,6 +195,48 @@ export default async function EsgPage() {
           </div>
         </div>
       </section>
+
+      {/* Políticas corporativas */}
+      {politicas.length > 0 && (
+        <section className="section" style={{ borderTop: '1px solid var(--rule)' }}>
+          <div className="container">
+            <div className="section-head">
+              <div>
+                <span className="eyebrow"><span className="lang-es">Cumplimiento</span><span className="lang-en">Compliance</span></span>
+                <h2 className="section-title" style={{ marginTop: 8 }}>
+                  <span className="lang-es">Políticas corporativas.</span>
+                  <span className="lang-en">Corporate policies.</span>
+                </h2>
+              </div>
+            </div>
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 10 }}>
+              {politicas.map(doc => (
+                <li key={doc.id}>
+                  <a
+                    href={`${supabaseUrl}/storage/v1/object/public/documents/${doc.storage_path}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '16px 20px', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)',
+                      textDecoration: 'none', color: 'var(--fg)', background: 'var(--surface)',
+                    }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: 'var(--accent)' }}>
+                      <path d="M6 2h9l5 5v15a1 1 0 01-1 1H6a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.6"/>
+                      <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.6"/>
+                    </svg>
+                    <span style={{ fontSize: 14, fontWeight: 500 }}>
+                      <span className="lang-es">{doc.titulo_es}</span>
+                      <span className="lang-en">{doc.titulo_en || doc.titulo_es}</span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
 
       {/* Reporting & frameworks */}
       <section className="section-tight" style={{ borderTop: '1px solid var(--rule)', background: 'var(--bg-alt)' }}>
