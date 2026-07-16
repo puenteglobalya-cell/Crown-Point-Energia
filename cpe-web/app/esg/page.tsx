@@ -65,48 +65,6 @@ export default async function EsgPage() {
         </div>
       </section>
 
-      {/* Políticas corporativas */}
-      {politicas.length > 0 && (
-        <section className="section" style={{ borderTop: '1px solid var(--rule)' }}>
-          <div className="container">
-            <div className="section-head">
-              <div>
-                <span className="eyebrow"><span className="lang-es">Cumplimiento</span><span className="lang-en">Compliance</span></span>
-                <h2 className="section-title" style={{ marginTop: 8 }}>
-                  <span className="lang-es">Políticas corporativas.</span>
-                  <span className="lang-en">Corporate policies.</span>
-                </h2>
-              </div>
-            </div>
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 10 }}>
-              {politicas.map(doc => (
-                <li key={doc.id}>
-                  <a
-                    href={`${supabaseUrl}/storage/v1/object/public/documents/${doc.storage_path}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '16px 20px', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)',
-                      textDecoration: 'none', color: 'var(--fg)', background: 'var(--surface)',
-                    }}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: 'var(--accent)' }}>
-                      <path d="M6 2h9l5 5v15a1 1 0 01-1 1H6a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.6"/>
-                      <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.6"/>
-                    </svg>
-                    <span style={{ fontSize: 14, fontWeight: 500 }}>
-                      <span className="lang-es">{doc.titulo_es}</span>
-                      <span className="lang-en">{doc.titulo_en || doc.titulo_es}</span>
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-      )}
-
       {/* Gobierno corporativo */}
       <section className="section-tight" style={{ borderTop: '1px solid var(--rule)', background: 'var(--bg-alt)' }}>
         <div className="container">
@@ -122,6 +80,23 @@ export default async function EsgPage() {
                 <span className="lang-en">Corporate governance</span>
               </h2>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 'var(--s-2)' }}>
+                {politicas.map(doc => (
+                  <li key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--rule)', fontSize: 14 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: 'var(--accent)' }}>
+                      <path d="M6 2h9l5 5v15a1 1 0 01-1 1H6a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.6"/>
+                      <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.6"/>
+                    </svg>
+                    <a
+                      href={`${supabaseUrl}/storage/v1/object/public/documents/${doc.storage_path}`}
+                      target="_blank" rel="noreferrer"
+                      style={{ color: 'var(--fg)', textDecoration: 'none', flex: 1 }}
+                    >
+                      <span className="lang-es">{doc.titulo_es}</span>
+                      <span className="lang-en">{doc.titulo_en || doc.titulo_es}</span>
+                    </a>
+                    <span style={{ fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>PDF</span>
+                  </li>
+                ))}
                 {[
                   { es: 'Política anticorrupción', en: 'Anti-corruption policy', href: '/biblioteca?cat=gobierno-corporativo' },
                   { es: 'Código de conducta y ética empresarial', en: 'Code of conduct & business ethics', href: '/biblioteca?cat=gobierno-corporativo' },
