@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { getCmsState } from '@/lib/cms'
+import { getEffectiveLang } from '@/lib/lang'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import ArgentinaMap from '@/components/ArgentinaMap'
 import { DroneHud } from '@/components/DroneHud'
@@ -45,6 +46,7 @@ export default async function HomePage() {
 
   const latestComunicados = comunicadosRes.data ?? []
 
+  const lang = getEffectiveLang(s.lang as 'es' | 'en')
   const f = s.fields
   const show = s.show
 
@@ -106,7 +108,7 @@ export default async function HomePage() {
             )}
             <div className="hero-veil"></div>
           </div>
-          <DroneHud lang={s.lang} />
+          <DroneHud lang={lang} />
           <div className="container hero-content">
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>

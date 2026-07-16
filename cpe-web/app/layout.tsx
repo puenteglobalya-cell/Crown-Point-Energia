@@ -9,6 +9,7 @@ import {
   Manrope,
 } from 'next/font/google'
 import { getCmsState } from '@/lib/cms'
+import { getEffectiveLang } from '@/lib/lang'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import BackToTop from '@/components/BackToTop'
@@ -135,22 +136,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const state = await getCmsState()
 
   const cookieStore = cookies()
-  const langCookie  = cookieStore.get('cpe_lang')?.value
   const themeCookie = cookieStore.get('cpe_theme')?.value
   const theme = (themeCookie === 'dark' || themeCookie === 'light') ? themeCookie : state.theme
 
   const headersList = headers()
   const pathname = headersList.get('x-pathname') ?? ''
 
-  // Language: cookie → Accept-Language header → CMS default
-  let lang: 'es' | 'en'
-  if (langCookie === 'en' || langCookie === 'es') {
-    lang = langCookie
-  } else {
-    const acceptLang = headersList.get('accept-language') ?? ''
-    const primary = acceptLang.split(',')[0].split(';')[0].trim().toLowerCase()
-    lang = primary.startsWith('en') ? 'en' : (state.lang as 'es' | 'en')
-  }
+  const lang = getEffectiveLang(state.lang as 'es' | 'en')
   const nonce = headersList.get('x-nonce') ?? undefined
   const showSiteChrome = !pathname.startsWith('/portal') && !pathname.startsWith('/admin')
 
