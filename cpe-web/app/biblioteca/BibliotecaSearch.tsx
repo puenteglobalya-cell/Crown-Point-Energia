@@ -32,8 +32,8 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-export default function BibliotecaSearch({ carpetas }: { carpetas: Carpeta[] }) {
-  const [query, setQuery] = useState('')
+export default function BibliotecaSearch({ carpetas, initialQuery = '' }: { carpetas: Carpeta[]; initialQuery?: string }) {
+  const [query, setQuery] = useState(initialQuery)
 
   const q = query.trim().toLowerCase()
   const filtered = q
