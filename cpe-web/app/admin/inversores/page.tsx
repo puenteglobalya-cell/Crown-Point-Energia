@@ -55,6 +55,8 @@ export default function InversoresAdminPage() {
   const [newContact, setNewContact] = useState({ nombre: '', email: '', telefono: '', tipo: 'prospecto', tenencia_estimada: '', interes_on: false, notas: '' })
   const [filterTipo, setFilterTipo] = useState('todos')
   const [filterOn, setFilterOn] = useState(false)
+  const [search, setSearch] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
 
   const loadDocs = useCallback(async () => {
     const res = await fetch('/api/admin/investor-documents')
@@ -96,7 +98,7 @@ export default function InversoresAdminPage() {
   }
 
   async function deleteDoc(doc: Doc) {
-    if (!confirm(`¿Eliminar "${doc.titulo}"?`)) return
+    if (!confirm(`¿Eliminar "${doc.titulo}" (${CATEGORIA_LABELS[doc.categoria] ?? doc.categoria})?\n\nDeja de verse para los accionistas inmediatamente. Esta acción es irreversible.`)) return
     const res = await fetch('/api/admin/investor-documents', {
       method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: doc.id }),
     })
@@ -121,11 +123,15 @@ export default function InversoresAdminPage() {
     const res = await fetch('/api/admin/investor-contacts', {
       method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, ...patch }),
     })
-    if (res.ok) setContacts(prev => prev.map(c => c.id === id ? { ...c, ...patch } : c))
+    if (res.ok) {
+      setContacts(prev => prev.map(c => c.id === id ? { ...c, ...patch } : c))
+      flash('Actualizado')
+    }
   }
 
   async function deleteContact(c: Contact) {
-    if (!confirm(`¿Eliminar el contacto de "${c.nombre}"?`)) return
+    const detalle = `${TIPO_LABELS[c.tipo] ?? c.tipo}${c.interes_on ? ' · candidato ON' : ''}`
+    if (!confirm(`¿Eliminar el contacto de "${c.nombre}" (${detalle})? Esta acción es irreversible.`)) return
     const res = await fetch('/api/admin/investor-contacts', {
       method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: c.id }),
     })
@@ -135,6 +141,12 @@ export default function InversoresAdminPage() {
   const filteredContacts = contacts
     .filter(c => filterTipo === 'todos' || c.tipo === filterTipo)
     .filter(c => !filterOn || c.interes_on)
+    .filter(c => !dateFrom || c.created_at.slice(0, 10) >= dateFrom)
+    .filter(c => {
+      if (!search.trim()) return true
+      const q = search.toLowerCase()
+      return c.nombre.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)
+    })
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
@@ -218,10 +230,21 @@ export default function InversoresAdminPage() {
               Registro interno de inversores actuales y prospectos — para futuras colocaciones (ej. Obligaciones Negociables). No visible fuera de este panel.
             </p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+              <input
+                type="search"
+                placeholder="Buscar por nombre o email…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ fontSize: 12, padding: '7px 10px', minWidth: 200 }}
+              />
               <select value={filterTipo} onChange={e => setFilterTipo(e.target.value)} style={{ fontSize: 12, padding: '7px 10px' }}>
                 <option value="todos">Todos los tipos</option>
                 {Object.entries(TIPO_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
+              <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                Alta desde
+                <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }} />
+              </label>
               <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <input type="checkbox" checked={filterOn} onChange={e => setFilterOn(e.target.checked)} />
                 Solo interesados en ON

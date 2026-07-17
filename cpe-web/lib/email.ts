@@ -262,3 +262,39 @@ export async function enviarConfirmacionPostulacion({
     html:     emailShell('Postulación recibida', body),
   }).catch(() => {/* non-blocking */})
 }
+
+// Notifies accionista users that a new private IR document was uploaded.
+// Unlike enviarNotificacionIR, this never links directly to the file — the
+// storage bucket is private and signed URLs expire — it points to /portal
+// instead, where the document list itself is auth-gated.
+export async function enviarNotificacionDocumentoIR({
+  titulo,
+  categoria,
+  recipients,
+}: {
+  titulo: string
+  categoria: string
+  recipients: string[]
+}) {
+  if (!resend || recipients.length === 0) return { sent: 0, skipped: true }
+
+  const html = emailShell('Nuevo documento IR', `
+    <p style="margin:0 0 6px;font-size:15px;color:#1a1c2e;font-weight:600">${titulo}</p>
+    <p style="margin:0 0 24px;font-size:14px;color:#5a5d78;line-height:1.6">
+      Se subió un nuevo documento (${categoria}) a la sección de Documentos IR del portal de accionistas.
+    </p>
+    <a href="${BASE_URL}/portal"
+       style="display:inline-block;background:#1F2566;color:#fff;text-decoration:none;
+              padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600">
+      Ver en el portal →
+    </a>
+    <p style="margin:28px 0 0;font-size:12px;color:#8e91b0">
+      Necesitás iniciar sesión con tu cuenta de accionista para acceder al documento.
+    </p>`)
+
+  const results = await Promise.allSettled(
+    recipients.map(email => resend!.emails.send({ from: FROM, to: email, subject: `[CPE IR] ${titulo}`, html }))
+  )
+  const sent = results.filter(r => r.status === 'fulfilled').length
+  return { sent, total: recipients.length }
+}
