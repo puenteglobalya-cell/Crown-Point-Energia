@@ -260,6 +260,21 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
           </nav>
 
           <div className="header-utils">
+            <Link
+              href="/buscar"
+              aria-label="Buscar"
+              style={{
+                background: 'none', border: '1px solid var(--rule)',
+                borderRadius: 'var(--r-pill)', width: 34, height: 34,
+                display: 'grid', placeItems: 'center',
+                color: 'var(--fg-soft)', flexShrink: 0, textDecoration: 'none',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </Link>
             <button
               onClick={handleThemeToggle}
               aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}

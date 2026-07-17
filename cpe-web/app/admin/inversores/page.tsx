@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
+import { AdminPageHeader, AdminSkeletonRows } from '@/components/AdminPageHeader'
 
 type Doc = {
   id: string; titulo: string; descripcion: string; categoria: string
@@ -57,6 +58,7 @@ export default function InversoresAdminPage() {
   const [filterOn, setFilterOn] = useState(false)
   const [search, setSearch] = useState('')
   const [dateFrom, setDateFrom] = useState('')
+  const [visibleCount, setVisibleCount] = useState(30)
 
   const loadDocs = useCallback(async () => {
     const res = await fetch('/api/admin/investor-documents')
@@ -70,6 +72,8 @@ export default function InversoresAdminPage() {
   useEffect(() => {
     Promise.all([loadDocs(), loadContacts()]).then(() => setLoading(false))
   }, [loadDocs, loadContacts])
+
+  useEffect(() => { setVisibleCount(30) }, [filterTipo, filterOn, search, dateFrom])
 
   function flash(m: string) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
@@ -151,18 +155,18 @@ export default function InversoresAdminPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>Inversores</h1>
-            <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>Documentos internos de IR y registro de contactos</p>
-            <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '6px 0 0' }}>
+        <AdminPageHeader
+          title="Inversores"
+          subtitle="Documentos internos de IR y registro de contactos"
+          note={
+            <>
               Todo lo de este panel es <strong>privado</strong> — nada se ve en la web pública. Para EE.FF., MD&amp;A,
               AGM u otros documentos que sí deben ser públicos, usá{' '}
               <Link href="/admin/ir-docs" style={{ color: 'var(--accent)' }}>Documentos IR — públicos</Link>.
-            </p>
-          </div>
-          {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
-        </div>
+            </>
+          }
+          right={msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
+        />
 
         <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
           {([['documentos', 'Documentos IR'], ['contactos', 'Registro de inversores']] as const).map(([key, label]) => (
@@ -176,7 +180,7 @@ export default function InversoresAdminPage() {
         </div>
 
         {loading ? (
-          <p style={{ color: 'var(--fg-soft)', fontFamily: 'var(--font-mono)', fontSize: 13 }}>Cargando…</p>
+          <AdminSkeletonRows rows={6} />
         ) : tab === 'documentos' ? (
           <>
             <p style={{ fontSize: 13, color: 'var(--fg-soft)', marginBottom: 16 }}>
@@ -287,8 +291,8 @@ export default function InversoresAdminPage() {
             <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--surface)' }}>
               {filteredContacts.length === 0 ? (
                 <p style={{ padding: 20, color: 'var(--fg-muted)', fontSize: 14 }}>No hay contactos que coincidan con el filtro.</p>
-              ) : filteredContacts.map((c, i) => (
-                <div key={c.id} style={{ padding: '14px 18px', borderBottom: i < filteredContacts.length - 1 ? '1px solid var(--rule)' : 'none' }}>
+              ) : filteredContacts.slice(0, visibleCount).map((c, i) => (
+                <div key={c.id} style={{ padding: '14px 18px', borderBottom: i < Math.min(filteredContacts.length, visibleCount) - 1 ? '1px solid var(--rule)' : 'none' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                     <div>
                       <span style={{ fontSize: 14, fontWeight: 500 }}>{c.nombre}</span>
@@ -317,6 +321,11 @@ export default function InversoresAdminPage() {
                 </div>
               ))}
             </div>
+            {filteredContacts.length > visibleCount && (
+              <button className="btn" style={{ fontSize: 12, padding: '10px 16px', marginTop: 10, width: '100%' }} onClick={() => setVisibleCount(v => v + 30)}>
+                Mostrar más ({filteredContacts.length - visibleCount} restantes)
+              </button>
+            )}
           </>
         )}
       </div>
