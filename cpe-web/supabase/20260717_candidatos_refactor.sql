@@ -13,6 +13,8 @@
 -- reads, so existing GET endpoints don't need to change their column list.
 -- ═══════════════════════════════════════════════════════════════════════════
 
+CREATE EXTENSION IF NOT EXISTS citext;
+
 CREATE TABLE IF NOT EXISTS candidatos (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nombre      TEXT NOT NULL DEFAULT '',
@@ -23,7 +25,6 @@ CREATE TABLE IF NOT EXISTS candidatos (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE EXTENSION IF NOT EXISTS citext;
 CREATE UNIQUE INDEX IF NOT EXISTS candidatos_email_unique ON candidatos (email);
 
 CREATE TABLE IF NOT EXISTS postulaciones (
