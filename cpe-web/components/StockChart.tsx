@@ -8,12 +8,12 @@ type Quote = {
   ok: true
   price: number
   prevClose: number
-  delta: number
-  deltaP: number
-  high52: number
-  low52: number
-  marketCap: number
-  shares: number
+  delta: number | null
+  deltaP: number | null
+  high52: number | null
+  low52: number | null
+  marketCap: number | null
+  shares: number | null
   currency: string
   ts: number
   history: HistoryPoint[]
@@ -23,14 +23,21 @@ type State = { status: 'loading' | 'ok' | 'error'; data?: Quote }
 
 const C = 'CA $'
 
-function fmt(n: number, decimals = 3) {
+function fmt(n: number | null | undefined, decimals = 3) {
+  if (n == null) return '—'
   return `${C}${n.toFixed(decimals)}`
 }
 
-function fmtCap(n: number) {
+function fmtCap(n: number | null | undefined) {
+  if (n == null) return '—'
   if (n >= 1e9) return `${C}${(n / 1e9).toFixed(2)}B`
   if (n >= 1e6) return `${C}${(n / 1e6).toFixed(1)}M`
   return `${C}${n.toLocaleString()}`
+}
+
+function fmtShares(n: number | null | undefined) {
+  if (n == null) return '—'
+  return `${(n / 1e6).toFixed(1)}M`
 }
 
 function PriceLine({ history }: { history: HistoryPoint[] }) {
@@ -135,8 +142,8 @@ export default function StockChart({ lang = 'es' }: { lang?: 'es' | 'en' }) {
   const err     = state.status === 'error'
   const d       = state.data
 
-  const isUp   = d ? d.delta >= 0 : true
-  const deltaStr = d
+  const isUp   = d && d.delta != null ? d.delta >= 0 : true
+  const deltaStr = d && d.delta != null && d.deltaP != null
     ? `${isUp ? '+' : ''}${d.delta.toFixed(3)} (${isUp ? '+' : ''}${d.deltaP.toFixed(2)}%)`
     : ''
 
@@ -222,7 +229,7 @@ export default function StockChart({ lang = 'es' }: { lang?: 'es' | 'en' }) {
         </div>
         <div className="sc-cell">
           <span className="sc-lbl">{lang === 'es' ? 'Acciones' : 'Shares'}</span>
-          {loading ? <div className="sc-skel" style={{ width: 80 }} /> : <strong className="num">{d ? `${(d.shares / 1e6).toFixed(1)}M` : '—'}</strong>}
+          {loading ? <div className="sc-skel" style={{ width: 80 }} /> : <strong className="num">{d ? fmtShares(d.shares) : '—'}</strong>}
         </div>
       </div>
 

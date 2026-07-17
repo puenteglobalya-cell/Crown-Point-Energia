@@ -81,9 +81,9 @@ export async function GET() {
       .filter((p): p is { date: string; close: number } => p.close != null)
 
     const price     = meta.regularMarketPrice     as number
-    const prevClose = meta.regularMarketPreviousClose as number
-    const delta     = price - prevClose
-    const deltaP    = (delta / prevClose) * 100
+    const prevClose = meta.regularMarketPreviousClose as number | undefined
+    const delta     = prevClose != null ? price - prevClose : null
+    const deltaP    = prevClose ? (delta! / prevClose) * 100 : null
 
     return NextResponse.json({
       ok:       true,
@@ -91,10 +91,10 @@ export async function GET() {
       prevClose,
       delta,
       deltaP,
-      high52:   meta.fiftyTwoWeekHigh       as number,
-      low52:    meta.fiftyTwoWeekLow        as number,
-      marketCap: meta.marketCap             as number,
-      shares:   meta.sharesOutstanding      as number,
+      high52:   (meta.fiftyTwoWeekHigh  as number | null) ?? null,
+      low52:    (meta.fiftyTwoWeekLow   as number | null) ?? null,
+      marketCap: (meta.marketCap        as number | null) ?? null,
+      shares:   (meta.sharesOutstanding as number | null) ?? null,
       currency: meta.currency               as string,
       ts:       Date.now(),
       history,

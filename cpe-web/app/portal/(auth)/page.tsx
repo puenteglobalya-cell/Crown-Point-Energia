@@ -55,6 +55,15 @@ export default async function PortalPage() {
   const userIsAdmin   = isAdminRole(permissions)
   const isAccionista  = role?.role === 'accionista'
 
+  let investorDocs: { id: string; titulo: string; descripcion: string; categoria: string; file_name: string | null; created_at: string }[] = []
+  if (isAccionista || userIsAdmin) {
+    const { data } = await db
+      .from('investor_documents')
+      .select('id, titulo, descripcion, categoria, file_name, created_at')
+      .order('created_at', { ascending: false })
+    investorDocs = data ?? []
+  }
+
   return (
     <div className="portal-page">
 
@@ -88,6 +97,35 @@ export default async function PortalPage() {
         </h2>
         <ReportesLista items={items} userCanUpload={userCanUpload} isAccionista={isAccionista} />
       </section>
+
+      {(isAccionista || userIsAdmin) && investorDocs.length > 0 && (
+        <section className="portal-section">
+          <h2 className="portal-section__title">Documentos IR</h2>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {investorDocs.map(doc => (
+              <a
+                key={doc.id}
+                href={`/api/investor-documents/${doc.id}/download`}
+                target="_blank" rel="noreferrer"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '14px 18px', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)',
+                  textDecoration: 'none', color: 'var(--fg)', background: 'var(--surface)',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: 'var(--accent)' }}>
+                  <path d="M6 2h9l5 5v15a1 1 0 01-1 1H6a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.6"/>
+                  <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.6"/>
+                </svg>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>{doc.titulo}</div>
+                  {doc.descripcion && <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>{doc.descripcion}</div>}
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {(userIsAdmin || userCanUpload) && (
         <section className="portal-section">

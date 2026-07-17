@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   const area = req.nextUrl.searchParams.get('area') ?? 'todas'
 
   const db = createSupabaseServerAdminClient()
-  let q = db.from('job_applications')
+  let q = db.from('job_applications_view')
     .select('created_at, nombre, email, telefono, linkedin, area, estado, score, cv_name, mensaje, notas, ai_summary, datos')
     .order('created_at', { ascending: false })
   if (['nueva', 'revisada', 'contactada', 'descartada'].includes(estado)) q = q.eq('estado', estado)

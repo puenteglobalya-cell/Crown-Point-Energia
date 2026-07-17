@@ -23,6 +23,7 @@ const TIPOS = [
   { value: 'gobierno',      label: 'Gobierno corporativo' },
   { value: 'produccion',    label: 'Reporte de producción' },
   { value: 'presentacion',  label: 'Presentación corporativa' },
+  { value: 'politica',      label: 'Política corporativa (ESG)' },
   { value: 'otro',          label: 'Otro' },
 ]
 

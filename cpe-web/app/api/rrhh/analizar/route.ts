@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
   // Fetch the application
   const { data: app, error: appErr } = await db
-    .from('job_applications')
+    .from('job_applications_view')
     .select('*')
     .eq('id', id)
     .single()
@@ -114,7 +114,7 @@ Respondé EXACTAMENTE en este formato JSON (sin markdown, sin explicaciones extr
     }
 
     // Persist result
-    await db.from('job_applications').update({
+    await db.from('postulaciones').update({
       score,
       ai_summary: resumen,
       ai_analyzed_at: new Date().toISOString(),

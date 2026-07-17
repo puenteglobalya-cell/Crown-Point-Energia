@@ -25,7 +25,13 @@ type Carpeta = {
 }
 
 
-export default async function BibliotecaPage() {
+const CAT_TO_CARPETA: Record<string, string> = {
+  'gobierno-corporativo': 'Gobierno corporativo',
+}
+
+export default async function BibliotecaPage({ searchParams }: { searchParams: { cat?: string } }) {
+  const initialQuery = searchParams.cat ? CAT_TO_CARPETA[searchParams.cat] ?? '' : ''
+
   const supabase = createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -83,7 +89,7 @@ export default async function BibliotecaPage() {
           <p style={{ fontSize: 13, color: 'var(--fg-muted)', margin: 0 }}>Contactá al administrador para solicitar acceso.</p>
         </div>
       ) : (
-        <BibliotecaSearch carpetas={carpetas} />
+        <BibliotecaSearch carpetas={carpetas} initialQuery={initialQuery} />
       )}
     </div>
   )

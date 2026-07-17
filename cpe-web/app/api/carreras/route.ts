@@ -60,15 +60,37 @@ export async function POST(req: NextRequest) {
     let cv_name: string | null = null
     let cv_size: number | null = null
 
-    // Per-email: one application per 24 hours
-    const { data: recent } = await supabase
-      .from('job_applications')
+    // Find or create the candidate (deduped by email)
+    const { data: existingCandidato } = await supabase
+      .from('candidatos')
       .select('id')
-      .eq('email', email)
-      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-      .limit(1)
-    if (recent && recent.length > 0) {
-      return NextResponse.json({ error: 'Ya registramos tu postulación. Podés volver a intentarlo en 24 horas.' }, { status: 429 })
+      .ilike('email', email)
+      .maybeSingle()
+
+    let candidatoId = existingCandidato?.id as string | undefined
+
+    if (candidatoId) {
+      // Per-email: one application per 24 hours
+      const { data: recent } = await supabase
+        .from('postulaciones')
+        .select('id')
+        .eq('candidato_id', candidatoId)
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .limit(1)
+      if (recent && recent.length > 0) {
+        return NextResponse.json({ error: 'Ya registramos tu postulación. Podés volver a intentarlo en 24 horas.' }, { status: 429 })
+      }
+      await supabase.from('candidatos').update({ nombre, telefono, linkedin, updated_at: new Date().toISOString() }).eq('id', candidatoId)
+    } else {
+      const { data: created, error: candidatoErr } = await supabase
+        .from('candidatos')
+        .insert({ nombre, email, telefono, linkedin })
+        .select('id')
+        .single()
+      if (candidatoErr || !created) {
+        return NextResponse.json({ error: 'Error al guardar la postulación' }, { status: 500 })
+      }
+      candidatoId = created.id
     }
 
     if (cv && cv.size > 0) {
@@ -93,11 +115,16 @@ export async function POST(req: NextRequest) {
         cv_path = path
         cv_name = cv.name
         cv_size = cv.size
+        await supabase.from('candidato_documentos').insert({
+          candidato_id: candidatoId, tipo: 'cv',
+          storage_path: path, file_name: cv.name, file_size: cv.size,
+        })
       }
     }
 
-    const { error: insertErr } = await supabase.from('job_applications').insert({
-      nombre, email, telefono, linkedin, area, mensaje,
+    const { error: insertErr } = await supabase.from('postulaciones').insert({
+      candidato_id: candidatoId,
+      area, mensaje,
       cv_path, cv_name, cv_size,
       datos,
     })
@@ -122,7 +149,7 @@ export async function GET() {
 
   const supabase = createSupabaseServerAdminClient()
   const { data, error } = await supabase
-    .from('job_applications')
+    .from('job_applications_view')
     .select('*')
     .order('created_at', { ascending: false })
 

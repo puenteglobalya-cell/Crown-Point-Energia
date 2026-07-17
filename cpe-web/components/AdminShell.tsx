@@ -45,6 +45,7 @@ const NAV_GROUPS: { key: string; label: string; items: NavItem[] }[] = [
       { href: '/admin/suscriptores', label: 'Suscriptores IR', icon: 'mail' },
       { href: '/admin/ir-alertas', label: 'Alertas IR', icon: 'bell' },
       { href: '/admin/rrhh', label: 'RRHH', icon: 'briefcase', roles: ['rrhh', 'admin'] },
+      { href: '/admin/inversores', label: 'Inversores (registro privado)', icon: 'folder', hint: 'Documentos internos para accionistas + registro de contactos para futuras colocaciones' },
       { href: '/admin/contacto', label: 'Contacto', icon: 'message' },
       { href: '/admin/logs', label: 'Logs', icon: 'activity' },
     ],
