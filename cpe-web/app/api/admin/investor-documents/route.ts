@@ -3,6 +3,11 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
+import { enviarNotificacionDocumentoIR } from '@/lib/email'
+
+const CATEGORIA_LABELS: Record<string, string> = {
+  directorio: 'Directorio', cap_table: 'Cap table', legal: 'Legal', otro: 'Otro',
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -59,6 +64,10 @@ export async function POST(req: NextRequest) {
     }).select().single()
 
     if (error) return dbError(error)
+
+    // Notify accionista users — best-effort, never blocks the upload response
+    notifyAccionistas(db, titulo, CATEGORIA_LABELS[categoria] ?? categoria).catch(() => {})
+
     return NextResponse.json(data, { status: 201 })
   } catch {
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })
@@ -82,4 +91,19 @@ export async function DELETE(req: NextRequest) {
   const { error } = await db.from('investor_documents').delete().eq('id', id)
   if (error) return dbError(error)
   return NextResponse.json({ ok: true })
+}
+
+async function notifyAccionistas(
+  db: ReturnType<typeof createSupabaseServerAdminClient>,
+  titulo: string,
+  categoriaLabel: string,
+) {
+  const { data: roles } = await db.from('user_roles').select('user_id').eq('role', 'accionista').eq('activo', true)
+  if (!roles || roles.length === 0) return
+
+  const { data: { users } } = await db.auth.admin.listUsers({ perPage: 1000 })
+  const ids = new Set(roles.map(r => r.user_id))
+  const recipients = users.filter(u => ids.has(u.id) && u.email).map(u => u.email!)
+
+  await enviarNotificacionDocumentoIR({ titulo, categoria: categoriaLabel, recipients })
 }

@@ -127,7 +127,8 @@ export default function RrhhPage() {
   }
 
   async function deleteApp(app: Application) {
-    if (!confirm(`¿Eliminar la postulación de "${app.nombre}"? Esta acción es irreversible.`)) return
+    const detalle = `${AREA_LABELS[app.area] ?? app.area}${app.cv_path ? ' · con CV adjunto' : ' · sin CV'}`
+    if (!confirm(`¿Eliminar la postulación de "${app.nombre}" (${detalle})?\n\nEsta acción es irreversible y borra también el CV del storage.`)) return
     const res = await fetch('/api/rrhh/postulaciones', {
       method: 'DELETE',
       headers: { 'content-type': 'application/json' },
@@ -212,6 +213,11 @@ export default function RrhhPage() {
   }
 
   // ── Derived data ──────────
+
+  const candidatoCounts = apps.reduce<Record<string, number>>((acc, a) => {
+    acc[a.candidato_id] = (acc[a.candidato_id] ?? 0) + 1
+    return acc
+  }, {})
 
   const filteredApps = apps
     .filter(a => filterEstado === 'todas' || a.estado === filterEstado)
@@ -433,7 +439,17 @@ export default function RrhhPage() {
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg)' }}>{app.nombre}</span>
+                          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg)' }}>
+                            {app.nombre}
+                            {candidatoCounts[app.candidato_id] > 1 && (
+                              <span
+                                title="Este candidato tiene más de una postulación"
+                                style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)' }}
+                              >
+                                {candidatoCounts[app.candidato_id]}×
+                              </span>
+                            )}
+                          </span>
                           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                             {app.score != null && (
                               <span style={{

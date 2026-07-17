@@ -102,7 +102,9 @@ export default async function PortalPage() {
         <section className="portal-section">
           <h2 className="portal-section__title">Documentos IR</h2>
           <div style={{ display: 'grid', gap: 8 }}>
-            {investorDocs.map(doc => (
+            {investorDocs.map(doc => {
+              const isNew = Date.now() - new Date(doc.created_at).getTime() < 7 * 24 * 60 * 60 * 1000
+              return (
               <a
                 key={doc.id}
                 href={`/api/investor-documents/${doc.id}/download`}
@@ -118,11 +120,21 @@ export default async function PortalPage() {
                   <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.6"/>
                 </svg>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>{doc.titulo}</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {doc.titulo}
+                    {isNew && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+                        padding: '2px 7px', borderRadius: 'var(--r-pill)',
+                        background: 'rgba(108,174,82,0.15)', color: 'var(--cp-green-deep)',
+                      }}>Nuevo</span>
+                    )}
+                  </div>
                   {doc.descripcion && <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>{doc.descripcion}</div>}
                 </div>
               </a>
-            ))}
+              )
+            })}
           </div>
         </section>
       )}
