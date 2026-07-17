@@ -8,8 +8,8 @@ type Quote = {
   ok: true
   price: number
   prevClose: number
-  delta: number
-  deltaP: number
+  delta: number | null
+  deltaP: number | null
   high52: number | null
   low52: number | null
   marketCap: number | null
@@ -142,8 +142,8 @@ export default function StockChart({ lang = 'es' }: { lang?: 'es' | 'en' }) {
   const err     = state.status === 'error'
   const d       = state.data
 
-  const isUp   = d ? d.delta >= 0 : true
-  const deltaStr = d
+  const isUp   = d && d.delta != null ? d.delta >= 0 : true
+  const deltaStr = d && d.delta != null && d.deltaP != null
     ? `${isUp ? '+' : ''}${d.delta.toFixed(3)} (${isUp ? '+' : ''}${d.deltaP.toFixed(2)}%)`
     : ''
 
