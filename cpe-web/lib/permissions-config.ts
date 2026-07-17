@@ -12,6 +12,7 @@ export const PERMISSIONS = {
   delete_reports:  'Eliminar reportes',
   manage_users:    'Gestionar usuarios',
   manage_cms:      'Panel CMS / Admin',
+  view_investor:   'Ver sección inversores',
 } as const
 
 export type Permission = keyof typeof PERMISSIONS
@@ -27,7 +28,7 @@ export const DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
   uploader:   ['view_reports', 'view_dashboard', 'view_comercial', 'view_drafts', 'upload_reports'],
   admin:      PERMISSION_KEYS,
   rrhh:       ['view_reports', 'view_dashboard'],
-  accionista: ['view_reports', 'view_dashboard', 'view_comercial'],
+  accionista: ['view_reports', 'view_dashboard', 'view_comercial', 'view_investor'],
   finanzas:   ['view_reports', 'view_dashboard', 'view_drafts', 'upload_reports'],
 }
 
@@ -36,3 +37,7 @@ export const DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
 // is out of scope for that role, the same way /admin/rrhh is the only admin
 // screen an 'rrhh' user can reach.
 export const FINANZAS_REPORT_TYPES = ['financiero', 'facturacion'] as const
+
+// Report types the 'accionista' role can see in its sandboxed sub-portal
+// (/portal/accionista) — same sandboxing pattern as finanzas/rrhh.
+export const ACCIONISTA_REPORT_TYPES = ['financiero', 'produccion'] as const

@@ -208,11 +208,29 @@ export const BACKUP_TABLES: BackupTable[] = [
     category: 'contactos', included: true,
   },
   {
-    table: 'job_applications',    key: 'job_applications',    label: 'Postulaciones',
+    table: 'candidatos',           key: 'candidatos',           label: 'Candidatos',
+    description: 'Personas que se postularon en la sección Carreras (deduplicadas por email)',
+    category: 'contactos', included: true,
+    select: 'id, nombre, email, telefono, linkedin, created_at, updated_at',
+  },
+  {
+    table: 'postulaciones',        key: 'postulaciones',        label: 'Postulaciones',
     description: 'Postulaciones recibidas en la sección Carreras',
     category: 'contactos', included: true,
-    select: 'id, nombre, email, telefono, linkedin, area, mensaje, estado, notas, created_at, updated_at',
+    select: 'id, candidato_id, position_id, area, mensaje, estado, notas, score, ai_summary, created_at, updated_at',
     notes: 'Sin CVs físicos — descargar desde Supabase → Storage',
+  },
+  {
+    table: 'investor_contacts',    key: 'investor_contacts',    label: 'Registro de inversores',
+    description: 'Contactos de accionistas actuales y prospectos para futuras colocaciones',
+    category: 'contactos', included: true,
+  },
+  {
+    table: 'investor_documents',   key: 'investor_documents',   label: 'Documentos IR internos',
+    description: 'Metadata de documentos privados para accionistas',
+    category: 'contactos', included: true,
+    select: 'id, titulo, descripcion, categoria, file_name, file_size, created_at, updated_at',
+    notes: 'Sin archivos físicos — descargar desde Supabase → Storage (bucket investor-documents)',
   },
 
   // ── No incluido ──────────────────────────────────────────────────────────

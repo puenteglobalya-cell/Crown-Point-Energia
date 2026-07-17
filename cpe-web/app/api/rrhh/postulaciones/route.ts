@@ -13,7 +13,7 @@ export async function GET() {
 
   const db = createSupabaseServerAdminClient()
   const { data, error } = await db
-    .from('job_applications')
+    .from('job_applications_view')
     .select('*')
     .order('created_at', { ascending: false })
 
@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest) {
   if (notas !== undefined) update.notas = notas
 
   const db = createSupabaseServerAdminClient()
-  const { error } = await db.from('job_applications').update(update).eq('id', id)
+  const { error } = await db.from('postulaciones').update(update).eq('id', id)
   if (error) return dbError(error)
 
   await logActivity({ userId: user.id, userEmail: user.email ?? null, action: 'update_postulacion', resourceType: 'postulacion', resourceId: id, metadata: { estado, notas: notas != null } })
@@ -51,12 +51,12 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'Falta id' }, { status: 400 })
 
   const db = createSupabaseServerAdminClient()
-  const { data: app } = await db.from('job_applications').select('cv_path, nombre').eq('id', id).single()
+  const { data: app } = await db.from('job_applications_view').select('cv_path, nombre').eq('id', id).single()
   if (app?.cv_path) {
     await db.storage.from('documents').remove([app.cv_path])
   }
 
-  const { error } = await db.from('job_applications').delete().eq('id', id)
+  const { error } = await db.from('postulaciones').delete().eq('id', id)
   if (error) return dbError(error)
 
   await logActivity({ userId: user.id, userEmail: user.email ?? null, action: 'delete_postulacion', resourceType: 'postulacion', resourceId: id, metadata: { nombre: app?.nombre } })
