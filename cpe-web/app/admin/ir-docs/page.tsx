@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 type IrDoc = {
@@ -182,6 +183,11 @@ export default function IrDocsAdminPage() {
             </h1>
             <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
               {docs.length} documentos · EE.FF., MD&amp;A, AGM, ESTMA, Gobierno corporativo
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '6px 0 0' }}>
+              Estos documentos son <strong>públicos</strong> (se ven en /inversores sin login). Para materiales
+              privados solo para accionistas, usá{' '}
+              <Link href="/admin/inversores" style={{ color: 'var(--accent)' }}>Inversores — privado</Link>.
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>

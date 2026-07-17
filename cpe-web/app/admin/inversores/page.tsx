@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 
 type Doc = {
@@ -142,6 +143,11 @@ export default function InversoresAdminPage() {
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>Inversores</h1>
             <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>Documentos internos de IR y registro de contactos</p>
+            <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '6px 0 0' }}>
+              Todo lo de este panel es <strong>privado</strong> — nada se ve en la web pública. Para EE.FF., MD&amp;A,
+              AGM u otros documentos que sí deben ser públicos, usá{' '}
+              <Link href="/admin/ir-docs" style={{ color: 'var(--accent)' }}>Documentos IR — públicos</Link>.
+            </p>
           </div>
           {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
         </div>
@@ -220,7 +226,14 @@ export default function InversoresAdminPage() {
                 <input type="checkbox" checked={filterOn} onChange={e => setFilterOn(e.target.checked)} />
                 Solo interesados en ON
               </label>
-              <button className="btn btn-primary" style={{ fontSize: 12, padding: '8px 16px', marginLeft: 'auto' }} onClick={() => setShowNewContact(true)}>
+              <a
+                href={`/api/admin/investor-contacts/export?tipo=${filterTipo}&on=${filterOn ? '1' : '0'}`}
+                className="btn"
+                style={{ fontSize: 12, padding: '8px 16px', textDecoration: 'none', marginLeft: 'auto' }}
+              >
+                Exportar Excel
+              </a>
+              <button className="btn btn-primary" style={{ fontSize: 12, padding: '8px 16px' }} onClick={() => setShowNewContact(true)}>
                 + Nuevo contacto
               </button>
             </div>
