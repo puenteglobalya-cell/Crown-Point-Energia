@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { AdminSkeletonRows } from '@/components/AdminPageHeader'
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -88,6 +89,7 @@ export default function RrhhPage() {
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<'fecha' | 'score'>('fecha')
   const [view, setView] = useState<'lista' | 'tablero'>('lista')
+  const [visibleCount, setVisibleCount] = useState(30)
   const [analyzingId, setAnalyzingId] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
 
@@ -109,6 +111,8 @@ export default function RrhhPage() {
   useEffect(() => {
     Promise.all([loadApps(), loadPositions()]).then(() => setLoading(false))
   }, [loadApps, loadPositions])
+
+  useEffect(() => { setVisibleCount(30) }, [filterEstado, filterArea, search, sortBy])
 
   function flash(m: string) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
@@ -322,7 +326,7 @@ export default function RrhhPage() {
         </div>
 
         {loading ? (
-          <p style={{ color: 'var(--fg-soft)', fontFamily: 'var(--font-mono)', fontSize: 13 }}>Cargando…</p>
+          <AdminSkeletonRows rows={6} />
         ) : tab === 'postulaciones' ? (
           /* ── POSTULACIONES TAB ──────────────────────────────────────── */
           <>
@@ -423,8 +427,9 @@ export default function RrhhPage() {
                   </div>
                 )}
                 {/* List */}
-                {view === 'lista' && <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--surface)', maxHeight: '70vh', overflowY: 'auto' }}>
-                  {filteredApps.map((app, i) => {
+                {view === 'lista' && <div>
+                <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--surface)', maxHeight: '70vh', overflowY: 'auto' }}>
+                  {filteredApps.slice(0, visibleCount).map((app, i) => {
                     const ec = ESTADO_CONF[app.estado] ?? ESTADO_CONF.nueva
                     const age = daysSince(app.created_at)
                     return (
@@ -433,7 +438,7 @@ export default function RrhhPage() {
                         onClick={() => setSelected(app.id === selected ? null : app.id)}
                         style={{
                           padding: '14px 18px', cursor: 'pointer',
-                          borderBottom: i < filteredApps.length - 1 ? '1px solid var(--rule)' : 'none',
+                          borderBottom: i < Math.min(filteredApps.length, visibleCount) - 1 ? '1px solid var(--rule)' : 'none',
                           background: app.id === selected ? 'var(--bg-alt)' : 'transparent',
                           borderLeft: app.estado === 'nueva' ? '3px solid #2FA08A' : '3px solid transparent',
                         }}
@@ -479,6 +484,12 @@ export default function RrhhPage() {
                       </div>
                     )
                   })}
+                </div>
+                {filteredApps.length > visibleCount && (
+                  <button className="btn" style={{ fontSize: 12, padding: '10px 16px', marginTop: 10, width: '100%' }} onClick={() => setVisibleCount(v => v + 30)}>
+                    Mostrar más ({filteredApps.length - visibleCount} restantes)
+                  </button>
+                )}
                 </div>}
 
                 {/* Detail panel */}

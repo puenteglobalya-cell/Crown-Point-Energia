@@ -6,6 +6,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import ArgentinaMap from '@/components/ArgentinaMap'
 import { DroneHud } from '@/components/DroneHud'
 import { sumWellsFromBlocks, fetchOperationsBlocks } from '@/lib/content-fetch'
+import { CopyLinkButton } from '@/components/CopyLinkButton'
 
 export const revalidate = 60
 
@@ -472,9 +473,12 @@ export default async function HomePage() {
                       <h3>{item.descripcion}</h3>
                     </div>
                     {item.pdf_url && (
-                      <a className="press-arrow" href={item.pdf_url} target="_blank" rel="noreferrer" aria-label="Ver PDF en CNV">
-                        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11h12M12 5l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      </a>
+                      <>
+                        <CopyLinkButton url={item.pdf_url} />
+                        <a className="press-arrow" href={item.pdf_url} target="_blank" rel="noreferrer" aria-label="Ver PDF en CNV">
+                          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11h12M12 5l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </a>
+                      </>
                     )}
                   </li>
                 ))}

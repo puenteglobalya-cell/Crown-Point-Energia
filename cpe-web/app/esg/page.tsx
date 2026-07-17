@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
 import { cmsLineBreaks } from '@/lib/cms-html'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { CopyLinkButton } from '@/components/CopyLinkButton'
 
 type PoliticaDoc = {
   id: string
@@ -80,23 +81,27 @@ export default async function EsgPage() {
                 <span className="lang-en">Corporate governance</span>
               </h2>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 'var(--s-2)' }}>
-                {politicas.map(doc => (
+                {politicas.map(doc => {
+                  const href = `${supabaseUrl}/storage/v1/object/public/documents/${doc.storage_path}`
+                  return (
                   <li key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--rule)', fontSize: 14 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: 'var(--accent)' }}>
                       <path d="M6 2h9l5 5v15a1 1 0 01-1 1H6a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.6"/>
                       <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.6"/>
                     </svg>
                     <a
-                      href={`${supabaseUrl}/storage/v1/object/public/documents/${doc.storage_path}`}
+                      href={href}
                       target="_blank" rel="noreferrer"
                       style={{ color: 'var(--fg)', textDecoration: 'none', flex: 1 }}
                     >
                       <span className="lang-es">{doc.titulo_es}</span>
                       <span className="lang-en">{doc.titulo_en || doc.titulo_es}</span>
                     </a>
+                    <CopyLinkButton url={href} />
                     <span style={{ fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>PDF</span>
                   </li>
-                ))}
+                  )
+                })}
                 {[
                   { es: 'Política anticorrupción', en: 'Anti-corruption policy', href: '/biblioteca?cat=gobierno-corporativo' },
                   { es: 'Código de conducta y ética empresarial', en: 'Code of conduct & business ethics', href: '/biblioteca?cat=gobierno-corporativo' },
