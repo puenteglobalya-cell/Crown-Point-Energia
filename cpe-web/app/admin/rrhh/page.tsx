@@ -30,6 +30,7 @@ type Application = {
   score?: number | null
   ai_summary?: string | null
   ai_analyzed_at?: string | null
+  candidato_id: string
 }
 
 type Tab = 'postulaciones' | 'posiciones'
@@ -507,6 +508,34 @@ export default function RrhhPage() {
                       {sel.linkedin && <InfoRow label="LinkedIn" val={sel.linkedin} href={sel.linkedin} />}
                       <InfoRow label="Área" val={AREA_LABELS[sel.area] ?? sel.area} />
                     </div>
+
+                    {/* Other applications from the same candidate (deduped by email) */}
+                    {(() => {
+                      const otras = apps.filter(a => a.candidato_id === sel.candidato_id && a.id !== sel.id)
+                      if (otras.length === 0) return null
+                      return (
+                        <div style={{ background: 'var(--bg-alt)', borderRadius: 'var(--r-md)', padding: '16px', marginBottom: 20 }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--fg-muted)', marginBottom: 10 }}>
+                            Otras postulaciones de este candidato ({otras.length})
+                          </div>
+                          <div style={{ display: 'grid', gap: 6 }}>
+                            {otras.map(a => (
+                              <button
+                                key={a.id}
+                                onClick={() => setSelected(a.id)}
+                                className="btn"
+                                style={{ fontSize: 12, padding: '8px 12px', textAlign: 'left', display: 'flex', justifyContent: 'space-between', gap: 8 }}
+                              >
+                                <span>{AREA_LABELS[a.area] ?? a.area}</span>
+                                <span style={{ color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
+                                  {(ESTADO_CONF[a.estado] ?? ESTADO_CONF.nueva).label} · hace {daysSince(a.created_at)}d
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })()}
 
                     {/* Structured experience data */}
                     {sel.datos && Object.values(sel.datos).some(Boolean) && (
