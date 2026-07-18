@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -90,19 +91,18 @@ export default function AdminBiblioteca() {
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px' }}>
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
-          <Link href="/admin/usuarios" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Usuarios</Link>
-          <Link href="/admin/documentos" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Documentos</Link>
-          <Link href="/admin/comunicados" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Comunicados</Link>
-          <Link href="/admin/reportes" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Reportes</Link>
-          <span style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-            <Link href="/biblioteca" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--cp-green)', textDecoration: 'none' }}>Ver Biblioteca →</Link>
-          </span>
-        </div>
-        <span style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--cp-green)', fontWeight: 700 }}>Admin</span>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginTop: 4, marginBottom: 0 }}>Biblioteca</h1>
-      </div>
+      <AdminPageHeader
+        title="Biblioteca"
+        note={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <Link href="/admin/usuarios" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Usuarios</Link>
+            <Link href="/admin/documentos" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Documentos</Link>
+            <Link href="/admin/comunicados" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Comunicados</Link>
+            <Link href="/admin/reportes" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>Reportes</Link>
+          </div>
+        }
+        right={<Link href="/biblioteca" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--cp-green)', textDecoration: 'none' }}>Ver Biblioteca →</Link>}
+      />
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--rule)', marginBottom: 32 }}>

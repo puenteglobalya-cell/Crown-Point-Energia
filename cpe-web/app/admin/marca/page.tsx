@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { useState } from 'react'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 // ── Paleta completa de marca (de tokens.css) ──────────────────────────────────
 const PRIMARY_COLORS = [
@@ -185,13 +186,10 @@ export default function MarcaPage() {
 
       {/* Header */}
       <div style={{ marginBottom: 40 }}>
-        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '0 0 4px' }}>Admin · Marca</p>
-        <h1 style={{ fontSize: 32, fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-display)', margin: '0 0 10px', letterSpacing: '-0.02em' }}>
-          Manual de Marca
-        </h1>
-        <p style={{ fontSize: 15, color: 'var(--fg-soft)', margin: 0, maxWidth: '60ch', lineHeight: 1.6 }}>
-          Referencia de identidad visual de Crown Point Energía S.A. — paleta de colores, tipografía, logo y pautas de uso para garantizar coherencia en todas las comunicaciones.
-        </p>
+        <AdminPageHeader
+          title="Manual de Marca"
+          subtitle="Referencia de identidad visual de Crown Point Energía S.A. — paleta de colores, tipografía, logo y pautas de uso para garantizar coherencia en todas las comunicaciones."
+        />
       </div>
 
       {/* ── 1. LOGO ─────────────────────────────────────────────────────────── */}

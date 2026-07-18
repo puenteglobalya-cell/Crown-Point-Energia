@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 interface Recipient {
   id: string
@@ -149,13 +150,10 @@ export default function IrAlertasPage() {
     <div style={{ maxWidth: 1400, margin: '0 auto', padding: '36px 24px' }}>
 
       {/* Header */}
-      <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '0 0 4px' }}>Admin</p>
-      <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-display)', margin: '0 0 6px', letterSpacing: '-0.02em' }}>
-        Alertas IR — Vencimientos y Notificaciones
-      </h1>
-      <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '0 0 32px' }}>
-        Alertas automáticas de vencimientos de filing (días 60/70/80 post-cierre de trimestre) y lista de destinatarios que reciben notificación cuando se publica un documento relevante para inversores.
-      </p>
+      <AdminPageHeader
+        title="Alertas IR — Vencimientos y Notificaciones"
+        subtitle="Alertas automáticas de vencimientos de filing (días 60/70/80 post-cierre de trimestre) y lista de destinatarios que reciben notificación cuando se publica un documento relevante para inversores."
+      />
 
       {/* Deadline calendar */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', overflow: 'hidden', marginBottom: 28 }}>

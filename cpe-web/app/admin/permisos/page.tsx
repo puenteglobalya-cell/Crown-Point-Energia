@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas'] as const
 type Role = typeof ROLES[number]
@@ -55,17 +56,11 @@ export default function PermisosPage() {
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 24px' }}>
-      <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: '#8e91b0', margin: '0 0 4px' }}>
-        Gestión
-      </p>
-      <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-display)', margin: '0 0 8px' }}>
-        Permisos por rol
-      </h1>
-      <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '0 0 28px', maxWidth: 620 }}>
-        Cada casilla habilita o deshabilita una acción para todos los usuarios de ese rol.
-        Los permisos de Admin marcados con 🔒 no se pueden desactivar. Los cambios aplican
-        al siguiente login o recarga de sesión del usuario afectado.
-      </p>
+      <AdminPageHeader
+        title="Permisos por rol"
+        subtitle="Cada casilla habilita o deshabilita una acción para todos los usuarios de ese rol."
+        note="Los permisos de Admin marcados con 🔒 no se pueden desactivar. Los cambios aplican al siguiente login o recarga de sesión del usuario afectado."
+      />
 
       {loading ? (
         <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Cargando…</p>

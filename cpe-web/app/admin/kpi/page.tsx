@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import type { KpiExtracted } from '@/lib/parsers/kpi-excel'
 import type { KpiWordExtracted } from '@/lib/parsers/kpi-word'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 type Step = 'upload' | 'preview' | 'done' | 'error'
 
@@ -136,13 +137,12 @@ export default function AdminKpiPage() {
     <div style={{ maxWidth: 1400, margin: '0 auto', padding: '36px 24px' }}>
 
       {/* Header */}
-      <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '0 0 4px' }}>Admin</p>
-      <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-display)', margin: '0 0 6px', letterSpacing: '-0.02em' }}>
-        Actualizar KPIs desde Excel + Word
-      </h1>
-      <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '0 0 32px' }}>
-        Se requieren <strong>ambos archivos</strong> para garantizar integridad: el Excel de consolidación (datos financieros) y el Word del MD&amp;A (plan de pozos y contexto operacional).
-      </p>
+      <div style={{ marginBottom: 32 }}>
+        <AdminPageHeader
+          title="Actualizar KPIs desde Excel + Word"
+          subtitle="Se requieren ambos archivos para garantizar integridad: el Excel de consolidación (datos financieros) y el Word del MD&A (plan de pozos y contexto operacional)."
+        />
+      </div>
 
       {/* Upload step */}
       {step === 'upload' && (

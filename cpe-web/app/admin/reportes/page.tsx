@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 type ReporteItem = {
   id: string
@@ -212,31 +213,28 @@ export default function ReportesAdminPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
       <div style={{ maxWidth: 1400, margin: '0 auto' }}>
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 600, letterSpacing: '-0.02em', margin: '0 0 4px' }}>
-              Reportes
-            </h1>
-            <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: 0 }}>Gestión de todos los tipos de reportes</p>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Link
-              href="/admin/reportes/comparar"
-              className="btn"
-              style={{ textDecoration: 'none', padding: '10px 18px', fontSize: 13 }}
-            >
-              ⇄ Comparar ingresos
-            </Link>
-            <Link
-              href="/portal/subir"
-              className="btn btn-primary"
-              style={{ textDecoration: 'none', padding: '10px 20px', fontSize: 13 }}
-            >
-              + Subir reporte
-            </Link>
-          </div>
-        </div>
+        <AdminPageHeader
+          title="Reportes"
+          subtitle="Gestión de todos los tipos de reportes"
+          right={
+            <>
+              <Link
+                href="/admin/reportes/comparar"
+                className="btn"
+                style={{ textDecoration: 'none', padding: '10px 18px', fontSize: 13 }}
+              >
+                ⇄ Comparar ingresos
+              </Link>
+              <Link
+                href="/portal/subir"
+                className="btn btn-primary"
+                style={{ textDecoration: 'none', padding: '10px 20px', fontSize: 13 }}
+              >
+                + Subir reporte
+              </Link>
+            </>
+          }
+        />
 
         {msg && (
           <div style={{

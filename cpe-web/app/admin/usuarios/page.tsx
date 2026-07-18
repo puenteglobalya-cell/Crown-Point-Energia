@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type User = {
@@ -495,21 +496,15 @@ export default function UsuariosPage() {
           </div>
         )}
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 12 }}>
-          <div>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '0 0 4px' }}>Admin</p>
-            <h1 style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em', margin: 0, color: 'var(--fg)' }}>
-              Usuarios
-              <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--fg-muted)', marginLeft: 10, fontFamily: 'var(--font-mono)' }}>
-                {loading ? '…' : `${users.length} total${banCounts.baneados > 0 ? ` · ${banCounts.baneados} baneados` : ''}`}
-              </span>
-            </h1>
-          </div>
-          <button className="btn btn-primary" onClick={() => setShowInvite(v => !v)} style={{ fontSize: 13, padding: '9px 20px', flexShrink: 0 }}>
-            {showInvite ? '× Cancelar' : '+ Invitar'}
-          </button>
-        </div>
+        <AdminPageHeader
+          title="Usuarios"
+          subtitle={loading ? '…' : `${users.length} total${banCounts.baneados > 0 ? ` · ${banCounts.baneados} baneados` : ''}`}
+          right={
+            <button className="btn btn-primary" onClick={() => setShowInvite(v => !v)} style={{ fontSize: 13, padding: '9px 20px', flexShrink: 0 }}>
+              {showInvite ? '× Cancelar' : '+ Invitar'}
+            </button>
+          }
+        />
 
         {/* Invite form */}
         {showInvite && (

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 type Subscriber = {
   id: string; nombre: string; email: string
@@ -56,25 +57,21 @@ export default function SuscriptoresAdminPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
-                Suscriptores IR
-              </h1>
-              <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
-                Lista de correo — Relaciones con Inversores
-                <span style={{ marginLeft: 8, background: 'var(--accent)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 'var(--r-pill)' }}>{activas} activos</span>
-              </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <AdminPageHeader
+          title="Suscriptores IR"
+          subtitle="Lista de correo — Relaciones con Inversores"
+          note={
+            <span style={{ background: 'var(--accent)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 'var(--r-pill)' }}>{activas} activos</span>
+          }
+          right={
+            <>
               {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>&#10003; {msg}</span>}
               <a href={`/api/admin/suscriptores/export?filter=${filter}`} className="btn btn-primary" style={{ fontSize: 12, padding: '8px 16px', textDecoration: 'none' }}>
                 Exportar Excel
               </a>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
           {(['todas', 'activas', 'inactivas'] as const).map(f => (

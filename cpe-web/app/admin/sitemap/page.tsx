@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { SITE_SECTIONS, AREA_LABELS, AREA_ORDER, type SiteArea } from '@/lib/site-sections'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 const AREA_COLORS: Record<SiteArea, string> = {
   public:    '#1F2566',
@@ -42,31 +43,27 @@ export default function SitemapPage() {
         }
       `}</style>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 36, gap: 16 }}>
-        <div>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '0 0 4px' }}>
-            Admin
-          </p>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-display)', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
-            Sitemap
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: 0 }}>
-            Todas las secciones del sistema · {SITE_SECTIONS.length} rutas en total.
+      <AdminPageHeader
+        title="Sitemap"
+        subtitle={`Todas las secciones del sistema · ${SITE_SECTIONS.length} rutas en total.`}
+        note={
+          <>
             Para agregar una nueva, editá <code style={{ fontFamily: 'var(--font-mono)', fontSize: 12, background: 'var(--bg-alt)', padding: '1px 6px', borderRadius: 4 }}>lib/site-sections.ts</code>.
-          </p>
-        </div>
-        <button
-          className="btn no-print"
-          onClick={() => window.print()}
-          style={{ padding: '9px 18px', whiteSpace: 'nowrap', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 7, fontSize: 13 }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
-          </svg>
-          Exportar PDF
-        </button>
-      </div>
+          </>
+        }
+        right={
+          <button
+            className="btn no-print"
+            onClick={() => window.print()}
+            style={{ padding: '9px 18px', whiteSpace: 'nowrap', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 7, fontSize: 13 }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+            </svg>
+            Exportar PDF
+          </button>
+        }
+      />
 
       {/* Areas */}
       <div style={{ display: 'grid', gap: 32 }}>

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import type { DatosIngresos } from '@/lib/parsers/ingresos'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 export type ReporteConDatos = {
   id: string
@@ -75,20 +76,15 @@ export function CompararClient({ reportes }: { reportes: ReporteConDatos[] }) {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 600, letterSpacing: '-0.02em', margin: '0 0 4px' }}>
-              Comparar reportes de ingresos
-            </h1>
-            <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: 0 }}>
-              Variación período contra período de las métricas clave.
-            </p>
-          </div>
-          <Link href="/admin/reportes" className="btn" style={{ textDecoration: 'none', padding: '9px 16px', fontSize: 13 }}>
-            ← Volver a reportes
-          </Link>
-        </div>
+        <AdminPageHeader
+          title="Comparar reportes de ingresos"
+          subtitle="Variación período contra período de las métricas clave."
+          right={
+            <Link href="/admin/reportes" className="btn" style={{ textDecoration: 'none', padding: '9px 16px', fontSize: 13 }}>
+              ← Volver a reportes
+            </Link>
+          }
+        />
 
         {!enoughReports ? (
           <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', background: 'var(--surface)', padding: '32px 24px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: 14 }}>
