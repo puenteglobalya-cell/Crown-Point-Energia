@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { requireAdminUser } from '@/lib/admin-auth'
+import { requireComplianceUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { looksLikeBot, HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  const user = await requireAdminUser()
+  const user = await requireComplianceUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const db = createSupabaseServerAdminClient()
@@ -109,7 +109,7 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  const user = await requireAdminUser()
+  const user = await requireComplianceUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id, estado, notas } = await req.json()
@@ -127,7 +127,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  const user = await requireAdminUser()
+  const user = await requireComplianceUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await req.json()

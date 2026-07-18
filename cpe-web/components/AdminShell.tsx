@@ -47,7 +47,7 @@ const NAV_GROUPS: { key: string; label: string; items: NavItem[] }[] = [
       { href: '/admin/rrhh', label: 'RRHH', icon: 'briefcase', roles: ['rrhh', 'admin'] },
       { href: '/admin/inversores', label: 'Inversores — privado (accionistas)', icon: 'folder', hint: 'NO es público: documentos internos solo para el rol accionista en /portal + registro de contactos para futuras colocaciones' },
       { href: '/admin/contacto', label: 'Contacto', icon: 'message' },
-      { href: '/admin/denuncias', label: 'Línea Ética — Denuncias', icon: 'bell', hint: 'Canal confidencial de denuncias e irregularidades — acceso restringido a administradores' },
+      { href: '/admin/denuncias', label: 'Línea Ética — Denuncias', icon: 'bell', roles: ['compliance', 'admin'], hint: 'Canal confidencial de denuncias e irregularidades — acceso restringido a Compliance/administradores' },
       { href: '/admin/logs', label: 'Logs', icon: 'activity' },
     ],
   },
@@ -127,9 +127,9 @@ function Icon({ name, size = 17 }: { name: IconName; size?: number }) {
 }
 
 function getVisibleGroups(role: string): typeof NAV_GROUPS {
-  if (role === 'rrhh') {
+  if (role === 'rrhh' || role === 'compliance') {
     return NAV_GROUPS
-      .map(g => ({ ...g, items: g.items.filter(item => item.roles?.includes('rrhh')) }))
+      .map(g => ({ ...g, items: g.items.filter(item => item.roles?.includes(role)) }))
       .filter(g => g.items.length > 0)
   }
   return NAV_GROUPS
@@ -571,13 +571,15 @@ export function AdminShell({
 
         {/* Nav groups */}
         <nav style={{ flex: 1, padding: '4px 0' }}>
-          {!collapsed && userRole === 'rrhh' && (
+          {!collapsed && (userRole === 'rrhh' || userRole === 'compliance') && (
             <div style={{
               margin: '0 12px 10px', padding: '8px 10px', borderRadius: 8,
               background: 'rgba(201,80,40,.08)', border: '1px solid rgba(201,80,40,.2)',
               fontSize: 11, color: '#b03010', lineHeight: 1.4,
             }}>
-              Vista restringida a RRHH — el resto del panel de administración no está disponible para tu rol.
+              {userRole === 'rrhh'
+                ? 'Vista restringida a RRHH — el resto del panel de administración no está disponible para tu rol.'
+                : 'Vista restringida a Compliance — el resto del panel de administración no está disponible para tu rol.'}
             </div>
           )}
 
