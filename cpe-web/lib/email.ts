@@ -298,3 +298,46 @@ export async function enviarNotificacionDocumentoIR({
   const sent = results.filter(r => r.status === 'fulfilled').length
   return { sent, total: recipients.length }
 }
+
+const CATEGORIA_LABELS_DENUNCIA: Record<string, string> = {
+  anticorrupcion: 'Anticorrupción',
+  informacion_privilegiada: 'Uso de información privilegiada',
+  conflicto_interes: 'Conflicto de interés',
+  acoso_discriminacion: 'Acoso o discriminación',
+  fraude_financiero: 'Fraude o irregularidad financiera',
+  seguridad_ambiente: 'Seguridad, salud o medio ambiente',
+  otro: 'Otro',
+}
+
+// Alerts the ethics inbox that a new report came in — deliberately never
+// includes the report's content (sensitive, and the reporter may be
+// anonymous); it only points staff to the admin panel to review it there.
+//
+// TODO — PENDIENTE DE VALIDAR: for 'fraude_financiero' / 'anticorrupcion',
+// governance best practice is a separate escalation route to the Audit
+// Committee / Board (bypassing management) instead of only this shared
+// ethics inbox, in case management itself is implicated. No such route
+// exists yet — needs a real contact from the company before wiring it up.
+export async function enviarNotificacionDenuncia({ categoria }: { categoria: string }) {
+  if (!resend) return
+  const label = CATEGORIA_LABELS_DENUNCIA[categoria] ?? categoria
+  const html = emailShell('Nueva denuncia recibida', `
+    <p style="margin:0 0 20px;font-size:14px;color:#5a5d78;line-height:1.6">
+      Se recibió una nueva denuncia por el canal de Línea Ética, categoría:
+      <strong style="color:#1a1c2e">${label}</strong>.
+    </p>
+    <a href="${BASE_URL}/admin/denuncias"
+       style="display:inline-block;background:#1F2566;color:#fff;text-decoration:none;
+              padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600">
+      Revisar en el panel →
+    </a>
+    <p style="margin:24px 0 0;font-size:12px;color:#8e91b0">
+      Por confidencialidad, el contenido de la denuncia no se incluye en este email.
+    </p>`)
+  await resend.emails.send({
+    from: FROM,
+    to: 'etica@crownpointenergy.com',
+    subject: '[CPE Línea Ética] Nueva denuncia recibida',
+    html,
+  }).catch(() => {/* non-blocking */})
+}

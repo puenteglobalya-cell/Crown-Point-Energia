@@ -107,24 +107,17 @@ export default async function EsgPage() {
                   { es: 'Código de conducta y ética empresarial', en: 'Code of conduct & business ethics', href: '/biblioteca?cat=gobierno-corporativo' },
                   { es: 'Política de uso de información privilegiada', en: 'Insider trading policy', href: '/biblioteca?cat=gobierno-corporativo' },
                   { es: 'Política de denuncia de irregularidades', en: 'Whistleblower policy', href: '/biblioteca?cat=gobierno-corporativo' },
-                  { es: 'Formulario de denuncias e irregularidades', en: 'Reporting form', href: 'https://docs.google.com/forms/d/e/1FAIpQLSceRgaaMfvPO7ndB2v_5UHpUna9tmV0om4JEDEl5cIqUasQJA/viewform?pli=1', isLink: true, external: true },
+                  { es: 'Formulario de denuncias e irregularidades', en: 'Reporting form', href: '/denuncias', isLink: true },
                 ].map((doc, i) => (
                   <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--rule)', fontSize: 14 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: 'var(--cp-green)' }}>
                       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="currentColor" strokeWidth="1.8"/>
                       <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
                     </svg>
-                    {doc.external ? (
-                      <a href={doc.href} target="_blank" rel="noreferrer" style={{ color: 'var(--fg)', textDecoration: 'none', flex: 1 }}>
-                        <span className="lang-es">{doc.es}</span>
-                        <span className="lang-en">{doc.en}</span>
-                      </a>
-                    ) : (
-                      <Link href={doc.href} style={{ color: 'var(--fg)', textDecoration: 'none', flex: 1 }}>
-                        <span className="lang-es">{doc.es}</span>
-                        <span className="lang-en">{doc.en}</span>
-                      </Link>
-                    )}
+                    <Link href={doc.href} style={{ color: 'var(--fg)', textDecoration: 'none', flex: 1 }}>
+                      <span className="lang-es">{doc.es}</span>
+                      <span className="lang-en">{doc.en}</span>
+                    </Link>
                     <span style={{ fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>
                       {doc.isLink ? 'enlace' : 'PDF'}
                     </span>
@@ -153,6 +146,13 @@ export default async function EsgPage() {
                 <span className="lang-en">Confidential channel to report conduct contrary to the Code of Ethics. Reports may be submitted anonymously. All are handled with complete confidentiality.</span>
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
+                <Link href="/denuncias" style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  background: 'var(--cp-green)', color: 'var(--cp-navy-darker)', fontWeight: 700,
+                  fontSize: 14, padding: '11px 20px', borderRadius: 'var(--r-md)', textDecoration: 'none', marginBottom: 4,
+                }}>
+                  Hacer una denuncia →
+                </Link>
                 <a href={`tel:${ethicsPhone.replace(/\s/g,'')}`} style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#fff', fontSize: 15, fontWeight: 600 }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11.5a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .82h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="1.8"/></svg>
                   {ethicsPhone}

@@ -47,6 +47,7 @@ const NAV_GROUPS: { key: string; label: string; items: NavItem[] }[] = [
       { href: '/admin/rrhh', label: 'RRHH', icon: 'briefcase', roles: ['rrhh', 'admin'] },
       { href: '/admin/inversores', label: 'Inversores — privado (accionistas)', icon: 'folder', hint: 'NO es público: documentos internos solo para el rol accionista en /portal + registro de contactos para futuras colocaciones' },
       { href: '/admin/contacto', label: 'Contacto', icon: 'message' },
+      { href: '/admin/denuncias', label: 'Línea Ética — Denuncias', icon: 'bell', hint: 'Canal confidencial de denuncias e irregularidades — acceso restringido a administradores' },
       { href: '/admin/logs', label: 'Logs', icon: 'activity' },
     ],
   },
