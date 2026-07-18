@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 type SiteImage = {
   name: string
@@ -162,18 +163,11 @@ export default function ImagenesPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
-              Imágenes del sitio
-            </h1>
-            <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
-              Fotos de portada y heroes · JPG / PNG / WebP · máx. 10 MB
-            </p>
-          </div>
-          {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
-        </div>
+        <AdminPageHeader
+          title="Imágenes del sitio"
+          subtitle="Fotos de portada y heroes · JPG / PNG / WebP · máx. 10 MB"
+          right={msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
+        />
 
         {/* Upload form */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: '24px 28px', marginBottom: 36 }}>

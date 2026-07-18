@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 type Comunicado = {
   id: string
@@ -196,18 +197,11 @@ export default function ComunicadosAdminPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
       <div style={{ maxWidth: 1400, margin: '0 auto' }}>
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
-              Comunicados de prensa
-            </h1>
-            <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
-              Press releases · noticias de la empresa
-            </p>
-          </div>
-          {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
-        </div>
+        <AdminPageHeader
+          title="Comunicados de prensa"
+          subtitle="Press releases · noticias de la empresa"
+          right={msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
+        />
 
         {/* Form */}
         <div ref={formRef} style={{ background: 'var(--surface)', border: `1px solid ${editingId ? 'var(--accent)' : 'var(--rule)'}`, borderRadius: 'var(--r-lg)', padding: '28px 28px 24px', marginBottom: 36, transition: 'border-color 0.2s' }}>

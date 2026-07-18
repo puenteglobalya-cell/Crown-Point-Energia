@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -1188,20 +1189,11 @@ export default function CmsAdminPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
-              Contenido del sitio
-            </h1>
-            <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
-              CRUD de todas las secciones editables. Los cambios se publican en hasta 60 s.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <Link href="/" target="_blank" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>Ver sitio</Link>
-          </div>
-        </div>
+        <AdminPageHeader
+          title="Contenido del sitio"
+          subtitle="CRUD de todas las secciones editables. Los cambios se publican en hasta 60 s."
+          right={<Link href="/" target="_blank" className="btn" style={{ fontSize: 13, padding: '8px 16px', textDecoration: 'none' }}>Ver sitio</Link>}
+        />
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 2, borderBottom: '1px solid var(--rule)', marginBottom: 32, overflowX: 'auto' }}>

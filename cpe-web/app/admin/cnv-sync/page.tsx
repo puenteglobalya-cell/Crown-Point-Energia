@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 type CnvHecho = {
   doc_id: number
@@ -49,19 +50,19 @@ export default function CnvSyncPage() {
   return (
     <div style={{ maxWidth: 900 }}>
       <div style={{ marginBottom: 'var(--s-8)' }}>
-        <span style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 700, color: 'var(--accent)', display: 'block', marginBottom: 8 }}>
-          CNV · AIF
-        </span>
-        <h1 style={{ fontSize: 28, fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 12 }}>
-          Hechos relevantes
-        </h1>
-        <p style={{ fontSize: 14, color: 'var(--fg-soft)', maxWidth: 620 }}>
-          Sincroniza automáticamente desde{' '}
-          <a href="https://www.cnv.gov.ar/SitioWeb/Empresas/Empresa/30709346268" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>
-            cnv.gov.ar
-          </a>{' '}
-          cada día hábil a las 8:00 AM (Argentina). También podés forzar una sincronización manual.
-        </p>
+        <AdminPageHeader
+          title="Hechos relevantes"
+          subtitle="CNV · AIF"
+          note={
+            <>
+              Sincroniza automáticamente desde{' '}
+              <a href="https://www.cnv.gov.ar/SitioWeb/Empresas/Empresa/30709346268" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>
+                cnv.gov.ar
+              </a>{' '}
+              cada día hábil a las 8:00 AM (Argentina). También podés forzar una sincronización manual.
+            </>
+          }
+        />
       </div>
 
       {/* Sync button */}

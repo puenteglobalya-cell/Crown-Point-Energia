@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 export default function WordExportPage() {
   const [loading, setLoading] = useState(false)
@@ -42,15 +43,14 @@ export default function WordExportPage() {
 
   return (
     <div style={{ maxWidth: 720 }}>
-      <span style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 700, color: 'var(--accent)', display: 'block', marginBottom: 8 }}>
-        Documentación
-      </span>
-      <h1 style={{ fontSize: 28, fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 12 }}>
-        Exportar contenidos Word
-      </h1>
-      <p style={{ fontSize: 14, color: 'var(--fg-soft)', marginBottom: 'var(--s-8)', maxWidth: 580 }}>
-        Genera un archivo <strong>.docx</strong> con todo el contenido bilingüe del sitio organizado por sección, con campos amarillos para agregar comentarios y correcciones.
-      </p>
+      <AdminPageHeader
+        title="Exportar contenidos Word"
+        note={
+          <>
+            Genera un archivo <strong>.docx</strong> con todo el contenido bilingüe del sitio organizado por sección, con campos amarillos para agregar comentarios y correcciones.
+          </>
+        }
+      />
 
       {/* Sections preview */}
       <div style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', overflow: 'hidden', marginBottom: 'var(--s-8)' }}>

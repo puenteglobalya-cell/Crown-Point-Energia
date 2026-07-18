@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 export default function PushPage() {
   const [title, setTitle] = useState('')
@@ -42,10 +43,12 @@ export default function PushPage() {
 
   return (
     <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px' }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 6px' }}>Notificaciones Push</h1>
-      <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '0 0 32px' }}>
-        Enviá una notificación a todos los usuarios del portal que activaron las notificaciones.
-      </p>
+      <div style={{ marginBottom: 32 }}>
+        <AdminPageHeader
+          title="Notificaciones Push"
+          subtitle="Enviá una notificación a todos los usuarios del portal que activaron las notificaciones."
+        />
+      </div>
 
       <form onSubmit={handleSend} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div>

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 type Documento = {
   id: string
@@ -192,20 +193,11 @@ export default function DocumentosPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
       <div style={{ maxWidth: 1400, margin: '0 auto' }}>
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
-              Documentos
-            </h1>
-            <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
-              Balances, reportes, presentaciones y documentos legales · PDF / Excel / PowerPoint / Word
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
-          </div>
-        </div>
+        <AdminPageHeader
+          title="Documentos"
+          subtitle="Balances, reportes, presentaciones y documentos legales · PDF / Excel / PowerPoint / Word"
+          right={msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
+        />
 
         {/* Upload form */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: '28px 28px 24px', marginBottom: 36 }}>

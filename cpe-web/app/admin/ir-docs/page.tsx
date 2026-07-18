@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 type IrDoc = {
   id: string
@@ -175,33 +176,30 @@ export default function IrDocsAdminPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
       <div style={{ maxWidth: 1400, margin: '0 auto' }}>
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
-              IR Documents
-            </h1>
-            <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
-              {docs.length} documentos · EE.FF., MD&amp;A, AGM, ESTMA, Gobierno corporativo
-            </p>
-            <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '6px 0 0' }}>
+        <AdminPageHeader
+          title="IR Documents"
+          subtitle={`${docs.length} documentos · EE.FF., MD&A, AGM, ESTMA, Gobierno corporativo`}
+          note={
+            <>
               Estos documentos son <strong>públicos</strong> (se ven en /inversores sin login). Para materiales
               privados solo para accionistas, usá{' '}
               <Link href="/admin/inversores" style={{ color: 'var(--accent)' }}>Inversores — privado</Link>.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
-            {err && <span style={{ fontSize: 12, color: 'var(--cp-negative)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✗ {err}</span>}
-            <button
-              className="btn btn-primary"
-              style={{ fontSize: 13, padding: '9px 18px' }}
-              onClick={() => { setShowForm(s => !s); setEditingId(null); setForm({ ...EMPTY_FORM }) }}
-            >
-              {showForm && !editingId ? '✕ Cancelar' : '+ Agregar documento'}
-            </button>
-          </div>
-        </div>
+            </>
+          }
+          right={
+            <>
+              {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
+              {err && <span style={{ fontSize: 12, color: 'var(--cp-negative)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✗ {err}</span>}
+              <button
+                className="btn btn-primary"
+                style={{ fontSize: 13, padding: '9px 18px' }}
+                onClick={() => { setShowForm(s => !s); setEditingId(null); setForm({ ...EMPTY_FORM }) }}
+              >
+                {showForm && !editingId ? '✕ Cancelar' : '+ Agregar documento'}
+              </button>
+            </>
+          }
+        />
 
         {/* Form */}
         {showForm && (

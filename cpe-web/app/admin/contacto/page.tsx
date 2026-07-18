@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 type Submission = {
   id: string; tipo: string; nombre: string; organizacion: string
@@ -71,26 +72,20 @@ export default function ContactoAdminPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
-                Consultas de contacto
-              </h1>
-              <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
-                Mensajes recibidos desde /contacto
-                {nuevas > 0 && <span style={{ marginLeft: 8, background: '#2FA08A', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 'var(--r-pill)' }}>{nuevas} nuevas</span>}
-              </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <AdminPageHeader
+          title="Consultas de contacto"
+          subtitle="Mensajes recibidos desde /contacto"
+          note={nuevas > 0 && <span style={{ background: '#2FA08A', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 'var(--r-pill)' }}>{nuevas} nuevas</span>}
+          right={
+            <>
               {msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
               <a href={`/api/admin/contacto/export?estado=${filter}`} className="btn" style={{ fontSize: 12, padding: '7px 14px', display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 Exportar Excel
               </a>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         {/* Filters */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>

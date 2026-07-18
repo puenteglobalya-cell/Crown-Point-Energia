@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { Sparkline } from './Sparkline'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 export const dynamic = 'force-dynamic'
 
@@ -80,8 +81,7 @@ export default async function AdminInicioPage() {
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 1100, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--fg)', margin: '0 0 4px' }}>Inicio</h1>
-      <p style={{ color: 'var(--fg-muted)', fontSize: 14, margin: '0 0 24px' }}>Resumen operativo de la intranet.</p>
+      <AdminPageHeader title="Inicio" subtitle="Resumen operativo de la intranet." />
 
       {/* Stat tiles */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>

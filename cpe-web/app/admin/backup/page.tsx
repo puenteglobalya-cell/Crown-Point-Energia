@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { BACKUP_TABLES, CATEGORY_LABELS, CATEGORY_ORDER } from '@/lib/backup-tables'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 const LAST_BACKUP_KEY = 'cpe-admin-last-backup'
 
@@ -57,21 +58,19 @@ export default function BackupPage() {
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto', padding: '36px 24px' }}>
 
-      {/* Header */}
-      <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '0 0 4px' }}>
-        Admin
-      </p>
-      <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--fg)', fontFamily: 'var(--font-display)', margin: '0 0 6px', letterSpacing: '-0.02em' }}>
-        Backup
-      </h1>
-      <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '0 0 32px' }}>
-        Exportá todos los datos del sistema en un archivo JSON local.
-        Para agregar tablas nuevas al backup, editá{' '}
-        <code style={{ fontFamily: 'var(--font-mono)', fontSize: 12, background: 'var(--bg-alt)', padding: '1px 6px', borderRadius: 4 }}>
-          lib/backup-tables.ts
-        </code>.
-        Se envía un recordatorio automático por email todos los lunes a las 9 AM.
-      </p>
+      <AdminPageHeader
+        title="Backup"
+        subtitle="Exportá todos los datos del sistema en un archivo JSON local."
+        note={
+          <>
+            Para agregar tablas nuevas al backup, editá{' '}
+            <code style={{ fontFamily: 'var(--font-mono)', fontSize: 12, background: 'var(--bg-alt)', padding: '1px 6px', borderRadius: 4 }}>
+              lib/backup-tables.ts
+            </code>.
+            Se envía un recordatorio automático por email todos los lunes a las 9 AM.
+          </>
+        }
+      />
 
       {/* Download card */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: '24px 28px', marginBottom: 32 }}>

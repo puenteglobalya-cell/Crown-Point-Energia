@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import Image from 'next/image'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 type Block = {
   slug: string
@@ -179,15 +180,11 @@ function BlockCard({ block }: { block: Block }) {
 export default function BloquesFotosPage() {
   return (
     <div style={{ padding: '40px 32px', maxWidth: 1200 }}>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 28, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em', margin: '0 0 8px' }}>
-          Fotos de bloques operativos
-        </h1>
-        <p style={{ fontSize: 14, color: 'var(--fg-soft)', margin: 0 }}>
-          Subí una foto por bloque. Se guarda en Supabase Storage y se actualiza el campo CMS automáticamente.
-          Clic en el área de la imagen o arrastrá el archivo.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Fotos de bloques operativos"
+        subtitle="Subí una foto por bloque. Se guarda en Supabase Storage y se actualiza el campo CMS automáticamente."
+        note="Clic en el área de la imagen o arrastrá el archivo."
+      />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24 }}>
         {BLOCKS.map(b => <BlockCard key={b.slug} block={b} />)}
       </div>

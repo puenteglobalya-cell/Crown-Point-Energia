@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import type { CMSState } from '@/lib/cms'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import { AdminPageHeader } from '@/components/AdminPageHeader'
 
 // ─── Schema ────────────────────────────────────────────────────────────────
 
@@ -428,41 +429,37 @@ export default function AdminPage() {
 
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <div>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
-                CMS — Crown Point
-              </h1>
-              <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: '4px 0 0' }}>
-                Los cambios se reflejan en el sitio público en hasta 60&nbsp;s.
-              </p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-              <span style={{
-                fontSize: 12, fontFamily: 'var(--font-mono)', fontWeight: 600,
-                color: saving ? 'var(--fg-muted)' : savedMsg ? 'var(--cp-green)' : 'var(--fg-muted)',
-                display: 'flex', alignItems: 'center', gap: 5,
-              }}>
-                {saving ? (
-                  <>⟳ Guardando…</>
-                ) : savedMsg ? (
-                  <>✓ {savedMsg}</>
-                ) : (
-                  <>● Sincronizado</>
+          <AdminPageHeader
+            title="CMS — Crown Point"
+            subtitle="Los cambios se reflejan en el sitio público en hasta 60 s."
+            right={
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                <span style={{
+                  fontSize: 12, fontFamily: 'var(--font-mono)', fontWeight: 600,
+                  color: saving ? 'var(--fg-muted)' : savedMsg ? 'var(--cp-green)' : 'var(--fg-muted)',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                }}>
+                  {saving ? (
+                    <>⟳ Guardando…</>
+                  ) : savedMsg ? (
+                    <>✓ {savedMsg}</>
+                  ) : (
+                    <>● Sincronizado</>
+                  )}
+                </span>
+                {propagatingUntil && (
+                  <div style={{ width: 160 }}>
+                    <div style={{ height: 3, background: 'var(--rule)', borderRadius: 2, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${propagatePct}%`, background: 'var(--accent)', transition: 'width .4s linear' }} />
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--fg-muted)', textAlign: 'right', marginTop: 2 }}>
+                      {propagatePct >= 100 ? 'Visible en el sitio público' : 'Propagando al sitio público…'}
+                    </div>
+                  </div>
                 )}
-              </span>
-              {propagatingUntil && (
-                <div style={{ width: 160 }}>
-                  <div style={{ height: 3, background: 'var(--rule)', borderRadius: 2, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${propagatePct}%`, background: 'var(--accent)', transition: 'width .4s linear' }} />
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--fg-muted)', textAlign: 'right', marginTop: 2 }}>
-                    {propagatePct >= 100 ? 'Visible en el sitio público' : 'Propagando al sitio público…'}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+              </div>
+            }
+          />
         </div>
 
         {/* Tabs */}
