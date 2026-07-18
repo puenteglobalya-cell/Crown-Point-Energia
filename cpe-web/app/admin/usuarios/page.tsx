@@ -12,9 +12,9 @@ type User = {
 }
 type BibGrupo = { id: number; slug: string; label: string; orden: number }
 
-const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas'] as const
+const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas', 'compliance'] as const
 const ROLE_LABELS: Record<string, string> = {
-  viewer: 'Consulta', uploader: 'Carga', admin: 'Admin', rrhh: 'RRHH', accionista: 'Accionista', finanzas: 'Finanzas',
+  viewer: 'Consulta', uploader: 'Carga', admin: 'Admin', rrhh: 'RRHH', accionista: 'Accionista', finanzas: 'Finanzas', compliance: 'Compliance',
 }
 const ROLE_COLOR: Record<string, { bg: string; fg: string }> = {
   admin:      { bg: 'rgba(108,174,82,.15)',  fg: '#3a7d2a' },
@@ -22,6 +22,7 @@ const ROLE_COLOR: Record<string, { bg: string; fg: string }> = {
   accionista: { bg: 'rgba(180,130,0,.12)',   fg: '#9a6f00' },
   rrhh:       { bg: 'rgba(201,80,40,.1)',    fg: '#b03010' },
   finanzas:   { bg: 'rgba(47,160,138,.15)',  fg: '#2FA08A' },
+  compliance: { bg: 'rgba(179,59,46,.12)',   fg: '#b33b2e' },
   viewer:     { bg: 'var(--bg-alt)',          fg: 'var(--fg-muted)' },
 }
 

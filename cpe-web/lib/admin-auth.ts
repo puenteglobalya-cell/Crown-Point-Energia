@@ -57,6 +57,20 @@ export async function requireHrUser() {
   return user
 }
 
+/** Returns the authenticated user if they have role 'compliance' or 'admin'. */
+export async function requireComplianceUser() {
+  const user = await getAuthenticatedUser()
+  if (!user) return null
+
+  if (isAdminEmail(user.email)) return user
+
+  const roleRow = await getUserRole(user.id)
+  if (!roleRow?.activo) return null
+  if (roleRow.role !== 'compliance' && roleRow.role !== 'admin') return null
+
+  return user
+}
+
 /** Returns user + role for any authenticated active user (admin, viewer, uploader, rrhh…). */
 export async function requireAnyActiveUser() {
   const user = await getAuthenticatedUser()

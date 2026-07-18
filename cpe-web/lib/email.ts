@@ -334,10 +334,18 @@ export async function enviarNotificacionDenuncia({ categoria }: { categoria: str
     <p style="margin:24px 0 0;font-size:12px;color:#8e91b0">
       Por confidencialidad, el contenido de la denuncia no se incluye en este email.
     </p>`)
-  await resend.emails.send({
-    from: FROM,
-    to: 'etica@crownpointenergy.com',
-    subject: '[CPE Línea Ética] Nueva denuncia recibida',
-    html,
-  }).catch(() => {/* non-blocking */})
+  // Acoso/discriminación is also an HR matter, not just an ethics one —
+  // notify both inboxes so it doesn't sit unseen in just one of them.
+  const recipients = categoria === 'acoso_discriminacion'
+    ? ['etica@crownpointenergy.com', 'rrhh@crownpointenergy.com']
+    : ['etica@crownpointenergy.com']
+
+  await Promise.allSettled(
+    recipients.map(to => resend!.emails.send({
+      from: FROM,
+      to,
+      subject: '[CPE Línea Ética] Nueva denuncia recibida',
+      html,
+    }))
+  )
 }

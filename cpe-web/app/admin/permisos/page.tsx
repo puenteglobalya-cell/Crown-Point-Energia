@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AdminPageHeader } from '@/components/AdminPageHeader'
 
-const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas'] as const
+const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas', 'compliance'] as const
 type Role = typeof ROLES[number]
 const ROLE_LABELS: Record<Role, string> = {
-  viewer: 'Consulta', uploader: 'Carga', admin: 'Admin', rrhh: 'RRHH', accionista: 'Accionista', finanzas: 'Finanzas',
+  viewer: 'Consulta', uploader: 'Carga', admin: 'Admin', rrhh: 'RRHH', accionista: 'Accionista', finanzas: 'Finanzas', compliance: 'Compliance',
 }
 
 const PERMISSION_LABELS: Record<string, string> = {

@@ -30,6 +30,7 @@ export const DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
   rrhh:       ['view_reports', 'view_dashboard'],
   accionista: ['view_reports', 'view_dashboard', 'view_comercial', 'view_investor'],
   finanzas:   ['view_reports', 'view_dashboard', 'view_drafts', 'upload_reports'],
+  compliance: ['view_reports', 'view_dashboard'],
 }
 
 // Report types the 'finanzas' role can see/upload in its sandboxed sub-portal

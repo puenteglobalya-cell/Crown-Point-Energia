@@ -159,6 +159,10 @@ export async function middleware(request: NextRequest) {
         if (userRole !== 'rrhh' && userRole !== 'admin') {
           return NextResponse.redirect(new URL('/admin/login', request.url))
         }
+      } else if (pathname.startsWith('/admin/denuncias')) {
+        if (userRole !== 'compliance' && userRole !== 'admin') {
+          return NextResponse.redirect(new URL('/admin/login', request.url))
+        }
       } else {
         if (userRole !== 'admin') {
           return NextResponse.redirect(new URL('/admin/login', request.url))
