@@ -8,9 +8,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.111.0",
+    "@anthropic-ai/sdk": "^0.112.3",
     "@sparticuz/chromium-min": "^149.0.0",
-    "@supabase/ssr": "^0.12.0",
+    "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.2",
     "@types/leaflet": "^1.9.21",
     "@types/web-push": "^3.6.4",
