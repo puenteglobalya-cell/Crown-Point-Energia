@@ -50,6 +50,8 @@ export type OperationsBlock = {
   activo: boolean
 }
 
+export type BlockPhoto = { id: string; block_slug: string; url: string; alt: string; orden: number }
+
 export type TeamMember = {
   id: string; name: string; role_es: string; role_en: string
   bio_es: string; bio_en: string; initials: string; bg: string
@@ -107,6 +109,16 @@ export async function fetchObligaciones(): Promise<ObligacionNegociable[]> {
 
 export async function fetchOperationsBlocks(): Promise<OperationsBlock[]> {
   return safeQuery(() => db().from('operations_blocks').select('*').eq('activo', true).order('orden'))
+}
+
+/** Photo galleries for every operations block, grouped by slug (max 5 each, enforced on write). */
+export async function fetchBlockPhotosBySlug(): Promise<Record<string, BlockPhoto[]>> {
+  const rows = await safeQuery<BlockPhoto[]>(() => db().from('operations_block_photos').select('*').order('orden'))
+  const bySlug: Record<string, BlockPhoto[]> = {}
+  for (const row of rows) {
+    (bySlug[row.block_slug] ??= []).push(row)
+  }
+  return bySlug
 }
 
 /**

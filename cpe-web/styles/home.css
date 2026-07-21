@@ -657,6 +657,72 @@
 }
 .block-photo-placeholder svg { opacity: 0.3; }
 
+/* -------- Photo carousel (up to 5 photos per block) -------- */
+.photo-carousel-track {
+  display: flex;
+  width: 100%; height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.photo-carousel-track::-webkit-scrollbar { display: none; }
+.photo-carousel-slide {
+  position: relative;
+  flex: 0 0 100%;
+  width: 100%; height: 100%;
+  scroll-snap-align: start;
+}
+.photo-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(15, 20, 35, 0.55);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.photo-carousel-arrow:hover { background: rgba(15, 20, 35, 0.8); }
+.photo-carousel-arrow.prev { left: 12px; }
+.photo-carousel-arrow.next { right: 12px; }
+.photo-carousel-dots {
+  position: absolute;
+  bottom: 12px;
+  left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+}
+.photo-carousel-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+}
+.photo-carousel-dot.is-active {
+  background: #fff;
+  transform: scale(1.3);
+}
+.photo-carousel-count {
+  position: absolute;
+  top: 12px; right: 12px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  background: rgba(15, 20, 35, 0.55);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
 /* ── Media gallery — photo + map side by side ────────────────── */
 .block-media-gallery {
   display: grid;

@@ -11,6 +11,10 @@ type Block = {
   eyebrow: string
 }
 
+type Photo = { id: string; url: string; orden: number }
+
+const MAX_PHOTOS = 5
+
 const BLOCKS: Block[] = [
   { slug: 'ppc',      titulo: 'Puesto Pozo Cercado Oriental', eyebrow: 'Bloque 01 · Mendoza' },
   { slug: 'chanares', titulo: 'Chañares Herrados',            eyebrow: 'Bloque 02 · Mendoza' },
@@ -26,47 +30,56 @@ function publicUrl(path: string) {
 
 function BlockCard({ block }: { block: Block }) {
   const fileRef = useRef<HTMLInputElement>(null)
-  const [currentUrl, setCurrentUrl] = useState<string>('')
+  const [photos, setPhotos] = useState<Photo[]>([])
   const [uploading, setUploading] = useState(false)
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
   const [dragging, setDragging] = useState(false)
 
-  async function loadCurrentImg() {
+  async function loadPhotos() {
     const sb = createSupabaseBrowserClient()
-    const { data } = await sb.from('cms_fields').select('value_es').eq('key', `img.ops.${block.slug}`).maybeSingle()
-    setCurrentUrl(data?.value_es ?? '')
+    const { data } = await sb
+      .from('operations_block_photos')
+      .select('id, url, orden')
+      .eq('block_slug', block.slug)
+      .order('orden')
+    setPhotos(data ?? [])
   }
 
-  useEffect(() => { loadCurrentImg() }, [block.slug])
+  useEffect(() => { loadPhotos() }, [block.slug])
 
   function flash(m: string, isErr = false) {
     if (isErr) { setErr(m); setTimeout(() => setErr(''), 4000) }
     else { setMsg(m); setTimeout(() => setMsg(''), 3000) }
   }
 
-  async function uploadFile(file: File) {
-    if (!file.type.startsWith('image/')) { flash('Solo imágenes', true); return }
+  async function uploadFiles(files: File[]) {
+    const room = MAX_PHOTOS - photos.length
+    if (room <= 0) { flash(`Máximo ${MAX_PHOTOS} fotos por concesión`, true); return }
+    const toUpload = files.filter(f => f.type.startsWith('image/')).slice(0, room)
+    if (toUpload.length === 0) { flash('Solo imágenes', true); return }
+
     setUploading(true); setErr('')
     try {
       const sb = createSupabaseBrowserClient()
-      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-      const slug2 = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '-').toLowerCase().slice(0, 40)
-      const path = `operaciones/${block.slug}/${Date.now()}-${slug2}.${ext}`
+      let nextOrden = photos.length ? Math.max(...photos.map(p => p.orden)) + 1 : 0
 
-      const { error: uploadErr } = await sb.storage.from('site-images').upload(path, file, { upsert: false })
-      if (uploadErr) throw new Error(uploadErr.message)
+      for (const file of toUpload) {
+        const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+        const slug2 = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '-').toLowerCase().slice(0, 40)
+        const path = `operaciones/${block.slug}/${Date.now()}-${slug2}.${ext}`
 
-      const url = publicUrl(path)
+        const { error: uploadErr } = await sb.storage.from('site-images').upload(path, file, { upsert: false })
+        if (uploadErr) throw new Error(uploadErr.message)
 
-      const { error: cmsErr } = await sb.from('cms_fields').upsert(
-        { key: `img.ops.${block.slug}`, value_es: url, value_en: url },
-        { onConflict: 'key' }
-      )
-      if (cmsErr) throw new Error(cmsErr.message)
+        const { error: insertErr } = await sb.from('operations_block_photos').insert({
+          block_slug: block.slug, url: publicUrl(path), orden: nextOrden++,
+        })
+        if (insertErr) throw new Error(insertErr.message)
+      }
 
-      setCurrentUrl(url)
-      flash('Foto actualizada')
+      await loadPhotos()
+      flash(toUpload.length > 1 ? `${toUpload.length} fotos subidas` : 'Foto subida')
     } catch (e: unknown) {
       flash(e instanceof Error ? e.message : String(e), true)
     } finally {
@@ -75,40 +88,52 @@ function BlockCard({ block }: { block: Block }) {
     }
   }
 
-  async function clearPhoto() {
-    if (!confirm('¿Eliminar foto de este bloque?')) return
+  async function removePhoto(id: string) {
+    if (!confirm('¿Eliminar esta foto?')) return
     const sb = createSupabaseBrowserClient()
-    await sb.from('cms_fields').upsert(
-      { key: `img.ops.${block.slug}`, value_es: '', value_en: '' },
-      { onConflict: 'key' }
-    )
-    setCurrentUrl('')
+    await sb.from('operations_block_photos').delete().eq('id', id)
+    setPhotos(prev => prev.filter(p => p.id !== id))
     flash('Foto eliminada')
   }
+
+  async function move(id: string, dir: -1 | 1) {
+    const idx = photos.findIndex(p => p.id === id)
+    const swapIdx = idx + dir
+    if (idx < 0 || swapIdx < 0 || swapIdx >= photos.length) return
+    const reordered = [...photos]
+    ;[reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]]
+    setPhotos(reordered)
+
+    const sb = createSupabaseBrowserClient()
+    await Promise.all(reordered.map((p, i) => sb.from('operations_block_photos').update({ orden: i }).eq('id', p.id)))
+    setPhotos(reordered.map((p, i) => ({ ...p, orden: i })))
+  }
+
+  const atLimit = photos.length >= MAX_PHOTOS
 
   return (
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)',
       overflow: 'hidden', display: 'flex', flexDirection: 'column',
     }}>
-      {/* Photo area */}
+      {/* Dropzone */}
       <div
         style={{
           position: 'relative', aspectRatio: '16/7', background: 'var(--bg-alt)',
           border: dragging ? '2px dashed var(--accent)' : '2px dashed transparent',
-          cursor: 'pointer', transition: 'border-color 0.15s',
+          cursor: atLimit ? 'not-allowed' : 'pointer', transition: 'border-color 0.15s',
         }}
-        onClick={() => fileRef.current?.click()}
-        onDragOver={e => { e.preventDefault(); setDragging(true) }}
+        onClick={() => !atLimit && fileRef.current?.click()}
+        onDragOver={e => { e.preventDefault(); if (!atLimit) setDragging(true) }}
         onDragLeave={() => setDragging(false)}
         onDrop={e => {
           e.preventDefault(); setDragging(false)
-          const f = e.dataTransfer.files[0]
-          if (f) uploadFile(f)
+          if (atLimit) return
+          uploadFiles(Array.from(e.dataTransfer.files))
         }}
       >
-        {currentUrl ? (
-          <Image src={currentUrl} alt={block.titulo} fill style={{ objectFit: 'cover' }} />
+        {photos[0] ? (
+          <Image src={photos[0].url} alt={block.titulo} fill style={{ objectFit: 'cover' }} />
         ) : (
           <div style={{
             position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
@@ -129,17 +154,47 @@ function BlockCard({ block }: { block: Block }) {
             Subiendo…
           </div>
         )}
-        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
-          onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f) }} />
+        {photos.length > 0 && (
+          <span style={{
+            position: 'absolute', top: 8, right: 8, padding: '2px 8px', borderRadius: 100,
+            background: 'rgba(15,20,35,0.6)', color: '#fff', fontSize: 11, fontWeight: 600,
+          }}>
+            {photos.length}/{MAX_PHOTOS}
+          </span>
+        )}
+        <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
+          onChange={e => { const fs = Array.from(e.target.files ?? []); if (fs.length) uploadFiles(fs) }} />
       </div>
 
+      {/* Thumbnail strip — reorder & delete */}
+      {photos.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, padding: '10px 16px 0', flexWrap: 'wrap' }}>
+          {photos.map((p, i) => (
+            <div key={p.id} style={{ position: 'relative', width: 56, height: 42, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--rule)' }}>
+              <Image src={p.url} alt={`Foto ${i + 1}`} fill style={{ objectFit: 'cover' }} />
+              <div style={{
+                position: 'absolute', inset: 0, background: 'rgba(0,0,0,0)', display: 'flex',
+                alignItems: 'flex-end', justifyContent: 'space-between', padding: 2,
+              }}>
+                <button onClick={() => move(p.id, -1)} disabled={i === 0} title="Mover antes"
+                  style={{ fontSize: 9, lineHeight: 1, padding: '1px 3px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 0, borderRadius: 3, cursor: i === 0 ? 'default' : 'pointer', opacity: i === 0 ? 0.3 : 1 }}>‹</button>
+                <button onClick={() => removePhoto(p.id)} title="Eliminar"
+                  style={{ fontSize: 9, lineHeight: 1, padding: '1px 3px', background: 'rgba(180,40,40,0.85)', color: '#fff', border: 0, borderRadius: 3, cursor: 'pointer' }}>✕</button>
+                <button onClick={() => move(p.id, 1)} disabled={i === photos.length - 1} title="Mover después"
+                  style={{ fontSize: 9, lineHeight: 1, padding: '1px 3px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 0, borderRadius: 3, cursor: i === photos.length - 1 ? 'default' : 'pointer', opacity: i === photos.length - 1 ? 0.3 : 1 }}>›</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Info */}
-      <div style={{ padding: '14px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ padding: '12px 16px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div>
           <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 600 }}>{block.eyebrow}</div>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)', marginTop: 2 }}>{block.titulo}</div>
-          <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', marginTop: 4 }}>
-            CMS: <code>img.ops.{block.slug}</code>
+          <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 4 }}>
+            La primera foto es la que se ve en el sitio si no hay carrusel activo. Con 2 o más, se muestra como carrusel.
           </div>
         </div>
 
@@ -152,25 +207,14 @@ function BlockCard({ block }: { block: Block }) {
         <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 8 }}>
           <button
             onClick={() => fileRef.current?.click()}
-            disabled={uploading}
+            disabled={uploading || atLimit}
             style={{
-              flex: 1, padding: '8px 0', background: 'var(--accent)', color: '#fff',
-              border: 0, borderRadius: 'var(--r-md)', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+              flex: 1, padding: '8px 0', background: atLimit ? 'var(--rule)' : 'var(--accent)', color: atLimit ? 'var(--fg-muted)' : '#fff',
+              border: 0, borderRadius: 'var(--r-md)', cursor: atLimit ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600,
             }}
           >
-            {currentUrl ? 'Cambiar foto' : 'Subir foto'}
+            {atLimit ? `Máximo ${MAX_PHOTOS} alcanzado` : 'Agregar foto(s)'}
           </button>
-          {currentUrl && (
-            <button
-              onClick={clearPhoto}
-              style={{
-                padding: '8px 14px', background: 'transparent', color: 'var(--fg-muted)',
-                border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', cursor: 'pointer', fontSize: 13,
-              }}
-            >
-              Quitar
-            </button>
-          )}
         </div>
       </div>
     </div>
@@ -182,8 +226,8 @@ export default function BloquesFotosPage() {
     <div style={{ padding: '40px 32px', maxWidth: 1200 }}>
       <AdminPageHeader
         title="Fotos de bloques operativos"
-        subtitle="Subí una foto por bloque. Se guarda en Supabase Storage y se actualiza el campo CMS automáticamente."
-        note="Clic en el área de la imagen o arrastrá el archivo."
+        subtitle={`Subí hasta ${MAX_PHOTOS} fotos por concesión. Se guardan en Supabase Storage y se muestran como carrusel en /operaciones cuando hay más de una.`}
+        note="Clic en el área de la imagen o arrastrá el archivo (podés seleccionar varios a la vez). Usá las flechitas de cada miniatura para reordenar."
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24 }}>
         {BLOCKS.map(b => <BlockCard key={b.slug} block={b} />)}
