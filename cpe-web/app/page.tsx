@@ -46,7 +46,7 @@ export default async function HomePage() {
   const delta  = f['stock.delta']  || '+0.00%'
   const beta   = f['stock.beta']   || '0.93'
   const vol30  = f['stock.vol30']  || '14,210'
-  const cap    = f['stock.cap']    || 'CA $18.4M'
+  const cap    = f['stock.cap']    || 'CA $40.7M'
 
   const kpiProdVal   = f['kpi.production.value'] || '8,672'
   const kpiProdUnit  = f['kpi.production.unit']  || 'boe/d'
@@ -63,7 +63,7 @@ export default async function HomePage() {
 
   const stockHigh52  = f['stock.high52']  || 'CA $0.31'
   const stockLow52   = f['stock.low52']   || 'CA $0.150'
-  const stockShares  = f['stock.shares']  || '89.7M'
+  const stockShares  = f['stock.shares']  || '312.9M'
 
   const heroImg      = f['hero.home.img']   || ''
   const heroVideo    = f['hero.home.video'] || ''

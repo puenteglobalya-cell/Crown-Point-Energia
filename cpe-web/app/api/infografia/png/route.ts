@@ -74,8 +74,8 @@ export async function GET(req: Request) {
       deltaP:  '+0.00%',
       high52:  f['stock.high52'] || 'CA $0.31',
       low52:   f['stock.low52']  || 'CA $0.150',
-      cap:     f['stock.cap']    || 'CA $18.4M',
-      shares:  f['stock.shares'] || '89.7M',
+      cap:     f['stock.cap']    || 'CA $40.7M',
+      shares:  f['stock.shares'] || '312.9M',
       isUp:    true,
     }
 
