@@ -28,7 +28,7 @@ export default function ComercialPage() {
             <span className="lang-en">Commercial enquiries.</span>
           </h1>
           <p className="hero-lede">
-            <span className="lang-es">Petróleo crudo tipo Medanito y gas natural desde cuatro cuencas argentinas. Completá el formulario y nuestro equipo de comercialización te contactará.</span>
+            <span className="lang-es">Petróleo crudo tipo Medanito y gas natural desde tres cuencas argentinas. Completá el formulario y nuestro equipo de comercialización te contactará.</span>
             <span className="lang-en">Medanito-type crude oil and natural gas from four Argentine basins. Fill in the form and our commercial team will be in touch.</span>
           </p>
         </div>

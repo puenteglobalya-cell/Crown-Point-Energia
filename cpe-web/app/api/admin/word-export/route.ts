@@ -219,19 +219,19 @@ function buildSections(
   section('Hero', 'Página principal · Hero', [
     { label: 'Eyebrow',  es: 'TSXV: CWV · Petróleo y gas · Argentina', en: 'TSXV: CWV · Oil & gas · Canada' },
     { label: 'Título',   es: f['hero.title.es'] || 'Energía que sostiene la matriz productiva argentina.', en: f['hero.title.en'] || 'Energy that sustains Argentina\'s productive matrix.' },
-    { label: 'Subtítulo', es: f['hero.lede.es']  || 'Operamos en cuatro de las cuencas más relevantes del país.', en: f['hero.lede.en']  || 'We operate in four of the country\'s most relevant basins.' },
+    { label: 'Subtítulo', es: f['hero.lede.es']  || 'Operamos en tres de las cuencas más relevantes del país.', en: f['hero.lede.en']  || 'We operate in three of the country\'s most relevant basins.' },
   ])
 
   section('KPIs', 'Página principal · KPIs', [
     { label: 'Período',     es: f['kpis.periodo.es'] || 'Q1 2026 · Cifras clave',  en: f['kpis.periodo.en'] || 'Q1 2026 · Key figures' },
     { label: 'Producción',  es: `${f['kpi.production.value'] || '3,090'} ${f['kpi.production.unit'] || 'boe/d'}`, en: `${f['kpi.production.value'] || '3,090'} ${f['kpi.production.unit'] || 'boe/d'}` },
-    { label: 'Reservas',    es: `${f['kpi.reserves.value'] || '36.996'} ${f['kpi.reserves.unit'] || 'MMboe'}`,     en: `${f['kpi.reserves.value'] || '36.996'} ${f['kpi.reserves.unit'] || 'MMboe'}` },
+    { label: 'Reservas',    es: `${f['kpi.reserves.value'] || '71.580'} ${f['kpi.reserves.unit'] || 'MMboe'}`,     en: `${f['kpi.reserves.value'] || '71.580'} ${f['kpi.reserves.unit'] || 'MMboe'}` },
     { label: 'EBITDA',      es: `${f['kpi.ebitda.value'] || '18'} ${f['kpi.ebitda.unit'] || 'USD M'}`,        en: `${f['kpi.ebitda.value'] || '18'} ${f['kpi.ebitda.unit'] || 'USD M'}` },
-    { label: 'Bloques',     es: `${f['kpi.blocks.value'] || '6'} ${f['kpi.blocks.unit'] || 'en 4 cuencas'}`,    en: `${f['kpi.blocks.value'] || '6'} in 4 basins` },
+    { label: 'Bloques',     es: `${f['kpi.blocks.value'] || '8'} ${f['kpi.blocks.unit'] || 'en 3 cuencas'}`,    en: `${f['kpi.blocks.value'] || '8'} in 3 basins` },
   ])
 
   section('Sección operaciones (home)', 'Página principal · Operaciones', [
-    { label: 'Título',  es: 'N bloques en cuatro cuencas.',       en: 'N blocks across four basins.' },
+    { label: 'Título',  es: 'N bloques en tres cuencas.',       en: 'N blocks across three basins.' },
     { label: 'Bajada',  es: 'Cartera diversificada de áreas convencionales y no convencionales, con foco en gas natural y crudo liviano.', en: 'A diversified portfolio of conventional and unconventional blocks, focused on natural gas and light oil.' },
   ])
 
@@ -276,12 +276,12 @@ function buildSections(
 
   section('Hero', 'Operaciones · Hero', [
     { label: 'Eyebrow', es: 'Upstream · Argentina',                        en: 'Upstream · Argentina' },
-    { label: 'Título',  es: f['page.operaciones.h1'] || 'Seis bloques.\nCuatro cuencas.\nUn país.',    en: fe['page.operaciones.h1'] || 'Six blocks.\nFour basins.\nOne country.' },
+    { label: 'Título',  es: f['page.operaciones.h1'] || 'Ocho concesiones.\nTres cuencas.\nUn país.',    en: fe['page.operaciones.h1'] || 'Eight concessions.\nThree basins.\nOne country.' },
     { label: 'Bajada',  es: f['page.operaciones.lede'] || 'Una cartera diversificada de áreas productivas y exploratorias, distribuidas estratégicamente entre el norte y el sur de Argentina.', en: fe['page.operaciones.lede'] || 'A diversified portfolio of producing and exploration areas, strategically distributed across northern and southern Argentina.' },
   ])
 
   // Per-block detail
-  const EXPLOTACION = ['tordillo', 'piedra', 'chanares', 'ppc', 'tdf']
+  const EXPLOTACION = ['tordillo', 'piedra', 'chanares', 'ppc']
   const orderedBlocks = [
     ...EXPLOTACION.map(slug => opsBlocks.find(b => b.slug === slug)).filter(Boolean),
     ...opsBlocks.filter(b => !EXPLOTACION.includes(b.slug) && b.slug !== 'cerro'),

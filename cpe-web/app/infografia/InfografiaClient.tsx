@@ -23,9 +23,9 @@ type ModuleDef = {
 
 const MODULES: ModuleDef[] = [
   { id: 'headline',   label: 'Titular',                icon: '💬', color: '#6CAE52', desc: 'Frase institucional + bajada de 2 líneas' },
-  { id: 'stats',      label: 'En números',             icon: '📊', color: '#1F2566', desc: '357 pozos · 83 inyectores · 4 cuencas · 372k ha · 25+ años' },
+  { id: 'stats',      label: 'En números',             icon: '📊', color: '#1F2566', desc: '357 pozos · 83 inyectores · 3 cuencas · 372k ha · 25+ años' },
   { id: 'production', label: 'Producción',             icon: '⛽', color: '#3D5F9A', desc: 'boe/d neto Q1 2026 + mix gas/líquidos' },
-  { id: 'blocks',     label: 'Bloques operativos',     icon: '🗺️', color: '#4a8a3a', desc: 'Grilla de los 6 bloques con commodity y WI' },
+  { id: 'blocks',     label: 'Bloques operativos',     icon: '🗺️', color: '#4a8a3a', desc: 'Grilla de los 5 bloques con commodity y WI' },
   { id: 'stock',      label: 'Cotización CWV.V',       icon: '📈', color: '#2E4878', desc: 'Precio live, delta, 52w high/low, cap de mercado' },
   { id: 'ratings',    label: 'Calificaciones FIX SCR', icon: '⭐', color: '#1F2566', desc: 'BBB(arg) emisor + A-(arg)/BBB(arg) por clase de ON' },
   { id: 'thesis',     label: 'Tesis de inversión',     icon: '💼', color: '#0d1230', desc: 'KPIs: producción, reservas, EBITDA, bloques activos' },
@@ -181,7 +181,7 @@ function Infografia({ modules: active, stats, production, blocks, thesis, date, 
             Upstream argentino<br/>con alcance internacional.
           </div>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 12, lineHeight: 1.6, maxWidth: 600 }}>
-            Con más de {stats.anios} años de operación ininterrumpida, Crown Point opera seis bloques en cuatro cuencas históricamente productoras de Argentina.
+            Con más de {stats.anios} años de operación ininterrumpida, Crown Point opera cinco bloques en tres cuencas históricamente productoras de Argentina.
           </div>
         </div>
       )}
