@@ -55,6 +55,7 @@ const NAV_GROUPS: { key: string; label: string; items: NavItem[] }[] = [
     key: 'sistema',
     label: 'Sistema',
     items: [
+      { href: '/admin/estado-sistema', label: 'Estado del sistema', icon: 'activity' },
       { href: '/admin/sitemap', label: 'Sitemap', icon: 'map' },
       { href: '/admin/backup', label: 'Backup', icon: 'database' },
     ],

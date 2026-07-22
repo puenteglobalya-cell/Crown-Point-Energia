@@ -190,37 +190,24 @@ export default async function OperacionesPage() {
                       <span className="lang-en">{b.lede_en}</span>
                     </p>
 
-                    {photos.length > 0 ? (
+                    {photos.length > 0 && (
                       <PhotoCarousel photos={photos} sizes="(max-width: 900px) 100vw, 860px" />
-                    ) : (
-                      <div className="block-photo">
-                        <div className="block-photo-placeholder">
-                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                            <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5"/>
-                            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
-                            <path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          <span>
-                            <span className="lang-es">Imagen pendiente · {b.titulo}</span>
-                            <span className="lang-en">Pending image · {b.titulo}</span>
-                          </span>
-                        </div>
-                      </div>
                     )}
                     {blockMap && (
-                      <figure style={{ margin: 'var(--s-4) 0 0' }}>
+                      <figure className="block-map-fig">
                         <img
                           src={blockMap}
                           alt={f[`img.ops.${b.slug}.map.alt`] || `Mapa de ubicación · ${b.titulo}`}
                           loading="lazy"
                           decoding="async"
-                          style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--rule)', display: 'block' }}
                         />
-                        <figcaption style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
-                          <span className="lang-es">Mapa de ubicación</span>
-                          <span className="lang-en">Location map</span>
-                        </figcaption>
                       </figure>
+                    )}
+                    {blockMap && (
+                      <figcaption style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '6px 0 0', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
+                        <span className="lang-es">Mapa de ubicación</span>
+                        <span className="lang-en">Location map</span>
+                      </figcaption>
                     )}
 
                     <div className="block-card" style={{ borderTop: `3px solid ${comm.color}` }}>
@@ -297,38 +284,25 @@ export default async function OperacionesPage() {
                       <span className="lang-en">{b.lede_en}</span>
                     </p>
 
-                    {photos.length > 0 ? (
+                    {photos.length > 0 && (
                       <PhotoCarousel photos={photos} sizes="(max-width: 900px) 100vw, 860px" />
-                    ) : (
-                      <div className="block-photo">
-                        <div className="block-photo-placeholder">
-                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                            <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5"/>
-                            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
-                            <path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          <span>
-                            <span className="lang-es">Imagen pendiente · {b.titulo}</span>
-                            <span className="lang-en">Pending image · {b.titulo}</span>
-                          </span>
-                        </div>
-                      </div>
                     )}
 
                     {blockMap && (
-                      <figure style={{ margin: 'var(--s-4) 0 0' }}>
+                      <figure className="block-map-fig">
                         <img
                           src={blockMap}
                           alt={f[`img.ops.${b.slug}.map.alt`] || `Mapa de ubicación · ${b.titulo}`}
                           loading="lazy"
                           decoding="async"
-                          style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--rule)', display: 'block' }}
                         />
-                        <figcaption style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
-                          <span className="lang-es">Mapa de ubicación</span>
-                          <span className="lang-en">Location map</span>
-                        </figcaption>
                       </figure>
+                    )}
+                    {blockMap && (
+                      <figcaption style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '6px 0 0', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
+                        <span className="lang-es">Mapa de ubicación</span>
+                        <span className="lang-en">Location map</span>
+                      </figcaption>
                     )}
 
                     <div className="block-card" style={{ borderTop: `3px solid ${comm.color}` }}>
