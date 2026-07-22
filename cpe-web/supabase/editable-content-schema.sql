@@ -429,7 +429,7 @@ INSERT INTO cms_fields (key, value_es, value_en) VALUES
   ('page.acerca.lede', 'Crown Point Energía S.A. opera en el mercado argentino con casa matriz internacional. Dedicada al petróleo y gas con sede en Buenos Aires, genera flujo de caja de su propia producción y mantiene una cartera de oportunidades en las cuencas Austral, Neuquina y Cuyana. La empresa holding Crown Point Energy Inc. cotiza en TSXV: CWV.',
                         'Crown Point Energy Inc. is listed on TSX Venture Exchange: CWV. The Company operates in Argentina through its wholly owned subsidiary, Crown Point Energía S.A. (CPESA), headquartered in Buenos Aires.'),
   -- ESG
-  ('page.esg.h1',   'Operar bien.<br/>Reportar con claridad.',  'Operate responsibly.<br/>Report with clarity.'),
+  ('page.esg.h1',   'Operar responsablemente.<br/>Reportar con claridad.',  'Operate responsibly.<br/>Report with clarity.'),
   ('page.esg.lede', 'Nuestra estrategia ESG integra la responsabilidad ambiental, el compromiso social y la gobernanza robusta como pilares de creación de valor a largo plazo.',
                      'Our ESG strategy integrates environmental responsibility, social commitment and robust governance as pillars of long-term value creation.'),
   -- Carreras

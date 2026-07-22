@@ -56,7 +56,7 @@ export default async function EsgPage() {
             <span className="lang-en">Corporate responsibility</span>
           </span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.esg.h1'] || 'Operar bien.<br/>Reportar con claridad.') }} />
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.esg.h1'] || 'Operar responsablemente.<br/>Reportar con claridad.') }} />
             <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.esg.h1'] || 'Operate responsibly.<br/>Report with clarity.') }} />
           </h1>
           <p>
