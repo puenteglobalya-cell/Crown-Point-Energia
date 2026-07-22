@@ -5,6 +5,7 @@ import { getEffectiveLang } from '@/lib/lang'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import ArgentinaMap from '@/components/ArgentinaMap'
 import { DroneHud } from '@/components/DroneHud'
+import { HeroVideoPip } from '@/components/HeroVideoPip'
 import { sumWellsFromBlocks, fetchOperationsBlocks } from '@/lib/content-fetch'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 
@@ -94,18 +95,7 @@ export default async function HomePage() {
             <div className="hero-veil"></div>
           </div>
           <DroneHud lang={lang} />
-          {heroVideo && (
-            <div className="hero-video-pip">
-              <video autoPlay muted loop playsInline preload="none">
-                <source src={heroVideo} type="video/mp4" />
-              </video>
-              <span className="hero-video-pip-label">
-                <span className="hero-video-pip-dot" />
-                <span className="lang-es">Video aéreo</span>
-                <span className="lang-en">Aerial footage</span>
-              </span>
-            </div>
-          )}
+          {heroVideo && <HeroVideoPip src={heroVideo} />}
           <div className="container hero-content">
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
