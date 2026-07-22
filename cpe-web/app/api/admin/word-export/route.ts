@@ -372,9 +372,9 @@ function buildSections(
   ])
 
   section('Pilares ESG', 'ESG · Pilares', [
-    { label: 'Ambiental', es: 'Gestión de emisiones, agua y residuos. Planes de cierre de pozos y remediación.',                              en: 'Emissions, water and waste management. Well abandonment and remediation plans.' },
-    { label: 'Social',    es: 'Inversión comunitaria, empleo local y condiciones laborales seguras.',                                          en: 'Community investment, local employment and safe working conditions.' },
-    { label: 'Gobierno',  es: 'Directorio independiente, auditorías externas, política anticorrupción y línea ética.',                         en: 'Independent board, external audits, anti-corruption policy and ethics hotline.' },
+    { label: 'Ambiental', es: 'Emisiones, agua, residuos y remediación de pozos.', en: 'Emissions, water, waste and well remediation.' },
+    { label: 'Social',    es: 'Comunidades, empleo local y seguridad laboral.', en: 'Communities, local employment and workplace safety.' },
+    { label: 'Gobierno',  es: 'Directorio independiente, auditoría externa y línea ética.', en: 'Independent board, external audits and ethics hotline.' },
   ])
 
   // ── COMERCIAL ─────────────────────────────────────────────────────────────
