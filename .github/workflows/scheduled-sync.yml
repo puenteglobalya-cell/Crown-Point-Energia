@@ -1,0 +1,31 @@
+name: Scheduled data sync
+
+# Vercel's own cron scheduler can silently fail to fire these routes (missing
+# CRON_SECRET in Production, or a plan tier that caps/limits cron jobs) — this
+# workflow calls the exact same endpoints from GitHub's infrastructure instead,
+# so the stock quote and CNV disclosures sync stays automatic regardless of
+# Vercel's cron config.
+on:
+  schedule:
+    - cron: '0 14 * * 1-5' # stock quote — weekdays 14:00 UTC
+    - cron: '0 15 * * 1-5' # CNV hechos relevantes — weekdays 15:00 UTC
+  workflow_dispatch: {} # lets you trigger both manually from the Actions tab
+
+jobs:
+  sync-stock:
+    if: github.event.schedule == '0 14 * * 1-5' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/cron/stock
+        run: |
+          curl -sS -f -X GET "${{ vars.SITE_URL }}/api/cron/stock" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  sync-cnv:
+    if: github.event.schedule == '0 15 * * 1-5' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/cron/cnv-sync
+        run: |
+          curl -sS -f -X GET "${{ vars.SITE_URL }}/api/cron/cnv-sync" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
