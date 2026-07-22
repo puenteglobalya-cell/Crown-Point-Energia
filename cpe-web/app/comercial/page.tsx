@@ -58,8 +58,8 @@ export default function ComercialPage() {
                       icon: '🔥',
                       titleEs: 'Gas natural',
                       titleEn: 'Natural gas',
-                      descEs: 'Producción en cuenca Neuquina y Austral. Contratos de suministro de corto y mediano plazo.',
-                      descEn: 'Production from Neuquén and Austral basins. Short and medium-term supply contracts.',
+                      descEs: 'Producción en cuenca Neuquina. Contratos de suministro de corto y mediano plazo.',
+                      descEn: 'Production from Neuquén basin. Short and medium-term supply contracts.',
                     },
                   ].map(p => (
                     <div key={p.titleEs} style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', padding: 'var(--s-5)' }}>

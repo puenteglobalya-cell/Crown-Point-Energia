@@ -163,7 +163,6 @@ export default async function HomePage() {
                   { num: '01', name: 'Cuyana', es: 'Cuyo, Mendoza', en: 'Cuyo, Mendoza' },
                   { num: '02', name: 'Neuquina', es: 'Mendoza Sur', en: 'Southern Mendoza' },
                   { num: '03', name: 'Golfo San Jorge', es: 'Chubut · Santa Cruz', en: 'Chubut · Santa Cruz' },
-                  { num: '04', name: 'Austral', es: 'Tierra del Fuego', en: 'Tierra del Fuego' },
                 ].map(b => (
                   <div className="bs-item" key={b.num}>
                     <span className="bs-num num">{b.num}</span>
@@ -359,14 +358,6 @@ export default async function HomePage() {
                     <strong><span className="lang-es">Producción base diversificada</span><span className="lang-en">Diversified base production</span></strong>
                     <span className="lang-es">Mix balanceado de gas natural, crudo y NGL en cinco bloques y tres cuencas.</span>
                     <span className="lang-en">Balanced mix of natural gas, crude and NGLs across five blocks in three basins.</span>
-                  </div>
-                </li>
-                <li>
-                  <span className="bullet"></span>
-                  <div>
-                    <strong><span className="lang-es">Estructura financiera prudente</span><span className="lang-en">Prudent capital structure</span></strong>
-                    <span className="lang-es">Deuda/EBITDA &lt; 1,5x. Obligaciones negociables Clase IV emitidas en 2025.</span>
-                    <span className="lang-en">Net debt/EBITDA &lt; 1.5x. Class IV notes issued in 2025.</span>
                   </div>
                 </li>
                 <li>

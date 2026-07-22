@@ -107,7 +107,7 @@ export function DroneHud({ lang = 'es' }: Props) {
         <div className="hud-cell">
           <span>{isEs ? 'Cuencas productoras:' : 'Producing basins:'}</span>
           <span className="hud-sep">·</span>
-          <span>AUSTRAL · GSJ · NEUQUINA · CUYANA</span>
+          <span>GSJ · NEUQUINA · CUYANA</span>
         </div>
         <div className="hud-cell">
           <span>TSXV: CWV</span>
