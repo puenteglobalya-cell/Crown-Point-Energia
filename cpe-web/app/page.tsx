@@ -80,14 +80,7 @@ export default async function HomePage() {
       {show['hero'] !== false && (
         <section className="hero" data-cpe-section="hero">
           <div className="hero-media">
-            {heroVideo ? (
-              <video
-                autoPlay muted loop playsInline preload="none"
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-              >
-                <source src={heroVideo} type="video/mp4" />
-              </video>
-            ) : heroImg ? (
+            {heroImg ? (
               <Image
                 src={heroImg}
                 alt={f['hero.home.img.alt'] || ''}
@@ -101,6 +94,18 @@ export default async function HomePage() {
             <div className="hero-veil"></div>
           </div>
           <DroneHud lang={lang} />
+          {heroVideo && (
+            <div className="hero-video-pip">
+              <video autoPlay muted loop playsInline preload="none">
+                <source src={heroVideo} type="video/mp4" />
+              </video>
+              <span className="hero-video-pip-label">
+                <span className="hero-video-pip-dot" />
+                <span className="lang-es">Video aéreo</span>
+                <span className="lang-en">Aerial footage</span>
+              </span>
+            </div>
+          )}
           <div className="container hero-content">
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
