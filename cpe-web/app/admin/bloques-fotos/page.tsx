@@ -28,6 +28,36 @@ function publicUrl(path: string) {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/site-images/${path}`
 }
 
+/**
+ * Downscales + recompresses a photo in the browser before it hits the wire —
+ * phone cameras routinely produce 3-8 MB originals, which is what made
+ * multi-photo uploads feel slow. Caps the long edge at 1920px and re-encodes
+ * as JPEG at 82% quality; falls back to the original file if canvas decoding
+ * fails (e.g. an unusual format).
+ */
+async function compressImage(file: File, maxDim = 1920, quality = 0.82): Promise<File> {
+  try {
+    const bitmap = await createImageBitmap(file)
+    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height))
+    const w = Math.round(bitmap.width * scale)
+    const h = Math.round(bitmap.height * scale)
+
+    const canvas = document.createElement('canvas')
+    canvas.width = w; canvas.height = h
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return file
+    ctx.drawImage(bitmap, 0, 0, w, h)
+
+    const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality))
+    if (!blob || blob.size >= file.size) return file
+
+    const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg'
+    return new File([blob], newName, { type: 'image/jpeg' })
+  } catch {
+    return file
+  }
+}
+
 function BlockCard({ block }: { block: Block }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [photos, setPhotos] = useState<Photo[]>([])
@@ -62,24 +92,37 @@ function BlockCard({ block }: { block: Block }) {
     setUploading(true); setErr('')
     try {
       const sb = createSupabaseBrowserClient()
-      let nextOrden = photos.length ? Math.max(...photos.map(p => p.orden)) + 1 : 0
+      const baseOrden = photos.length ? Math.max(...photos.map(p => p.orden)) + 1 : 0
 
-      for (const file of toUpload) {
-        const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-        const slug2 = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '-').toLowerCase().slice(0, 40)
-        const path = `operaciones/${block.slug}/${Date.now()}-${slug2}.${ext}`
+      // Compress + upload every file concurrently instead of one at a time —
+      // each photo's own network round-trip no longer blocks the next one.
+      const results = await Promise.allSettled(
+        toUpload.map(async (file, i) => {
+          const compact = await compressImage(file)
+          const ext = compact.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+          const slug2 = compact.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '-').toLowerCase().slice(0, 40)
+          const path = `operaciones/${block.slug}/${Date.now()}-${i}-${slug2}.${ext}`
 
-        const { error: uploadErr } = await sb.storage.from('site-images').upload(path, file, { upsert: false })
-        if (uploadErr) throw new Error(uploadErr.message)
+          const { error: uploadErr } = await sb.storage.from('site-images').upload(path, compact, { upsert: false })
+          if (uploadErr) throw new Error(uploadErr.message)
 
-        const { error: insertErr } = await sb.from('operations_block_photos').insert({
-          block_slug: block.slug, url: publicUrl(path), orden: nextOrden++,
+          const { error: insertErr } = await sb.from('operations_block_photos').insert({
+            block_slug: block.slug, url: publicUrl(path), orden: baseOrden + i,
+          })
+          if (insertErr) throw new Error(insertErr.message)
         })
-        if (insertErr) throw new Error(insertErr.message)
-      }
+      )
 
       await loadPhotos()
-      flash(toUpload.length > 1 ? `${toUpload.length} fotos subidas` : 'Foto subida')
+      const failed = results.filter(r => r.status === 'rejected') as PromiseRejectedResult[]
+      const okCount = results.length - failed.length
+      if (failed.length === 0) {
+        flash(okCount > 1 ? `${okCount} fotos subidas` : 'Foto subida')
+      } else if (okCount > 0) {
+        flash(`${okCount} subidas, ${failed.length} fallaron: ${failed[0].reason?.message ?? failed[0].reason}`, true)
+      } else {
+        throw new Error(failed[0].reason?.message ?? String(failed[0].reason))
+      }
     } catch (e: unknown) {
       flash(e instanceof Error ? e.message : String(e), true)
     } finally {
