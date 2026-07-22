@@ -8,7 +8,7 @@ export function HeroVideoPip({ src }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
-    if (videoRef.current) videoRef.current.playbackRate = 0.5
+    if (videoRef.current) videoRef.current.playbackRate = 0.35
   }, [])
 
   return (

@@ -174,7 +174,7 @@
   z-index: 3;
   right: clamp(20px, 3vw, 40px);
   bottom: 96px;
-  width: clamp(180px, 20vw, 260px);
+  width: clamp(240px, 26vw, 360px);
   aspect-ratio: 16 / 9;
   border-radius: var(--r-lg);
   overflow: hidden;
