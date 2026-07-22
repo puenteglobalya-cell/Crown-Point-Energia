@@ -200,6 +200,10 @@ export default async function InversoresPage() {
                   <span className="lang-es">&ldquo;Ocho concesiones en tres cuencas — diversificación geológica real con un solo país.&rdquo;</span>
                   <span className="lang-en">&ldquo;Eight concessions across three basins — real geological diversification within a single country.&rdquo;</span>
                 </p>
+                <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 'var(--s-2)' }}>
+                  <span className="lang-es">Cifras gerenciales no auditadas en base a los estados contables de CPE Inc. Para detalle ver <a href="#financieros">Estados financieros</a>.</span>
+                  <span className="lang-en">Unaudited management figures based on CPE Inc. financial statements. See <a href="#financieros">Financial statements</a> for detail.</span>
+                </p>
               </div>
 
               <div className="section-block" id="calificacion">

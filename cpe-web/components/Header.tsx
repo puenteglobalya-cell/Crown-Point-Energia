@@ -37,7 +37,7 @@ const NAV = [
     ]
   },
   { key: 'comercial', href: '/comercial', es: 'Comercial', en: 'Commercial', menu: null },
-  // { key: 'esg', href: '/esg', es: 'ESG/Políticas', en: 'ESG/Policies', menu: null },
+  { key: 'esg', href: '/esg', es: 'ESG/Políticas', en: 'ESG/Policies', menu: null },
   { key: 'carreras', href: '/carreras', es: 'Carreras', en: 'Careers', menu: null },
   { key: 'contacto', href: '/contacto', es: 'Contacto', en: 'Contact', menu: null },
   {
