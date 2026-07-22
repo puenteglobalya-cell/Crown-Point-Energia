@@ -107,7 +107,6 @@ export default function ArgentinaMap({ className, style }: { className?: string;
         <text x="316" y="282" textAnchor="middle">MENDOZA</text>
         <text x="328" y="510" textAnchor="middle">CHUBUT</text>
         <text x="290" y="612" textAnchor="middle">SANTA CRUZ</text>
-        <text x="210" y="772" textAnchor="middle">TIERRA DEL FUEGO</text>
         <text x="318" y="120" textAnchor="middle" opacity="0.45">SALTA / JUJUY</text>
         <text x="332" y="200" textAnchor="middle" opacity="0.45">CÓRDOBA</text>
         <text x="356" y="408" textAnchor="middle" opacity="0.45">RÍO NEGRO</text>
@@ -148,15 +147,6 @@ export default function ArgentinaMap({ className, style }: { className?: string;
         <text x="476" y="579" className="ar-label">Piedra Clavada – Koluel Kaike</text>
         <text x="476" y="593" className="ar-sublabel">Golfo San Jorge · Santa Cruz</text>
       </g>
-      <g className="ar-block" data-block="tdf">
-        <ellipse cx="208" cy="760" rx="34" ry="15" className="cc-teal-dark" opacity="0.95" />
-        <line className="ar-leader" x1="242" y1="760" x2="468" y2="760" />
-        <circle cx="468" cy="760" r="2.5" className="cc-fill-leader" />
-        <text x="476" y="753" className="ar-label">Río Cullen · Las Violetas</text>
-        <text x="476" y="767" className="ar-label">La Angostura</text>
-        <text x="476" y="781" className="ar-sublabel">Cuenca Austral · Tierra del Fuego</text>
-      </g>
-
       <g className="ar-hq">
         <circle cx="402" cy="300" r="4" className="cc-fill-stroke" />
         <circle cx="402" cy="300" r="11" fill="none" className="cc-stroke" strokeWidth="0.8" opacity="0.5" />
@@ -173,7 +163,6 @@ export default function ArgentinaMap({ className, style }: { className?: string;
         <g transform="translate(0, 40)"><rect width="12" height="12" rx="2" className="cc-green-light" /><text x="22" y="10" className="ar-legend-text">Cuyana</text></g>
         <g transform="translate(0, 60)"><rect width="12" height="12" rx="2" className="cc-green" /><text x="22" y="10" className="ar-legend-text">Neuquina / San Jorge N.</text></g>
         <g transform="translate(0, 80)"><rect width="12" height="12" rx="2" className="cc-teal" /><text x="22" y="10" className="ar-legend-text">Golfo San Jorge S.</text></g>
-        <g transform="translate(0, 100)"><rect width="12" height="12" rx="2" className="cc-teal-dark" /><text x="22" y="10" className="ar-legend-text">Cuenca Austral</text></g>
       </g>
     </svg>
   )

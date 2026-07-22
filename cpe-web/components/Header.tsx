@@ -24,7 +24,6 @@ const NAV = [
       { href: '/operaciones#tordillo', es: 'El Tordillo · La Tapera · P. Quiroga', en: 'El Tordillo · La Tapera · P. Quiroga' },
       { href: '/operaciones#piedra', es: 'Piedra Clavada – Koluel Kaike', en: 'Piedra Clavada – Koluel Kaike' },
       { href: '/operaciones#chanares', es: 'Chañares Herrados / PPCO', en: 'Chañares Herrados / PPCO' },
-      { href: '/operaciones#tdf', es: 'Río Cullen · Las Violetas', en: 'Río Cullen · Las Violetas' },
       { divider: true, es: 'Exploración', en: 'Exploration' },
       { href: '/operaciones#cerro', es: 'Cerro de Los Leones', en: 'Cerro de Los Leones' },
     ]
