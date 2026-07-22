@@ -273,8 +273,8 @@ export default async function HomePage() {
               </div>
             </div>
             <p className="kpi-foot">
-              <span className="lang-es">Cifras gerenciales no auditadas. Para detalle ver <Link href="/inversores#financieros">Estados financieros</Link>.</span>
-              <span className="lang-en">Unaudited management figures. See <Link href="/inversores#financieros">Financial statements</Link> for detail.</span>
+              <span className="lang-es">Cifras gerenciales no auditadas en base a los estados contables de CPE Inc. Para detalle ver <Link href="/inversores#financieros">Estados financieros</Link>.</span>
+              <span className="lang-en">Unaudited management figures based on CPE Inc. financial statements. See <Link href="/inversores#financieros">Financial statements</Link> for detail.</span>
             </p>
           </div>
         </section>
