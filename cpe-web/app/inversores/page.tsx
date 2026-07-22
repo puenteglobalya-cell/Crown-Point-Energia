@@ -197,8 +197,8 @@ export default async function InversoresPage() {
                 </div>
                 <ReservesTable />
                 <p className="pull">
-                  <span className="lang-es">&ldquo;Seis bloques en cuatro cuencas — diversificación geológica real con un solo país.&rdquo;</span>
-                  <span className="lang-en">&ldquo;Eleven concessions across four basins — real geological diversification within a single country.&rdquo;</span>
+                  <span className="lang-es">&ldquo;Ocho concesiones en tres cuencas — diversificación geológica real con un solo país.&rdquo;</span>
+                  <span className="lang-en">&ldquo;Eight concessions across three basins — real geological diversification within a single country.&rdquo;</span>
                 </p>
               </div>
 

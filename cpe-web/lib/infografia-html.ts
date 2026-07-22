@@ -75,7 +75,7 @@ export function generateInfografiaHtml(d: InfografiaData): string {
         { n: '01', label: 'Producción', val: t.prodVal, unit: t.prodUnit, delta: t.prodDelta },
         { n: '02', label: 'Reservas',   val: t.resVal,  unit: t.resUnit,  delta: t.resDelta  },
         { n: '03', label: 'EBITDA',     val: t.ebVal,   unit: t.ebUnit,   delta: t.ebDelta   },
-        { n: '04', label: 'Bloques',    val: '6',        unit: 'en 4 cuencas', delta: '372k ha' },
+        { n: '04', label: 'Bloques',    val: '5',        unit: 'en 3 cuencas', delta: '372k ha' },
       ].map((k, i) => `
         <div style="padding:18px 20px;${i < 3 ? 'border-right:1px solid rgba(108,174,82,0.18);' : ''}background:rgba(31,37,102,0.3);">
           <div style="font-size:9px;color:#6CAE52;font-weight:700;letter-spacing:0.18em;margin-bottom:8px;">${k.n}</div>
@@ -201,8 +201,8 @@ body { width: 1080px; background: #031636; color: #fff; font-family: 'Inter', sy
       Upstream argentino<br>con alcance internacional.
     </div>
     <div style="font-size:14px;color:rgba(255,255,255,0.55);margin-top:14px;line-height:1.6;max-width:620px;">
-      Con más de ${d.stats.anios} años de operación ininterrumpida, Crown Point opera seis bloques
-      en cuatro cuencas históricamente productoras de Argentina.
+      Con más de ${d.stats.anios} años de operación ininterrumpida, Crown Point opera cinco bloques
+      en tres cuencas históricamente productoras de Argentina.
     </div>
   </div>` : ''}
 

@@ -90,7 +90,7 @@ export const BACKUP_TABLES: BackupTable[] = [
   },
   {
     table: 'operations_blocks',   key: 'operations_blocks',   label: 'Bloques operativos',
-    description: 'Los 6 bloques: descripción, stats, coordenadas geográficas',
+    description: 'Los bloques operativos: descripción, stats, coordenadas geográficas',
     category: 'contenido', included: true,
   },
   {

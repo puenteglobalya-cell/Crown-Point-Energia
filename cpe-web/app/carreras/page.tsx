@@ -66,8 +66,8 @@ export default async function CarrerasPage() {
             <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.carreras.h1'] || "Building Argentina's<br/>energy future.") }} />
           </h1>
           <p>
-            <span className="lang-es">{f['page.carreras.lede'] || 'Crown Point opera en cuatro cuencas. Buscamos profesionales que quieran dejar huella en la industria energética con un equipo técnico de alto nivel.'}</span>
-            <span className="lang-en">{fe['page.carreras.lede'] || 'Crown Point operates across four basins. We look for professionals who want to make a mark in the energy industry alongside a top-tier technical team.'}</span>
+            <span className="lang-es">{f['page.carreras.lede'] || 'Crown Point opera en tres cuencas. Buscamos profesionales que quieran dejar huella en la industria energética con un equipo técnico de alto nivel.'}</span>
+            <span className="lang-en">{fe['page.carreras.lede'] || 'Crown Point operates across three basins. We look for professionals who want to make a mark in the energy industry alongside a top-tier technical team.'}</span>
           </p>
         </div>
       </section>

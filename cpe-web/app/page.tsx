@@ -51,14 +51,14 @@ export default async function HomePage() {
   const kpiProdVal   = f['kpi.production.value'] || '8,672'
   const kpiProdUnit  = f['kpi.production.unit']  || 'boe/d'
   const kpiProdDelta = f['kpi.production.delta'] || '1Q 2026'
-  const kpiResVal    = f['kpi.reserves.value']   || '36.996'
+  const kpiResVal    = f['kpi.reserves.value']   || '71.580'
   const kpiResUnit   = f['kpi.reserves.unit']    || 'MMboe'
-  const kpiResDelta  = f['kpi.reserves.delta']   || 'P1 Sproule'
+  const kpiResDelta  = f['kpi.reserves.delta']   || '2P Sproule ERCE'
   const kpiEbVal     = f['kpi.ebitda.value']     || '18'
   const kpiEbUnit    = f['kpi.ebitda.unit']      || 'USD M'
   const kpiEbDelta   = f['kpi.ebitda.delta']     || 'LTM'
-  const kpiBlkVal    = f['kpi.blocks.value']     || '11'
-  const kpiBlkUnit   = f['kpi.blocks.unit']      || 'concesiones en 4 cuencas'
+  const kpiBlkVal    = f['kpi.blocks.value']     || '8'
+  const kpiBlkUnit   = f['kpi.blocks.unit']      || 'concesiones en 3 cuencas'
   const kpiBlkDelta  = f['kpi.blocks.delta']     || '372k ha'
 
   const stockHigh52  = f['stock.high52']  || 'CA $0.31'
@@ -119,10 +119,10 @@ export default async function HomePage() {
             <p className="hero-lede">
               {heroLedeEs
                 ? <span className="lang-es">{heroLedeEs}</span>
-                : <span className="lang-es">Operamos en cuatro de las cuencas más relevantes del país — producción propia, cartera de proyectos de bajo riesgo y estructura financiera prudente.</span>}
+                : <span className="lang-es">Operamos en tres de las cuencas más relevantes del país — producción propia, cartera de proyectos de bajo riesgo y estructura financiera prudente.</span>}
               {heroLedeEn
                 ? <span className="lang-en">{heroLedeEn}</span>
-                : <span className="lang-en">We operate in four of the country&apos;s most relevant basins — our own production, a low-risk project portfolio and a prudent financial structure.</span>}
+                : <span className="lang-en">We operate in three of the country&apos;s most relevant basins — our own production, a low-risk project portfolio and a prudent financial structure.</span>}
             </p>
             <div className="hero-cta">
               <Link className="btn btn-primary" href="/inversores">
@@ -299,8 +299,8 @@ export default async function HomePage() {
               <div>
                 <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
                 <h2 className="section-title">
-                  <span className="lang-es">11 concesiones<br/>en cuatro cuencas.</span>
-                  <span className="lang-en">11 concessions<br/>across four basins.</span>
+                  <span className="lang-es">8 concesiones<br/>en tres cuencas.</span>
+                  <span className="lang-en">8 concessions<br/>across three basins.</span>
                 </h2>
               </div>
               <p>
@@ -357,8 +357,8 @@ export default async function HomePage() {
                   <span className="bullet"></span>
                   <div>
                     <strong><span className="lang-es">Producción base diversificada</span><span className="lang-en">Diversified base production</span></strong>
-                    <span className="lang-es">Mix balanceado de gas natural, crudo y NGL en seis bloques y cuatro cuencas.</span>
-                    <span className="lang-en">Balanced mix of natural gas, crude and NGLs across six blocks in four basins.</span>
+                    <span className="lang-es">Mix balanceado de gas natural, crudo y NGL en cinco bloques y tres cuencas.</span>
+                    <span className="lang-en">Balanced mix of natural gas, crude and NGLs across five blocks in three basins.</span>
                   </div>
                 </li>
                 <li>

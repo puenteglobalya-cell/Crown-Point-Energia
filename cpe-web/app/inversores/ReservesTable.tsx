@@ -1,16 +1,16 @@
-import { SPROULE_P1_2024, totalP1 } from '@/lib/reserves'
+import { SPROULE_2P_2025, totalReserves } from '@/lib/reserves'
 
 export default function ReservesTable() {
-  const data  = SPROULE_P1_2024
-  const total = totalP1(data)
+  const data  = SPROULE_2P_2025
+  const total = totalReserves(data)
   const rows  = [...data.categories, total]
 
   return (
     <details className="reserves-details">
       <summary className="reserves-summary">
         <span className="reserves-summary__label">
-          <span className="lang-es">Reservas P1 Certificadas — {data.certifier}</span>
-          <span className="lang-en">Certified P1 Reserves — {data.certifier}</span>
+          <span className="lang-es">Reservas 2P Certificadas — {data.certifier}</span>
+          <span className="lang-en">Certified 2P Reserves — {data.certifier}</span>
         </span>
         <span className="reserves-summary__total">
           <span className="lang-es">Total bruto <strong>{total.gross.toFixed(3)}</strong> MMboe</span>
@@ -19,7 +19,7 @@ export default function ReservesTable() {
       </summary>
 
       <div className="reserves-body">
-        <table className="reserves-table" aria-label="Reservas P1 Sproule">
+        <table className="reserves-table" aria-label="Reservas 2P Sproule">
           <thead>
             <tr>
               <th scope="col">
@@ -41,7 +41,7 @@ export default function ReservesTable() {
               <tr key={r.category} data-total={i === rows.length - 1 ? '' : undefined}>
                 <td>
                   <span className="lang-es">{r.category}</span>
-                  <span className="lang-en">{r.category === 'Total P1' ? 'Total P1' : r.category}</span>
+                  <span className="lang-en">{r.category === 'Total 2P' ? 'Total 2P' : r.category === 'Total Probadas' ? 'Total Proved' : r.category === 'Total Probables' ? 'Total Probable' : r.category}</span>
                 </td>
                 <td className="num">{r.gross.toFixed(3)}</td>
                 <td className="num">{r.net.toFixed(3)}</td>
@@ -51,11 +51,11 @@ export default function ReservesTable() {
         </table>
         <p className="reserves-footnote">
           <span className="lang-es">
-            Certificadas al 31/12/2024 bajo NI 51-101. Volúmenes en MMboe (millones de barriles de petróleo equivalente).
+            Certificadas al 31/12/2025 bajo NI 51-101. Volúmenes en MMboe (millones de barriles de petróleo equivalente).
             Bruto = participación de trabajo bruta; Neto = porción correspondiente a Crown Point después de regalías.
           </span>
           <span className="lang-en">
-            Certified as of 31/12/2024 under NI 51-101. Volumes in MMboe (millions of barrels of oil equivalent).
+            Certified as of 31/12/2025 under NI 51-101. Volumes in MMboe (millions of barrels of oil equivalent).
             Gross = working interest share before royalties; Net = Crown Point share after royalties.
           </span>
         </p>

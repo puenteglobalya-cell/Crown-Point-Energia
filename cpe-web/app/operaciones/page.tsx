@@ -10,7 +10,7 @@ import PhotoCarousel from '@/components/PhotoCarousel'
 export const revalidate = 60
 
 // Display order per section
-const EXPLOTACION_ORDER = ['tordillo', 'piedra', 'chanares', 'tdf']
+const EXPLOTACION_ORDER = ['tordillo', 'piedra', 'chanares']
 const EXPLORACION_SLUGS = new Set(['cerro'])
 
 type Commodity = 'oil' | 'gas' | 'mixed'
@@ -22,7 +22,7 @@ const COMMODITY: Record<Commodity, { color: string; es: string; en: string }> = 
 
 export const metadata = {
   title: 'Operaciones | Crown Point Energy',
-  description: '11 concesiones agrupadas en 6 bloques operativos, en cuatro cuencas argentinas — Austral, San Jorge, Neuquén y Cuyo. Producción de petróleo y gas.',
+  description: '8 concesiones agrupadas en 5 bloques operativos, en tres cuencas argentinas — San Jorge, Neuquén y Cuyo. Producción de petróleo y gas.',
   alternates: { canonical: 'https://crownpointenergy.com/operaciones' },
 }
 
@@ -75,8 +75,8 @@ export default async function OperacionesPage() {
           </div>
           <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.operaciones.h1'] || 'Once concesiones.<br/>Cuatro cuencas.<br/>Un país.') }} />
-            <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.operaciones.h1'] || 'Eleven concessions.<br/>Four basins.<br/>One country.') }} />
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.operaciones.h1'] || 'Ocho concesiones.<br/>Tres cuencas.<br/>Un país.') }} />
+            <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.operaciones.h1'] || 'Eight concessions.<br/>Three basins.<br/>One country.') }} />
           </h1>
           <p>
             <span className="lang-es">{f['page.operaciones.lede'] || 'Una cartera diversificada de áreas productivas y exploratorias, distribuidas estratégicamente entre el norte y el sur de Argentina.'}</span>
@@ -126,8 +126,8 @@ export default async function OperacionesPage() {
             <aside className="left-rail">
               <h4><span className="lang-es">Bloques</span><span className="lang-en">Blocks</span></h4>
               <p style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.5, margin: '4px 0 12px' }}>
-                <span className="lang-es">{blocks.length} bloques · 11 concesiones agrupadas</span>
-                <span className="lang-en">{blocks.length} blocks · 11 grouped concessions</span>
+                <span className="lang-es">{blocks.length} bloques · 8 concesiones agrupadas</span>
+                <span className="lang-en">{blocks.length} blocks · 8 grouped concessions</span>
               </p>
               <nav>
                 <a href="#mapa" className="active"><span className="lang-es">Mapa general</span><span className="lang-en">Map overview</span></a>
@@ -152,8 +152,8 @@ export default async function OperacionesPage() {
                 <span className="eyebrow"><span className="lang-es">Mapa de operaciones</span><span className="lang-en">Operations map</span></span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Dónde operamos.</span><span className="lang-en">Where we operate.</span></h2>
                 <p className="lede">
-                  <span className="lang-es">Nuestros bloques se distribuyen entre Mendoza, Chubut, Santa Cruz y Tierra del Fuego, en cuatro cuencas históricamente productoras.</span>
-                  <span className="lang-en">Our blocks span Mendoza, Chubut, Santa Cruz and Tierra del Fuego across four historically producing basins.</span>
+                  <span className="lang-es">Nuestros bloques se distribuyen entre Mendoza, Chubut y Santa Cruz, en tres cuencas históricamente productoras.</span>
+                  <span className="lang-en">Our blocks span Mendoza, Chubut and Santa Cruz across three historically producing basins.</span>
                 </p>
                 <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: 'var(--s-6) var(--s-4)', marginTop: 'var(--s-6)', overflow: 'hidden' }}>
                   <MapSection blocks={mapBlocks} style={{ maxHeight: 760, margin: '0 auto' }} />
