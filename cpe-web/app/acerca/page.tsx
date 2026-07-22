@@ -132,7 +132,7 @@ export default async function AcercaPage() {
                 <a href="#evolucion"><span className="lang-es">Evolución</span><span className="lang-en">History</span></a>
                 <a href="#management">Management</a>
                 {boardCPI.length > 0 && <a href="#directorio-cpi"><span className="lang-es">Directorio CPE Inc.</span><span className="lang-en">CPE Inc. Board</span></a>}
-                {boardCPESA.length > 0 && <a href="#directorio"><span className="lang-es">Directorio CPESA</span><span className="lang-en">CPESA Board</span></a>}
+                {boardCPESA.length > 0 && <a href="#directorio" className="lang-es">Directorio CPESA</a>}
                 {SHOW_ESG && <Link href="/esg"><span className="lang-es">ESG &amp; Responsabilidad corporativa</span><span className="lang-en">ESG &amp; Corporate responsibility</span></Link>}
               </nav>
             </aside>
@@ -273,7 +273,7 @@ export default async function AcercaPage() {
                 </p>
                 {[
                   { label: 'Crown Point Energy Inc.', list: mgmtCPI, esOnly: false },
-                  { label: 'Crown Point Energía S.A. (CPESA)', list: mgmtCPESA, esOnly: false },
+                  { label: 'Crown Point Energía S.A. (CPESA)', list: mgmtCPESA, esOnly: true },
                 ].filter(g => g.list.length > 0).map(g => (
                   <div key={g.label} className={g.esOnly ? 'lang-es' : undefined} style={{ marginTop: 'var(--s-6)' }}>
                     <h3 style={{ fontSize: 13, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent-deep)', fontWeight: 700, marginBottom: 'var(--s-4)' }}>{g.label}</h3>
@@ -328,7 +328,7 @@ export default async function AcercaPage() {
                 </div>
               )}
 
-              {boardCPESA.length > 0 && <div className="section-block" id="directorio">
+              {boardCPESA.length > 0 && <div className="section-block lang-es" id="directorio">
                 <span className="eyebrow">Crown Point Energía S.A.</span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es">Directorio — CPESA</span><span className="lang-en">Board of directors — CPESA</span></h2>
                 <p className="lede">
