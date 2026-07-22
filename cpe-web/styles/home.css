@@ -172,9 +172,9 @@
 .hero-video-pip {
   position: absolute;
   z-index: 3;
-  right: clamp(20px, 3vw, 40px);
-  bottom: 96px;
-  width: clamp(240px, 26vw, 360px);
+  right: clamp(20px, 3vw, 48px);
+  bottom: 110px;
+  width: clamp(340px, 34vw, 520px);
   aspect-ratio: 16 / 9;
   border-radius: var(--r-lg);
   overflow: hidden;
