@@ -353,8 +353,6 @@ h1, h2, h3, h4 {
   text-decoration: none; color: var(--fg);
 }
 .brand-logo {
-  height: 72px;
-  width: auto;
   display: block;
   /* native logo is fixed-color (navy + green) — invert on dark surfaces */
 }
