@@ -105,7 +105,7 @@ export default async function HomePage() {
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
                 <span className="lang-es">TSXV: CWV · Petróleo y gas · Argentina</span>
-                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Canada</span>
+                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Argentina</span>
               </span>
             </div>
             <h1 className="hero-title">
@@ -186,7 +186,7 @@ export default async function HomePage() {
             {[
               { val: String(wells.activos),     es: 'pozos productivos',     en: 'producing wells' },
               { val: String(wells.inyectores),  es: 'pozos inyectores',      en: 'injection wells' },
-              { val: f['stats.cuencas']    || '4',    es: 'cuencas productoras',   en: 'producing basins' },
+              { val: f['stats.cuencas']    || '3',    es: 'cuencas productoras',   en: 'producing basins' },
               { val: f['stats.ha']         || '372k', es: 'hectáreas operadas',    en: 'operated hectares' },
               { val: f['stats.anios']      || '25+',  es: 'años en upstream arg.', en: 'yrs Argentine upstream' },
             ].map(s => (
@@ -262,7 +262,7 @@ export default async function HomePage() {
                   <span className="kpi-value num" data-cpe-field="kpi.blocks.value">{kpiBlkVal}</span>
                   <span className="kpi-unit" data-cpe-field="kpi.blocks.unit">
                     <span className="lang-es">{kpiBlkUnit}</span>
-                    <span className="lang-en">concessions in 4 basins</span>
+                    <span className="lang-en">concessions in 3 basins</span>
                   </span>
                 </div>
                 <span className="kpi-meta">
@@ -304,7 +304,7 @@ export default async function HomePage() {
               </div>
               <p>
                 <span className="lang-es">Cartera diversificada de áreas convencionales y no convencionales, con foco en gas natural y crudo liviano.</span>
-                <span className="lang-en">A diversified portfolio of assets focused on conventional oil and natural gas.</span>
+                <span className="lang-en">Diversified portfolio of conventional and unconventional assets, focused on natural gas and light crude oil.</span>
               </p>
             </div>
             <div className="ops-layout reveal">
