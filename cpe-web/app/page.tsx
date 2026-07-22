@@ -46,7 +46,7 @@ export default async function HomePage() {
   const delta  = f['stock.delta']  || '+0.00%'
   const beta   = f['stock.beta']   || '0.93'
   const vol30  = f['stock.vol30']  || '14,210'
-  const cap    = f['stock.cap']    || 'CA $18.4M'
+  const cap    = f['stock.cap']    || 'CA $40.7M'
 
   const kpiProdVal   = f['kpi.production.value'] || '8,672'
   const kpiProdUnit  = f['kpi.production.unit']  || 'boe/d'
@@ -63,7 +63,7 @@ export default async function HomePage() {
 
   const stockHigh52  = f['stock.high52']  || 'CA $0.31'
   const stockLow52   = f['stock.low52']   || 'CA $0.150'
-  const stockShares  = f['stock.shares']  || '89.7M'
+  const stockShares  = f['stock.shares']  || '312.9M'
 
   const heroImg      = f['hero.home.img']   || ''
   const heroVideo    = f['hero.home.video'] || ''
@@ -105,7 +105,7 @@ export default async function HomePage() {
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
                 <span className="lang-es">TSXV: CWV · Petróleo y gas · Argentina</span>
-                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Canada</span>
+                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Argentina</span>
               </span>
             </div>
             <h1 className="hero-title">
@@ -163,7 +163,6 @@ export default async function HomePage() {
                   { num: '01', name: 'Cuyana', es: 'Cuyo, Mendoza', en: 'Cuyo, Mendoza' },
                   { num: '02', name: 'Neuquina', es: 'Mendoza Sur', en: 'Southern Mendoza' },
                   { num: '03', name: 'Golfo San Jorge', es: 'Chubut · Santa Cruz', en: 'Chubut · Santa Cruz' },
-                  { num: '04', name: 'Austral', es: 'Tierra del Fuego', en: 'Tierra del Fuego' },
                 ].map(b => (
                   <div className="bs-item" key={b.num}>
                     <span className="bs-num num">{b.num}</span>
@@ -187,7 +186,7 @@ export default async function HomePage() {
             {[
               { val: String(wells.activos),     es: 'pozos productivos',     en: 'producing wells' },
               { val: String(wells.inyectores),  es: 'pozos inyectores',      en: 'injection wells' },
-              { val: f['stats.cuencas']    || '4',    es: 'cuencas productoras',   en: 'producing basins' },
+              { val: f['stats.cuencas']    || '3',    es: 'cuencas productoras',   en: 'producing basins' },
               { val: f['stats.ha']         || '372k', es: 'hectáreas operadas',    en: 'operated hectares' },
               { val: f['stats.anios']      || '25+',  es: 'años en upstream arg.', en: 'yrs Argentine upstream' },
             ].map(s => (
@@ -263,7 +262,7 @@ export default async function HomePage() {
                   <span className="kpi-value num" data-cpe-field="kpi.blocks.value">{kpiBlkVal}</span>
                   <span className="kpi-unit" data-cpe-field="kpi.blocks.unit">
                     <span className="lang-es">{kpiBlkUnit}</span>
-                    <span className="lang-en">concessions in 4 basins</span>
+                    <span className="lang-en">concessions in 3 basins</span>
                   </span>
                 </div>
                 <span className="kpi-meta">
@@ -274,8 +273,8 @@ export default async function HomePage() {
               </div>
             </div>
             <p className="kpi-foot">
-              <span className="lang-es">Cifras gerenciales no auditadas. Para detalle ver <Link href="/inversores#financieros">Estados financieros</Link>.</span>
-              <span className="lang-en">Unaudited management figures. See <Link href="/inversores#financieros">Financial statements</Link> for detail.</span>
+              <span className="lang-es">Cifras gerenciales no auditadas en base a los estados contables de CPE Inc. Para detalle ver <Link href="/inversores#financieros">Estados financieros</Link>.</span>
+              <span className="lang-en">Unaudited management figures based on CPE Inc. financial statements. See <Link href="/inversores#financieros">Financial statements</Link> for detail.</span>
             </p>
           </div>
         </section>
@@ -305,7 +304,7 @@ export default async function HomePage() {
               </div>
               <p>
                 <span className="lang-es">Cartera diversificada de áreas convencionales y no convencionales, con foco en gas natural y crudo liviano.</span>
-                <span className="lang-en">A diversified portfolio of assets focused on conventional oil and natural gas.</span>
+                <span className="lang-en">Diversified portfolio of conventional and unconventional assets, focused on natural gas and light crude oil.</span>
               </p>
             </div>
             <div className="ops-layout reveal">
@@ -359,14 +358,6 @@ export default async function HomePage() {
                     <strong><span className="lang-es">Producción base diversificada</span><span className="lang-en">Diversified base production</span></strong>
                     <span className="lang-es">Mix balanceado de gas natural, crudo y NGL en cinco bloques y tres cuencas.</span>
                     <span className="lang-en">Balanced mix of natural gas, crude and NGLs across five blocks in three basins.</span>
-                  </div>
-                </li>
-                <li>
-                  <span className="bullet"></span>
-                  <div>
-                    <strong><span className="lang-es">Estructura financiera prudente</span><span className="lang-en">Prudent capital structure</span></strong>
-                    <span className="lang-es">Deuda/EBITDA &lt; 1,5x. Obligaciones negociables Clase IV emitidas en 2025.</span>
-                    <span className="lang-en">Net debt/EBITDA &lt; 1.5x. Class IV notes issued in 2025.</span>
                   </div>
                 </li>
                 <li>

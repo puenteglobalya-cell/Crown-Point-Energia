@@ -200,6 +200,10 @@ export default async function InversoresPage() {
                   <span className="lang-es">&ldquo;Ocho concesiones en tres cuencas — diversificación geológica real con un solo país.&rdquo;</span>
                   <span className="lang-en">&ldquo;Eight concessions across three basins — real geological diversification within a single country.&rdquo;</span>
                 </p>
+                <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 'var(--s-2)' }}>
+                  <span className="lang-es">Cifras gerenciales no auditadas en base a los estados contables de CPE Inc. Para detalle ver <a href="#financieros">Estados financieros</a>.</span>
+                  <span className="lang-en">Unaudited management figures based on CPE Inc. financial statements. See <a href="#financieros">Financial statements</a> for detail.</span>
+                </p>
               </div>
 
               <div className="section-block" id="calificacion">
@@ -335,7 +339,7 @@ export default async function InversoresPage() {
                         {cnvHechos.map((h, i) => (
                           <tr key={h.doc_id} style={{ borderTop: i > 0 ? '1px solid var(--rule)' : 'none', background: 'var(--surface)' }}>
                             <td style={{ padding: '12px 16px', color: 'var(--fg-muted)', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                              {new Date(h.fecha + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              <span className="lang-es">{new Date(h.fecha + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}</span><span className="lang-en">{new Date(h.fecha + 'T00:00:00').toLocaleDateString('en-CA', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                             </td>
                             <td style={{ padding: '12px 16px', color: 'var(--fg)', lineHeight: 1.5 }}>
                               {h.descripcion}

@@ -162,8 +162,9 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
               src={lang === 'en' ? '/logo-en.png' : '/logo.png'}
               alt={lang === 'en' ? 'Crown Point Energy Inc.' : 'Crown Point Energía S.A.'}
               className="brand-logo"
-              width={160}
-              height={72}
+              width={lang === 'en' ? 176 : 178}
+              height={lang === 'en' ? 83 : 103}
+              style={{ height: 56, width: 'auto' }}
             />
           </Link>
 

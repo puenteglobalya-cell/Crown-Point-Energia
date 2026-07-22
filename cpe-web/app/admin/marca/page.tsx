@@ -67,7 +67,7 @@ const TYPEFACES = [
       { weight: 600, label: 'SemiBold' },
     ],
     specimen: 'Cuencas productoras en Argentina',
-    subSpecimen: 'Austral · GSJ · Neuquina · Cuyana',
+    subSpecimen: 'GSJ · Neuquina · Cuyana',
   },
   {
     family: 'JetBrains Mono',

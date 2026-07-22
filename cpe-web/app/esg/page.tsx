@@ -56,7 +56,7 @@ export default async function EsgPage() {
             <span className="lang-en">Corporate responsibility</span>
           </span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.esg.h1'] || 'Operar bien.<br/>Reportar con claridad.') }} />
+            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.esg.h1'] || 'Operar responsablemente.<br/>Reportar con claridad.') }} />
             <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.esg.h1'] || 'Operate responsibly.<br/>Report with clarity.') }} />
           </h1>
           <p>
@@ -119,7 +119,7 @@ export default async function EsgPage() {
                       <span className="lang-en">{doc.en}</span>
                     </Link>
                     <span style={{ fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>
-                      {doc.isLink ? 'enlace' : 'PDF'}
+                      {doc.isLink ? <><span className="lang-es">enlace</span><span className="lang-en">link</span></> : 'PDF'}
                     </span>
                   </li>
                 ))}
@@ -151,7 +151,7 @@ export default async function EsgPage() {
                   background: 'var(--cp-green)', color: 'var(--cp-navy-darker)', fontWeight: 700,
                   fontSize: 14, padding: '11px 20px', borderRadius: 'var(--r-md)', textDecoration: 'none', marginBottom: 4,
                 }}>
-                  Hacer una denuncia →
+                  <span className="lang-es">Hacer una denuncia →</span><span className="lang-en">File a report →</span>
                 </Link>
                 <a href={`tel:${ethicsPhone.replace(/\s/g,'')}`} style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#fff', fontSize: 15, fontWeight: 600 }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11.5a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .82h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="1.8"/></svg>

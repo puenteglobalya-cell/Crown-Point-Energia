@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
 import { cmsLineBreaks } from '@/lib/cms-html'
-import { fetchTeamMembers, fetchStrategyCards, fetchEsgPillars } from '@/lib/content-fetch'
+import { fetchTeamMembers, fetchStrategyCards } from '@/lib/content-fetch'
 import ScrollSpy from '@/components/ScrollSpy'
 
 export const revalidate = 60
@@ -13,20 +13,16 @@ export const metadata = {
 }
 
 export default async function AcercaPage() {
-  const [s, management, board, strategyCards, esgPillars] = await Promise.all([
+  const [s, management, board, strategyCards] = await Promise.all([
     getCmsState(),
     fetchTeamMembers('management'),
     fetchTeamMembers('board'),
     fetchStrategyCards(),
-    fetchEsgPillars(),
   ])
 
   const f = s.fields
   const fe = s.fieldsEn
   const heroImg = f['hero.acerca.img'] || ''
-
-  // ESG oculto hasta validar toda la sección — cambiar a true para reactivar
-  const SHOW_ESG = false
 
   const isCPI = (m: { entidad?: string }) => m.entidad === 'CPI'
   // CPE Inc. (matriz canadiense) vs CPESA (entidad argentina)
@@ -133,7 +129,7 @@ export default async function AcercaPage() {
                 <a href="#management">Management</a>
                 {boardCPI.length > 0 && <a href="#directorio-cpi"><span className="lang-es">Directorio CPE Inc.</span><span className="lang-en">CPE Inc. Board</span></a>}
                 {boardCPESA.length > 0 && <a href="#directorio" className="lang-es">Directorio CPESA</a>}
-                {SHOW_ESG && <Link href="/esg"><span className="lang-es">ESG &amp; Responsabilidad corporativa</span><span className="lang-en">ESG &amp; Corporate responsibility</span></Link>}
+                <a href="#esg"><span className="lang-es">ESG &amp; Responsabilidad corporativa</span><span className="lang-en">ESG &amp; Corporate responsibility</span></a>
               </nav>
             </aside>
             <main>
@@ -157,7 +153,7 @@ export default async function AcercaPage() {
                     <h4><span className="lang-es">Misión</span><span className="lang-en">Mission</span></h4>
                     <p>
                       <span className="lang-es">Generar valor para los accionistas haciendo un uso racional de los recursos, estableciendo relaciones a largo plazo y contribuyendo a mejorar la calidad de vida de las comunidades donde operamos.</span>
-                      <span className="lang-en">Add shareholder value by focusing on assets with low lifting costs, long reserve life, repeatable drilling inventory and strong netbacks.</span>
+                      <span className="lang-en">Generate shareholder value through rational use of resources, building long-term relationships and contributing to the quality of life of the communities where we operate.</span>
                     </p>
                   </div>
                   <div className="mvp-card">
@@ -404,7 +400,7 @@ export default async function AcercaPage() {
                 </ul>
               </div>}
 
-              {SHOW_ESG && <div className="section-block" id="esg" style={{ borderBottom: 0 }}>
+              <div className="section-block" id="esg" style={{ borderBottom: 0 }}>
                 <span className="eyebrow">ESG</span>
                 <h2 style={{ marginTop: 8 }}>
                   <span className="lang-es">Responsabilidad corporativa</span>
@@ -414,37 +410,13 @@ export default async function AcercaPage() {
                   <span className="lang-es">Operar de forma responsable es la condición para operar a largo plazo. Reportamos métricas ambientales, sociales y de gobierno bajo criterios SASB para upstream oil &amp; gas y las recomendaciones del TCFD.</span>
                   <span className="lang-en">Operating responsibly is the condition for operating long-term. We report environmental, social and governance metrics using SASB upstream oil &amp; gas criteria and TCFD recommendations.</span>
                 </p>
-                <div style={{ display: 'flex', gap: 'var(--s-4)', flexWrap: 'wrap', marginTop: 'var(--s-6)', padding: 'var(--s-6)', background: 'var(--bg-alt)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)' }}>
-                  {(esgPillars.length > 0 ? esgPillars.map(p => ({
-                    col: p.color,
-                    labelEs: p.pilar, labelEn: p.pilar,
-                    metaEs: p.metrics?.[0] ? `${p.metrics[0].val} ${p.metrics[0].labelEs}` : p.lede_es,
-                    metaEn: p.metrics?.[0] ? `${p.metrics[0].val} ${p.metrics[0].labelEn}` : p.lede_en,
-                  })) : [
-                    { col: '#E2B23A', labelEs: 'Ambiental', labelEn: 'Environmental', metaEs: '−18% emisiones vs 2022', metaEn: '−18% emissions vs 2022' },
-                    { col: '#6CAE52', labelEs: 'Social',    labelEn: 'Social',         metaEs: 'TRIR 0.87 · 71% empleo local', metaEn: 'TRIR 0.87 · 71% local hires' },
-                    { col: '#2FA08A', labelEs: 'Gobernanza',labelEn: 'Governance',     metaEs: '4/5 directores independientes', metaEn: '4/5 independent directors' },
-                  ]).map(p => (
-                    <div key={p.col} style={{ flex: '1 1 160px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ width: 10, height: 10, borderRadius: 2, background: p.col, flexShrink: 0 }}></span>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
-                          <span className="lang-es">{p.labelEs}</span>
-                          <span className="lang-en">{p.labelEn}</span>
-                        </div>
-                        <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 2 }}>
-                          <span className="lang-es">{p.metaEs}</span>
-                          <span className="lang-en">{p.metaEn}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <Link href="/esg" className="btn btn-secondary" style={{ alignSelf: 'center', flexShrink: 0 }}>
+                <div style={{ marginTop: 'var(--s-6)' }}>
+                  <Link href="/esg" className="btn btn-secondary">
                     <span className="lang-es">Ver reporte ESG completo</span>
                     <span className="lang-en">Full ESG report</span>
                   </Link>
                 </div>
-              </div>}
+              </div>
             </main>
           </div>
         </div>

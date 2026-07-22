@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-const IDLE_TIMEOUT_MS = 30 * 60 * 1000
+const IDLE_TIMEOUT_MS = 4 * 60 * 60 * 1000
 const WARNING_BEFORE_MS = 2 * 60 * 1000
 const STORAGE_KEY = 'cpe_last_activity'
 

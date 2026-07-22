@@ -29,7 +29,7 @@ export default function ComercialPage() {
           </h1>
           <p className="hero-lede">
             <span className="lang-es">Petróleo crudo tipo Medanito y gas natural desde tres cuencas argentinas. Completá el formulario y nuestro equipo de comercialización te contactará.</span>
-            <span className="lang-en">Medanito-type crude oil and natural gas from four Argentine basins. Fill in the form and our commercial team will be in touch.</span>
+            <span className="lang-en">Medanito-type crude oil and natural gas from three Argentine basins. Fill in the form and our commercial team will be in touch.</span>
           </p>
         </div>
       </section>
@@ -58,8 +58,8 @@ export default function ComercialPage() {
                       icon: '🔥',
                       titleEs: 'Gas natural',
                       titleEn: 'Natural gas',
-                      descEs: 'Producción en cuenca Neuquina y Austral. Contratos de suministro de corto y mediano plazo.',
-                      descEn: 'Production from Neuquén and Austral basins. Short and medium-term supply contracts.',
+                      descEs: 'Producción en cuenca Neuquina. Contratos de suministro de corto y mediano plazo.',
+                      descEn: 'Production from Neuquén basin. Short and medium-term supply contracts.',
                     },
                   ].map(p => (
                     <div key={p.titleEs} style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', padding: 'var(--s-5)' }}>

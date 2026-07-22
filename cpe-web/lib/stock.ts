@@ -1,5 +1,9 @@
 const YAHOO_SYMBOL = 'CWV.V'
 
+// Public data from SEDAR/TSXV filings — update after any share issuance
+const SHARES_OUTSTANDING = 312_905_530
+const KNOWN_BETA = 0.93
+
 export type StockQuote = {
   price: number
   currency: string
@@ -42,37 +46,16 @@ export async function fetchStockQuote(): Promise<StockQuote> {
     changePct,
     volume: meta.regularMarketVolume ?? 0,
     avgVolume: 0,
-    marketCap: 0,
-    sharesOutstanding: 0,
+    marketCap: price * SHARES_OUTSTANDING,
+    sharesOutstanding: SHARES_OUTSTANDING,
     fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh ?? 0,
     fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? 0,
-    beta: 0,
+    beta: KNOWN_BETA,
   }
 }
 
 export async function fetchStockQuoteFull(): Promise<StockQuote> {
-  const base = await fetchStockQuote()
-
-  try {
-    const summaryUrl = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${YAHOO_SYMBOL}?modules=defaultKeyStatistics,price`
-    const res = await fetch(summaryUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      next: { revalidate: 0 },
-    })
-    if (res.ok) {
-      const json = await res.json()
-      const result = json.quoteSummary?.result?.[0]
-      const stats = result?.defaultKeyStatistics
-      const priceModule = result?.price
-
-      base.beta = stats?.beta?.raw ?? base.beta
-      base.sharesOutstanding = stats?.sharesOutstanding?.raw ?? priceModule?.sharesOutstanding?.raw ?? 0
-      base.marketCap = priceModule?.marketCap?.raw ?? 0
-      base.avgVolume = priceModule?.averageDailyVolume3Month?.raw ?? 0
-    }
-  } catch { /* summary is best-effort */ }
-
-  return base
+  return fetchStockQuote()
 }
 
 export function formatCmsFields(q: StockQuote): Record<string, string> {
