@@ -19,9 +19,12 @@ export interface KpiExtracted {
   cashUSD: number
   // Income statement
   ebitdaUSD: number        // operating income + D&A for the period
+  ebitdaPrevUSD: number
   // CMS field payloads ready to upsert
   fields: Record<string, string>    // value_es
   fieldsEn: Record<string, string>  // value_en
+  // Sanity checks — non-empty means something looks off; surface before publishing
+  warnings: string[]
 }
 
 // ---------------------------------------------------------------------------
@@ -159,18 +162,26 @@ export async function parseKpiExcel(buffer: Buffer | ArrayBuffer): Promise<KpiEx
   const netDebtUSD = loansUSD + notesPayableUSD - cashUSD
 
   // --- Income statement: EBITDA = operating income + D&A ---
-  // FS Stmt Loss sheet: operating income r29 c4, D&A r20 c4 (depl)+r21 c4 (lease depl)
+  // FS Stmt Loss sheet: operating income r29, D&A r20 (depl) + r21 (lease depl).
+  // Col C = index 2 = current quarter; col D = index 3 = prior-year quarter
+  // (same convention as every other sheet in this file — verified against a
+  // real consolidation file where D/E/F are blank and C holds the actual figures).
   const ws_is = wb.getWorksheet('FS Stmt Loss')
   let ebitdaUSD = 0
+  let ebitdaPrevUSD = 0
   if (ws_is) {
     const is = worksheetToGrid(ws_is)
     const opIncRow = findRowByLabel(is, 0, 'results from operating activities')
     const deplRow  = findRowByLabel(is, 0, 'depl & depn')
     const leaseDeplRow = findRowByLabel(is, 0, 'lease depletion')
-    const opInc  = num(is[opIncRow    >= 0 ? opIncRow    : 27]?.[3])
-    const depl   = num(is[deplRow     >= 0 ? deplRow     : 18]?.[3])
-    const lDepl  = num(is[leaseDeplRow >= 0 ? leaseDeplRow : 19]?.[3])
-    ebitdaUSD = opInc + depl + lDepl
+    const opInc      = num(is[opIncRow    >= 0 ? opIncRow    : 28]?.[2])
+    const depl       = num(is[deplRow     >= 0 ? deplRow     : 19]?.[2])
+    const lDepl      = num(is[leaseDeplRow >= 0 ? leaseDeplRow : 20]?.[2])
+    const opIncPrev  = num(is[opIncRow    >= 0 ? opIncRow    : 28]?.[3])
+    const deplPrev   = num(is[deplRow     >= 0 ? deplRow     : 19]?.[3])
+    const lDeplPrev  = num(is[leaseDeplRow >= 0 ? leaseDeplRow : 20]?.[3])
+    ebitdaUSD     = opInc + depl + lDepl
+    ebitdaPrevUSD = opIncPrev + deplPrev + lDeplPrev
   }
 
   // --- Opex per BOE (row 142 = index 141): production+processing + transportation ---
@@ -185,8 +196,8 @@ export async function parseKpiExcel(buffer: Buffer | ArrayBuffer): Promise<KpiEx
   // --- Build CMS field updates ---
   const prodStr    = fmtInt(productionBoed)
   const prodDelta  = fmtDelta(productionBoed, productionPrevBoed)
-  const ffMStr     = fmtMillions(fundsFlowUSD)
-  const ffDelta    = fmtDelta(revenueUSD, revenuePrevUSD) // revenue ratio — clean positive comp
+  const ebMStr     = fmtMillions(ebitdaUSD)
+  const ebDelta    = fmtDelta(ebitdaUSD, ebitdaPrevUSD)
   const opexStr    = opexPerBoe > 0 ? `$${opexPerBoe.toFixed(1)}/boe` : ''
   const opexDelta  = fmtDelta(-opexPerBoe, -opexPerBoePrev) // negative = cost reduction = good
   const periodEs   = `${period} · Cifras clave`
@@ -198,8 +209,8 @@ export async function parseKpiExcel(buffer: Buffer | ArrayBuffer): Promise<KpiEx
     'kpis.periodo.es':          periodEs,
     'kpi.production.value':     prodStr,
     'kpi.production.delta':     prodDelta,
-    'kpi.ebitda.value':         ffMStr,
-    'kpi.ebitda.delta':         ffDelta,
+    'kpi.ebitda.value':         ebMStr,
+    'kpi.ebitda.delta':         ebDelta,
     'kpi.opex.value':           opexStr,
     'kpi.opex.delta':           opexDelta,
     'ops.kpi.production':       prodStr,
@@ -222,6 +233,16 @@ export async function parseKpiExcel(buffer: Buffer | ArrayBuffer): Promise<KpiEx
     'inv.thesis.3.meta':        `${period} · annualized`,
   }
 
+  // --- Sanity checks — a sensitive-data upload should never silently ship a
+  // zero or missing figure just because a label/column moved in the template ---
+  const warnings: string[] = []
+  if (revenueUSD <= 0) warnings.push('Revenue salió en 0 o negativo — revisá la fila "oil and natural gas sales" en MD&A input.')
+  if (productionBoed <= 0) warnings.push('Producción (boe/d) salió en 0 — revisá la fila "total boe per day" en MD&A input.')
+  if (fundsFlowUSD === 0) warnings.push('Funds flow from operations salió en 0 — revisá esa fila en MD&A input.')
+  if (ebitdaUSD === 0) warnings.push('EBITDA (resultado operativo + D&A) salió en 0 — revisá la hoja "FS Stmt Loss" (filas 20, 21, 29).')
+  if (cashUSD === 0 && loansUSD === 0 && notesPayableUSD === 0) warnings.push('No se pudo leer nada del balance (caja/deuda) — revisá la hoja "BS".')
+  if (ebitdaUSD > 0 && netDebtUSD / (ebitdaUSD * 4) < 0) warnings.push('Net debt/EBITDA salió negativo — revisá caja y deuda en la hoja "BS".')
+
   return {
     period,
     productionBoed,
@@ -239,7 +260,9 @@ export async function parseKpiExcel(buffer: Buffer | ArrayBuffer): Promise<KpiEx
     notesPayableUSD,
     cashUSD,
     ebitdaUSD,
+    ebitdaPrevUSD,
     fields,
     fieldsEn,
+    warnings,
   }
 }
