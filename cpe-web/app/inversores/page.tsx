@@ -110,7 +110,7 @@ export default async function InversoresPage() {
           </h1>
           <p>
             <span className="lang-es">{f['page.inversores.lede'] || 'Crown Point Energía S.A. es una empresa dedicada al petróleo y gas con cobertura internacional que opera en el mercado argentino.'}</span>
-            <span className="lang-en">{fe['page.inversores.lede'] || 'Crown Point Energy Inc. is a public company incorporated in Alberta, Canada and listed on the Toronto Stock Exchange Venture (TSXV) under the symbol "CWV". Crown Point operates in Argentina through its wholly owned subsidiary Crown Point Energía S.A. headquartered in Buenos Aires.'}</span>
+            <span className="lang-en">{fe['page.inversores.lede'] || 'Crown Point Energy Inc. is a public company incorporated in Alberta, Canada and listed on the TSX Venture Exchange (TSXV) under the symbol "CWV". Crown Point operates in Argentina through its wholly owned subsidiary Crown Point Energía S.A. headquartered in Buenos Aires.'}</span>
           </p>
         </div>
       </section>

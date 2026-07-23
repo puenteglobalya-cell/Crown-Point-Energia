@@ -360,7 +360,7 @@ function buildSections(
     { label: 'Punto 2', es: 'Equipo experimentado en el upstream argentino',            en: 'Experienced team in Argentine upstream' },
     { label: 'Punto 3', es: 'Diversificación por cuencas y commodities',                en: 'Diversification by basins and commodities' },
     { label: 'Punto 4', es: 'Exposición a precios internacionales del petróleo',        en: 'Exposure to international oil prices' },
-    { label: 'Punto 5', es: 'Gobierno corporativo con doble cotización TSX-CNV',        en: 'Corporate governance with dual TSX-CNV listing' },
+    { label: 'Punto 5', es: 'Gobierno corporativo con doble cotización TSX (acciones) - CNV (deuda)',        en: 'Corporate governance with dual TSX (shares) - CNV (debt) listing' },
   ])
 
   // ── ESG ───────────────────────────────────────────────────────────────────
