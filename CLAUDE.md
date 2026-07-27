@@ -12,6 +12,16 @@ npx tsc --noEmit  # type-check without emitting
 
 No test runner is configured. Type-check is the primary static correctness tool.
 
+## Stale pre-reset branches — ignore
+
+`main`'s history starts at PR #71 ("crown-point-setup"). Several remote branches predate that reset and share an unrelated root commit (`bd0da9a "Initial commit"`), so they have **no merge-base with `main`** — do not attempt to merge them. Confirmed superseded (e.g. `facturacion` was rebuilt from scratch after the reset with its own commits in `main`). Last activity 27-May to 10-Jun 2026; do not consider them for merging or recovery unless the user explicitly asks:
+
+`claude/cpe-build-fixes`, `claude/cpe-comunicados`, `claude/cpe-docs-maintenance`, `claude/cpe-website`, `claude/visual-redesign`, `design/token-cleanup-and-portal-css`, `fix/admin-type-access`, `fix/brent-parser-aug26`, `fix/cpe-website-fixes`, `fix/facturacion-art-filter`, `fix/facturacion-tipos`, `fix/facturacion-ux`, `fix/facturacion-v3`, `hotfix/macro-api-fix`
+
+## Branch workflow note
+
+Merge feature branches to `main` every 2-3 commits — don't let work accumulate unmerged on a branch (this caused the hero-video / EBITDA-fix incident where 11 finished commits sat unmerged and never reached production).
+
 ## Architecture
 
 ### Current app — Revenue Reports (ingresos)
