@@ -72,6 +72,7 @@ export default function AdminKpiPage() {
   const [step, setStep]       = useState<Step>('upload')
   const [data, setData]       = useState<KpiResult | null>(null)
   const [loading, setLoading] = useState(false)
+  const [ackWarnings, setAckWarnings] = useState(false)
   const [msg, setMsg]         = useState('')
   const excelRef              = useRef<HTMLInputElement>(null)
   const wordRef               = useRef<HTMLInputElement>(null)
@@ -179,6 +180,24 @@ export default function AdminKpiPage() {
       {step === 'preview' && excel && word && (
         <div style={{ display: 'grid', gap: 24 }}>
 
+          {/* Warnings — sensitive financial data, don't let a silent zero ship */}
+          {excel.warnings.length > 0 && (
+            <div style={{ background: 'rgba(179,59,46,0.08)', border: '1px solid var(--cp-negative)', borderRadius: 'var(--r-lg)', padding: '18px 22px' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--cp-negative)', marginBottom: 10 }}>
+                ⚠ {excel.warnings.length} {excel.warnings.length === 1 ? 'valor sospechoso detectado' : 'valores sospechosos detectados'} — revisá antes de aplicar
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 20, display: 'grid', gap: 6 }}>
+                {excel.warnings.map((w, i) => (
+                  <li key={i} style={{ fontSize: 13, color: 'var(--fg-soft)' }}>{w}</li>
+                ))}
+              </ul>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, fontSize: 13, color: 'var(--fg)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={ackWarnings} onChange={e => setAckWarnings(e.target.checked)} />
+                Revisé los valores contra el Excel original y confirmo que están correctos
+              </label>
+            </div>
+          )}
+
           {/* Summary header */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: '24px 28px' }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', marginBottom: 4, fontFamily: 'var(--font-display)' }}>
@@ -195,8 +214,8 @@ export default function AdminKpiPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(148px,1fr))', gap: 10, marginBottom: 24 }}>
               <Pill label="Producción" value={`${excel.fields['kpi.production.value']} boe/d`} sub={excel.fields['kpi.production.delta'] || undefined} />
               <Pill label="Revenue" value={fmtUSD(excel.revenueUSD)} />
-              <Pill label="Funds flow" value={fmtUSD(excel.fundsFlowUSD)} sub={excel.fields['kpi.ebitda.delta'] || undefined} />
-              <Pill label="EBITDA" value={fmtM(excel.ebitdaUSD)} />
+              <Pill label="Funds flow" value={fmtUSD(excel.fundsFlowUSD)} />
+              <Pill label="EBITDA" value={fmtM(excel.ebitdaUSD)} sub={excel.fields['kpi.ebitda.delta'] || undefined} />
               <Pill label="Opex/BOE" value={excel.fields['kpi.opex.value'] || '—'} sub={excel.fields['kpi.opex.delta'] || undefined} />
               <Pill label="Op. Netback" value={fmtUSD(excel.netbackUSD)} />
             </div>
@@ -238,14 +257,14 @@ export default function AdminKpiPage() {
             <button
               className="btn btn-primary"
               onClick={handleApply}
-              disabled={loading}
-              style={{ padding: '11px 28px', opacity: loading ? 0.7 : 1 }}
+              disabled={loading || (excel.warnings.length > 0 && !ackWarnings)}
+              style={{ padding: '11px 28px', opacity: (loading || (excel.warnings.length > 0 && !ackWarnings)) ? 0.5 : 1 }}
             >
               {loading ? 'Aplicando…' : 'Aplicar al sitio'}
             </button>
             <button
               className="btn"
-              onClick={() => { setStep('upload'); setData(null) }}
+              onClick={() => { setStep('upload'); setData(null); setAckWarnings(false) }}
               disabled={loading}
               style={{ padding: '11px 20px' }}
             >
@@ -264,7 +283,7 @@ export default function AdminKpiPage() {
           <p style={{ fontSize: 13, color: 'var(--fg-soft)', marginBottom: 20 }}>
             Los campos del sitio se actualizaron y el caché se invalidó. Los cambios son visibles de inmediato.
           </p>
-          <button className="btn" onClick={() => { setStep('upload'); setData(null) }} style={{ padding: '10px 20px' }}>
+          <button className="btn" onClick={() => { setStep('upload'); setData(null); setAckWarnings(false) }} style={{ padding: '10px 20px' }}>
             Subir otro período
           </button>
         </div>

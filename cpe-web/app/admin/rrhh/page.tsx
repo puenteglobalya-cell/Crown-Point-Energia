@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { AdminSkeletonRows } from '@/components/AdminPageHeader'
+import { RrhhDashboard } from '@/components/RrhhDashboard'
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -34,7 +35,7 @@ type Application = {
   candidato_id: string
 }
 
-type Tab = 'postulaciones' | 'posiciones'
+type Tab = 'dashboard' | 'postulaciones' | 'posiciones'
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
@@ -79,7 +80,7 @@ function daysSince(iso: string): number {
 // ── Main Component ────────────────────────────────────────────────────────
 
 export default function RrhhPage() {
-  const [tab, setTab] = useState<Tab>('postulaciones')
+  const [tab, setTab] = useState<Tab>('dashboard')
   const [apps, setApps] = useState<Application[]>([])
   const [positions, setPositions] = useState<Position[]>([])
   const [loading, setLoading] = useState(true)
@@ -305,7 +306,7 @@ export default function RrhhPage() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
-          {([['postulaciones', 'Postulaciones'], ['posiciones', 'Búsquedas activas']] as const).map(([key, label]) => (
+          {([['dashboard', 'Dashboard'], ['postulaciones', 'Postulaciones'], ['posiciones', 'Búsquedas activas']] as const).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -327,6 +328,8 @@ export default function RrhhPage() {
 
         {loading ? (
           <AdminSkeletonRows rows={6} />
+        ) : tab === 'dashboard' ? (
+          <RrhhDashboard apps={apps} />
         ) : tab === 'postulaciones' ? (
           /* ── POSTULACIONES TAB ──────────────────────────────────────── */
           <>

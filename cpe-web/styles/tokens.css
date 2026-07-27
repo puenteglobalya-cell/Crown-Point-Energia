@@ -397,17 +397,18 @@ h1, h2, h3, h4 {
   margin-top: 4px;
 }
 .primary-nav {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 2px;
 }
 .nav-item {
   position: relative;
-  padding: 10px 12px;
+  padding: 10px 10px;
   font-size: 14px;
   font-weight: 500;
   color: var(--fg);
   border-radius: var(--r-md);
   cursor: pointer;
   user-select: none;
+  white-space: nowrap;
 }
 .nav-item:hover { background: rgba(20,23,46,.06); background: color-mix(in oklab, var(--fg) 6%, transparent); }
 .nav-item.has-menu::after {

@@ -14,11 +14,21 @@ type SiteImage = {
 
 const SECTIONS = [
   { value: 'hero',       label: 'Hero / portada',    cmsKey: 'hero.home.img' as string | null },
+  { value: 'hero-video', label: 'Hero / video de fondo (mp4)', cmsKey: 'hero.home.video' as string | null },
   { value: 'operaciones', label: 'Operaciones',       cmsKey: null },
   { value: 'esg',        label: 'ESG / Sostenibilidad', cmsKey: null },
   { value: 'acerca',     label: 'Acerca de',          cmsKey: null },
   { value: 'general',    label: 'General',             cmsKey: null },
 ]
+
+const ACCEPT_BY_SECTION: Record<string, string> = {
+  'hero-video': 'video/mp4',
+}
+const DEFAULT_ACCEPT = 'image/jpeg,image/png,image/webp,image/svg+xml'
+
+function isVideo(name: string) {
+  return name.toLowerCase().endsWith('.mp4')
+}
 
 function fmtSize(bytes: number | null | undefined) {
   if (!bytes) return ''
@@ -165,7 +175,7 @@ export default function ImagenesPage() {
 
         <AdminPageHeader
           title="Imágenes del sitio"
-          subtitle="Fotos de portada y heroes · JPG / PNG / WebP · máx. 10 MB"
+          subtitle="Fotos de portada y heroes · JPG / PNG / WebP (máx. 10 MB) · Video de fondo MP4 (máx. 100 MB)"
           right={msg && <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>✓ {msg}</span>}
         />
 
@@ -195,7 +205,7 @@ export default function ImagenesPage() {
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                accept={ACCEPT_BY_SECTION[section] ?? DEFAULT_ACCEPT}
                 required
                 onChange={e => {
                   const f = e.target.files?.[0]
@@ -219,7 +229,11 @@ export default function ImagenesPage() {
           )}
           {preview && (
             <div style={{ marginTop: 14 }}>
-              <img src={preview} alt="preview" style={{ maxHeight: 120, maxWidth: '100%', borderRadius: 'var(--r-md)', border: '1px solid var(--rule)', objectFit: 'cover' }} />
+              {section === 'hero-video' ? (
+                <video src={preview} muted autoPlay loop playsInline style={{ maxHeight: 160, maxWidth: '100%', borderRadius: 'var(--r-md)', border: '1px solid var(--rule)' }} />
+              ) : (
+                <img src={preview} alt="preview" style={{ maxHeight: 120, maxWidth: '100%', borderRadius: 'var(--r-md)', border: '1px solid var(--rule)', objectFit: 'cover' }} />
+              )}
             </div>
           )}
         </div>
@@ -240,12 +254,20 @@ export default function ImagenesPage() {
                   {grupo.items.map(img => (
                     <div key={img.id} style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden', background: 'var(--surface)' }}>
                       <div style={{ aspectRatio: '16/9', background: 'var(--bg-alt)', overflow: 'hidden' }}>
-                        <img
-                          src={publicUrl(img.name)}
-                          alt={img.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                          loading="lazy"
-                        />
+                        {isVideo(img.name) ? (
+                          <video
+                            src={publicUrl(img.name)}
+                            muted loop playsInline preload="metadata"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          />
+                        ) : (
+                          <img
+                            src={publicUrl(img.name)}
+                            alt={img.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            loading="lazy"
+                          />
+                        )}
                       </div>
                       <div style={{ padding: '10px 12px' }}>
                         <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

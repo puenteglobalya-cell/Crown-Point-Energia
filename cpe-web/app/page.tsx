@@ -5,6 +5,7 @@ import { getEffectiveLang } from '@/lib/lang'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import ArgentinaMap from '@/components/ArgentinaMap'
 import { DroneHud } from '@/components/DroneHud'
+import { HeroVideoPip } from '@/components/HeroVideoPip'
 import { sumWellsFromBlocks, fetchOperationsBlocks } from '@/lib/content-fetch'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 
@@ -80,14 +81,7 @@ export default async function HomePage() {
       {show['hero'] !== false && (
         <section className="hero" data-cpe-section="hero">
           <div className="hero-media">
-            {heroVideo ? (
-              <video
-                autoPlay muted loop playsInline preload="none"
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-              >
-                <source src={heroVideo} type="video/mp4" />
-              </video>
-            ) : heroImg ? (
+            {heroImg ? (
               <Image
                 src={heroImg}
                 alt={f['hero.home.img.alt'] || ''}
@@ -101,6 +95,7 @@ export default async function HomePage() {
             <div className="hero-veil"></div>
           </div>
           <DroneHud lang={lang} />
+          {heroVideo && <HeroVideoPip src={heroVideo} />}
           <div className="container hero-content">
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
@@ -364,8 +359,8 @@ export default async function HomePage() {
                   <span className="bullet"></span>
                   <div>
                     <strong><span className="lang-es">Pipeline de crecimiento</span><span className="lang-en">Growth pipeline</span></strong>
-                    <span className="lang-es">Plan de 12 pozos para 2026–2027 enfocados en gas y crudo de bajo punto de equilibrio.</span>
-                    <span className="lang-en">12-well program for 2026–2027 targeting low-breakeven gas and oil.</span>
+                    <span className="lang-es">Plan de {f['inv.thesis.4.val'] || '13'} pozos para 2026–2027 enfocados en gas y crudo de bajo punto de equilibrio.</span>
+                    <span className="lang-en">{f['inv.thesis.4.val'] || '13'}-well program for 2026–2027 targeting low-breakeven gas and oil.</span>
                   </div>
                 </li>
               </ul>
