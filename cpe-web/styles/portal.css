@@ -8,6 +8,101 @@
   padding: 40px 24px;
 }
 
+/* ---- Nav ---- */
+.portal-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+}
+
+.portal-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 56px;
+  gap: 12px;
+}
+
+.portal-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.portal-nav-link {
+  font-size: 13px;
+  color: var(--fg-soft);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  white-space: nowrap;
+}
+.portal-nav-link:hover {
+  background: color-mix(in oklab, var(--fg) 6%, transparent);
+}
+
+.portal-nav-role {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  flex-shrink: 0;
+}
+
+.portal-nav-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: var(--r-md);
+  flex-shrink: 0;
+}
+
+.portal-nav-toggle {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: 7px 9px;
+  color: var(--fg);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.portal-nav-drawer {
+  display: none;
+  flex-direction: column;
+  padding: 8px 12px 12px;
+  border-top: 1px solid var(--rule);
+}
+.portal-nav-drawer.open {
+  display: flex;
+}
+.portal-nav-drawer .portal-nav-link {
+  padding: 12px 10px;
+  font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  .portal-nav-links { display: none; }
+  .portal-nav-toggle { display: inline-flex; align-items: center; }
+  .portal-nav-signout span { display: none; }
+  .portal-nav-role { display: none; }
+}
+
+@media (max-width: 420px) {
+  .portal-nav-signout span { display: none; }
+  .portal-nav-signout { padding: 8px; }
+}
+
 .portal-page {
   max-width: 1280px;
   margin: 0 auto;
@@ -56,6 +151,61 @@
   color: var(--fg-muted);
   font-weight: 400;
   font-family: var(--font-mono);
+}
+
+/* ---- Report row ---- */
+.report-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.report-row__badges {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.report-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.report-row__copy { padding: 5px 10px; font-size: 12px; }
+.report-row__excel { padding: 6px 12px; font-size: 11px; }
+.report-row__view { padding: 7px 16px; font-size: 12px; }
+
+@media (max-width: 600px) {
+  .report-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .report-row__info { width: 100%; }
+  .report-row__badges { width: 100%; }
+  .report-row__actions {
+    width: 100%;
+    gap: 8px;
+  }
+  .report-row__copy {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  .report-row__excel {
+    flex: 1;
+    text-align: center;
+    padding: 11px 12px;
+    font-size: 13px;
+  }
+  .report-row__view {
+    flex: 2;
+    text-align: center;
+    padding: 12px 12px;
+    font-size: 14px;
+  }
 }
 
 /* ---- Macro widget ---- */

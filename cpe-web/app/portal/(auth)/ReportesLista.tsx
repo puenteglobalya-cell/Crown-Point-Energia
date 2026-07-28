@@ -217,15 +217,12 @@ export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
         {items.map(item => (
           <div
             key={item.id}
+            className="report-row"
             style={{
               background: 'var(--surface)',
               border: `1px solid ${combineMode && selected.has(item.id) ? 'var(--accent)' : 'var(--rule)'}`,
               borderRadius: 'var(--r-lg)',
               padding: '18px 20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              flexWrap: 'wrap',
               outline: combineMode && selected.has(item.id) ? '2px solid var(--accent-pale)' : 'none',
             }}
           >
@@ -240,7 +237,7 @@ export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
             )}
 
             {/* Info */}
-            <div style={{ flex: 1, minWidth: 180 }}>
+            <div className="report-row__info" style={{ flex: 1, minWidth: 180 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', marginBottom: 3 }}>
                 {item.titulo}
               </div>
@@ -251,7 +248,7 @@ export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
             </div>
 
             {/* Badges */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+            <div className="report-row__badges">
               {item.type_id && item.type_id !== 'ingresos' && (
                 <span style={{
                   fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
@@ -269,19 +266,22 @@ export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
               }}>
                 {item.estado}
               </span>
+            </div>
 
-              {/* Actions */}
+            {/* Actions */}
+            <div className="report-row__actions">
               <button
                 title="Copiar enlace"
                 onClick={() => copyLink(item.id)}
-                style={{ background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', padding: '5px 10px', cursor: 'pointer', fontSize: 12, color: copiedId === item.id ? 'var(--cp-green-deep)' : 'var(--fg-muted)' }}
+                className="report-row__copy"
+                style={{ background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', cursor: 'pointer', color: copiedId === item.id ? 'var(--cp-green-deep)' : 'var(--fg-muted)' }}
               >
                 {copiedId === item.id ? '✓' : '🔗'}
               </button>
               <a
                 href={`/api/admin/reportes/${item.id}/excel`}
-                className="btn"
-                style={{ fontSize: 11, padding: '6px 12px', textDecoration: 'none' }}
+                className="btn report-row__excel"
+                style={{ textDecoration: 'none' }}
                 title="Descargar Excel"
               >
                 ↓ Excel
@@ -290,8 +290,8 @@ export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
                 href={`/api/admin/reportes/${item.id}`}
                 target="_blank"
                 rel="noreferrer"
-                className="btn btn-primary"
-                style={{ fontSize: 12, padding: '7px 16px', textDecoration: 'none' }}
+                className="btn btn-primary report-row__view"
+                style={{ textDecoration: 'none' }}
               >
                 Ver / PDF
               </a>
