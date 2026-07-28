@@ -47,6 +47,10 @@ type Props = {
   isAccionista?: boolean
 }
 
+function groupKey(item: ReporteItem) {
+  return `${item.type_id ?? 'sin-tipo'}::${item.periodo}`
+}
+
 export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
   const [combineMode, setCombineMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -56,6 +60,33 @@ export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
   const [generateError, setGenerateError] = useState<string | null>(null)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [copiedId, setCopiedId] = useState('')
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+
+  // Items already arrive sorted by created_at desc — the first item of each
+  // (tipo, periodo) group is the latest version, shown by default. Older
+  // versions of the same period stay hidden behind "Ver versiones anteriores".
+  const groups = new Map<string, ReporteItem[]>()
+  for (const item of items) {
+    const key = groupKey(item)
+    const arr = groups.get(key)
+    if (arr) arr.push(item); else groups.set(key, [item])
+  }
+  const latestItems: ReporteItem[] = []
+  const seenGroups = new Set<string>()
+  for (const item of items) {
+    const key = groupKey(item)
+    if (seenGroups.has(key)) continue
+    seenGroups.add(key)
+    latestItems.push(item)
+  }
+
+  function toggleGroup(key: string) {
+    setExpandedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key); else next.add(key)
+      return next
+    })
+  }
 
   // Comments state
   const [commentOpen, setCommentOpen] = useState<Set<string>>(new Set())
@@ -190,12 +221,139 @@ export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
 
   const orderedReportItems = orderedIds.map(id => items.find(it => it.id === id)!)
 
+  function renderRow(item: ReporteItem) {
+    return (
+      <div
+        key={item.id}
+        className="report-row"
+        style={{
+          background: 'var(--surface)',
+          border: `1px solid ${combineMode && selected.has(item.id) ? 'var(--accent)' : 'var(--rule)'}`,
+          borderRadius: 'var(--r-lg)',
+          padding: '18px 20px',
+          outline: combineMode && selected.has(item.id) ? '2px solid var(--accent-pale)' : 'none',
+        }}
+      >
+        {/* Checkbox */}
+        {combineMode && (
+          <input
+            type="checkbox"
+            checked={selected.has(item.id)}
+            onChange={() => toggleSelect(item.id)}
+            style={{ width: 17, height: 17, cursor: 'pointer', flexShrink: 0, accentColor: 'var(--accent)' }}
+          />
+        )}
+
+        {/* Info */}
+        <div className="report-row__info" style={{ flex: 1, minWidth: 180 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', marginBottom: 3 }}>
+            {item.titulo}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
+            {item.periodo} · {fmtDate(item.created_at)}
+            {item.file_size ? ` · ${fmtSize(item.file_size)}` : ''}
+          </div>
+        </div>
+
+        {/* Badges */}
+        <div className="report-row__badges">
+          {item.type_id && item.type_id !== 'ingresos' && (
+            <span style={{
+              fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+              padding: '3px 8px', borderRadius: 'var(--r-pill)',
+              background: 'rgba(31,37,102,0.08)', color: 'var(--accent)',
+            }}>
+              {TYPE_LABELS[item.type_id] ?? item.type_id}
+            </span>
+          )}
+          <span style={{
+            fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+            padding: '3px 8px', borderRadius: 'var(--r-pill)',
+            background: item.estado === 'publicado' ? 'rgba(108,174,82,0.15)' : 'var(--bg-alt)',
+            color: item.estado === 'publicado' ? 'var(--cp-green-deep)' : 'var(--fg-muted)',
+          }}>
+            {item.estado}
+          </span>
+        </div>
+
+        {/* Actions */}
+        <div className="report-row__actions">
+          <button
+            title="Copiar enlace"
+            onClick={() => copyLink(item.id)}
+            className="report-row__copy"
+            style={{ background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', cursor: 'pointer', color: copiedId === item.id ? 'var(--cp-green-deep)' : 'var(--fg-muted)' }}
+          >
+            {copiedId === item.id ? '✓' : '🔗'}
+          </button>
+          <a
+            href={`/api/admin/reportes/${item.id}/excel`}
+            className="btn report-row__excel"
+            style={{ textDecoration: 'none' }}
+            title="Descargar Excel"
+          >
+            ↓ Excel
+          </a>
+          <a
+            href={`/api/admin/reportes/${item.id}`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-primary report-row__view"
+            style={{ textDecoration: 'none' }}
+          >
+            Ver / PDF
+          </a>
+        </div>
+
+        {/* Comments section for accionistas */}
+        {isAccionista && (
+          <div style={{ marginTop: 8, borderTop: '1px solid var(--rule)', paddingTop: 8, width: '100%' }}>
+            <button onClick={() => toggleComments(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--fg-muted)', padding: 0 }}>
+              {commentOpen.has(item.id) ? '▲ Ocultar notas' : `▼ Notas${comments[item.id]?.length ? ` (${comments[item.id].length})` : ''}`}
+            </button>
+            {commentOpen.has(item.id) && (
+              <div style={{ marginTop: 10 }}>
+                {(comments[item.id] ?? []).map(c => (
+                  <div key={c.id} style={{ background: 'var(--bg-alt)', borderRadius: 'var(--r-md)', padding: '8px 12px', marginBottom: 6, fontSize: 12 }}>
+                    <div style={{ color: 'var(--fg)', whiteSpace: 'pre-wrap' }}>{c.texto}</div>
+                    <div style={{ marginTop: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{fmtDate(c.created_at)}</span>
+                      <button onClick={() => deleteComment(item.id, c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, color: '#E53E3E', padding: 0 }}>Eliminar</button>
+                    </div>
+                  </div>
+                ))}
+                <textarea
+                  value={commentText[item.id] ?? ''}
+                  onChange={e => setCommentText(prev => ({ ...prev, [item.id]: e.target.value }))}
+                  placeholder="Agregar una nota…"
+                  rows={3}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: 12, padding: '8px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--rule)', background: 'var(--surface)', color: 'var(--fg)', resize: 'vertical', marginBottom: 6 }}
+                />
+                <button
+                  onClick={() => addComment(item.id)}
+                  disabled={!commentText[item.id]?.trim()}
+                  className="btn btn-primary"
+                  style={{ fontSize: 12, padding: '6px 16px' }}
+                >
+                  Agregar nota
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <>
       {/* Header bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
         <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>
-          {items.length} {items.length === 1 ? 'reporte' : 'reportes'}
+          {latestItems.length} {latestItems.length === 1 ? 'reporte' : 'reportes'}
+          {items.length > latestItems.length && (
+            <span style={{ color: 'var(--fg-muted)' }}> · {items.length - latestItems.length} versión(es) anterior(es) ocultas</span>
+          )}
         </div>
         {items.length > 1 && (
           <button
@@ -214,127 +372,34 @@ export function ReportesLista({ items, userCanUpload, isAccionista }: Props) {
 
       {/* Report list */}
       <div style={{ display: 'grid', gap: 10 }}>
-        {items.map(item => (
-          <div
-            key={item.id}
-            className="report-row"
-            style={{
-              background: 'var(--surface)',
-              border: `1px solid ${combineMode && selected.has(item.id) ? 'var(--accent)' : 'var(--rule)'}`,
-              borderRadius: 'var(--r-lg)',
-              padding: '18px 20px',
-              outline: combineMode && selected.has(item.id) ? '2px solid var(--accent-pale)' : 'none',
-            }}
-          >
-            {/* Checkbox */}
-            {combineMode && (
-              <input
-                type="checkbox"
-                checked={selected.has(item.id)}
-                onChange={() => toggleSelect(item.id)}
-                style={{ width: 17, height: 17, cursor: 'pointer', flexShrink: 0, accentColor: 'var(--accent)' }}
-              />
-            )}
-
-            {/* Info */}
-            <div className="report-row__info" style={{ flex: 1, minWidth: 180 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', marginBottom: 3 }}>
-                {item.titulo}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
-                {item.periodo} · {fmtDate(item.created_at)}
-                {item.file_size ? ` · ${fmtSize(item.file_size)}` : ''}
-              </div>
-            </div>
-
-            {/* Badges */}
-            <div className="report-row__badges">
-              {item.type_id && item.type_id !== 'ingresos' && (
-                <span style={{
-                  fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                  padding: '3px 8px', borderRadius: 'var(--r-pill)',
-                  background: 'rgba(31,37,102,0.08)', color: 'var(--accent)',
-                }}>
-                  {TYPE_LABELS[item.type_id] ?? item.type_id}
-                </span>
+        {latestItems.map(item => {
+          const key = groupKey(item)
+          const olderVersions = (groups.get(key) ?? []).slice(1)
+          const isExpanded = expandedGroups.has(key)
+          return (
+            <div key={key} style={{ display: 'grid', gap: 10 }}>
+              {renderRow(item)}
+              {olderVersions.length > 0 && (
+                <>
+                  <button
+                    onClick={() => toggleGroup(key)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: 11, color: 'var(--fg-muted)', padding: '0 4px', textAlign: 'left',
+                    }}
+                  >
+                    {isExpanded
+                      ? '▲ Ocultar versiones anteriores'
+                      : `▼ Ver ${olderVersions.length} versión(es) anterior(es)`}
+                  </button>
+                  {isExpanded && olderVersions.map(v => (
+                    <div key={v.id} style={{ opacity: 0.7 }}>{renderRow(v)}</div>
+                  ))}
+                </>
               )}
-              <span style={{
-                fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                padding: '3px 8px', borderRadius: 'var(--r-pill)',
-                background: item.estado === 'publicado' ? 'rgba(108,174,82,0.15)' : 'var(--bg-alt)',
-                color: item.estado === 'publicado' ? 'var(--cp-green-deep)' : 'var(--fg-muted)',
-              }}>
-                {item.estado}
-              </span>
             </div>
-
-            {/* Actions */}
-            <div className="report-row__actions">
-              <button
-                title="Copiar enlace"
-                onClick={() => copyLink(item.id)}
-                className="report-row__copy"
-                style={{ background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)', cursor: 'pointer', color: copiedId === item.id ? 'var(--cp-green-deep)' : 'var(--fg-muted)' }}
-              >
-                {copiedId === item.id ? '✓' : '🔗'}
-              </button>
-              <a
-                href={`/api/admin/reportes/${item.id}/excel`}
-                className="btn report-row__excel"
-                style={{ textDecoration: 'none' }}
-                title="Descargar Excel"
-              >
-                ↓ Excel
-              </a>
-              <a
-                href={`/api/admin/reportes/${item.id}`}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-primary report-row__view"
-                style={{ textDecoration: 'none' }}
-              >
-                Ver / PDF
-              </a>
-            </div>
-
-            {/* Comments section for accionistas */}
-            {isAccionista && (
-              <div style={{ marginTop: 8, borderTop: '1px solid var(--rule)', paddingTop: 8, width: '100%' }}>
-                <button onClick={() => toggleComments(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--fg-muted)', padding: 0 }}>
-                  {commentOpen.has(item.id) ? '▲ Ocultar notas' : `▼ Notas${comments[item.id]?.length ? ` (${comments[item.id].length})` : ''}`}
-                </button>
-                {commentOpen.has(item.id) && (
-                  <div style={{ marginTop: 10 }}>
-                    {(comments[item.id] ?? []).map(c => (
-                      <div key={c.id} style={{ background: 'var(--bg-alt)', borderRadius: 'var(--r-md)', padding: '8px 12px', marginBottom: 6, fontSize: 12 }}>
-                        <div style={{ color: 'var(--fg)', whiteSpace: 'pre-wrap' }}>{c.texto}</div>
-                        <div style={{ marginTop: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{fmtDate(c.created_at)}</span>
-                          <button onClick={() => deleteComment(item.id, c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, color: '#E53E3E', padding: 0 }}>Eliminar</button>
-                        </div>
-                      </div>
-                    ))}
-                    <textarea
-                      value={commentText[item.id] ?? ''}
-                      onChange={e => setCommentText(prev => ({ ...prev, [item.id]: e.target.value }))}
-                      placeholder="Agregar una nota…"
-                      rows={3}
-                      style={{ width: '100%', boxSizing: 'border-box', fontSize: 12, padding: '8px 10px', borderRadius: 'var(--r-md)', border: '1px solid var(--rule)', background: 'var(--surface)', color: 'var(--fg)', resize: 'vertical', marginBottom: 6 }}
-                    />
-                    <button
-                      onClick={() => addComment(item.id)}
-                      disabled={!commentText[item.id]?.trim()}
-                      className="btn btn-primary"
-                      style={{ fontSize: 12, padding: '6px 16px' }}
-                    >
-                      Agregar nota
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Floating combine bar */}

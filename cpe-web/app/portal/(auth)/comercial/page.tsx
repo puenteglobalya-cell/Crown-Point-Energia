@@ -24,14 +24,14 @@ export default async function ComercialPage() {
       .eq('type_id', 'facturacion')
       .eq('estado', 'publicado')
       .order('created_at', { ascending: false })
-      .limit(6),
+      .limit(20),
 
     db.from('reportes')
       .select('id, tipo_id:type_id, titulo, periodo, created_at')
       .eq('type_id', 'ingresos')
       .eq('estado', 'publicado')
       .order('created_at', { ascending: false })
-      .limit(6),
+      .limit(20),
 
     db.from('se_referencias')
       .select('id, fecha_desde, fecha_hasta, scraped_at, headers, filas, brent_ref')
@@ -40,8 +40,23 @@ export default async function ComercialPage() {
   ])
 
   type ReporteRow = { id: string; tipo_id: string | null; titulo: string; periodo: string; created_at: string }
-  const facturacion = (facturacionRes.data ?? []) as ReporteRow[]
-  const ingresos    = (ingresosRes.data    ?? []) as ReporteRow[]
+
+  // Rows already come sorted by created_at desc — keep only the latest
+  // upload per período, so re-uploads of the same month don't clutter the list.
+  function latestPerPeriodo(rows: ReporteRow[]) {
+    const seen = new Set<string>()
+    const out: ReporteRow[] = []
+    for (const r of rows) {
+      if (seen.has(r.periodo)) continue
+      seen.add(r.periodo)
+      out.push(r)
+      if (out.length === 6) break
+    }
+    return out
+  }
+
+  const facturacion = latestPerPeriodo((facturacionRes.data ?? []) as ReporteRow[])
+  const ingresos    = latestPerPeriodo((ingresosRes.data    ?? []) as ReporteRow[])
   const seList      = (seRes.data ?? []) as NonNullable<typeof seRes.data>
   const isAdmin     = permissions.has('manage_users')
 
