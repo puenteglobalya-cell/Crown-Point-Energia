@@ -7,12 +7,14 @@ import { fetchCclRate } from '@/lib/matbarofex'
 import { generarReporteAccionistaHTML } from '@/lib/generador/htmlReportAccionista'
 import { generarReporteFacturacionHTML } from '@/lib/generador/htmlReportFacturacion'
 import { generarReporteGenericoHTML } from '@/lib/generador/htmlReportGenerico'
+import { generarReporteProduccionHTML } from '@/lib/generador/htmlReportProduccion'
 import { snapshotReportVersion } from '@/lib/report-versions'
 import type { DatosIngresos } from '@/lib/parsers/ingresos'
 import type { MacroSnapshot } from '@/lib/generador/htmlReport'
 import type { DatosAccionista } from '@/lib/parsers/accionista'
 import type { DatosFacturacion } from '@/lib/parsers/facturacion'
 import type { DatosGenerico } from '@/lib/parsers/generico'
+import type { DatosProduccion } from '@/lib/parsers/produccion'
 
 const REGENERABLE = ['ingresos', 'accionista', 'facturacion', 'produccion', 'financiero']
 
@@ -87,6 +89,8 @@ export async function POST(
         html = generarReporteFacturacionHTML(datos as DatosFacturacion)
         break
       case 'produccion':
+        html = generarReporteProduccionHTML(datos as DatosProduccion)
+        break
       case 'financiero':
         html = generarReporteGenericoHTML(datos as DatosGenerico)
         break
