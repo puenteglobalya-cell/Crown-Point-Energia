@@ -14,10 +14,18 @@ type CnvHecho = {
   synced_at: string
 }
 
+// If the last successful sync is older than this, something's off with the
+// daily cron (should run every business day) — auto-trigger a sync on load
+// instead of waiting for someone to notice and click the button.
+const STALE_AFTER_MS = 36 * 60 * 60 * 1000 // 36h — covers weekends/holidays slack
+
 export default function CnvSyncPage() {
   const [syncing, setSyncing] = useState(false)
+  const [autoSyncing, setAutoSyncing] = useState(false)
   const [result, setResult]   = useState<{ ok?: boolean; inserted?: number; errors?: string[]; error?: string } | null>(null)
   const [hechos, setHechos]   = useState<CnvHecho[] | null>(null)
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null)
+  const [autoChecked, setAutoChecked] = useState(false)
 
   async function handleSync() {
     setSyncing(true)
@@ -42,10 +50,26 @@ export default function CnvSyncPage() {
       .select('*')
       .order('fecha', { ascending: false })
       .limit(50)
-    setHechos((data ?? []) as CnvHecho[])
+    const rows = (data ?? []) as CnvHecho[]
+    setHechos(rows)
+    const newest = rows.reduce<string | null>(
+      (max, h) => (!max || h.synced_at > max ? h.synced_at : max), null
+    )
+    setLastSyncedAt(newest)
+    return newest
   }
 
-  useState(() => { loadHechos() })
+  useState(() => {
+    (async () => {
+      const newest = await loadHechos()
+      const isStale = !newest || Date.now() - new Date(newest).getTime() > STALE_AFTER_MS
+      setAutoChecked(true)
+      if (isStale) {
+        setAutoSyncing(true)
+        try { await handleSync() } finally { setAutoSyncing(false) }
+      }
+    })()
+  })
 
   return (
     <div style={{ maxWidth: 900 }}>
@@ -60,10 +84,26 @@ export default function CnvSyncPage() {
                 cnv.gov.ar
               </a>{' '}
               cada día hábil a las 8:00 AM (Argentina). También podés forzar una sincronización manual.
+              {lastSyncedAt && (
+                <> · última sincronización: {new Date(lastSyncedAt).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</>
+              )}
             </>
           }
         />
       </div>
+
+      {autoChecked && autoSyncing && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 'var(--s-4)',
+          padding: '10px 14px', background: 'rgba(31,37,102,.06)', border: '1px solid rgba(31,37,102,.18)',
+          borderRadius: 'var(--r-md)', fontSize: 12.5, color: 'var(--fg-soft)',
+        }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }}>
+            <path d="M21 12a9 9 0 11-6.219-8.56"/>
+          </svg>
+          La última sincronización quedó vieja — revisando automáticamente contra cnv.gov.ar…
+        </div>
+      )}
 
       {/* Sync button */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 'var(--s-8)', padding: 'var(--s-6)', background: 'var(--bg-alt)', borderRadius: 'var(--r-lg)', border: '1px solid var(--rule)' }}>
