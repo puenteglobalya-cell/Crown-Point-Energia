@@ -163,8 +163,8 @@ export default async function InversoresPage() {
             <main>
               <div className="section-block" id="porque">
                 <span className="eyebrow"><span className="lang-es">Tesis de inversión</span><span className="lang-en">Investment thesis</span></span>
-                <h2 style={{ marginTop: 8 }}><span className="lang-es">Cuatro motivos para mirar Crown Point.</span><span className="lang-en">Four reasons to look at Crown Point.</span></h2>
-                <div className="kpi-grid" style={{ marginTop: 'var(--s-6)' }}>
+                <h2 style={{ marginTop: 8 }}><span className="lang-es">Tres motivos para mirar Crown Point.</span><span className="lang-en">Three reasons to look at Crown Point.</span></h2>
+                <div className="kpi-grid kpi-grid-3" style={{ marginTop: 'var(--s-6)' }}>
                   {[
                     { n: '01', labelEs: 'Producción', labelEn: 'Production',
                       val: f['inv.thesis.1.val'] || '8,672',
@@ -176,12 +176,7 @@ export default async function InversoresPage() {
                       unit: f['inv.thesis.2.unit'] || '/boe',
                       metaEs: f['inv.thesis.2.meta'] || 'Opex total LTM',
                       metaEn: fe['inv.thesis.2.meta'] || 'Total opex LTM' },
-                    { n: '03', labelEs: 'Apalancamiento', labelEn: 'Leverage',
-                      val: f['inv.thesis.3.val'] || '2.9x',
-                      unit: f['inv.thesis.3.unit'] || 'Net debt / EBITDA',
-                      metaEs: f['inv.thesis.3.meta'] || 'Estructura prudente',
-                      metaEn: fe['inv.thesis.3.meta'] || 'Prudent capital structure' },
-                    { n: '04', labelEs: 'Pipeline', labelEn: 'Pipeline',
+                    { n: '03', labelEs: 'Pipeline', labelEn: 'Pipeline',
                       val: f['inv.thesis.4.val'] || '12',
                       unitEs: f['inv.thesis.4.unit'] || 'pozos planeados',
                       unitEn: fe['inv.thesis.4.unit'] || 'planned wells',

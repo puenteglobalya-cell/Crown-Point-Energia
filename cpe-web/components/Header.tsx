@@ -65,7 +65,7 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
     ?? (pathname === '/' ? 'home' : '')
 
   const tickerVisible = show['ticker'] !== false
-  const price = fields['stock.price'] || 'CA $0.205'
+  const price = fields['stock.price'] || '$0.205'
   const delta = fields['stock.delta'] || '+0.00%'
   const beta  = fields['stock.beta']  || '0.93'
   const vol30 = fields['stock.vol30'] || '14,210'
@@ -89,10 +89,9 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
         if (!r.ok || cancelled) return
         const d = await r.json() as { ok: boolean; price: number; deltaP: number; delta: number; currency: string }
         if (!d.ok || cancelled) return
-        const cur = d.currency === 'CAD' ? 'CA' : (d.currency || 'CA')
         const sign = d.deltaP >= 0 ? '+' : ''
         setLive({
-          price: `${cur} $${d.price.toFixed(3)}`,
+          price: `$${d.price.toFixed(3)}`,
           delta: `${sign}${d.deltaP.toFixed(2)}%`,
           isUp: d.delta >= 0,
         })

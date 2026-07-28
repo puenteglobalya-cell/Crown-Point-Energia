@@ -21,7 +21,7 @@ type Quote = {
 
 type State = { status: 'loading' | 'ok' | 'error'; data?: Quote }
 
-const C = 'CA $'
+const C = '$'
 
 function fmt(n: number | null | undefined, decimals = 3) {
   if (n == null) return '—'

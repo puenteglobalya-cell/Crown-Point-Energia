@@ -679,6 +679,11 @@ h1, h2, h3, h4 {
 @media (max-width: 920px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 520px) { .kpi-grid { grid-template-columns: 1fr; } .kpi { min-height: auto; } .kpi .kpi-value { font-size: 44px; } }
 
+/* Three-card variant (home + inversores, after removing the EBITDA card) */
+.kpi-grid-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 920px) { .kpi-grid-3 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .kpi-grid-3 { grid-template-columns: 1fr; } }
+
 /* ---------- Card ---------- */
 .card {
   background: var(--surface);

@@ -32,7 +32,7 @@ export default async function InfografiaPage() {
       stats={{
         pozos:      f['stats.pozos']      || '357',
         inyectores: f['stats.inyectores'] || '83',
-        cuencas:    f['stats.cuencas']    || '4',
+        cuencas:    f['stats.cuencas']    || '3',
         ha:         f['stats.ha']         || '372k',
         anios:      f['stats.anios']      || '25+',
       }}

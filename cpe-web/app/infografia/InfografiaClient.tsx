@@ -28,7 +28,7 @@ const MODULES: ModuleDef[] = [
   { id: 'blocks',     label: 'Bloques operativos',     icon: '🗺️', color: '#4a8a3a', desc: 'Grilla de los 5 bloques con commodity y WI' },
   { id: 'stock',      label: 'Cotización CWV.V',       icon: '📈', color: '#2E4878', desc: 'Precio live, delta, 52w high/low, cap de mercado' },
   { id: 'ratings',    label: 'Calificaciones FIX SCR', icon: '⭐', color: '#1F2566', desc: 'BBB(arg) emisor + A-(arg)/BBB(arg) por clase de ON' },
-  { id: 'thesis',     label: 'Tesis de inversión',     icon: '💼', color: '#0d1230', desc: 'KPIs: producción, reservas, EBITDA, bloques activos' },
+  { id: 'thesis',     label: 'Tesis de inversión',     icon: '💼', color: '#0d1230', desc: 'KPIs: producción, reservas, bloques activos' },
   { id: 'mix',        label: 'Mix de producción',      icon: '🔵', color: '#3D5F9A', desc: 'Barra visual gas vs. líquidos (54/46 %)' },
 ]
 
@@ -78,8 +78,8 @@ function useStock(): StockInfo | null {
     fetch('/api/stock/cwv').then(r => r.json()).then(d => {
       if (!d.ok) return
       const isUp = d.delta >= 0
-      const fmtCAD = (n: number) => `CA $${n.toFixed(3)}`
-      const fmtCap = (n: number) => n >= 1e9 ? `CA $${(n / 1e9).toFixed(2)}B` : `CA $${(n / 1e6).toFixed(1)}M`
+      const fmtCAD = (n: number) => `$${n.toFixed(3)}`
+      const fmtCap = (n: number) => n >= 1e9 ? `$${(n / 1e9).toFixed(2)}B` : `$${(n / 1e6).toFixed(1)}M`
       setS({
         price: fmtCAD(d.price), delta: `${isUp ? '+' : ''}${d.delta.toFixed(3)}`,
         deltaP: `${isUp ? '+' : ''}${d.deltaP.toFixed(2)}%`,
@@ -237,7 +237,7 @@ function Infografia({ modules: active, stats, production, blocks, thesis, date, 
       {/* Blocks */}
       {has('blocks') && (
         <div style={{ padding: '26px 48px', borderBottom: '1px solid rgba(108,174,82,0.22)' }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 14 }}>6 BLOQUES EN 4 CUENCAS</div>
+          <div style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 14 }}>5 BLOQUES EN 3 CUENCAS</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
             {blocks.map((b, i) => (
               <div key={b.slug} style={{ background: 'rgba(31,37,102,0.55)', border: '1px solid rgba(108,174,82,0.22)', borderRadius: 10, padding: '16px 18px' }}>
@@ -257,14 +257,13 @@ function Infografia({ modules: active, stats, production, blocks, thesis, date, 
       {has('thesis') && (
         <div style={{ padding: '26px 48px', borderBottom: '1px solid rgba(108,174,82,0.22)', background: 'rgba(15,27,56,0.4)' }}>
           <div style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 14 }}>TESIS DE INVERSIÓN</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0, border: '1px solid rgba(108,174,82,0.22)', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 0, border: '1px solid rgba(108,174,82,0.22)', borderRadius: 10, overflow: 'hidden' }}>
             {[
               { n: '01', label: 'Producción', val: thesis.prodVal, unit: thesis.prodUnit, delta: thesis.prodDelta },
               { n: '02', label: 'Reservas',   val: thesis.resVal,  unit: thesis.resUnit,  delta: thesis.resDelta  },
-              { n: '03', label: 'EBITDA',     val: thesis.ebVal,   unit: thesis.ebUnit,   delta: thesis.ebDelta   },
-              { n: '04', label: 'Bloques',    val: '6',            unit: 'en 4 cuencas',  delta: '372k ha'        },
+              { n: '03', label: 'Bloques',    val: '5',            unit: 'en 3 cuencas',  delta: '372k ha'        },
             ].map((k, i) => (
-              <div key={i} style={{ padding: '18px 20px', borderRight: i < 3 ? '1px solid rgba(108,174,82,0.18)' : undefined, background: 'rgba(31,37,102,0.3)' }}>
+              <div key={i} style={{ padding: '18px 20px', borderRight: i < 2 ? '1px solid rgba(108,174,82,0.18)' : undefined, background: 'rgba(31,37,102,0.3)' }}>
                 <div style={{ fontSize: 9, color: '#6CAE52', fontWeight: 700, letterSpacing: '0.18em', marginBottom: 8 }}>{k.n}</div>
                 <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>{k.label}</div>
                 <div>
