@@ -715,12 +715,12 @@ export default function AdminPage() {
                             {g.group.includes('Stock') && (
                               <>
                                 <button
-                                  className="btn"
+                                  className="btn btn-primary"
                                   disabled={refreshingStock}
                                   onClick={refreshStock}
-                                  style={{ fontSize: 11, padding: '3px 10px', lineHeight: 1.4 }}
+                                  style={{ fontSize: 12, fontWeight: 600, padding: '5px 14px', lineHeight: 1.4 }}
                                 >
-                                  {refreshingStock ? 'Actualizando…' : 'Actualizar cotización'}
+                                  {refreshingStock ? 'Actualizando…' : '↻ Actualizar cotización'}
                                 </button>
                                 {stockMsg && <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{stockMsg}</span>}
                               </>
