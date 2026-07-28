@@ -5,12 +5,14 @@ import Link from 'next/link'
 import { parsearIngresosExcel, type DatosIngresos } from '@/lib/parsers/ingresos'
 import { parsearAccionistaPPTX, type DatosAccionista } from '@/lib/parsers/accionista'
 import { parsearExcelGenerico, type DatosGenerico } from '@/lib/parsers/generico'
+import { parsearProduccionExcel, type DatosProduccion } from '@/lib/parsers/produccion'
 import { parsearTextoMacro, type DatosMacro } from '@/lib/parsers/macro'
 import { parsearFacturacionExcel, type DatosFacturacion, dedupKey, reconstruirDatosFacturacion } from '@/lib/parsers/facturacion'
 import type { LineaFacturacion } from '@/lib/parsers/facturacion'
 import { generarReporteHTML, type MacroSnapshot } from '@/lib/generador/htmlReport'
 import { generarReporteAccionistaHTML } from '@/lib/generador/htmlReportAccionista'
 import { generarReporteGenericoHTML } from '@/lib/generador/htmlReportGenerico'
+import { generarReporteProduccionHTML } from '@/lib/generador/htmlReportProduccion'
 import { generarReporteFacturacionHTML } from '@/lib/generador/htmlReportFacturacion'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
@@ -52,6 +54,7 @@ export default function PortalSubirPage() {
   const [datosIngresos, setDatosIngresos] = useState<DatosIngresos | null>(null)
   const [datosAccionista, setDatosAccionista] = useState<DatosAccionista | null>(null)
   const [datosGenerico, setDatosGenerico] = useState<DatosGenerico | null>(null)
+  const [datosProduccion, setDatosProduccion] = useState<DatosProduccion | null>(null)
   const [datosMacro, setDatosMacro] = useState<DatosMacro | null>(null)
   const [datosFacturacion, setDatosFacturacion] = useState<DatosFacturacion | null>(null)
   const [macroSnap, setMacroSnap]   = useState<MacroSnapshot | null>(null)
@@ -119,11 +122,14 @@ export default function PortalSubirPage() {
         const parsed = await parsearAccionistaPPTX(f)
         setDatosAccionista(parsed)
         setTitulo(`Informe de Seguimiento — ${parsed.periodo}`)
+      } else if (tipo === 'produccion') {
+        const parsed = await parsearProduccionExcel(f)
+        setDatosProduccion(parsed)
+        setTitulo(`Reporte de Producción — ${parsed.periodo}`)
       } else {
-        const parsed = await parsearExcelGenerico(f, tipo as 'produccion' | 'financiero')
+        const parsed = await parsearExcelGenerico(f, tipo as 'financiero')
         setDatosGenerico(parsed)
-        const tipoLabel = tipo === 'produccion' ? 'Reporte de Producción' : 'Reporte Financiero'
-        setTitulo(`${tipoLabel} — ${parsed.periodo}`)
+        setTitulo(`Reporte Financiero — ${parsed.periodo}`)
       }
       setParsingStage('generando')
       await new Promise(r => setTimeout(r, 150))
@@ -185,7 +191,11 @@ export default function PortalSubirPage() {
         datos   = datosAccionista
         html    = generarReporteAccionistaHTML(datosAccionista)
         periodo = datosAccionista.periodo.replace(/\s*\|\s*/, '_')
-      } else if ((tipo === 'produccion' || tipo === 'financiero') && datosGenerico) {
+      } else if (tipo === 'produccion' && datosProduccion) {
+        datos   = datosProduccion
+        html    = generarReporteProduccionHTML(datosProduccion)
+        periodo = datosProduccion.periodo
+      } else if (tipo === 'financiero' && datosGenerico) {
         datos   = datosGenerico
         html    = generarReporteGenericoHTML(datosGenerico)
         periodo = datosGenerico.periodo
@@ -253,7 +263,7 @@ export default function PortalSubirPage() {
 
   function reset() {
     setStep('type'); setFile(null); setMacroText('')
-    setDatosIngresos(null); setDatosAccionista(null); setDatosGenerico(null); setDatosMacro(null); setDatosFacturacion(null)
+    setDatosIngresos(null); setDatosAccionista(null); setDatosGenerico(null); setDatosMacro(null); setDatosFacturacion(null); setDatosProduccion(null)
     setMacroSnap(null); setIncludeMacro(true); setCclRate(null)
     setTitulo(''); setDoneId(''); setErr('')
     setExistingFactId(null); setExistingLineas(null); setMergeStats(null)
@@ -268,7 +278,9 @@ export default function PortalSubirPage() {
       return generarReporteFacturacionHTML(datosFacturacion)
     if (tipo === 'accionista' && datosAccionista)
       return generarReporteAccionistaHTML(datosAccionista)
-    if ((tipo === 'produccion' || tipo === 'financiero') && datosGenerico)
+    if (tipo === 'produccion' && datosProduccion)
+      return generarReporteProduccionHTML(datosProduccion)
+    if (tipo === 'financiero' && datosGenerico)
       return generarReporteGenericoHTML(datosGenerico)
     if (isMacroType(tipo) && datosMacro)
       return generarHTMLMacro(datosMacro, titulo.trim() || tipoMeta.label)
@@ -549,11 +561,19 @@ td{padding:6px 12px;border-bottom:1px solid #eee;font-family:monospace}</style><
                   {kv('Deuda total', `US$ ${datosAccionista.deuda_total_MMUS.toFixed(2)} MM`)}
                   {kv('Meses de facturación', `${datosAccionista.facturacion.length}`)}
                 </>}
-                {(tipo === 'produccion' || tipo === 'financiero') && datosGenerico && <>
+                {tipo === 'financiero' && datosGenerico && <>
                   {kv('Período', datosGenerico.periodo)}
                   {kv('Archivo', datosGenerico.titulo_archivo)}
                   {kv('Hojas encontradas', `${datosGenerico.hojas.length}`)}
                   {kv('Total filas', `${datosGenerico.hojas.reduce((s, h) => s + h.filas.length, 0)}`)}
+                </>}
+                {tipo === 'produccion' && datosProduccion && <>
+                  {kv('Período', datosProduccion.periodo)}
+                  {kv('Rango de fechas', datosProduccion.rangoFechas)}
+                  {kv('Petróleo (sem. ' + datosProduccion.semana2 + ')', `${Math.round(datosProduccion.petroleo.total.semana2).toLocaleString('es-AR')} m³/d`)}
+                  {kv('Gas (sem. ' + datosProduccion.semana2 + ')', `${Math.round(datosProduccion.gas.total.semana2).toLocaleString('es-AR')} Mm³/d`)}
+                  {kv('Áreas — petróleo', `${datosProduccion.petroleo.areas.length}`)}
+                  {kv('Días con serie diaria', `${datosProduccion.serieDiaria.length}`)}
                 </>}
                 {isMacroType(tipo) && datosMacro && <>
                   {kv('Fuente', tipo === 'henry_hub' ? 'Henry Hub — CME · NYMEX' : 'ICE Brent Crude')}

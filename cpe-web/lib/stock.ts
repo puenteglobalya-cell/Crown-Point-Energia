@@ -64,9 +64,9 @@ export function formatCmsFields(q: StockQuote): Record<string, string> {
   const fmtInt = (n: number) => n.toLocaleString('en-CA', { maximumFractionDigits: 0 })
 
   const fmtCap = (n: number) => {
-    if (n >= 1e9) return `CA $${(n / 1e9).toFixed(1)}B`
-    if (n >= 1e6) return `CA $${(n / 1e6).toFixed(1)}M`
-    return `CA $${fmtInt(n)}`
+    if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`
+    if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`
+    return `$${fmtInt(n)}`
   }
 
   const fmtShares = (n: number) => {
@@ -76,12 +76,12 @@ export function formatCmsFields(q: StockQuote): Record<string, string> {
   }
 
   return {
-    'stock.price': `CA $${fmtNum(q.price, 3)}`,
+    'stock.price': `$${fmtNum(q.price, 3)}`,
     'stock.delta': `${sign}${fmtNum(q.changePct)}%`,
     ...(q.beta > 0 && { 'stock.beta': fmtNum(q.beta) }),
     ...(q.avgVolume > 0 && { 'stock.vol30': fmtInt(q.avgVolume) }),
-    ...(q.fiftyTwoWeekHigh > 0 && { 'stock.high52': `CA $${fmtNum(q.fiftyTwoWeekHigh)}` }),
-    ...(q.fiftyTwoWeekLow > 0 && { 'stock.low52': `CA $${fmtNum(q.fiftyTwoWeekLow)}` }),
+    ...(q.fiftyTwoWeekHigh > 0 && { 'stock.high52': `$${fmtNum(q.fiftyTwoWeekHigh)}` }),
+    ...(q.fiftyTwoWeekLow > 0 && { 'stock.low52': `$${fmtNum(q.fiftyTwoWeekLow)}` }),
     ...(q.marketCap > 0 && { 'stock.cap': fmtCap(q.marketCap) }),
     ...(q.sharesOutstanding > 0 && { 'stock.shares': fmtShares(q.sharesOutstanding) }),
   }

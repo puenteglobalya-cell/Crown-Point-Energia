@@ -33,11 +33,11 @@ async function getPortalUser() {
 const YF_URL = 'https://query1.finance.yahoo.com/v8/finance/chart/CWV.V'
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
 
-function fmtCAD(n: number, d = 3) { return `CA $${n.toFixed(d)}` }
+function fmtCAD(n: number, d = 3) { return `$${n.toFixed(d)}` }
 function fmtCap(n: number) {
-  if (n >= 1e9) return `CA $${(n / 1e9).toFixed(2)}B`
-  if (n >= 1e6) return `CA $${(n / 1e6).toFixed(1)}M`
-  return `CA $${n.toLocaleString()}`
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`
+  if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`
+  return `$${n.toLocaleString()}`
 }
 
 export async function GET(req: Request) {
@@ -69,12 +69,12 @@ export async function GET(req: Request) {
 
     // Stock data
     let stockData: InfografiaData['stock'] = {
-      price:   f['stock.price']  || 'CA $0.205',
+      price:   f['stock.price']  || '$0.205',
       delta:   '+0.000',
       deltaP:  '+0.00%',
-      high52:  f['stock.high52'] || 'CA $0.31',
-      low52:   f['stock.low52']  || 'CA $0.150',
-      cap:     f['stock.cap']    || 'CA $40.7M',
+      high52:  f['stock.high52'] || '$0.31',
+      low52:   f['stock.low52']  || '$0.150',
+      cap:     f['stock.cap']    || '$40.7M',
       shares:  f['stock.shares'] || '312.9M',
       isUp:    true,
     }
@@ -105,7 +105,7 @@ export async function GET(req: Request) {
       stats: {
         pozos:       f['stats.pozos']       || '357',
         inyectores:  f['stats.inyectores']  || '83',
-        cuencas:     f['stats.cuencas']     || '4',
+        cuencas:     f['stats.cuencas']     || '3',
         ha:          f['stats.ha']          || '372k',
         anios:       f['stats.anios']       || '25+',
       },

@@ -284,7 +284,7 @@ function AnalystsSection() {
             <Field label="Rating EN" value={editing.rating_en ?? ''} onChange={v => setEditing(p => ({ ...p, rating_en: v }))} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Field label="Target (ej: CA $0.35)" value={editing.target ?? ''} onChange={v => setEditing(p => ({ ...p, target: v }))} />
+            <Field label="Target (ej: $0.35)" value={editing.target ?? ''} onChange={v => setEditing(p => ({ ...p, target: v }))} />
             <Field label="Orden" value={String(editing.orden ?? '')} onChange={v => setEditing(p => ({ ...p, orden: Number(v) }))} />
           </div>
           <Toggle label="Activo" checked={editing.activo ?? true} onChange={v => setEditing(p => ({ ...p, activo: v }))} />

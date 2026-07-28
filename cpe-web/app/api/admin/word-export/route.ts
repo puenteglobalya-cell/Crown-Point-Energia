@@ -217,7 +217,7 @@ function buildSections(
   elems.push(heading1('1. Inicio (Home)'))
 
   section('Hero', 'Página principal · Hero', [
-    { label: 'Eyebrow',  es: 'TSXV: CWV · Petróleo y gas · Argentina', en: 'TSXV: CWV · Oil & gas · Canada' },
+    { label: 'Eyebrow',  es: 'TSXV: CWV · Petróleo y gas · Argentina', en: 'TSXV: CWV · Oil & gas · Argentina' },
     { label: 'Título',   es: f['hero.title.es'] || 'Energía que sostiene la matriz productiva argentina.', en: f['hero.title.en'] || 'Energy that sustains Argentina\'s productive matrix.' },
     { label: 'Subtítulo', es: f['hero.lede.es']  || 'Operamos en tres de las cuencas más relevantes del país.', en: f['hero.lede.en']  || 'We operate in three of the country\'s most relevant basins.' },
   ])
@@ -226,7 +226,6 @@ function buildSections(
     { label: 'Período',     es: f['kpis.periodo.es'] || 'Q1 2026 · Cifras clave',  en: f['kpis.periodo.en'] || 'Q1 2026 · Key figures' },
     { label: 'Producción',  es: `${f['kpi.production.value'] || '3,090'} ${f['kpi.production.unit'] || 'boe/d'}`, en: `${f['kpi.production.value'] || '3,090'} ${f['kpi.production.unit'] || 'boe/d'}` },
     { label: 'Reservas',    es: `${f['kpi.reserves.value'] || '71.580'} ${f['kpi.reserves.unit'] || 'MMboe'}`,     en: `${f['kpi.reserves.value'] || '71.580'} ${f['kpi.reserves.unit'] || 'MMboe'}` },
-    { label: 'EBITDA',      es: `${f['kpi.ebitda.value'] || '18'} ${f['kpi.ebitda.unit'] || 'USD M'}`,        en: `${f['kpi.ebitda.value'] || '18'} ${f['kpi.ebitda.unit'] || 'USD M'}` },
     { label: 'Bloques',     es: `${f['kpi.blocks.value'] || '8'} ${f['kpi.blocks.unit'] || 'en 3 cuencas'}`,    en: `${f['kpi.blocks.value'] || '8'} in 3 basins` },
   ])
 

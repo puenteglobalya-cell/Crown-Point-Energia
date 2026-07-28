@@ -91,7 +91,7 @@ export default async function OperacionesPage() {
             {[
               { labelEs: 'Hectáreas operadas', labelEn: 'Operated acreage',
                 val: f['ops.kpi.acreage'] || '372k', unit: 'ha',
-                metaEs: `${f['kpi.blocks.value'] || '11'} concesiones`, metaEn: `${f['kpi.blocks.value'] || '11'} concessions` },
+                metaEs: `${f['kpi.blocks.value'] || '8'} concesiones`, metaEn: `${f['kpi.blocks.value'] || '8'} concessions` },
               { labelEs: 'Pozos productores', labelEn: 'Producing wells',
                 val: String(wells.activos), unitEs: 'activos', unitEn: 'active',
                 metaEs: `+${wells.inyectores} inyectores en operación`,

@@ -43,11 +43,11 @@ export default async function HomePage() {
   const f = s.fields
   const show = s.show
 
-  const price  = f['stock.price']  || 'CA $0.205'
+  const price  = f['stock.price']  || '$0.205'
   const delta  = f['stock.delta']  || '+0.00%'
   const beta   = f['stock.beta']   || '0.93'
   const vol30  = f['stock.vol30']  || '14,210'
-  const cap    = f['stock.cap']    || 'CA $40.7M'
+  const cap    = f['stock.cap']    || '$40.7M'
 
   const kpiProdVal   = f['kpi.production.value'] || '8,672'
   const kpiProdUnit  = f['kpi.production.unit']  || 'boe/d'
@@ -55,15 +55,12 @@ export default async function HomePage() {
   const kpiResVal    = f['kpi.reserves.value']   || '71.580'
   const kpiResUnit   = f['kpi.reserves.unit']    || 'MMboe'
   const kpiResDelta  = f['kpi.reserves.delta']   || '2P Sproule ERCE'
-  const kpiEbVal     = f['kpi.ebitda.value']     || '18'
-  const kpiEbUnit    = f['kpi.ebitda.unit']      || 'USD M'
-  const kpiEbDelta   = f['kpi.ebitda.delta']     || 'LTM'
   const kpiBlkVal    = f['kpi.blocks.value']     || '8'
   const kpiBlkUnit   = f['kpi.blocks.unit']      || 'concesiones en 3 cuencas'
   const kpiBlkDelta  = f['kpi.blocks.delta']     || '372k ha'
 
-  const stockHigh52  = f['stock.high52']  || 'CA $0.31'
-  const stockLow52   = f['stock.low52']   || 'CA $0.150'
+  const stockHigh52  = f['stock.high52']  || '$0.31'
+  const stockLow52   = f['stock.low52']   || '$0.150'
   const stockShares  = f['stock.shares']  || '312.9M'
 
   const heroImg      = f['hero.home.img']   || ''
@@ -205,7 +202,7 @@ export default async function HomePage() {
               <div>
                 <span className="eyebrow"><span className="lang-es">{kpiPeriodoEs}</span><span className="lang-en">{kpiPeriodoEn}</span></span>
                 <h2 className="section-title">
-                  <span className="lang-es">Una operación de escala<br/>con balance saneado.</span>
+                  <span className="lang-es">Nuestra Escala</span>
                   <span className="lang-en">An at-scale operation<br/>on a clean balance sheet.</span>
                 </h2>
               </div>
@@ -214,7 +211,7 @@ export default async function HomePage() {
                 <span className="lang-en">Daily production, certified reserves and disciplined capital allocation. Figures as of last reported quarter, per NI 51-101.</span>
               </p>
             </div>
-            <div className="kpi-grid reveal">
+            <div className="kpi-grid kpi-grid-3 reveal">
               <div className="kpi">
                 <span className="kpi-label"><span className="lang-es">Producción diaria</span><span className="lang-en">Daily production</span></span>
                 <div>
@@ -237,18 +234,6 @@ export default async function HomePage() {
                   <span className="badge" data-cpe-field="kpi.reserves.delta">{kpiResDelta}</span>
                   <span className="lang-es">vida útil estimada</span>
                   <span className="lang-en">reserve life</span>
-                </span>
-              </div>
-              <div className="kpi">
-                <span className="kpi-label"><span className="lang-es">EBITDA ajustado</span><span className="lang-en">Adj. EBITDA</span></span>
-                <div>
-                  <span className="kpi-value num" data-cpe-field="kpi.ebitda.value">{kpiEbVal}</span>
-                  <span className="kpi-unit" data-cpe-field="kpi.ebitda.unit">{kpiEbUnit}</span>
-                </div>
-                <span className="kpi-meta">
-                  <span className="badge" data-cpe-field="kpi.ebitda.delta">{kpiEbDelta}</span>
-                  <span className="lang-es">últimos 12 meses</span>
-                  <span className="lang-en">LTM</span>
                 </span>
               </div>
               <div className="kpi">
@@ -493,7 +478,7 @@ export default async function HomePage() {
               <div className="cc-copy">
                 <span className="eyebrow"><span className="lang-es">Contacto institucional</span><span className="lang-en">Institutional contact</span></span>
                 <h2 className="section-title">
-                  <span className="lang-es">¿Sos analista,<br/>inversor o socio?</span>
+                  <span className="lang-es">¿Eres analista,<br/>inversor o socio?</span>
                   <span className="lang-en">Are you an analyst,<br/>investor or partner?</span>
                 </h2>
                 <p>

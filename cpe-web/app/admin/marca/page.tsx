@@ -78,7 +78,7 @@ const TYPEFACES = [
       { weight: 400, label: 'Regular' },
       { weight: 500, label: 'Medium' },
     ],
-    specimen: 'CA $0.205 +2.50%',
+    specimen: '$0.205 +2.50%',
     subSpecimen: 'TSXV: CWV · 8,672 boe/d',
   },
 ]
