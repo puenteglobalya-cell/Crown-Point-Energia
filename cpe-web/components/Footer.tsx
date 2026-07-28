@@ -58,7 +58,6 @@ export default function Footer() {
             <ul>
               <li><Link href="/operaciones#cerro">Cerro de Los Leones</Link></li>
               <li><Link href="/operaciones#tordillo">El Tordillo · La Tapera</Link></li>
-              <li><Link href="/operaciones#tdf">Tierra del Fuego</Link></li>
               <li><Link href="/operaciones#chanares">Chañares Herrados / PPCO</Link></li>
               <li><Link href="/operaciones#piedra">Piedra Clavada – Koluel Kaike</Link></li>
             </ul>
