@@ -182,7 +182,7 @@ export default async function InversoresPage() {
                       metaEs: f['inv.thesis.3.meta'] || 'Estructura prudente',
                       metaEn: fe['inv.thesis.3.meta'] || 'Prudent capital structure' },
                     { n: '04', labelEs: 'Pipeline', labelEn: 'Pipeline',
-                      val: f['inv.thesis.4.val'] || '13',
+                      val: f['inv.thesis.4.val'] || '12',
                       unitEs: f['inv.thesis.4.unit'] || 'pozos planeados',
                       unitEn: fe['inv.thesis.4.unit'] || 'planned wells',
                       metaEs: f['inv.thesis.4.meta'] || '2026–2027',
