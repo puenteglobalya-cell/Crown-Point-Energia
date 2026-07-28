@@ -76,6 +76,7 @@ export default async function InversoresPage() {
   }
   const f = s.fields
   const fe = s.fieldsEn
+  const show = s.show
   const heroImg = f['hero.inversores.img'] || ''
 
   // Visibilidad por sección: se auto-ocultan las que no tienen datos
@@ -116,11 +117,13 @@ export default async function InversoresPage() {
       </section>
 
       {/* Quote band + price history — live from Yahoo Finance via /api/stock/cwv */}
-      <section className="section-tight" style={{ borderBottom: '1px solid var(--rule)' }}>
-        <div className="container">
-          <StockChart />
-        </div>
-      </section>
+      {show['investor.quotePanel'] !== false && (
+        <section className="section-tight" style={{ borderBottom: '1px solid var(--rule)' }}>
+          <div className="container">
+            <StockChart />
+          </div>
+        </section>
+      )}
 
       <style>{`
         .analyst-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }

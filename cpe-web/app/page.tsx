@@ -126,20 +126,22 @@ export default async function HomePage() {
                 <span className="lang-en">See operations</span>
               </Link>
             </div>
-            <div className="hero-quote">
-              <div className="hq-row">
-                <span className="hq-label">TSX.V: CWV</span>
-                <span className="hq-sep"></span>
-                <span className="hq-price" data-cpe-field="stock.price">{price}</span>
-                <span className="hq-delta pos" data-cpe-field="stock.delta">{delta}</span>
+            {show['investor.quotePanel'] !== false && (
+              <div className="hero-quote">
+                <div className="hq-row">
+                  <span className="hq-label">TSX.V: CWV</span>
+                  <span className="hq-sep"></span>
+                  <span className="hq-price" data-cpe-field="stock.price">{price}</span>
+                  <span className="hq-delta pos" data-cpe-field="stock.delta">{delta}</span>
+                </div>
+                <div className="hq-row hq-sub">
+                  <span><span className="lang-es">Beta</span><span className="lang-en">Beta</span> · <span data-cpe-field="stock.beta">{beta}</span></span>
+                  <span><span className="lang-es">Vol.</span><span className="lang-en">Vol.</span> <span data-cpe-field="stock.vol30">{vol30}</span></span>
+                  <span><span className="lang-es">Cap.</span><span className="lang-en">Mkt&nbsp;cap</span> <span data-cpe-field="stock.cap">{cap}</span></span>
+                  <span className="hq-stale"><span className="lang-es">Actualizado al cierre anterior</span><span className="lang-en">Updated at prior close</span></span>
+                </div>
               </div>
-              <div className="hq-row hq-sub">
-                <span><span className="lang-es">Beta</span><span className="lang-en">Beta</span> · <span data-cpe-field="stock.beta">{beta}</span></span>
-                <span><span className="lang-es">Vol.</span><span className="lang-en">Vol.</span> <span data-cpe-field="stock.vol30">{vol30}</span></span>
-                <span><span className="lang-es">Cap.</span><span className="lang-en">Mkt&nbsp;cap</span> <span data-cpe-field="stock.cap">{cap}</span></span>
-                <span className="hq-stale"><span className="lang-es">Actualizado al cierre anterior</span><span className="lang-en">Updated at prior close</span></span>
-              </div>
-            </div>
+            )}
           </div>
         </section>
       )}
