@@ -58,13 +58,24 @@ export async function GET() {
   let visibleTypes: string[] | null = null
   const isAdmin = isAdminEmail(userWithRole.email) || userWithRole.role === 'admin'
   if (!isAdmin) {
-    const { data: typeAccess } = await db
+    const { data: typeAccess, error: typeAccessError } = await db
       .from('report_type_access')
       .select('type_id')
       .eq('role', userWithRole.role!)
       .eq('can_view', true)
-    // If table doesn't exist yet (migration not run), fall back to allow all
-    visibleTypes = typeAccess ? typeAccess.map(r => r.type_id) : null
+
+    if (typeAccessError) {
+      // Only "relation does not exist" (migration not run yet) falls back to
+      // showing everything — any other error (network blip, permissions
+      // issue, etc.) must fail closed, not silently grant access to every
+      // report type for the duration of the hiccup.
+      if (typeAccessError.code !== '42P01') {
+        return dbError(typeAccessError)
+      }
+      visibleTypes = null
+    } else {
+      visibleTypes = (typeAccess ?? []).map(r => r.type_id)
+    }
   }
 
   let q = db.from('reportes')
