@@ -22,15 +22,27 @@ export default function FirstLoginBanner() {
       zIndex: 9000, background: 'var(--fg)', color: 'var(--bg)',
       borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center',
       gap: 12, boxShadow: '0 8px 32px rgba(0,0,0,.25)', fontSize: 13,
-      maxWidth: 'calc(100vw - 40px)', width: 420,
+      maxWidth: 'calc(100vw - 40px)', width: 460,
     }}>
       <span style={{ fontSize: 22, flexShrink: 0 }}>🔑</span>
       <div style={{ flex: 1, lineHeight: 1.4 }}>
-        <strong style={{ display: 'block', fontSize: 13 }}>¿Primera vez en el portal?</strong>
+        <strong style={{ display: 'block', fontSize: 13 }}>Cambiá tu contraseña provisoria</strong>
         <span style={{ opacity: 0.7, fontSize: 12 }}>
-          Mirá cómo cambiar tu contraseña en <a href="/portal/ayuda" onClick={dismiss} style={{ color: 'var(--bg)', textDecoration: 'underline' }}>Ayuda</a>
+          Si ingresaste con una contraseña temporal, cambiala ahora en Mi Cuenta.{' '}
+          <a href="/portal/ayuda" onClick={dismiss} style={{ color: 'var(--bg)', textDecoration: 'underline' }}>Ver instructivo</a>
         </span>
       </div>
+      <a
+        href="/portal/mi-cuenta"
+        onClick={dismiss}
+        style={{
+          background: 'var(--bg)', color: 'var(--fg)', borderRadius: 8,
+          padding: '7px 14px', fontWeight: 700, fontSize: 12,
+          whiteSpace: 'nowrap', flexShrink: 0, textDecoration: 'none',
+        }}
+      >
+        Cambiar ahora
+      </a>
       <button
         onClick={dismiss}
         style={{
