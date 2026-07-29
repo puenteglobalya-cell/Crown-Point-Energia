@@ -3,6 +3,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isSameOrigin } from '@/lib/csrf'
 import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 import { looksLikeBot, HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
+import { str } from '@/lib/input'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,14 +27,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
-    const emailVal = email?.trim().toLowerCase() ?? ''
+    const emailVal = str(email, 320).toLowerCase()
     if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
       return NextResponse.json({ error: 'Email inválido' }, { status: 400 })
     }
 
     const db = createSupabaseServerAdminClient()
     const { error } = await db.from('ir_subscribers').upsert({
-      nombre: (nombre ?? '').trim().slice(0, 200),
+      nombre: str(nombre, 200),
       email: emailVal,
       activo: true,
       updated_at: new Date().toISOString(),

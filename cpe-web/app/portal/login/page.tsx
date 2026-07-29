@@ -85,15 +85,24 @@ export default function PortalLoginPage() {
     setLoading(true)
     setError('')
 
-    const supabase = createSupabaseBrowserClient()
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    // Goes through our own API route (not the browser SDK directly) so
+    // failed attempts count toward per-IP rate limiting and per-account
+    // lockout — the browser SDK call alone can't be throttled server-side.
+    const res = await fetch('/api/auth/portal-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    const body = await res.json()
 
-    if (error) {
-      setError('Email o contraseña incorrectos.')
+    if (!res.ok) {
+      setError(body.error || 'Email o contraseña inválidos.')
       setLoading(false)
-    } else {
-      await afterLogin(supabase, data.user?.id)
+      return
     }
+
+    const supabase = createSupabaseBrowserClient()
+    await afterLogin(supabase, body.userId ?? undefined)
   }
 
   async function handleReset(e: React.FormEvent) {
