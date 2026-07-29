@@ -60,6 +60,33 @@ Entrar a `/admin/cms` y tocar **"Guardar"** una vez. Dispara
 
 ---
 
+## 🟠 Deuda de seguridad — upgrade mayor de Next.js (deliberadamente no aplicado)
+
+`npm audit` marca `next@14.2.35` con varios CVEs (DoS, cache poisoning, XSS en
+CSP nonces, SSRF, request smuggling) cuyo único fix es saltar a `next@16.x`.
+Se intentó ese upgrade en sesión y se revirtió a propósito: Next 16 vuelve
+asíncronos `cookies()`/`headers()`/`params` (refactor mecánico grande, ya
+resuelto en gran parte con el codemod oficial `next-async-request-api`), pero
+además cambia la firma de `revalidateTag()` — pasa a exigir un "profile" de
+cache ligado a un sistema nuevo (`cacheLife`), y `lib/cms.ts` depende de
+`revalidateTag('cms')` para invalidar el caché del CMS al instante (el mismo
+mecanismo que ya causó el incidente de hero-video/EBITDA documentado en
+`CLAUDE.md`). No hay forma de verificar en este entorno que la invalidación
+siga funcionando igual sin un deploy real a un preview de Vercel.
+
+**Cuando se retome:** hacerlo en una rama aparte, seguir el codemod, resolver
+`revalidateTag('cms', <profile>)` con la semántica correcta (probablemente
+`'max'` o el profile por defecto — confirmar contra la doc oficial de Next 16
+de `cacheLife`), y probar en un preview deploy real que guardar en `/admin/cms`
+efectivamente actualiza el sitio público al instante antes de mergear a `main`.
+
+Mientras tanto, se resolvieron sin necesidad del upgrade (vía `overrides` en
+`package.json`, sin tocar Next): `uuid` (vía `exceljs`), `postcss` (bundleado
+en Next, parcheable independientemente), y `brace-expansion` (vía `exceljs`
+→ `archiver`).
+
+---
+
 ## 🟡 Variables de entorno (verificar en Vercel)
 
 Settings → Environment Variables. Confirmar que estén todas:
