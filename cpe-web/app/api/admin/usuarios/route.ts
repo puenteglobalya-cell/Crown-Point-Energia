@@ -69,7 +69,10 @@ export async function POST(req: NextRequest) {
   }
 
   const db = createSupabaseServerAdminClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('.supabase.co', '.vercel.app') ?? 'https://crownpointenergy.com'
+  // TEMP fallback points at the Vercel domain until crownpointenergy.com's
+  // DNS migrates — see PENDIENTES.md. Prefer setting NEXT_PUBLIC_SITE_URL in
+  // Vercel env vars over relying on this fallback.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://crown-point-energia.vercel.app'
 
   // Invite user via Supabase Auth
   const { data: inviteData, error: inviteError } = await db.auth.admin.inviteUserByEmail(email, {
