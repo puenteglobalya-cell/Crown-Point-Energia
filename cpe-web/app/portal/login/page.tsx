@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { startAuthentication } from '@simplewebauthn/browser'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
 const SESSION_START_PREFIX = 'cpe_session_start_'
@@ -11,6 +12,8 @@ export default function PortalLoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [expired, setExpired] = useState(false)
+  const [passkeyLoading, setPasskeyLoading] = useState(false)
+  const [passkeySupported, setPasskeySupported] = useState(false)
 
   // Password reset flow
   const [showPwd, setShowPwd] = useState(false)
@@ -22,7 +25,60 @@ export default function PortalLoginPage() {
 
   useEffect(() => {
     setExpired(new URLSearchParams(window.location.search).get('expirada') === '1')
+    setPasskeySupported(!!window.PublicKeyCredential)
   }, [])
+
+  async function afterLogin(supabase: ReturnType<typeof createSupabaseBrowserClient>, userId?: string) {
+    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+    if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
+      window.location.href = '/portal/mfa'
+      return
+    }
+    if (userId) localStorage.removeItem(SESSION_START_PREFIX + userId)
+    window.location.href = '/portal'
+  }
+
+  async function handlePasskeyLogin() {
+    if (!email) { setError('Ingresá tu email para continuar con la llave de acceso.'); return }
+    setPasskeyLoading(true)
+    setError('')
+    try {
+      const optionsRes = await fetch('/api/auth/webauthn/login-options', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const { options, hasPasskey } = await optionsRes.json()
+      if (!hasPasskey) {
+        setError('No hay una llave de acceso registrada para este email. Ingresá con tu contraseña.')
+        setPasskeyLoading(false)
+        return
+      }
+
+      const response = await startAuthentication({ optionsJSON: options })
+
+      const verifyRes = await fetch('/api/auth/webauthn/login-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ response }),
+      })
+      const verifyData = await verifyRes.json()
+      if (!verifyRes.ok) throw new Error(verifyData.error || 'No se pudo verificar la llave de acceso')
+
+      const supabase = createSupabaseBrowserClient()
+      const { data, error: otpError } = await supabase.auth.verifyOtp({
+        type: 'magiclink',
+        email: verifyData.email,
+        token_hash: verifyData.tokenHash,
+      })
+      if (otpError) throw new Error('No se pudo iniciar sesión')
+
+      await afterLogin(supabase, data.user?.id)
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : 'No se pudo ingresar con la llave de acceso.')
+      setPasskeyLoading(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -36,13 +92,7 @@ export default function PortalLoginPage() {
       setError('Email o contraseña incorrectos.')
       setLoading(false)
     } else {
-      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-      if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
-        window.location.href = '/portal/mfa'
-        return
-      }
-      if (data.user) localStorage.removeItem(SESSION_START_PREFIX + data.user.id)
-      window.location.href = '/portal'
+      await afterLogin(supabase, data.user?.id)
     }
   }
 
@@ -156,6 +206,18 @@ export default function PortalLoginPage() {
           >
             {loading ? 'Ingresando…' : 'Ingresar'}
           </button>
+
+          {passkeySupported && (
+            <button
+              type="button"
+              className="btn"
+              onClick={handlePasskeyLogin}
+              disabled={passkeyLoading}
+              style={{ justifyContent: 'center', opacity: passkeyLoading ? 0.7 : 1 }}
+            >
+              {passkeyLoading ? 'Verificando…' : '🔑 Ingresar con huella / Face ID'}
+            </button>
+          )}
         </form>
 
         {/* Password reset section */}

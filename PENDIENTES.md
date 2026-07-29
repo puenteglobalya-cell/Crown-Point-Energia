@@ -31,7 +31,16 @@ En el **SQL Editor** del proyecto CPE, correr:
 
 ```
 supabase/migrations/20260702_comunicados_and_anon_revoke.sql
+supabase/webauthn-schema.sql
 ```
+
+`webauthn-schema.sql` crea la tabla `webauthn_credentials` para el login con
+huella/Face ID (passkeys) del portal — sin esto, `/portal/mi-cuenta` no puede
+guardar llaves de acceso y el botón "Ingresar con huella / Face ID" en el
+login siempre va a fallar. Nota: una passkey queda atada al dominio exacto
+donde se registró — cuando migre el DNS a `crownpointenergy.com`, las passkeys
+registradas bajo `crown-point-energia.vercel.app` van a dejar de funcionar y
+los usuarios van a tener que volver a registrarlas.
 
 Es idempotente (se puede correr más de una vez). Hace dos cosas:
 - Crea la tabla `comunicados` con RLS endurecida (lectura pública de publicados,
