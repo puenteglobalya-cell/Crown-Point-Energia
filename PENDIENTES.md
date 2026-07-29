@@ -10,6 +10,13 @@ falta para que todo quede operativo en producción.
 
 ## 🔴 Imprescindible — ruta crítica
 
+### 0. Cuando migren el DNS de crownpointenergy.com
+`sitemap.xml` y `robots.txt` (`cpe-web/app/sitemap.ts`, `cpe-web/app/robots.ts`) apuntan
+temporalmente a `crown-point-energia.vercel.app` (comentario `TEMP` en el código) porque
+el DNS todavía no estaba migrado cuando se verificó Google Search Console. Una vez
+migrado: cambiar `BASE` y `sitemap`/`host` de vuelta a `https://crownpointenergy.com`,
+y volver a verificar/enviar el sitemap en Search Console con el dominio final.
+
 Con estos tres pasos, todo lo desarrollado queda vivo:
 
 ### 1. Correr la migración SQL en Supabase
