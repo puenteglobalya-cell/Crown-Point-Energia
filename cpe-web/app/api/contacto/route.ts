@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isSameOrigin } from '@/lib/csrf'
-import { checkRateLimit } from '@/lib/ratelimit'
+import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 import { looksLikeBot, HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 import { enviarConfirmacionContacto } from '@/lib/email'
 
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 5 submissions per 10 minutes per IP
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const ip = getClientIp(req)
   if (!await checkRateLimit(`contacto:${ip}`, 5, 10 * 60 * 1000)) {
     return NextResponse.json({ error: 'Demasiados intentos. Esperá unos minutos.' }, { status: 429 })
   }

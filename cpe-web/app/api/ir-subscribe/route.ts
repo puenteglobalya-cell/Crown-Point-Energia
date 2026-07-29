@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isSameOrigin } from '@/lib/csrf'
-import { checkRateLimit } from '@/lib/ratelimit'
+import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 import { looksLikeBot, HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 
 export const dynamic = 'force-dynamic'
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const ip = getClientIp(req)
   const allowed = await checkRateLimit(`ir-subscribe:${ip}`, 5, 60 * 60 * 1000) // 5 per hour
   if (!allowed) {
     return NextResponse.json({ error: 'Demasiados intentos. Intentá más tarde.' }, { status: 429 })

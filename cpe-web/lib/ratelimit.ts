@@ -2,6 +2,17 @@
 // Uses Upstash Redis when UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set,
 // falling back to an in-process map (resets on cold start — burst-only protection).
 
+// Vercel's edge sets x-real-ip itself on every request — a client can't
+// override it. x-forwarded-for, in contrast, is a plain request header any
+// caller (curl, a script) can set to an arbitrary value, and Vercel doesn't
+// strip a client-supplied first hop — so keying rate limits off its first
+// entry lets an attacker bypass the limit just by rotating that header.
+export function getClientIp(req: { headers: { get(name: string): string | null } }): string {
+  const realIp = req.headers.get('x-real-ip')
+  if (realIp) return realIp.trim()
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+}
+
 const windows = new Map<string, number[]>()
 
 function inMemoryCheck(key: string, maxRequests: number, windowMs: number): boolean {

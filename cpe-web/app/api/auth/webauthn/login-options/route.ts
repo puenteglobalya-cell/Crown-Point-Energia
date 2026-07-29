@@ -2,10 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateAuthenticationOptions } from '@simplewebauthn/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { getRpID, CHALLENGE_COOKIE } from '@/lib/webauthn'
+import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 
 export async function POST(req: NextRequest) {
   const { email } = await req.json()
   if (!email) return NextResponse.json({ error: 'Falta email' }, { status: 400 })
+
+  // Public, pre-auth endpoint that triggers an admin.listUsers() call — rate
+  // limit per IP so it can't be used to run up cost/load by hammering it.
+  const ip = getClientIp(req)
+  if (!await checkRateLimit(`webauthn-login-options:${ip}`, 20, 5 * 60 * 1000)) {
+    return NextResponse.json({ error: 'Demasiados intentos. Esperá unos minutos.' }, { status: 429 })
+  }
 
   const db = createSupabaseServerAdminClient()
   const { data: users } = await db.auth.admin.listUsers()
