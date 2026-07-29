@@ -98,6 +98,52 @@ function emailShell(title: string, body: string) {
 </body></html>`
 }
 
+// Backup delivery channel for portal invites/password resets. Supabase Auth's
+// own email sending (configured in the Supabase dashboard) is a separate,
+// rate-limited system we don't control from code — if it's slow, rate-limited,
+// or the mail lands in spam, this Resend-based copy is the one that reliably
+// arrives. Best-effort: never throws, since the Supabase-generated link is
+// already returned to the admin UI as a manual-share fallback either way.
+export async function enviarInvitacionUsuario({
+  email,
+  link,
+  esNuevo,
+}: {
+  email: string
+  link: string
+  esNuevo: boolean
+}) {
+  if (!resend) return { sent: false, reason: 'Resend no configurado' }
+  const body = `
+    <p style="margin:0 0 16px;font-size:15px;color:#1a1c2e;font-weight:600">
+      ${esNuevo ? 'Te invitaron al Portal de Crown Point Energía.' : 'Pedido de restablecer contraseña.'}
+    </p>
+    <p style="margin:0 0 24px;font-size:14px;color:#5a5d78;line-height:1.6">
+      ${esNuevo
+        ? 'Hacé clic en el botón para activar tu cuenta y elegir tu contraseña.'
+        : 'Hacé clic en el botón para elegir una nueva contraseña.'}
+      El link vence en 1 hora.
+    </p>
+    <a href="${link}" style="display:inline-block;background:#1F2566;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600">
+      ${esNuevo ? 'Activar mi cuenta' : 'Elegir nueva contraseña'}
+    </a>
+    <p style="margin:24px 0 0;font-size:12px;color:#8e91b0;line-height:1.6">
+      Si el botón no funciona, copiá y pegá este link en el navegador:<br/>
+      <a href="${link}" style="color:#1F2566;word-break:break-all">${link}</a>
+    </p>`
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to: email,
+      subject: esNuevo ? 'Activá tu cuenta — Portal Crown Point Energía' : 'Restablecer contraseña — Portal Crown Point Energía',
+      html: emailShell(esNuevo ? 'Bienvenido al Portal' : 'Restablecer contraseña', body),
+    })
+    return { sent: true }
+  } catch (e) {
+    return { sent: false, reason: (e as Error).message }
+  }
+}
+
 export async function enviarConfirmacionContacto({
   nombre,
   email,

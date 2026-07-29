@@ -3,6 +3,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity } from '@/lib/roles'
 import { requireAdminUser, isAdminEmail } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { enviarInvitacionUsuario } from '@/lib/email'
 
 export async function GET() {
   const adminUser = await requireAdminUser()
@@ -108,6 +109,12 @@ export async function POST(req: NextRequest) {
     })
     inviteLink = linkData?.properties?.action_link ?? null
   } catch { /* best-effort — invite email was already sent regardless */ }
+
+  // Send our own copy via Resend — don't depend solely on Supabase Auth's
+  // email delivery, which is a separate rate-limited system we don't control.
+  if (inviteLink) {
+    await enviarInvitacionUsuario({ email, link: inviteLink, esNuevo: true })
+  }
 
   await logActivity({
     userId: adminUser.id,

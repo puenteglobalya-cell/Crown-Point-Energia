@@ -89,6 +89,10 @@ function EditDrawer({
   // Biblioteca state
   const [bibSet, setBibSet] = useState<Set<number>>(usuarioGrupos[user.id] ?? new Set())
 
+  // Reset-password fallback link
+  const [resetLink, setResetLink] = useState('')
+  const [resetCopied, setResetCopied] = useState(false)
+
   async function savePerfil() {
     setSaving(true)
     const res = await fetch(`/api/admin/usuarios/${user.id}`, {
@@ -122,8 +126,21 @@ function EditDrawer({
 
   async function resetPassword() {
     if (!confirm('¿Enviar email de reseteo de contraseña?')) return
+    setResetLink(''); setResetCopied(false)
     const res = await fetch(`/api/admin/usuarios/${user.id}/reset`, { method: 'POST' })
-    res.ok ? flash('Email enviado') : flash('Error', 'err')
+    if (res.ok) {
+      flash('Email enviado')
+      const data = await res.json()
+      if (data.resetLink) setResetLink(data.resetLink)
+    } else {
+      flash('Error', 'err')
+    }
+  }
+
+  async function copyResetLink() {
+    await navigator.clipboard.writeText(resetLink)
+    setResetCopied(true)
+    setTimeout(() => setResetCopied(false), 2000)
   }
 
   async function deleteUser() {
@@ -249,6 +266,18 @@ function EditDrawer({
               <button className="btn" onClick={resetPassword} style={{ fontSize: 12, padding: '9px', textAlign: 'left' }}>
                 Enviar reseteo de contraseña
               </button>
+              {resetLink && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--fg-soft)' }}>
+                  <span>Si preferís compartirlo vos directamente:</span>
+                  <button
+                    type="button"
+                    onClick={copyResetLink}
+                    style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', border: '1px solid var(--rule)', borderRadius: 6, background: resetCopied ? 'var(--cp-green-deep, #2C7A5B)' : 'var(--surface)', color: resetCopied ? '#fff' : 'var(--fg)', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  >
+                    {resetCopied ? '✓ Copiado' : '🔗 Copiar enlace'}
+                  </button>
+                </div>
+              )}
               <button className="btn" onClick={deleteUser} style={{ fontSize: 12, padding: '9px', textAlign: 'left', color: 'var(--cp-negative,#b33b2e)' }}>
                 Eliminar usuario permanentemente
               </button>
