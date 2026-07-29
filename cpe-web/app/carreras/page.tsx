@@ -73,14 +73,16 @@ export default async function CarrerasPage() {
       </section>
 
       <style>{`
-        .safety-banner { background: linear-gradient(135deg, #C9A24A 0%, #B38828 100%); color: #fff; padding: var(--s-10) var(--s-12); border-radius: var(--r-xl); display: flex; gap: var(--s-8); align-items: center; margin-bottom: var(--s-16); }
+        .safety-banner { background: #B38828; color: #fff; padding: var(--s-10) var(--s-12); border-radius: var(--r-xl); display: flex; gap: var(--s-8); align-items: center; margin-bottom: var(--s-16); }
         .safety-icon { width: 64px; height: 64px; background: rgba(255,255,255,0.18); border-radius: var(--r-lg); display: grid; place-items: center; flex-shrink: 0; }
         .safety-banner h2 { font-size: 28px; font-family: var(--font-display); letter-spacing: -0.02em; margin: 0 0 8px; color: #fff; }
         .safety-banner p { font-size: 15px; line-height: 1.6; margin: 0; opacity: 0.88; max-width: 56ch; }
-        .culture-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-5); margin-top: var(--s-8); }
-        @media (max-width: 900px) { .culture-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 520px) { .culture-grid { grid-template-columns: 1fr; } .safety-banner { flex-direction: column; gap: var(--s-4); padding: var(--s-6); } }
-        .culture-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-lg); padding: var(--s-6); display: flex; flex-direction: column; gap: var(--s-3); }
+        .culture-grid { display: flex; flex-wrap: wrap; gap: var(--s-8) var(--s-10); margin-top: var(--s-8); }
+        @media (max-width: 520px) { .safety-banner { flex-direction: column; gap: var(--s-4); padding: var(--s-6); } }
+        .culture-card { flex: 1 1 200px; padding-left: var(--s-6); border-left: 1px solid var(--rule); display: flex; flex-direction: column; gap: var(--s-3); }
+        .culture-card:first-child { padding-left: 0; border-left: none; }
+        @media (max-width: 720px) { .culture-card { flex: 1 1 45%; } }
+        @media (max-width: 520px) { .culture-card { flex-basis: 100%; border-left: none; padding-left: 0; } }
         .culture-card-icon { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 4px; }
         .culture-card h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
         .culture-card p { font-size: 13px; color: var(--fg-soft); line-height: 1.65; margin: 0; }

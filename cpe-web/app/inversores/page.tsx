@@ -302,8 +302,8 @@ export default async function InversoresPage() {
                   <span className="lang-en">ESTMA Reports</span>
                 </h2>
                 <p className="lede">
-                  <span className="lang-es">Reportes de pagos a gobiernos bajo la <em>Extractive Sector Transparency Measures Act</em> (ESTMA) de Canadá. Crown Point Energy Inc. reporta sus pagos a gobiernos argentinos anualmente.</span>
-                  <span className="lang-en">Payments to governments reports under Canada's <em>Extractive Sector Transparency Measures Act</em> (ESTMA). Crown Point Energy Inc. reports annual payments to Argentine governments.</span>
+                  <span className="lang-es">Reportes de pagos a gobiernos bajo la Extractive Sector Transparency Measures Act (ESTMA) de Canadá. Crown Point Energy Inc. reporta sus pagos a gobiernos argentinos anualmente.</span>
+                  <span className="lang-en">Payments to governments reports under Canada's Extractive Sector Transparency Measures Act (ESTMA). Crown Point Energy Inc. reports annual payments to Argentine governments.</span>
                 </p>
                 <IrDocsTabs docs={irDocs} categoria="estma" />
               </div>}
