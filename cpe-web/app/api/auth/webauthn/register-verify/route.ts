@@ -3,6 +3,7 @@ import { verifyRegistrationResponse } from '@simplewebauthn/server'
 import { isoBase64URL } from '@simplewebauthn/server/helpers'
 import { createSupabaseServerClient, createSupabaseServerAdminClient } from '@/lib/supabase'
 import { getRpID, getOrigin, CHALLENGE_COOKIE } from '@/lib/webauthn'
+import { dbError } from '@/lib/api-error'
 
 export async function POST(req: NextRequest) {
   const supabase = createSupabaseServerClient()
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
     device_name: deviceName ?? null,
   })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return dbError(error)
 
   const res = NextResponse.json({ ok: true })
   res.cookies.delete(CHALLENGE_COOKIE)

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { dbError } from '@/lib/api-error'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
 
   if (error) {
     console.error('[cleanup-logs] activity_log error:', error.message)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return dbError(error)
   }
 
   console.log(`[cleanup-logs] deleted ${count ?? 0} activity_log rows older than 6 months`)
