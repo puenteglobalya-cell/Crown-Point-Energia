@@ -17,6 +17,13 @@ el DNS todavía no estaba migrado cuando se verificó Google Search Console. Una
 migrado: cambiar `BASE` y `sitemap`/`host` de vuelta a `https://crownpointenergy.com`,
 y volver a verificar/enviar el sitemap en Search Console con el dominio final.
 
+Mismo tema afecta los links de invitación/reset de contraseña (`app/api/admin/usuarios/route.ts`,
+`app/api/admin/usuarios/[id]/reset/route.ts`) — recomendado: setear la variable de entorno
+**`NEXT_PUBLIC_SITE_URL`** en Vercel a `https://crown-point-energia.vercel.app` ahora, y
+cambiarla a `https://crownpointenergy.com` cuando migre el DNS. Mientras esa variable no
+esté seteada, el código cae a un fallback hardcodeado (hoy ya corregido para apuntar al
+dominio de Vercel en vez de una URL rota).
+
 Con estos tres pasos, todo lo desarrollado queda vivo:
 
 ### 1. Correr la migración SQL en Supabase

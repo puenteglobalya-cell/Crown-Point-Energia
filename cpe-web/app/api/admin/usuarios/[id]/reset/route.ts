@@ -16,7 +16,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://crownpointenergy.com'
+  // TEMP fallback points at the Vercel domain until crownpointenergy.com's
+  // DNS migrates — see PENDIENTES.md.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://crown-point-energia.vercel.app'
 
   // Use anon client so Supabase sends the email via its standard flow
   const anonSupabase = createServerClient(
