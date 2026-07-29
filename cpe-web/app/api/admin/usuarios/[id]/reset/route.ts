@@ -4,6 +4,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity } from '@/lib/roles'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
+import { enviarInvitacionUsuario } from '@/lib/email'
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -32,6 +33,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (resetError) return NextResponse.json({ error: resetError.message }, { status: 500 })
 
+  // Same fallback as invite: generate a shareable link and send our own copy
+  // via Resend, in case Supabase Auth's own email is slow/rate-limited/spam.
+  let resetLink: string | null = null
+  try {
+    const { data: linkData } = await db.auth.admin.generateLink({
+      type: 'recovery',
+      email: target.email,
+      options: { redirectTo: `${siteUrl}/portal/reset-password` },
+    })
+    resetLink = linkData?.properties?.action_link ?? null
+  } catch { /* best-effort — Supabase's own email was already sent regardless */ }
+
+  if (resetLink) {
+    await enviarInvitacionUsuario({ email: target.email, link: resetLink, esNuevo: false })
+  }
+
   await logActivity({
     userId: adminUser.id,
     userEmail: adminUser.email ?? null,
@@ -41,5 +58,5 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     metadata: { targetEmail: target.email },
   })
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, resetLink })
 }
