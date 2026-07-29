@@ -95,6 +95,7 @@ export default async function AcercaPage() {
         .timeline__year { font-family: var(--font-mono); font-size: 13px; color: var(--accent); font-weight: 600; min-width: 72px; flex-shrink: 0; padding-top: 1px; }
       `}</style>
 
+      {heroImg && <link rel="preload" as="image" href={heroImg} fetchPriority="high" />}
       <section
         className={`page-hero${heroImg ? ' has-photo' : ''}`}
         style={heroImg ? { '--hero-photo-url': `url(${heroImg})` } as React.CSSProperties : undefined}
