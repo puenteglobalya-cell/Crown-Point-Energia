@@ -1,7 +1,10 @@
 import { MetadataRoute } from 'next'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 
-const BASE = 'https://crownpointenergy.com'
+// TEMP: DNS for crownpointenergy.com hasn't been migrated yet, so Search
+// Console is verified against the Vercel domain instead. Revert to
+// 'https://crownpointenergy.com' once DNS migration is done.
+const BASE = 'https://crown-point-energia.vercel.app'
 
 // Revalidate the sitemap hourly so newly published releases appear.
 export const revalidate = 3600
