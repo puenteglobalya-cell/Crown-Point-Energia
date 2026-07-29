@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { requireHrUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,14 @@ export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const user = await requireHrUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Each call hits the paid Anthropic API — cap it so a frontend loop bug or
+  // a compromised rrhh account can't run up an unbounded bill.
+  const ip = getClientIp(req)
+  if (!await checkRateLimit(`rrhh-analizar:${user.id}`, 30, 60 * 60 * 1000) ||
+      !await checkRateLimit(`rrhh-analizar:${ip}`, 30, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: 'Demasiados análisis en poco tiempo. Esperá un momento.' }, { status: 429 })
+  }
 
   const { id } = await req.json()
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
