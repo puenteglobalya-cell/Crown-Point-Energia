@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { logActivity } from '@/lib/roles'
 import { requireAdminUser } from '@/lib/admin-auth'
@@ -21,30 +20,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   // DNS migrates — see PENDIENTES.md.
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://crown-point-energia.vercel.app'
 
-  // Use anon client so Supabase sends the email via its standard flow
-  const anonSupabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-  const { error: resetError } = await anonSupabase.auth.resetPasswordForEmail(target.email, {
-    redirectTo: `${siteUrl}/portal/reset-password`,
+  // generateLink never touches Supabase's own (rate-limited) mailer — it
+  // just returns the action link, which we deliver ourselves via Resend.
+  // Previously this used resetPasswordForEmail, which DOES send through
+  // that limited mailer and could fail with "email rate limit exceeded".
+  const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
+    type: 'recovery',
+    email: target.email,
+    options: { redirectTo: `${siteUrl}/portal/reset-password` },
   })
 
-  if (resetError) return NextResponse.json({ error: resetError.message }, { status: 500 })
+  if (linkError) return NextResponse.json({ error: linkError.message }, { status: 500 })
 
-  // Same fallback as invite: generate a shareable link and send our own copy
-  // via Resend, in case Supabase Auth's own email is slow/rate-limited/spam.
-  let resetLink: string | null = null
-  try {
-    const { data: linkData } = await db.auth.admin.generateLink({
-      type: 'recovery',
-      email: target.email,
-      options: { redirectTo: `${siteUrl}/portal/reset-password` },
-    })
-    resetLink = linkData?.properties?.action_link ?? null
-  } catch { /* best-effort — Supabase's own email was already sent regardless */ }
-
+  const resetLink = linkData.properties?.action_link ?? null
   if (resetLink) {
     await enviarInvitacionUsuario({ email: target.email, link: resetLink, esNuevo: false })
   }

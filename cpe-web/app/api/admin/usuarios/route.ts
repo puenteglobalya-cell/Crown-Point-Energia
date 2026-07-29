@@ -75,9 +75,15 @@ export async function POST(req: NextRequest) {
   // Vercel env vars over relying on this fallback.
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://crown-point-energia.vercel.app'
 
-  // Invite user via Supabase Auth
-  const { data: inviteData, error: inviteError } = await db.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${siteUrl}/portal/reset-password`,
+  // Create the user AND get the action link in one call, WITHOUT sending
+  // Supabase's own invite email — that's a separate, low-volume mailer
+  // (Supabase's built-in email service is rate-limited to a handful of
+  // emails/hour regardless of plan, and unlike inviteUserByEmail this call
+  // never touches it, so account creation can't fail because of it).
+  const { data: linkData, error: inviteError } = await db.auth.admin.generateLink({
+    type: 'invite',
+    email,
+    options: { redirectTo: `${siteUrl}/portal/reset-password` },
   })
 
   if (inviteError) {
@@ -85,7 +91,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Insert role row
-  const userId = inviteData.user.id
+  const userId = linkData.user.id
   const { error: roleError } = await db.from('user_roles').upsert({
     user_id: userId,
     role,
@@ -97,21 +103,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: roleError.message }, { status: 500 })
   }
 
-  // Also produce a shareable one-time access link (Área 4, punto 23) — the
-  // invite email above may bounce or land in spam; this lets the admin
-  // share it directly over Slack/WhatsApp/etc. as a fallback.
-  let inviteLink: string | null = null
-  try {
-    const { data: linkData } = await db.auth.admin.generateLink({
-      type: 'recovery',
-      email,
-      options: { redirectTo: `${siteUrl}/portal/reset-password` },
-    })
-    inviteLink = linkData?.properties?.action_link ?? null
-  } catch { /* best-effort — invite email was already sent regardless */ }
+  const inviteLink = linkData.properties?.action_link ?? null
 
-  // Send our own copy via Resend — don't depend solely on Supabase Auth's
-  // email delivery, which is a separate rate-limited system we don't control.
+  // Resend is the only delivery channel for this link — reliable, no
+  // built-in-mailer rate limit. The UI also shows the link for the admin
+  // to share manually as a second fallback.
   if (inviteLink) {
     await enviarInvitacionUsuario({ email, link: inviteLink, esNuevo: true })
   }
