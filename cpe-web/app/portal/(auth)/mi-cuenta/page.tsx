@@ -7,6 +7,9 @@ export default function MiCuentaPage() {
   const [current, setCurrent]   = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm]   = useState('')
+  const [showCurrent, setShowCurrent]   = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm]   = useState(false)
   const [loading, setLoading]   = useState(false)
   const [err, setErr]           = useState('')
   const [ok, setOk]             = useState(false)
@@ -161,34 +164,67 @@ export default function MiCuentaPage() {
         <form onSubmit={handlePasswordSubmit} style={{ display: 'grid', gap: 18 }}>
           <div className="form-row">
             <label>Contraseña actual</label>
-            <input
-              type="password"
-              required
-              value={current}
-              onChange={e => setCurrent(e.target.value)}
-              autoComplete="current-password"
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showCurrent ? 'text' : 'password'}
+                required
+                value={current}
+                onChange={e => setCurrent(e.target.value)}
+                autoComplete="current-password"
+                style={{ paddingRight: 40 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrent(v => !v)}
+                aria-label={showCurrent ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--fg-muted)', padding: 4 }}
+              >
+                {showCurrent ? 'Ocultar' : 'Mostrar'}
+              </button>
+            </div>
           </div>
           <div className="form-row">
             <label>Nueva contraseña</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              autoComplete="new-password"
-              minLength={8}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                autoComplete="new-password"
+                minLength={8}
+                style={{ paddingRight: 40 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--fg-muted)', padding: 4 }}
+              >
+                {showPassword ? 'Ocultar' : 'Mostrar'}
+              </button>
+            </div>
           </div>
           <div className="form-row">
             <label>Confirmar contraseña</label>
-            <input
-              type="password"
-              required
-              value={confirm}
-              onChange={e => setConfirm(e.target.value)}
-              autoComplete="new-password"
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showConfirm ? 'text' : 'password'}
+                required
+                value={confirm}
+                onChange={e => setConfirm(e.target.value)}
+                autoComplete="new-password"
+                style={{ paddingRight: 40 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(v => !v)}
+                aria-label={showConfirm ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--fg-muted)', padding: 4 }}
+              >
+                {showConfirm ? 'Ocultar' : 'Mostrar'}
+              </button>
+            </div>
           </div>
 
           {err && (
