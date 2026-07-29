@@ -4,6 +4,7 @@ import { isSameOrigin } from '@/lib/csrf'
 import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 import { looksLikeBot, HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 import { enviarConfirmacionContacto } from '@/lib/email'
+import { str } from '@/lib/input'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,8 +28,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
-    const emailVal = email?.trim().toLowerCase() ?? ''
-    if (!nombre?.trim() || !emailVal || !mensaje?.trim()) {
+    const nombreVal = str(nombre, 200)
+    const emailVal = str(email, 320).toLowerCase()
+    const mensajeVal = str(mensaje, 5000)
+    const tipoVal = str(tipo, 50)
+    const organizacionVal = str(organizacion, 200)
+    const telefonoVal = str(telefono, 50)
+
+    if (!nombreVal || !emailVal || !mensajeVal) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
@@ -37,19 +44,19 @@ export async function POST(req: NextRequest) {
 
     const db = createSupabaseServerAdminClient()
     const { error } = await db.from('contact_submissions').insert({
-      tipo: (tipo ?? '').trim().slice(0, 50),
-      nombre: nombre.trim().slice(0, 200),
-      organizacion: (organizacion ?? '').trim().slice(0, 200),
+      tipo: tipoVal,
+      nombre: nombreVal,
+      organizacion: organizacionVal,
       email: emailVal,
-      telefono: (telefono ?? '').trim().slice(0, 50),
-      mensaje: mensaje.trim().slice(0, 5000),
+      telefono: telefonoVal,
+      mensaje: mensajeVal,
     })
 
     if (error) {
       return NextResponse.json({ error: 'Error al guardar' }, { status: 500 })
     }
 
-    enviarConfirmacionContacto({ nombre: nombre.trim(), email: emailVal, asunto: (tipo ?? '').trim() || undefined })
+    enviarConfirmacionContacto({ nombre: nombreVal, email: emailVal, asunto: tipoVal || undefined })
 
     return NextResponse.json({ ok: true })
   } catch {

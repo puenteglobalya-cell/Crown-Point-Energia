@@ -32,7 +32,14 @@ En el **SQL Editor** del proyecto CPE, correr:
 ```
 supabase/migrations/20260702_comunicados_and_anon_revoke.sql
 supabase/webauthn-schema.sql
+supabase/login-lockout-schema.sql
 ```
+
+`login-lockout-schema.sql` crea la tabla `login_lockouts` que usa el nuevo
+endpoint `/api/auth/portal-login` (login de portal Y admin) para bloquear una
+cuenta después de 5 intentos fallidos por 15 minutos. Sin esta tabla, el
+login sigue funcionando pero el bloqueo por intentos fallidos no se aplica
+(la consulta falla silenciosamente a "no bloqueado").
 
 `webauthn-schema.sql` crea la tabla `webauthn_credentials` para el login con
 huella/Face ID (passkeys) del portal — sin esto, `/portal/mi-cuenta` no puede
