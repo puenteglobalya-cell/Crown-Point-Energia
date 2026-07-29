@@ -26,6 +26,7 @@ const TYPE_LABELS: Record<string, string> = {
   accionista: 'Seguimiento',
   produccion: 'Producción',
   financiero: 'Financiero',
+  comercial:  'Modelo Comercial',
 }
 
 function fmtDate(iso: string) {
