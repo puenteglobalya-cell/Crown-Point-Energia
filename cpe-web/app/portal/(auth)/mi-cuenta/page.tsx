@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import PasskeyManager from '@/components/PasskeyManager'
 
 export default function MiCuentaPage() {
   const [current, setCurrent]   = useState('')
@@ -362,6 +363,8 @@ export default function MiCuentaPage() {
           </button>
         )}
       </div>
+
+      <PasskeyManager />
     </div>
   )
 }

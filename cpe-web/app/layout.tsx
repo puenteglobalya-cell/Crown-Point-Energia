@@ -29,6 +29,7 @@ const fontPlayfair = Playfair_Display({
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-nf-playfair',
   display: 'swap',
+  preload: false,
 })
 const fontInter = Inter({
   subsets: ['latin'],
@@ -47,22 +48,26 @@ const fontFraunces = Fraunces({
   weight: ['300', '400', '500', '600', '700', '800'],
   variable: '--font-nf-fraunces',
   display: 'swap',
+  preload: false,
 })
 const fontManrope = Manrope({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700', '800'],
   variable: '--font-nf-manrope',
   display: 'swap',
+  preload: false,
 })
 
-const fontClasses = [
-  fontMontserrat.variable,
-  fontPlayfair.variable,
-  fontInter.variable,
-  fontMono.variable,
-  fontFraunces.variable,
-  fontManrope.variable,
-].join(' ')
+// Only 'corporativo' (Montserrat/Inter/Mono) loads on every request — it's the
+// default and by far the most common direction. 'editorial' (Fraunces+Playfair)
+// and 'industrial' (Manrope) are a global CMS toggle, not per-visitor, so their
+// font files are only fetched when that direction is actually the active one.
+function fontClassesFor(direction: string) {
+  const base = [fontMontserrat.variable, fontInter.variable, fontMono.variable]
+  if (direction === 'editorial') base.push(fontFraunces.variable, fontPlayfair.variable)
+  if (direction === 'industrial') base.push(fontManrope.variable)
+  return base.join(' ')
+}
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://crownpointenergy.com'),
@@ -152,7 +157,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       data-direction={state.direction}
       data-theme={theme}
       data-lang={lang}
-      className={fontClasses}
+      className={fontClassesFor(state.direction)}
       suppressHydrationWarning
     >
       <head>

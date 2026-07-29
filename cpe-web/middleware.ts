@@ -83,7 +83,21 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  // Route classification, computed up front so we can skip the auth network
+  // round-trip entirely on plain public marketing pages (by far the most
+  // requested routes) — anonymous visitors to crownpointenergy.com never
+  // needed `user` before, they were just paying for it on every request.
+  const isAdminRoute      = pathname.startsWith('/admin')
+  const isPortalRoute     = pathname.startsWith('/portal')
+  const isApiRoute        = pathname.startsWith('/api')
+  const isBibliotecaRoute = pathname.startsWith('/biblioteca')
+  const isInfografiaRoute = pathname.startsWith('/infografia')
+  const isMaintenancePage = pathname === '/maintenance'
+  const needsAuth = isAdminRoute || isPortalRoute || isApiRoute || isBibliotecaRoute || isInfografiaRoute
+
+  const { data: { user } } = needsAuth
+    ? await supabase.auth.getUser()
+    : { data: { user: null } }
 
   // Resolve role once per request — JWT fast path, DB fallback.
   // Memoized so multiple checks in the same request only query DB once.
@@ -203,12 +217,6 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Maintenance mode ─────────────────────────────────────────────────────
-  const isAdminRoute    = pathname.startsWith('/admin')
-  const isPortalRoute   = pathname.startsWith('/portal')
-  const isApiRoute      = pathname.startsWith('/api')
-  const isBibliotecaRoute = pathname.startsWith('/biblioteca')
-  const isMaintenancePage = pathname === '/maintenance'
-
   if (!isAdminRoute && !isPortalRoute && !isApiRoute && !isBibliotecaRoute && !isMaintenancePage) {
     try {
       const timeout = new Promise<null>(r => setTimeout(() => r(null), 2000))

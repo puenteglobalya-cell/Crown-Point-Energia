@@ -94,6 +94,7 @@ export default async function InversoresPage() {
   return (
     <>
       <ScrollSpy />
+      {heroImg && <link rel="preload" as="image" href={heroImg} fetchPriority="high" />}
       <section
         className={`page-hero${heroImg ? ' has-photo' : ''}`}
         style={heroImg ? { '--hero-photo-url': `url(${heroImg})` } as React.CSSProperties : undefined}

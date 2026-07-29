@@ -83,7 +83,7 @@ export default async function HomePage() {
                 src={heroImg}
                 alt={f['hero.home.img.alt'] || ''}
                 fill
-                loading="eager"
+                priority
                 style={{ objectFit: 'cover' }}
               />
             ) : (
