@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { getCmsState } from '@/lib/cms'
 
 export const revalidate = 300
 
@@ -61,6 +62,15 @@ async function fallbackFromCms() {
 }
 
 export async function GET() {
+  // The public site can hide the stock-quote widgets via a CMS toggle (compliance
+  // requirement: TSXV quote must not be shown), but this endpoint used to serve the
+  // full quote regardless of that toggle — anyone could fetch it directly. Mirror
+  // the same gate here so hiding the widget also hides the underlying data.
+  const state = await getCmsState()
+  if (state.show['investor.quotePanel'] === false) {
+    return NextResponse.json({ ok: false, error: 'Not available' }, { status: 404 })
+  }
+
   try {
     const res = await fetch(`${YF_CHART}?interval=1d&range=2y`, {
       headers: { 'User-Agent': UA, Accept: 'application/json' },
