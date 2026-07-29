@@ -622,22 +622,26 @@ h1, h2, h3, h4 {
   margin: 0;
 }
 
-/* ---------- Stat / KPI ---------- */
+/* ---------- Stat / KPI ----------
+   Deliberately not a grid of identical boxed tiles: a horizontal stat line,
+   no per-item background/border, hairline dividers instead of cards, and
+   the first figure reads larger than the rest — an asymmetric emphasis
+   instead of 3-4 uniform metric boxes. */
 .kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--rule);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-lg);
-  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--s-10) var(--s-12);
 }
 .kpi {
-  background: var(--surface);
-  padding: var(--s-8) var(--s-6);
   display: flex; flex-direction: column; gap: 8px;
-  min-height: 180px;
-  justify-content: space-between;
+  flex: 1 1 200px;
+  padding-left: var(--s-8);
+  border-left: 1px solid var(--rule);
+}
+.kpi:first-child {
+  padding-left: 0;
+  border-left: none;
 }
 .kpi .kpi-label {
   font-size: 11px;
@@ -648,10 +652,13 @@ h1, h2, h3, h4 {
 }
 .kpi .kpi-value {
   font-family: var(--font-display);
-  font-size: 52px;
+  font-size: 40px;
   line-height: 1;
   font-weight: 600;
   letter-spacing: -0.03em;
+}
+.kpi:first-child .kpi-value {
+  font-size: 60px;
 }
 .kpi .kpi-unit {
   font-family: var(--font-body);
@@ -676,13 +683,16 @@ h1, h2, h3, h4 {
   color: var(--accent-deep);
 }
 [data-theme="dark"] .kpi .kpi-meta .badge { color: var(--accent); }
-@media (max-width: 920px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 520px) { .kpi-grid { grid-template-columns: 1fr; } .kpi { min-height: auto; } .kpi .kpi-value { font-size: 44px; } }
+@media (max-width: 640px) {
+  .kpi { flex: 1 1 45%; border-left: none; padding-left: 0; }
+  .kpi:first-child { flex-basis: 100%; }
+  .kpi .kpi-value { font-size: 36px; }
+  .kpi:first-child .kpi-value { font-size: 48px; }
+}
 
-/* Three-card variant (home + inversores, after removing the EBITDA card) */
-.kpi-grid-3 { grid-template-columns: repeat(3, 1fr); }
-@media (max-width: 920px) { .kpi-grid-3 { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 520px) { .kpi-grid-3 { grid-template-columns: 1fr; } }
+/* kpi-grid-3 no longer needs its own column count — kept as a no-op selector
+   so existing className="kpi-grid kpi-grid-3" markup keeps working. */
+.kpi-grid-3 {}
 
 /* ---------- Card ---------- */
 .card {

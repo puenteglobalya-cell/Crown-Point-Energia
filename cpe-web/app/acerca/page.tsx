@@ -59,12 +59,13 @@ export default async function AcercaPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(boardJsonLd) }}
       />
       <style>{`
-        .strat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-4); margin-top: var(--s-6); }
-        .strat-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-lg); padding: var(--s-6); }
-        .strat-card .num { font-family: var(--font-mono); font-size: 13px; color: var(--accent); font-weight: 600; letter-spacing: 0.08em; }
-        .strat-card h4 { font-family: var(--font-display); font-size: 22px; font-weight: 600; margin: 6px 0 12px; letter-spacing: -0.02em; }
+        .strat-grid { list-style: none; padding: 0; margin: var(--s-6) 0 0; }
+        .strat-card { padding: var(--s-6) 0; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 64px 1fr; gap: var(--s-6); align-items: start; }
+        .strat-card:last-child { border-bottom: 0; }
+        .strat-card .num { font-family: var(--font-mono); font-size: 22px; color: var(--accent); font-weight: 600; letter-spacing: 0.04em; }
+        .strat-card h4 { font-family: var(--font-display); font-size: 22px; font-weight: 600; margin: 0 0 8px; letter-spacing: -0.02em; }
         .strat-card p { color: var(--fg-soft); font-size: 14px; line-height: 1.55; margin: 0; }
-        @media (max-width: 720px) { .strat-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 720px) { .strat-card { grid-template-columns: 40px 1fr; } }
         .people-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-6); }
         .person { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-lg); padding: var(--s-6); }
         .avatar { width: 56px; height: 56px; border-radius: 50%; color: #fff; display: grid; place-items: center; font-family: var(--font-display); font-weight: 600; font-size: 20px; letter-spacing: -0.02em; margin-bottom: var(--s-3); }
@@ -78,13 +79,14 @@ export default async function AcercaPage() {
         .director-list li:last-child { border-bottom: 0; }
         .director-list strong { font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--fg); letter-spacing: -0.01em; }
         .director-list span { font-size: 12px; color: var(--fg-muted); letter-spacing: 0.06em; text-transform: uppercase; }
-        .mvp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4); margin-top: var(--s-6); }
-        @media (max-width: 720px) { .mvp-grid { grid-template-columns: 1fr; } }
-        .mvp-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-lg); padding: var(--s-5) var(--s-6); }
+        .mvp-grid { display: flex; flex-wrap: wrap; gap: var(--s-8) var(--s-10); margin-top: var(--s-6); }
+        .mvp-card { flex: 1 1 220px; padding-left: var(--s-6); border-left: 1px solid var(--rule); }
+        .mvp-card:first-child { padding-left: 0; border-left: none; }
         .mvp-card h4 { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin: 0 0 var(--s-3); }
         .mvp-card p, .mvp-card ul { font-size: 14px; line-height: 1.65; color: var(--fg-soft); margin: 0; padding: 0; list-style: none; }
         .mvp-card ul li { padding: 4px 0; border-bottom: 1px solid var(--rule); }
         .mvp-card ul li:last-child { border-bottom: 0; }
+        @media (max-width: 720px) { .mvp-card { flex-basis: 100%; border-left: none; padding-left: 0; border-top: 1px solid var(--rule); padding-top: var(--s-5); } .mvp-card:first-child { border-top: none; padding-top: 0; } }
         .advantages-list { list-style: none; padding: 0; margin: var(--s-5) 0 0; display: flex; flex-direction: column; gap: 0; }
         .advantages-list li { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; color: var(--fg-soft); padding: 12px 0; border-bottom: 1px solid var(--rule); }
         .advantages-list li:last-child { border-bottom: 0; }

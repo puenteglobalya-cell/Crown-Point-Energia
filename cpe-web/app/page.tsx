@@ -87,7 +87,7 @@ export default async function HomePage() {
                 style={{ objectFit: 'cover' }}
               />
             ) : (
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(150deg, #0d1230 0%, #1F2566 45%, #142e22 100%)' }} />
+              <div style={{ position: 'absolute', inset: 0, background: '#111838' }} />
             )}
             <div className="hero-veil"></div>
           </div>
