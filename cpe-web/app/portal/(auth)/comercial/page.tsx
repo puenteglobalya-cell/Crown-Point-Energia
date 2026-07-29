@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic'
 const TYPE_LABELS: Record<string, string> = {
   facturacion: 'Facturación',
   ingresos:    'Ventas Estimadas',
+  comercial:   'Modelo Comercial',
 }
 
 export default async function ComercialPage() {
@@ -18,7 +19,7 @@ export default async function ComercialPage() {
 
   const db = createSupabaseServerAdminClient()
 
-  const [facturacionRes, ingresosRes, seRes] = await Promise.all([
+  const [facturacionRes, ingresosRes, comercialRes, seRes] = await Promise.all([
     db.from('reportes')
       .select('id, tipo_id:type_id, titulo, periodo, created_at')
       .eq('type_id', 'facturacion')
@@ -29,6 +30,13 @@ export default async function ComercialPage() {
     db.from('reportes')
       .select('id, tipo_id:type_id, titulo, periodo, created_at')
       .eq('type_id', 'ingresos')
+      .eq('estado', 'publicado')
+      .order('created_at', { ascending: false })
+      .limit(20),
+
+    db.from('reportes')
+      .select('id, tipo_id:type_id, titulo, periodo, created_at')
+      .eq('type_id', 'comercial')
       .eq('estado', 'publicado')
       .order('created_at', { ascending: false })
       .limit(20),
@@ -57,6 +65,7 @@ export default async function ComercialPage() {
 
   const facturacion = latestPerPeriodo((facturacionRes.data ?? []) as ReporteRow[])
   const ingresos    = latestPerPeriodo((ingresosRes.data    ?? []) as ReporteRow[])
+  const comercial   = latestPerPeriodo((comercialRes.data   ?? []) as ReporteRow[])
   const seList      = (seRes.data ?? []) as NonNullable<typeof seRes.data>
   const isAdmin     = permissions.has('manage_users')
 
@@ -94,6 +103,14 @@ export default async function ComercialPage() {
             color="#1F2566"
             items={ingresos}
             allHref="/portal?type=ingresos"
+          />
+
+          {/* Modelo comercial */}
+          <ReporteGroup
+            label={TYPE_LABELS.comercial}
+            color="#2a8a9e"
+            items={comercial}
+            allHref="/portal?type=comercial"
           />
 
         </div>

@@ -30,9 +30,10 @@ const TYPE_LABELS: Record<string, string> = {
   accionista: 'Seguimiento',
   produccion: 'Producción',
   financiero: 'Financiero',
+  comercial:  'Modelo Comercial',
 }
 const TYPE_ICONS: Record<string, string> = {
-  ingresos: '📊', accionista: '📋', produccion: '⛽', financiero: '💰',
+  ingresos: '📊', accionista: '📋', produccion: '⛽', financiero: '💰', comercial: '🧭',
 }
 
 function fmtDate(iso: string) {
