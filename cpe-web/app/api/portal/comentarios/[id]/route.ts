@@ -5,6 +5,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isAdminEmail } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
+import { getPermissionsForRole, type UserRole } from '@/lib/roles'
 
 async function getPortalUser() {
   const cookieStore = await cookies()
@@ -16,10 +17,41 @@ async function getPortalUser() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const db = createSupabaseServerAdminClient()
-  if (isAdminEmail(user.email)) return { id: user.id, email: user.email, isAdmin: true }
+  if (isAdminEmail(user.email)) return { id: user.id, email: user.email, isAdmin: true, role: 'admin' as UserRole }
   const { data: roleRow } = await db.from('user_roles').select('role, activo').eq('user_id', user.id).single()
   if (!roleRow?.activo) return null
-  return { id: user.id, email: user.email, isAdmin: roleRow.role === 'admin' }
+  return { id: user.id, email: user.email, isAdmin: roleRow.role === 'admin', role: roleRow.role as UserRole }
+}
+
+// Mirrors the visibility rules in GET /api/admin/reportes: a non-admin can
+// only act on a report whose type they're allowed to view, and drafts only
+// if their role has view_drafts. Without this, POST/DELETE only checked that
+// *some* portal user was logged in, not that the report_id given actually
+// belonged to a report they're allowed to see — commentable-but-not-viewable
+// reports were commentable anyway (low severity, since the GET here already
+// only returns a non-admin their own comments, but still a real gap).
+async function canAccessReport(u: { isAdmin: boolean; role: UserRole }, reporteId: string): Promise<boolean> {
+  if (u.isAdmin) return true
+
+  const db = createSupabaseServerAdminClient()
+  const { data: reporte } = await db.from('reportes').select('type_id, estado').eq('id', reporteId).single()
+  if (!reporte) return false
+
+  const permissions = await getPermissionsForRole(u.role)
+  if (reporte.estado !== 'publicado' && !permissions.has('view_drafts')) return false
+
+  const { data: typeAccess, error } = await db
+    .from('report_type_access')
+    .select('type_id')
+    .eq('role', u.role)
+    .eq('can_view', true)
+
+  // Same semantics as GET /api/admin/reportes: table missing (migration not
+  // run yet) allows everything; any other error, or a role with zero
+  // configured rows, denies — an empty allowlist means "no access", not
+  // "no restriction".
+  if (error) return error.code === '42P01'
+  return (typeAccess ?? []).some(r => r.type_id === reporte.type_id)
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -44,6 +76,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const u = await getPortalUser()
   if (!u) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!await canAccessReport(u, params.id)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const { texto } = await req.json()
   if (!texto || typeof texto !== 'string' || texto.trim().length === 0) {
     return NextResponse.json({ error: 'texto requerido' }, { status: 400 })
