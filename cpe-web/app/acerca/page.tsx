@@ -3,6 +3,7 @@ import { getCmsState } from '@/lib/cms'
 import { cmsLineBreaks } from '@/lib/cms-html'
 import { fetchTeamMembers, fetchStrategyCards } from '@/lib/content-fetch'
 import ScrollSpy from '@/components/ScrollSpy'
+import { getEffectiveLang } from '@/lib/lang'
 
 export const revalidate = 60
 
@@ -22,6 +23,7 @@ export default async function AcercaPage() {
 
   const f = s.fields
   const fe = s.fieldsEn
+  const lang = await getEffectiveLang(s.lang as 'es' | 'en')
   const heroImg = f['hero.acerca.img'] || ''
 
   const isCPI = (m: { entidad?: string }) => m.entidad === 'CPI'
@@ -104,18 +106,18 @@ export default async function AcercaPage() {
       >
         <div className="container">
           <div className="crumbs">
-            <Link href="/"><span className="lang-es">Inicio</span><span className="lang-en">Home</span></Link>
+            <Link href="/"><span className="lang-es" aria-hidden={lang !== 'es'}>Inicio</span><span className="lang-en" aria-hidden={lang !== 'en'}>Home</span></Link>
             <span>/</span>
-            <span><span className="lang-es">Acerca de</span><span className="lang-en">About</span></span>
+            <span><span className="lang-es" aria-hidden={lang !== 'es'}>Acerca de</span><span className="lang-en" aria-hidden={lang !== 'en'}>About</span></span>
           </div>
           <span className="eyebrow">Crown Point Energy</span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.acerca.h1'] || 'Producción real,<br/>base sólida,<br/>visión de largo plazo.') }} />
-            <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.acerca.h1'] || 'Real production,<br/>solid foundation,<br/>long-term vision.') }} />
+            <span className="lang-es" aria-hidden={lang !== 'es'} dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.acerca.h1'] || 'Producción real,<br/>base sólida,<br/>visión de largo plazo.') }} />
+            <span className="lang-en" aria-hidden={lang !== 'en'} dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.acerca.h1'] || 'Real production,<br/>solid foundation,<br/>long-term vision.') }} />
           </h1>
           <p>
-            <span className="lang-es">{f['page.acerca.lede'] || 'Crown Point Energy Inc. cotiza en la TSX Venture Exchange bajo el símbolo CWV. La Compañía opera en Argentina a través de su subsidiaria Crown Point Energía S.A. (CPESA), con sede en Buenos Aires.'}</span>
-            <span className="lang-en">{fe['page.acerca.lede'] || 'Crown Point Energy Inc. is listed on TSX Venture Exchange: CWV. The Company operates in Argentina through its wholly owned subsidiary, Crown Point Energía S.A. (CPESA), headquartered in Buenos Aires.'}</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>{f['page.acerca.lede'] || 'Crown Point Energy Inc. cotiza en la TSX Venture Exchange bajo el símbolo CWV. La Compañía opera en Argentina a través de su subsidiaria Crown Point Energía S.A. (CPESA), con sede en Buenos Aires.'}</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>{fe['page.acerca.lede'] || 'Crown Point Energy Inc. is listed on TSX Venture Exchange: CWV. The Company operates in Argentina through its wholly owned subsidiary, Crown Point Energía S.A. (CPESA), headquartered in Buenos Aires.'}</span>
           </p>
         </div>
       </section>
@@ -124,15 +126,15 @@ export default async function AcercaPage() {
         <div className="container">
           <div className="two-col">
             <aside className="left-rail">
-              <h4><span className="lang-es">En esta página</span><span className="lang-en">On this page</span></h4>
+              <h4><span className="lang-es" aria-hidden={lang !== 'es'}>En esta página</span><span className="lang-en" aria-hidden={lang !== 'en'}>On this page</span></h4>
               <nav>
-                <a href="#nosotros" className="active"><span className="lang-es">Quiénes somos</span><span className="lang-en">Who we are</span></a>
-                <a href="#estrategia"><span className="lang-es">Estrategia</span><span className="lang-en">Strategy</span></a>
-                <a href="#evolucion"><span className="lang-es">Evolución</span><span className="lang-en">History</span></a>
+                <a href="#nosotros" className="active"><span className="lang-es" aria-hidden={lang !== 'es'}>Quiénes somos</span><span className="lang-en" aria-hidden={lang !== 'en'}>Who we are</span></a>
+                <a href="#estrategia"><span className="lang-es" aria-hidden={lang !== 'es'}>Estrategia</span><span className="lang-en" aria-hidden={lang !== 'en'}>Strategy</span></a>
+                <a href="#evolucion"><span className="lang-es" aria-hidden={lang !== 'es'}>Evolución</span><span className="lang-en" aria-hidden={lang !== 'en'}>History</span></a>
                 <a href="#management">Management</a>
-                {boardCPI.length > 0 && <a href="#directorio-cpi"><span className="lang-es">Directorio CPE Inc.</span><span className="lang-en">CPE Inc. Board</span></a>}
-                {boardCPESA.length > 0 && <a href="#directorio" className="lang-es">Directorio CPESA</a>}
-                <a href="#esg"><span className="lang-es">ESG &amp; Responsabilidad corporativa</span><span className="lang-en">ESG &amp; Corporate responsibility</span></a>
+                {boardCPI.length > 0 && <a href="#directorio-cpi"><span className="lang-es" aria-hidden={lang !== 'es'}>Directorio CPE Inc.</span><span className="lang-en" aria-hidden={lang !== 'en'}>CPE Inc. Board</span></a>}
+                {boardCPESA.length > 0 && <a href="#directorio" className="lang-es" aria-hidden={lang !== 'es'}>Directorio CPESA</a>}
+                <a href="#esg"><span className="lang-es" aria-hidden={lang !== 'es'}>ESG &amp; Responsabilidad corporativa</span><span className="lang-en" aria-hidden={lang !== 'en'}>ESG &amp; Corporate responsibility</span></a>
               </nav>
             </aside>
             <main>
@@ -140,66 +142,66 @@ export default async function AcercaPage() {
               <div className="section-block" id="nosotros">
                 <span className="eyebrow">Crown Point Energy</span>
                 <h2 style={{ marginTop: 8 }}>
-                  <span className="lang-es">Quiénes somos</span>
-                  <span className="lang-en">Who we are</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Quiénes somos</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Who we are</span>
                 </h2>
                 <p className="lede">
-                  <span className="lang-es">
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>
                     Crown Point Energía S.A. es una empresa dedicada a la exploración y explotación de hidrocarburos en territorio argentino, 100% propiedad de Crown Point Energy Inc. (listada en el TSXV bajo el símbolo CWV), cuyo accionista controlante es de capitales argentinos.
                   </span>
-                  <span className="lang-en">
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>
                     Crown Point Energía S.A. is a company dedicated to the exploration and production of hydrocarbons in Argentina, 100% owned by Crown Point Energy Inc. (listed on the TSXV under the symbol CWV), whose controlling shareholder is Argentine capital.
                   </span>
                 </p>
                 <div className="mvp-grid">
                   <div className="mvp-card">
-                    <h4><span className="lang-es">Misión</span><span className="lang-en">Mission</span></h4>
+                    <h4><span className="lang-es" aria-hidden={lang !== 'es'}>Misión</span><span className="lang-en" aria-hidden={lang !== 'en'}>Mission</span></h4>
                     <p>
-                      <span className="lang-es">Generar valor para los accionistas haciendo un uso racional de los recursos, estableciendo relaciones a largo plazo y contribuyendo a mejorar la calidad de vida de las comunidades donde operamos.</span>
-                      <span className="lang-en">Generate shareholder value through rational use of resources, building long-term relationships and contributing to the quality of life of the communities where we operate.</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>Generar valor para los accionistas haciendo un uso racional de los recursos, estableciendo relaciones a largo plazo y contribuyendo a mejorar la calidad de vida de las comunidades donde operamos.</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>Generate shareholder value through rational use of resources, building long-term relationships and contributing to the quality of life of the communities where we operate.</span>
                     </p>
                   </div>
                   <div className="mvp-card">
-                    <h4><span className="lang-es">Visión</span><span className="lang-en">Vision</span></h4>
+                    <h4><span className="lang-es" aria-hidden={lang !== 'es'}>Visión</span><span className="lang-en" aria-hidden={lang !== 'en'}>Vision</span></h4>
                     <p>
-                      <span className="lang-es">Ser una compañía del sector energético, reconocida por su calidad de gestión y el respeto y cuidado del medio ambiente.</span>
-                      <span className="lang-en">To be an energy sector company recognized for its management quality and ethics, and respect and care for the environment.</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>Ser una compañía del sector energético, reconocida por su calidad de gestión y el respeto y cuidado del medio ambiente.</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>To be an energy sector company recognized for its management quality and ethics, and respect and care for the environment.</span>
                     </p>
                   </div>
                   <div className="mvp-card">
-                    <h4><span className="lang-es">Principios</span><span className="lang-en">Principles</span></h4>
+                    <h4><span className="lang-es" aria-hidden={lang !== 'es'}>Principios</span><span className="lang-en" aria-hidden={lang !== 'en'}>Principles</span></h4>
                     <ul>
-                      <li><span className="lang-es">Ética y responsabilidad</span><span className="lang-en">Ethics and responsibility</span></li>
-                      <li><span className="lang-es">Transparencia y acceso a la información</span><span className="lang-en">Transparency and access to information</span></li>
-                      <li><span className="lang-es">Trabajo en equipo</span><span className="lang-en">Teamwork</span></li>
+                      <li><span className="lang-es" aria-hidden={lang !== 'es'}>Ética y responsabilidad</span><span className="lang-en" aria-hidden={lang !== 'en'}>Ethics and responsibility</span></li>
+                      <li><span className="lang-es" aria-hidden={lang !== 'es'}>Transparencia y acceso a la información</span><span className="lang-en" aria-hidden={lang !== 'en'}>Transparency and access to information</span></li>
+                      <li><span className="lang-es" aria-hidden={lang !== 'es'}>Trabajo en equipo</span><span className="lang-en" aria-hidden={lang !== 'en'}>Teamwork</span></li>
                     </ul>
                   </div>
                 </div>
                 <div style={{ marginTop: 'var(--s-6)' }}>
                   <span style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: 'var(--fg-muted)' }}>
-                    <span className="lang-es">Ventajas competitivas</span>
-                    <span className="lang-en">Competitive advantages</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Ventajas competitivas</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Competitive advantages</span>
                   </span>
                   <ul className="advantages-list">
                     <li>
-                      <span className="lang-es">Fuerte compromiso del accionista controlante</span>
-                      <span className="lang-en">Strong commitment from the controlling shareholder</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>Fuerte compromiso del accionista controlante</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>Strong commitment from the controlling shareholder</span>
                     </li>
                     <li>
-                      <span className="lang-es">Alto conocimiento y experiencia en Argentina del accionista y management</span>
-                      <span className="lang-en">Management&apos;s deep knowledge of, and operating experience in Argentina</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>Alto conocimiento y experiencia en Argentina del accionista y management</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>Management&apos;s deep knowledge of, and operating experience in Argentina</span>
                     </li>
                     <li>
-                      <span className="lang-es">Rápida capacidad de respuesta</span>
-                      <span className="lang-en">Fast response capacity</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>Rápida capacidad de respuesta</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>Fast response capacity</span>
                     </li>
                     <li>
-                      <span className="lang-es">Menor burocracia y estructura más eficiente</span>
-                      <span className="lang-en">Less bureaucracy and more efficient structure</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>Menor burocracia y estructura más eficiente</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>Less bureaucracy and more efficient structure</span>
                     </li>
                     <li>
-                      <span className="lang-es">Foco en el negocio principal</span>
-                      <span className="lang-en">Focus on core business</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>Foco en el negocio principal</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>Focus on core business</span>
                     </li>
                   </ul>
                 </div>
@@ -207,26 +209,26 @@ export default async function AcercaPage() {
 
               {/* ── Estrategia ── */}
               <div className="section-block" id="estrategia">
-                <span className="eyebrow"><span className="lang-es">Estrategia</span><span className="lang-en">Strategy</span></span>
+                <span className="eyebrow"><span className="lang-es" aria-hidden={lang !== 'es'}>Estrategia</span><span className="lang-en" aria-hidden={lang !== 'en'}>Strategy</span></span>
                 <h2 style={{ marginTop: 8 }}>
-                  <span className="lang-es">Crecimiento disciplinado<br/>con activos reales.</span>
-                  <span className="lang-en">Increase oil and gas production<br/>only when returns exceed the cost of capital.</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Crecimiento disciplinado<br/>con activos reales.</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Increase oil and gas production<br/>only when returns exceed the cost of capital.</span>
                 </h2>
                 <p className="lede">
-                  <span className="lang-es">Establecer una cartera de activos de bajo riesgo generadores de un flujo de caja positivo con el fin de garantizar un crecimiento orgánico que facilite y se complemente con un crecimiento inorgánico.</span>
-                  <span className="lang-en">Build a portfolio of low-risk assets that generate positive cash flow to fuel organic growth and acquisitions.</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Establecer una cartera de activos de bajo riesgo generadores de un flujo de caja positivo con el fin de garantizar un crecimiento orgánico que facilite y se complemente con un crecimiento inorgánico.</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Build a portfolio of low-risk assets that generate positive cash flow to fuel organic growth and acquisitions.</span>
                 </p>
                 <div className="strat-grid">
                   {strategyCards.map(c => (
                     <div className="strat-card" key={c.id}>
                       <span className="num">{c.num}</span>
                       <h4>
-                        <span className="lang-es">{c.title_es}</span>
-                        <span className="lang-en">{c.title_en}</span>
+                        <span className="lang-es" aria-hidden={lang !== 'es'}>{c.title_es}</span>
+                        <span className="lang-en" aria-hidden={lang !== 'en'}>{c.title_en}</span>
                       </h4>
                       <p>
-                        <span className="lang-es">{c.body_es}</span>
-                        <span className="lang-en">{c.body_en}</span>
+                        <span className="lang-es" aria-hidden={lang !== 'es'}>{c.body_es}</span>
+                        <span className="lang-en" aria-hidden={lang !== 'en'}>{c.body_en}</span>
                       </p>
                     </div>
                   ))}
@@ -235,10 +237,10 @@ export default async function AcercaPage() {
 
               {/* ── Evolución de la Compañía ── */}
               <div className="section-block" id="evolucion">
-                <span className="eyebrow"><span className="lang-es">Historia</span><span className="lang-en">History</span></span>
+                <span className="eyebrow"><span className="lang-es" aria-hidden={lang !== 'es'}>Historia</span><span className="lang-en" aria-hidden={lang !== 'en'}>History</span></span>
                 <h2 style={{ marginTop: 8 }}>
-                  <span className="lang-es">Evolución de la Compañía</span>
-                  <span className="lang-en">Company milestones</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Evolución de la Compañía</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Company milestones</span>
                 </h2>
                 <ol className="timeline">
                   {[
@@ -256,7 +258,7 @@ export default async function AcercaPage() {
                   ].map((e, i) => (
                     <li key={i}>
                       <span className="timeline__year">{e.year}</span>
-                      <span><span className="lang-es">{e.es}</span><span className="lang-en">{e.en}</span></span>
+                      <span><span className="lang-es" aria-hidden={lang !== 'es'}>{e.es}</span><span className="lang-en" aria-hidden={lang !== 'en'}>{e.en}</span></span>
                     </li>
                   ))}
                 </ol>
@@ -265,10 +267,10 @@ export default async function AcercaPage() {
               {/* ── Management ── */}
               <div className="section-block" id="management">
                 <span className="eyebrow">Management</span>
-                <h2 style={{ marginTop: 8 }}><span className="lang-es">Equipo ejecutivo</span><span className="lang-en">Executive team</span></h2>
+                <h2 style={{ marginTop: 8 }}><span className="lang-es" aria-hidden={lang !== 'es'}>Equipo ejecutivo</span><span className="lang-en" aria-hidden={lang !== 'en'}>Executive team</span></h2>
                 <p className="lede">
-                  <span className="lang-es">Profesionales con más de 20 años de experiencia en upstream argentino y mercados de capitales canadienses.</span>
-                  <span className="lang-en">Professionals with over 20 years of experience in Argentine upstream and Canadian capital markets.</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Profesionales con más de 20 años de experiencia en upstream argentino y mercados de capitales canadienses.</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Professionals with over 20 years of experience in Argentine upstream and Canadian capital markets.</span>
                 </p>
                 {[
                   { label: 'Crown Point Energy Inc.', list: mgmtCPI, esOnly: false },
@@ -282,13 +284,13 @@ export default async function AcercaPage() {
                           <div className="avatar" style={{ background: p.bg }}>{p.initials}</div>
                           <strong>{p.name}</strong>
                           <span className="role">
-                            <span className="lang-es">{p.role_es}</span>
-                            <span className="lang-en">{p.role_en}</span>
+                            <span className="lang-es" aria-hidden={lang !== 'es'}>{p.role_es}</span>
+                            <span className="lang-en" aria-hidden={lang !== 'en'}>{p.role_en}</span>
                           </span>
                           {(p.bio_es || p.bio_en) && (
                             <p>
-                              <span className="lang-es">{p.bio_es}</span>
-                              <span className="lang-en">{p.bio_en}</span>
+                              <span className="lang-es" aria-hidden={lang !== 'es'}>{p.bio_es}</span>
+                              <span className="lang-en" aria-hidden={lang !== 'en'}>{p.bio_en}</span>
                             </p>
                           )}
                         </li>
@@ -301,10 +303,10 @@ export default async function AcercaPage() {
               {boardCPI.length > 0 && (
                 <div className="section-block" id="directorio-cpi">
                   <span className="eyebrow">Crown Point Energy Inc.</span>
-                  <h2 style={{ marginTop: 8 }}><span className="lang-es">Directorio — CPE Inc.</span><span className="lang-en">Board of directors — CPE Inc.</span></h2>
+                  <h2 style={{ marginTop: 8 }}><span className="lang-es" aria-hidden={lang !== 'es'}>Directorio — CPE Inc.</span><span className="lang-en" aria-hidden={lang !== 'en'}>Board of directors — CPE Inc.</span></h2>
                   <p className="lede">
-                    <span className="lang-es">Cumplimos con NI 58-101 sobre prácticas de gobierno corporativo.</span>
-                    <span className="lang-en">We comply with NI 58-101 on corporate governance practices.</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Cumplimos con NI 58-101 sobre prácticas de gobierno corporativo.</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>We comply with NI 58-101 on corporate governance practices.</span>
                   </p>
                   <ul className="people-grid">
                     {boardCPI.map(p => (
@@ -312,13 +314,13 @@ export default async function AcercaPage() {
                         <div className="avatar" style={{ background: p.bg }}>{p.initials}</div>
                         <strong>{p.name}</strong>
                         <span className="role">
-                          <span className="lang-es">{p.role_es}</span>
-                          <span className="lang-en">{p.role_en}</span>
+                          <span className="lang-es" aria-hidden={lang !== 'es'}>{p.role_es}</span>
+                          <span className="lang-en" aria-hidden={lang !== 'en'}>{p.role_en}</span>
                         </span>
                         {(p.bio_es || p.bio_en) && (
                           <p>
-                            <span className="lang-es">{p.bio_es}</span>
-                            <span className="lang-en">{p.bio_en}</span>
+                            <span className="lang-es" aria-hidden={lang !== 'es'}>{p.bio_es}</span>
+                            <span className="lang-en" aria-hidden={lang !== 'en'}>{p.bio_en}</span>
                           </p>
                         )}
                       </li>
@@ -329,53 +331,53 @@ export default async function AcercaPage() {
 
               {boardCPESA.length > 0 && <div className="section-block lang-es" id="directorio">
                 <span className="eyebrow">Crown Point Energía S.A.</span>
-                <h2 style={{ marginTop: 8 }}><span className="lang-es">Directorio — CPESA</span><span className="lang-en">Board of directors — CPESA</span></h2>
+                <h2 style={{ marginTop: 8 }}><span className="lang-es" aria-hidden={lang !== 'es'}>Directorio — CPESA</span><span className="lang-en" aria-hidden={lang !== 'en'}>Board of directors — CPESA</span></h2>
                 <p className="lede">
-                  <span className="lang-es">Directorio y Comisión Fiscalizadora de la entidad operadora argentina.</span>
-                  <span className="lang-en">Board and Statutory Audit Committee of the Argentine operating entity.</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Directorio y Comisión Fiscalizadora de la entidad operadora argentina.</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Board and Statutory Audit Committee of the Argentine operating entity.</span>
                 </p>
                 <ul className="director-list">
                   {dirTitulares.length > 0 && (
                     <li style={{ padding: '14px 0 2px', borderBottom: 'none', display: 'block' }}>
                       <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 700 }}>
-                        <span className="lang-es">Directorio Titular</span>
-                        <span className="lang-en">Board of Directors</span>
+                        <span className="lang-es" aria-hidden={lang !== 'es'}>Directorio Titular</span>
+                        <span className="lang-en" aria-hidden={lang !== 'en'}>Board of Directors</span>
                       </span>
                     </li>
                   )}
                   {dirTitulares.map(d => (
                     <li key={d.id}>
                       <strong>{d.name}</strong>
-                      {d.independiente === true && <span><span className="lang-es">Independiente</span><span className="lang-en">Independent</span></span>}
+                      {d.independiente === true && <span><span className="lang-es" aria-hidden={lang !== 'es'}>Independiente</span><span className="lang-en" aria-hidden={lang !== 'en'}>Independent</span></span>}
                     </li>
                   ))}
                   {dirSuplentes.length > 0 && (
                     <li style={{ padding: '14px 0 2px', borderBottom: 'none', display: 'block' }}>
                       <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 700 }}>
-                        <span className="lang-es">Directorio Suplente</span>
-                        <span className="lang-en">Alternate Directors</span>
+                        <span className="lang-es" aria-hidden={lang !== 'es'}>Directorio Suplente</span>
+                        <span className="lang-en" aria-hidden={lang !== 'en'}>Alternate Directors</span>
                       </span>
                     </li>
                   )}
                   {dirSuplentes.map(d => (
                     <li key={d.id}>
                       <strong>{d.name}</strong>
-                      {d.independiente === true && <span><span className="lang-es">Independiente</span><span className="lang-en">Independent</span></span>}
+                      {d.independiente === true && <span><span className="lang-es" aria-hidden={lang !== 'es'}>Independiente</span><span className="lang-en" aria-hidden={lang !== 'en'}>Independent</span></span>}
                     </li>
                   ))}
                   {(sindTitulares.length > 0 || sindSuplentes.length > 0) && (
                     <li style={{ padding: '20px 0 2px', borderBottom: 'none', display: 'block' }}>
                       <span style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent-deep)', fontWeight: 700 }}>
-                        <span className="lang-es">Comisión Fiscalizadora</span>
-                        <span className="lang-en">Statutory Audit Committee</span>
+                        <span className="lang-es" aria-hidden={lang !== 'es'}>Comisión Fiscalizadora</span>
+                        <span className="lang-en" aria-hidden={lang !== 'en'}>Statutory Audit Committee</span>
                       </span>
                     </li>
                   )}
                   {sindTitulares.length > 0 && (
                     <li style={{ padding: '8px 0 2px', borderBottom: 'none', display: 'block' }}>
                       <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 700 }}>
-                        <span className="lang-es">Síndicos Titulares</span>
-                        <span className="lang-en">Statutory Auditors</span>
+                        <span className="lang-es" aria-hidden={lang !== 'es'}>Síndicos Titulares</span>
+                        <span className="lang-en" aria-hidden={lang !== 'en'}>Statutory Auditors</span>
                       </span>
                     </li>
                   )}
@@ -385,8 +387,8 @@ export default async function AcercaPage() {
                   {sindSuplentes.length > 0 && (
                     <li style={{ padding: '8px 0 2px', borderBottom: 'none', display: 'block' }}>
                       <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 700 }}>
-                        <span className="lang-es">Síndicos Suplentes</span>
-                        <span className="lang-en">Alternate Statutory Auditors</span>
+                        <span className="lang-es" aria-hidden={lang !== 'es'}>Síndicos Suplentes</span>
+                        <span className="lang-en" aria-hidden={lang !== 'en'}>Alternate Statutory Auditors</span>
                       </span>
                     </li>
                   )}
@@ -397,7 +399,7 @@ export default async function AcercaPage() {
                     <li key={d.id}>
                       <strong>{d.name}</strong>
                       {d.cargo_board && <> · {d.cargo_board}</>}
-                      {d.independiente === true && <span><span className="lang-es">Independiente</span><span className="lang-en">Independent</span></span>}
+                      {d.independiente === true && <span><span className="lang-es" aria-hidden={lang !== 'es'}>Independiente</span><span className="lang-en" aria-hidden={lang !== 'en'}>Independent</span></span>}
                     </li>
                   ))}
                 </ul>
@@ -406,17 +408,17 @@ export default async function AcercaPage() {
               <div className="section-block" id="esg" style={{ borderBottom: 0 }}>
                 <span className="eyebrow">ESG</span>
                 <h2 style={{ marginTop: 8 }}>
-                  <span className="lang-es">Responsabilidad corporativa</span>
-                  <span className="lang-en">Corporate responsibility</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Responsabilidad corporativa</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Corporate responsibility</span>
                 </h2>
                 <p className="lede">
-                  <span className="lang-es">Operar de forma responsable es la condición para operar a largo plazo. Reportamos métricas ambientales, sociales y de gobierno bajo criterios SASB para upstream oil &amp; gas y las recomendaciones del TCFD.</span>
-                  <span className="lang-en">Operating responsibly is the condition for operating long-term. We report environmental, social and governance metrics using SASB upstream oil &amp; gas criteria and TCFD recommendations.</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Operar de forma responsable es la condición para operar a largo plazo. Reportamos métricas ambientales, sociales y de gobierno bajo criterios SASB para upstream oil &amp; gas y las recomendaciones del TCFD.</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Operating responsibly is the condition for operating long-term. We report environmental, social and governance metrics using SASB upstream oil &amp; gas criteria and TCFD recommendations.</span>
                 </p>
                 <div style={{ marginTop: 'var(--s-6)' }}>
                   <Link href="/esg" className="btn btn-secondary">
-                    <span className="lang-es">Ver reporte ESG completo</span>
-                    <span className="lang-en">Full ESG report</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Ver reporte ESG completo</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Full ESG report</span>
                   </Link>
                 </div>
               </div>

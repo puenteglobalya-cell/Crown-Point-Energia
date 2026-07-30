@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { getEffectiveLang } from '@/lib/lang'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,18 +52,19 @@ async function search(q: string): Promise<Result[]> {
 export default async function BuscarPage({ searchParams }: { searchParams: { q?: string } }) {
   const q = searchParams.q ?? ''
   const results = q ? await search(q) : []
+  const lang = await getEffectiveLang('es')
 
   return (
     <section className="section" style={{ minHeight: '60vh' }}>
       <div className="container" style={{ maxWidth: 720 }}>
         <div className="crumbs">
-          <Link href="/"><span className="lang-es">Inicio</span><span className="lang-en">Home</span></Link>
+          <Link href="/"><span className="lang-es" aria-hidden={lang !== 'es'}>Inicio</span><span className="lang-en" aria-hidden={lang !== 'en'}>Home</span></Link>
           <span>/</span>
           <span>Búsqueda</span>
         </div>
         <h1 className="section-title" style={{ marginTop: 14, marginBottom: 24 }}>
-          <span className="lang-es">Resultados para &ldquo;{q}&rdquo;</span>
-          <span className="lang-en">Results for &ldquo;{q}&rdquo;</span>
+          <span className="lang-es" aria-hidden={lang !== 'es'}>Resultados para &ldquo;{q}&rdquo;</span>
+          <span className="lang-en" aria-hidden={lang !== 'en'}>Results for &ldquo;{q}&rdquo;</span>
         </h1>
 
         <form action="/buscar" style={{ marginBottom: 32, display: 'flex', gap: 8 }}>
@@ -76,8 +78,8 @@ export default async function BuscarPage({ searchParams }: { searchParams: { q?:
 
         {q && results.length === 0 && (
           <p style={{ color: 'var(--fg-muted)', fontSize: 14 }}>
-            <span className="lang-es">Sin resultados. Probá con otro término.</span>
-            <span className="lang-en">No results. Try another term.</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>Sin resultados. Probá con otro término.</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>No results. Try another term.</span>
           </p>
         )}
 

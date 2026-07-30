@@ -1,29 +1,31 @@
 import Link from 'next/link'
+import { getEffectiveLang } from '@/lib/lang'
 
 export const metadata = {
   title: 'Términos y condiciones — Crown Point Energy',
 }
 
-export default function TerminosPage() {
+export default async function TerminosPage() {
+  const lang = await getEffectiveLang('es')
   return (
     <>
       <section className="page-hero">
         <div className="container">
           <div className="crumbs">
-            <Link href="/"><span className="lang-es">Inicio</span><span className="lang-en">Home</span></Link>
+            <Link href="/"><span className="lang-es" aria-hidden={lang !== 'es'}>Inicio</span><span className="lang-en" aria-hidden={lang !== 'en'}>Home</span></Link>
             <span>/</span>
-            <span><span className="lang-es">Términos y condiciones</span><span className="lang-en">Terms of use</span></span>
+            <span><span className="lang-es" aria-hidden={lang !== 'es'}>Términos y condiciones</span><span className="lang-en" aria-hidden={lang !== 'en'}>Terms of use</span></span>
           </div>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es">Términos y condiciones de uso</span>
-            <span className="lang-en">Terms of use</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>Términos y condiciones de uso</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>Terms of use</span>
           </h1>
         </div>
       </section>
 
       <section className="section">
         <div className="container" style={{ maxWidth: 760 }}>
-          <div className="lang-es">
+          <div className="lang-es" aria-hidden={lang !== 'es'}>
             <h2>Información general</h2>
             <p>Este sitio web es propiedad de Crown Point Energía S.A. (en adelante &quot;la Compañía&quot;). El acceso y uso del sitio implica la aceptación de los presentes términos.</p>
 
@@ -43,7 +45,7 @@ export default function TerminosPage() {
             <p>Estos términos se rigen por las leyes de la República Argentina. Cualquier controversia se someterá a la jurisdicción de los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires.</p>
           </div>
 
-          <div className="lang-en">
+          <div className="lang-en" aria-hidden={lang !== 'en'}>
             <h2>General information</h2>
             <p>This website is owned by Crown Point Energy Inc. and operated through its Argentine subsidiary Crown Point Energía S.A. (collectively, the &quot;Company&quot;). Access to and use of the site implies acceptance of these terms.</p>
 

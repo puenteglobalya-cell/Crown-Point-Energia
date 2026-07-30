@@ -177,8 +177,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         {showSiteChrome && (
           <a className="skip-nav" href="#main-content">
-            <span className="lang-es">Saltar al contenido</span>
-            <span className="lang-en">Skip to content</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>Saltar al contenido</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>Skip to content</span>
           </a>
         )}
         {showSiteChrome && <Header fields={state.fields} show={state.show} lang={lang} theme={theme} />}

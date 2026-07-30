@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getCmsState } from '@/lib/cms'
 import ContactForm from './ContactForm'
 import { UbicacionesMap } from './UbicacionesMap'
+import { getEffectiveLang } from '@/lib/lang'
 
 export const revalidate = 60
 
@@ -14,6 +15,7 @@ export const metadata = {
 export default async function ContactoPage() {
   const s = await getCmsState()
   const f = s.fields
+  const lang = await getEffectiveLang(s.lang as 'es' | 'en')
   const heroImg = f['hero.contacto.img'] || ''
 
   const irName      = f['contact.ir.name']      || 'María Teresa Zappino'
@@ -42,18 +44,18 @@ export default async function ContactoPage() {
       >
         <div className="container">
           <div className="crumbs">
-            <Link href="/"><span className="lang-es">Inicio</span><span className="lang-en">Home</span></Link>
+            <Link href="/"><span className="lang-es" aria-hidden={lang !== 'es'}>Inicio</span><span className="lang-en" aria-hidden={lang !== 'en'}>Home</span></Link>
             <span>/</span>
-            <span><span className="lang-es">Contacto</span><span className="lang-en">Contact</span></span>
+            <span><span className="lang-es" aria-hidden={lang !== 'es'}>Contacto</span><span className="lang-en" aria-hidden={lang !== 'en'}>Contact</span></span>
           </div>
-          <span className="eyebrow"><span className="lang-es">Hablemos</span><span className="lang-en">Let&apos;s talk</span></span>
+          <span className="eyebrow"><span className="lang-es" aria-hidden={lang !== 'es'}>Hablemos</span><span className="lang-en" aria-hidden={lang !== 'en'}>Let&apos;s talk</span></span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es">Estamos para responder.</span>
-            <span className="lang-en">We&apos;re here to answer.</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>Estamos para responder.</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>We&apos;re here to answer.</span>
           </h1>
           <p>
-            <span className="lang-es">Inversores, socios, proveedores o periodistas: te ponemos en contacto con la persona adecuada según tu consulta.</span>
-            <span className="lang-en">Investors, partners, suppliers or journalists: we&apos;ll connect you with the right person for your enquiry.</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>Inversores, socios, proveedores o periodistas: te ponemos en contacto con la persona adecuada según tu consulta.</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>Investors, partners, suppliers or journalists: we&apos;ll connect you with the right person for your enquiry.</span>
           </p>
         </div>
       </section>
@@ -65,8 +67,8 @@ export default async function ContactoPage() {
             {/* Argentina */}
             <div style={{ background: 'var(--surface)', padding: 'var(--s-8) var(--s-6)', display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
               <span style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 700, color: 'var(--cp-green)' }}>
-                <span className="lang-es">Argentina</span>
-                <span className="lang-en">Argentina</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Argentina</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Argentina</span>
               </span>
               <div>
                 <strong style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
@@ -85,8 +87,8 @@ export default async function ContactoPage() {
             {/* Canada */}
             <div style={{ background: 'var(--surface)', padding: 'var(--s-8) var(--s-6)', display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
               <span style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 700, color: 'var(--cp-green)' }}>
-                <span className="lang-es">Canadá</span>
-                <span className="lang-en">Canada</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Canadá</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Canada</span>
               </span>
               <div>
                 <strong style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
@@ -105,8 +107,8 @@ export default async function ContactoPage() {
             {/* Transfer Agent */}
             <div style={{ background: 'var(--surface)', padding: 'var(--s-8) var(--s-6)', display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
               <span style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 700, color: 'var(--cp-green)' }}>
-                <span className="lang-es">Agente de transferencia</span>
-                <span className="lang-en">Transfer agent</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Agente de transferencia</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Transfer agent</span>
               </span>
               <div>
                 <strong style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
@@ -125,20 +127,20 @@ export default async function ContactoPage() {
             {/* IR */}
             <div style={{ background: 'var(--surface)', padding: 'var(--s-8) var(--s-6)', display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
               <span style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 700, color: 'var(--cp-green)' }}>
-                <span className="lang-es">Relaciones con inversores</span>
-                <span className="lang-en">Investor relations</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Relaciones con inversores</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Investor relations</span>
               </span>
               <div>
                 <strong style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
                   {irName}
                 </strong>
                 <span style={{ display: 'block', fontSize: 12, color: 'var(--accent-deep)', letterSpacing: '0.04em', fontWeight: 600, marginBottom: 8 }}>
-                  <span className="lang-es">{irRole}</span>
-                  <span className="lang-en">{f['contact.ir.role_en'] || 'Investor Relations Officer'}</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>{irRole}</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>{f['contact.ir.role_en'] || 'Investor Relations Officer'}</span>
                 </span>
                 <p style={{ fontSize: 13, color: 'var(--fg-soft)', lineHeight: 1.6, margin: 0 }}>
-                  <span className="lang-es">TSXV: CWV</span>
-                  <span className="lang-en">TSXV: CWV</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>TSXV: CWV</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>TSXV: CWV</span>
                 </p>
               </div>
               <a href={`mailto:${irEmail}`} style={{ fontSize: 13, color: 'var(--accent)', overflowWrap: 'anywhere', marginTop: 4 }}>{irEmail}</a>
@@ -172,8 +174,8 @@ export default async function ContactoPage() {
 
             <aside className="contact-info-card">
               <h3 style={{ fontSize: 18, marginBottom: 'var(--s-5)', fontFamily: 'var(--font-display)' }}>
-                <span className="lang-es">Contacto rápido</span>
-                <span className="lang-en">Quick contact</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Contacto rápido</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Quick contact</span>
               </h3>
 
               <div className="info-row">
@@ -186,8 +188,8 @@ export default async function ContactoPage() {
 
               <div className="info-row">
                 <span className="info-key">
-                  <span className="lang-es">Comercialización</span>
-                  <span className="lang-en">Trading</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Comercialización</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Trading</span>
                 </span>
                 <div className="info-val">
                   <a href="mailto:comercial@crownpointenergy.com">comercial@crownpointenergy.com</a>
@@ -196,8 +198,8 @@ export default async function ContactoPage() {
 
               <div className="info-row">
                 <span className="info-key">
-                  <span className="lang-es">Proveedores</span>
-                  <span className="lang-en">Suppliers</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Proveedores</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Suppliers</span>
                 </span>
                 <div className="info-val">
                   <a href="mailto:compras@crownpointenergy.com">compras@crownpointenergy.com</a>
@@ -206,8 +208,8 @@ export default async function ContactoPage() {
 
               <div className="info-row">
                 <span className="info-key">
-                  <span className="lang-es">Recursos Humanos</span>
-                  <span className="lang-en">Human Resources</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Recursos Humanos</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Human Resources</span>
                 </span>
                 <div className="info-val">
                   <a href="mailto:rrhh@crownpointenergy.com">rrhh@crownpointenergy.com</a>
@@ -216,8 +218,8 @@ export default async function ContactoPage() {
 
               <div className="info-row">
                 <span className="info-key">
-                  <span className="lang-es">Argentina</span>
-                  <span className="lang-en">Argentina</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Argentina</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Argentina</span>
                 </span>
                 <div className="info-val">
                   {arAddress.split('\n').map((line, i) => (
@@ -229,8 +231,8 @@ export default async function ContactoPage() {
 
               <div className="info-row">
                 <span className="info-key">
-                  <span className="lang-es">Canadá</span>
-                  <span className="lang-en">Canada</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Canadá</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Canada</span>
                 </span>
                 <div className="info-val">
                   <span style={{ display: 'block', fontWeight: 600, fontSize: 13 }}>Crown Point Energy Inc.</span>
@@ -244,8 +246,8 @@ export default async function ContactoPage() {
 
               <div className="info-row" style={{ borderBottom: 0 }}>
                 <span className="info-key">
-                  <span className="lang-es">Ética</span>
-                  <span className="lang-en">Ethics</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Ética</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Ethics</span>
                 </span>
                 <div className="info-val">
                   <a href={`mailto:${ethicsEmail}`}>{ethicsEmail}</a>

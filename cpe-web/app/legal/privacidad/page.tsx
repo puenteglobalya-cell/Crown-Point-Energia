@@ -1,29 +1,31 @@
 import Link from 'next/link'
+import { getEffectiveLang } from '@/lib/lang'
 
 export const metadata = {
   title: 'Política de privacidad y cookies — Crown Point Energy',
 }
 
-export default function PrivacidadPage() {
+export default async function PrivacidadPage() {
+  const lang = await getEffectiveLang('es')
   return (
     <>
       <section className="page-hero">
         <div className="container">
           <div className="crumbs">
-            <Link href="/"><span className="lang-es">Inicio</span><span className="lang-en">Home</span></Link>
+            <Link href="/"><span className="lang-es" aria-hidden={lang !== 'es'}>Inicio</span><span className="lang-en" aria-hidden={lang !== 'en'}>Home</span></Link>
             <span>/</span>
-            <span><span className="lang-es">Privacidad y cookies</span><span className="lang-en">Privacy &amp; Cookies</span></span>
+            <span><span className="lang-es" aria-hidden={lang !== 'es'}>Privacidad y cookies</span><span className="lang-en" aria-hidden={lang !== 'en'}>Privacy &amp; Cookies</span></span>
           </div>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es">Política de privacidad y cookies</span>
-            <span className="lang-en">Privacy policy &amp; cookies</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>Política de privacidad y cookies</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>Privacy policy &amp; cookies</span>
           </h1>
         </div>
       </section>
 
       <section className="section">
         <div className="container" style={{ maxWidth: 760 }}>
-          <div className="lang-es">
+          <div className="lang-es" aria-hidden={lang !== 'es'}>
             <h2>Datos personales</h2>
             <p>Crown Point Energía S.A. recopila únicamente los datos personales que usted provee voluntariamente a través del formulario de contacto (nombre, email, mensaje). Estos datos se usan exclusivamente para responder su consulta y no se comparten con terceros sin su consentimiento.</p>
 
@@ -38,7 +40,7 @@ export default function PrivacidadPage() {
             <p>Esta política se rige por la Ley 25.326 de Protección de Datos Personales de la República Argentina y sus normas reglamentarias.</p>
           </div>
 
-          <div className="lang-en">
+          <div className="lang-en" aria-hidden={lang !== 'en'}>
             <h2>Personal data</h2>
             <p>Crown Point Energy Inc. (through its Argentine subsidiary Crown Point Energía S.A.) only collects personal data that you voluntarily provide through the contact form (name, email, message). This data is used exclusively to respond to your inquiry and is not shared with third parties without your consent.</p>
 
