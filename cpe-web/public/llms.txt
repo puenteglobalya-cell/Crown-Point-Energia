@@ -1,0 +1,41 @@
+# Crown Point Energy
+
+> Crown Point Energy Inc. (TSXV: CWV) is an Argentine oil & gas company. Its
+> Argentine operating subsidiary, Crown Point Energía S.A., is 100% owned by
+> Crown Point Energy Inc. and 100% Argentine-owned. The company operates its
+> own production across three sedimentary basins in Argentina (Neuquina, San
+> Jorge, Cuyana).
+
+This site is bilingual (Spanish/English). Most pages render both languages in
+the same HTML and toggle visibility with CSS/a cookie — if you're extracting
+text without rendering CSS, expect some duplicated bilingual content in
+headings and body copy.
+
+## Key pages
+
+- [Home](https://crownpointenergy.com/): company overview, current
+  production/reserves figures, latest material-fact filings.
+- [Investors](https://crownpointenergy.com/inversores): financial
+  statements, MD&A, investor presentations, ESTMA reports, shareholder
+  meeting notices, analyst coverage.
+- [Operations](https://crownpointenergy.com/operaciones): operating blocks/
+  concessions, acreage, wells, production mix by basin.
+- [Press releases](https://crownpointenergy.com/comunicados): news releases,
+  also available as [RSS](https://crownpointenergy.com/comunicados/rss.xml).
+- [About](https://crownpointenergy.com/acerca): corporate structure, board,
+  management, strategy.
+- [ESG](https://crownpointenergy.com/esg): environmental, social and
+  governance disclosures.
+- [Careers](https://crownpointenergy.com/carreras): open positions.
+- [Contact](https://crownpointenergy.com/contacto): investor relations and
+  general contact information.
+
+## Notes for automated access
+
+- `/portal/*` and `/admin/*` are private, authenticated systems (shareholder
+  portal and internal admin) — not part of the public site, disallowed in
+  robots.txt, and will not return useful content to an unauthenticated
+  request.
+- The stock quote widget respects an internal visibility toggle; when hidden,
+  `/api/stock/cwv` returns 404 rather than quote data.
+- Full sitemap: [sitemap.xml](https://crownpointenergy.com/sitemap.xml).

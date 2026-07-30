@@ -102,19 +102,19 @@ export default async function HomePage() {
             </div>
             <h1 className="hero-title">
               {heroTitleEs
-                ? <span className="lang-es">{heroTitleEs}</span>
-                : <span className="lang-es">Energía que sostiene<br/>la matriz productiva<br/>argentina.</span>}
+                ? <span className="lang-es" aria-hidden={lang !== 'es'}>{heroTitleEs}</span>
+                : <span className="lang-es" aria-hidden={lang !== 'es'}>Energía que sostiene<br/>la matriz productiva<br/>argentina.</span>}
               {heroTitleEn
-                ? <span className="lang-en">{heroTitleEn}</span>
-                : <span className="lang-en">Energy that sustains<br/>Argentina&apos;s productive<br/>matrix.</span>}
+                ? <span className="lang-en" aria-hidden={lang !== 'en'}>{heroTitleEn}</span>
+                : <span className="lang-en" aria-hidden={lang !== 'en'}>Energy that sustains<br/>Argentina&apos;s productive<br/>matrix.</span>}
             </h1>
             <p className="hero-lede">
               {heroLedeEs
-                ? <span className="lang-es">{heroLedeEs}</span>
-                : <span className="lang-es">Operamos en tres de las cuencas más relevantes del país — producción propia, cartera de proyectos de bajo riesgo y estructura financiera prudente.</span>}
+                ? <span className="lang-es" aria-hidden={lang !== 'es'}>{heroLedeEs}</span>
+                : <span className="lang-es" aria-hidden={lang !== 'es'}>Operamos en tres de las cuencas más relevantes del país — producción propia, cartera de proyectos de bajo riesgo y estructura financiera prudente.</span>}
               {heroLedeEn
-                ? <span className="lang-en">{heroLedeEn}</span>
-                : <span className="lang-en">We operate in three of the country&apos;s most relevant basins — our own production, a low-risk project portfolio and a prudent financial structure.</span>}
+                ? <span className="lang-en" aria-hidden={lang !== 'en'}>{heroLedeEn}</span>
+                : <span className="lang-en" aria-hidden={lang !== 'en'}>We operate in three of the country&apos;s most relevant basins — our own production, a low-risk project portfolio and a prudent financial structure.</span>}
             </p>
             <div className="hero-cta">
               <Link className="btn btn-primary" href="/inversores">
