@@ -3,6 +3,8 @@ import { getEffectiveLang } from '@/lib/lang'
 
 export const metadata = {
   title: 'Avisos legales / Advisories — Crown Point Energy',
+  description: 'Avisos legales, declaraciones prospectivas y glosario de abreviaturas técnicas de Crown Point Energy.',
+  alternates: { canonical: 'https://crownpointenergy.com/legal/avisos' },
 }
 
 const abbrevs = [

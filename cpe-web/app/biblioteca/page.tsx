@@ -5,6 +5,13 @@ import BibliotecaSearch from './BibliotecaSearch'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = {
+  title: 'Virtual Room | Crown Point Energy',
+  description: 'Sala de documentos para inversores de Crown Point Energy. Acceso restringido.',
+  alternates: { canonical: 'https://crownpointenergy.com/biblioteca' },
+  robots: { index: false, follow: false },
+}
+
 type Doc = {
   id: string
   nombre: string

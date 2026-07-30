@@ -4,6 +4,13 @@ import { getEffectiveLang } from '@/lib/lang'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = {
+  title: 'Buscar | Crown Point Energy',
+  description: 'Buscá comunicados, operaciones y documentos de Crown Point Energy.',
+  alternates: { canonical: 'https://crownpointenergy.com/buscar' },
+  robots: { index: false, follow: true },
+}
+
 type Result = { title: string; snippet: string; href: string; kind: string }
 
 async function search(q: string): Promise<Result[]> {

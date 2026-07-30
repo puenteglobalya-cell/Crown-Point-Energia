@@ -3,6 +3,8 @@ import { getEffectiveLang } from '@/lib/lang'
 
 export const metadata = {
   title: 'Términos y condiciones — Crown Point Energy',
+  description: 'Términos y condiciones de uso del sitio de Crown Point Energy.',
+  alternates: { canonical: 'https://crownpointenergy.com/legal/terminos' },
 }
 
 export default async function TerminosPage() {

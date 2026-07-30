@@ -76,6 +76,12 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://crownpointenergy.com',
   },
+  // Staging (Vercel domain) must not be indexed while crownpointenergy.com
+  // is the canonical. Set NEXT_PUBLIC_SITE_LIVE=true in Vercel env vars the
+  // day DNS migrates to the final domain to lift this.
+  robots: process.env.NEXT_PUBLIC_SITE_LIVE === 'true'
+    ? { index: true, follow: true }
+    : { index: false, follow: false },
   openGraph: {
     type: 'website',
     siteName: 'Crown Point Energy',
