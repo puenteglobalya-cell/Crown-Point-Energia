@@ -3,6 +3,7 @@ import { getCmsState } from '@/lib/cms'
 import ContactForm from './ContactForm'
 import { UbicacionesMap } from './UbicacionesMap'
 import { getEffectiveLang } from '@/lib/lang'
+import ObfuscatedEmail from '@/components/ObfuscatedEmail'
 
 export const revalidate = 60
 
@@ -80,7 +81,7 @@ export default async function ContactoPage() {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
                 <a href={`tel:${arPhone.replace(/\s/g,'')}`} style={{ fontSize: 13, color: 'var(--fg-soft)' }}>{arPhone}</a>
-                <a href={`mailto:${arEmail}`} style={{ fontSize: 11, color: 'var(--accent)', overflowWrap: 'anywhere' }}>{arEmail}</a>
+                <ObfuscatedEmail user={arEmail.split('@')[0]} domain={arEmail.split('@')[1]} style={{ fontSize: 11, color: 'var(--accent)', overflowWrap: 'anywhere' }} />
               </div>
             </div>
 
@@ -100,7 +101,7 @@ export default async function ContactoPage() {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
                 <a href={`tel:${caPhone.replace(/\s/g,'')}`} style={{ fontSize: 13, color: 'var(--fg-soft)' }}>{caPhone}</a>
-                <a href={`mailto:${caEmail}`} style={{ fontSize: 13, color: 'var(--accent)', overflowWrap: 'anywhere' }}>{caEmail}</a>
+                <ObfuscatedEmail user={caEmail.split('@')[0]} domain={caEmail.split('@')[1]} style={{ fontSize: 13, color: 'var(--accent)', overflowWrap: 'anywhere' }} />
               </div>
             </div>
 
@@ -143,7 +144,7 @@ export default async function ContactoPage() {
                   <span className="lang-en" aria-hidden={lang !== 'en'}>TSXV: CWV</span>
                 </p>
               </div>
-              <a href={`mailto:${irEmail}`} style={{ fontSize: 13, color: 'var(--accent)', overflowWrap: 'anywhere', marginTop: 4 }}>{irEmail}</a>
+              <ObfuscatedEmail user={irEmail.split('@')[0]} domain={irEmail.split('@')[1]} style={{ fontSize: 13, color: 'var(--accent)', overflowWrap: 'anywhere', marginTop: 4 }} />
             </div>
           </div>
 
@@ -182,7 +183,7 @@ export default async function ContactoPage() {
                 <span className="info-key">Investor Relations</span>
                 <div className="info-val">
                   <span style={{ display: 'block', fontWeight: 600, fontSize: 13 }}>{irName}</span>
-                  <a href={`mailto:${irEmail}`}>{irEmail}</a>
+                  <ObfuscatedEmail user={irEmail.split('@')[0]} domain={irEmail.split('@')[1]} />
                 </div>
               </div>
 
@@ -192,7 +193,7 @@ export default async function ContactoPage() {
                   <span className="lang-en" aria-hidden={lang !== 'en'}>Trading</span>
                 </span>
                 <div className="info-val">
-                  <a href="mailto:comercial@crownpointenergy.com">comercial@crownpointenergy.com</a>
+                  <ObfuscatedEmail user="comercial" domain="crownpointenergy.com" />
                 </div>
               </div>
 
@@ -202,7 +203,7 @@ export default async function ContactoPage() {
                   <span className="lang-en" aria-hidden={lang !== 'en'}>Suppliers</span>
                 </span>
                 <div className="info-val">
-                  <a href="mailto:compras@crownpointenergy.com">compras@crownpointenergy.com</a>
+                  <ObfuscatedEmail user="compras" domain="crownpointenergy.com" />
                 </div>
               </div>
 
@@ -212,7 +213,7 @@ export default async function ContactoPage() {
                   <span className="lang-en" aria-hidden={lang !== 'en'}>Human Resources</span>
                 </span>
                 <div className="info-val">
-                  <a href="mailto:rrhh@crownpointenergy.com">rrhh@crownpointenergy.com</a>
+                  <ObfuscatedEmail user="rrhh" domain="crownpointenergy.com" />
                 </div>
               </div>
 
@@ -240,7 +241,7 @@ export default async function ContactoPage() {
                     <span key={i}>{line}{i < caAddress.split('\n').length - 1 ? <br/> : null}</span>
                   ))}
                   <br/><span style={{ fontSize: 13, color: 'var(--fg-soft)' }}>{caPhone}</span>
-                  <br/><a href={`mailto:${caEmail}`}>{caEmail}</a>
+                  <br/><ObfuscatedEmail user={caEmail.split('@')[0]} domain={caEmail.split('@')[1]} />
                 </div>
               </div>
 
@@ -250,7 +251,7 @@ export default async function ContactoPage() {
                   <span className="lang-en" aria-hidden={lang !== 'en'}>Ethics</span>
                 </span>
                 <div className="info-val">
-                  <a href={`mailto:${ethicsEmail}`}>{ethicsEmail}</a>
+                  <ObfuscatedEmail user={ethicsEmail.split('@')[0]} domain={ethicsEmail.split('@')[1]} />
                   <br/><span style={{ fontSize: 13, color: 'var(--fg-soft)' }}>{ethicsPhone}</span>
                 </div>
               </div>

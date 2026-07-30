@@ -130,11 +130,11 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
               <span className="live-dot"></span>TSXV: CWV
             </span>
             <div className="ticker-cell">
-              <span className="key"><span className="lang-es">Precio</span><span className="lang-en">Price</span></span>
+              <span className="key"><span className="lang-es" aria-hidden={lang !== 'es'}>Precio</span><span className="lang-en" aria-hidden={lang !== 'en'}>Price</span></span>
               <span className="val">{displayPrice}</span>
             </div>
             <div className="ticker-cell">
-              <span className="key"><span className="lang-es">Variación</span><span className="lang-en">Change</span></span>
+              <span className="key"><span className="lang-es" aria-hidden={lang !== 'es'}>Variación</span><span className="lang-en" aria-hidden={lang !== 'en'}>Change</span></span>
               <span className={`val delta ${displayIsUp ? 'pos' : 'neg'}`}>{displayDelta}</span>
             </div>
             <div className="ticker-cell">
@@ -142,13 +142,13 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
               <span className="val" data-cpe-field="stock.beta">{beta}</span>
             </div>
             <div className="ticker-cell">
-              <span className="key"><span className="lang-es">Volumen</span><span className="lang-en">Volume</span></span>
+              <span className="key"><span className="lang-es" aria-hidden={lang !== 'es'}>Volumen</span><span className="lang-en" aria-hidden={lang !== 'en'}>Volume</span></span>
               <span className="val" data-cpe-field="stock.vol30">{vol30}</span>
             </div>
             <div className="ticker-spacer"></div>
             <span className="ticker-cell" style={{ opacity: 0.6 }}>
-              <span className="key"><span className="lang-es">Actualizado</span><span className="lang-en">Updated</span></span>
-              <span className="val"><span className="lang-es">Cierre&nbsp;anterior</span><span className="lang-en">Prior&nbsp;close</span></span>
+              <span className="key"><span className="lang-es" aria-hidden={lang !== 'es'}>Actualizado</span><span className="lang-en" aria-hidden={lang !== 'en'}>Updated</span></span>
+              <span className="val"><span className="lang-es" aria-hidden={lang !== 'es'}>Cierre&nbsp;anterior</span><span className="lang-en" aria-hidden={lang !== 'en'}>Prior&nbsp;close</span></span>
             </span>
           </div>
         </div>
@@ -187,21 +187,21 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
                         <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2"/>
                         <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                       </svg>
-                      <span className="lang-es">{it.es}</span>
-                      <span className="lang-en">{it.en}</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>{it.es}</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>{it.en}</span>
                     </span>
                     <div className="nav-submenu">
                       {it.menu.map((m) => (
                         'href' in m && m.href ? (
                           (m as { href: string; external?: boolean }).external ? (
                             <a key={`${m.href}-${m.es}`} href={m.href} target="_blank" rel="noreferrer noopener">
-                              <span className="lang-es">{m.es}</span>
-                              <span className="lang-en">{m.en}</span>
+                              <span className="lang-es" aria-hidden={lang !== 'es'}>{m.es}</span>
+                              <span className="lang-en" aria-hidden={lang !== 'en'}>{m.en}</span>
                             </a>
                           ) : (
                             <Link key={`${m.href}-${m.es}`} href={m.href}>
-                              <span className="lang-es">{m.es}</span>
-                              <span className="lang-en">{m.en}</span>
+                              <span className="lang-es" aria-hidden={lang !== 'es'}>{m.es}</span>
+                              <span className="lang-en" aria-hidden={lang !== 'en'}>{m.en}</span>
                             </Link>
                           )
                         ) : null
@@ -211,20 +211,20 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
                 ) : it.menu ? (
                   <>
                     <span>
-                      <span className="lang-es">{it.es}</span>
-                      <span className="lang-en">{it.en}</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>{it.es}</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>{it.en}</span>
                     </span>
                     <div className="nav-submenu">
                       {it.menu.map((m, mi) => (
                         'divider' in m ? (
                           <span key={`d${mi}`} className="nav-submenu-divider">
-                            <span className="lang-es">{m.es}</span>
-                            <span className="lang-en">{m.en}</span>
+                            <span className="lang-es" aria-hidden={lang !== 'es'}>{m.es}</span>
+                            <span className="lang-en" aria-hidden={lang !== 'en'}>{m.en}</span>
                           </span>
                         ) : (
                           <Link key={m.href} href={m.href}>
-                            <span className="lang-es">{m.es}</span>
-                            <span className="lang-en">{m.en}</span>
+                            <span className="lang-es" aria-hidden={lang !== 'es'}>{m.es}</span>
+                            <span className="lang-en" aria-hidden={lang !== 'en'}>{m.en}</span>
                           </Link>
                         )
                       ))}
@@ -245,13 +245,13 @@ export default function Header({ fields, show, lang, theme: initialTheme }: Prop
                       <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2"/>
                       <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                     </svg>
-                    <span className="lang-es">{it.es}</span>
-                    <span className="lang-en">{it.en}</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>{it.es}</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>{it.en}</span>
                   </Link>
                 ) : (
                   <Link href={it.href} style={{ display: 'block', margin: '-10px -14px', padding: '10px 14px' }}>
-                    <span className="lang-es">{it.es}</span>
-                    <span className="lang-en">{it.en}</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>{it.es}</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>{it.en}</span>
                   </Link>
                 )}
               </div>

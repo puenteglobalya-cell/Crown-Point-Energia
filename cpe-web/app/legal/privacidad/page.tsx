@@ -3,6 +3,8 @@ import { getEffectiveLang } from '@/lib/lang'
 
 export const metadata = {
   title: 'Política de privacidad y cookies — Crown Point Energy',
+  description: 'Cómo Crown Point Energy trata datos personales y cookies en su sitio web.',
+  alternates: { canonical: 'https://crownpointenergy.com/legal/privacidad' },
 }
 
 export default async function PrivacidadPage() {

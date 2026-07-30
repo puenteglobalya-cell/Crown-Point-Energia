@@ -8,6 +8,7 @@ import { DroneHud } from '@/components/DroneHud'
 import { HeroVideoPip } from '@/components/HeroVideoPip'
 import { sumWellsFromBlocks, fetchOperationsBlocks } from '@/lib/content-fetch'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
+import { PRODUCTION_1Q2026, productionMixLabel } from '@/lib/production'
 
 export const revalidate = 60
 
@@ -49,9 +50,9 @@ export default async function HomePage() {
   const vol30  = f['stock.vol30']  || '14,210'
   const cap    = f['stock.cap']    || '$40.7M'
 
-  const kpiProdVal   = f['kpi.production.value'] || '8,672'
-  const kpiProdUnit  = f['kpi.production.unit']  || 'boe/d'
-  const kpiProdDelta = f['kpi.production.delta'] || '1Q 2026'
+  const kpiProdVal   = f['kpi.production.value'] || PRODUCTION_1Q2026.avgBoePerDay
+  const kpiProdUnit  = f['kpi.production.unit']  || PRODUCTION_1Q2026.unit
+  const kpiProdDelta = f['kpi.production.delta'] || PRODUCTION_1Q2026.period
   const kpiResVal    = f['kpi.reserves.value']   || '71.580'
   const kpiResUnit   = f['kpi.reserves.unit']    || 'MMboe'
   const kpiResDelta  = f['kpi.reserves.delta']   || '2P Sproule ERCE'
@@ -92,7 +93,7 @@ export default async function HomePage() {
             <div className="hero-veil"></div>
           </div>
           <DroneHud lang={lang} />
-          {heroVideo && <HeroVideoPip src={heroVideo} />}
+          {heroVideo && <HeroVideoPip src={heroVideo} lang={lang} />}
           <div className="container hero-content">
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
@@ -222,8 +223,8 @@ export default async function HomePage() {
                 </div>
                 <span className="kpi-meta">
                   <span className="badge" data-cpe-field="kpi.production.delta">{kpiProdDelta}</span>
-                  <span className="lang-es" aria-hidden={lang !== 'es'}>86% petróleo · 14% gas</span>
-                  <span className="lang-en" aria-hidden={lang !== 'en'}>86% oil · 14% gas</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>{productionMixLabel('es')}</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>{productionMixLabel('en')}</span>
                 </span>
               </div>
               <div className="kpi">

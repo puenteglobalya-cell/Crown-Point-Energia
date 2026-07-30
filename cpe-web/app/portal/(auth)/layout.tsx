@@ -7,6 +7,13 @@ import SessionGuard from '@/components/SessionGuard'
 import FirstLoginBanner from '@/components/FirstLoginBanner'
 import '@/styles/portal.css'
 
+export const metadata = {
+  title: 'Portal de inversores | Crown Point Energy',
+  description: 'Portal privado de reportes e información para inversores de Crown Point Energy.',
+  alternates: { canonical: 'https://crownpointenergy.com/portal' },
+  robots: { index: false, follow: false },
+}
+
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const { user, role, permissions } = await getCurrentUserAndRole()
 

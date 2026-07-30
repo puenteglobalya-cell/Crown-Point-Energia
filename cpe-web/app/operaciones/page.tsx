@@ -7,6 +7,7 @@ import { fetchOperationsBlocks, fetchBlockPhotosBySlug, sumWellsFromBlocks } fro
 import ScrollSpy from '@/components/ScrollSpy'
 import PhotoCarousel from '@/components/PhotoCarousel'
 import { getEffectiveLang } from '@/lib/lang'
+import { PRODUCTION_1Q2026 } from '@/lib/production'
 
 export const revalidate = 60
 
@@ -100,12 +101,12 @@ export default async function OperacionesPage() {
                 metaEs: `+${wells.inyectores} inyectores en operación`,
                 metaEn: `+${wells.inyectores} injectors in operation` },
               { labelEs: 'Producción promedio', labelEn: 'Average production',
-                val: f['ops.kpi.production'] || '8,672', unit: 'boe/d',
+                val: f['ops.kpi.production'] || PRODUCTION_1Q2026.avgBoePerDay, unit: PRODUCTION_1Q2026.unit,
                 metaEs: f['ops.kpi.production.meta'] || 'Q1 2026 · neto',
                 metaEn: fe['ops.kpi.production.meta'] || 'Q1 2026 · net' },
               { labelEs: 'Mix producción', labelEn: 'Production mix',
-                val: f['ops.kpi.mix'] || '16/84', unitEs: 'gas / líquidos', unitEn: 'gas / liquids',
-                metaEs: 'Balance gas/oil', metaEn: 'Gas/oil balance' },
+                val: f['ops.kpi.mix'] || `${PRODUCTION_1Q2026.oilPct}/${PRODUCTION_1Q2026.gasPct}`, unitEs: 'petróleo / gas', unitEn: 'oil / gas',
+                metaEs: 'Balance petróleo/gas', metaEn: 'Oil/gas balance' },
             ].map((k, i) => (
               <div className="kpi" key={i}>
                 <span className="kpi-label"><span className="lang-es" aria-hidden={lang !== 'es'}>{k.labelEs}</span><span className="lang-en" aria-hidden={lang !== 'en'}>{k.labelEn}</span></span>

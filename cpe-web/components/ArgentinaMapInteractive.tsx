@@ -20,9 +20,11 @@ const COMMODITY_LABEL: Record<MapBlockData['commodity'], { es: string; en: strin
 export default function ArgentinaMapInteractive({
   blocks,
   style,
+  lang = 'es',
 }: {
   blocks: MapBlockData[]
   style?: CSSProperties
+  lang?: 'es' | 'en'
 }) {
   const [activeId, setActiveId] = useState<string | null>(null)
   const activeBlock = blocks.find(b => b.id === activeId) ?? null
@@ -58,8 +60,8 @@ export default function ArgentinaMapInteractive({
         {(['oil', 'gas', 'mixed'] as const).map(t => (
           <span key={t} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 10, height: 10, borderRadius: 2, background: COMMODITY_LABEL[t].color, display: 'inline-block', flexShrink: 0 }}></span>
-            <span className="lang-es">{COMMODITY_LABEL[t].es}</span>
-            <span className="lang-en">{COMMODITY_LABEL[t].en}</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>{COMMODITY_LABEL[t].es}</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>{COMMODITY_LABEL[t].en}</span>
           </span>
         ))}
       </div>
@@ -69,8 +71,8 @@ export default function ArgentinaMapInteractive({
       </div>
 
       <p className="map-hint">
-        <span className="lang-es">Hacé clic en un bloque para ver detalles</span>
-        <span className="lang-en">Click a block to view details</span>
+        <span className="lang-es" aria-hidden={lang !== 'es'}>Hacé clic en un bloque para ver detalles</span>
+        <span className="lang-en" aria-hidden={lang !== 'en'}>Click a block to view details</span>
       </p>
 
       {activeBlock && commodity && (
@@ -90,8 +92,8 @@ export default function ArgentinaMapInteractive({
                 padding: '3px 10px', borderRadius: 'var(--r-pill)',
               }}>
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: commodity.color, display: 'inline-block' }}></span>
-                <span className="lang-es">{commodity.es}</span>
-                <span className="lang-en">{commodity.en}</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>{commodity.es}</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>{commodity.en}</span>
               </span>
             </div>
             <button
@@ -112,12 +114,12 @@ export default function ArgentinaMapInteractive({
                 <div className="map-detail-stat" key={i}>
                   <div className="map-detail-stat-label">
                     {labelStr ?? (
-                      <><span className="lang-es">{(label as { es: string }).es}</span><span className="lang-en">{(label as { en: string }).en}</span></>
+                      <><span className="lang-es" aria-hidden={lang !== 'es'}>{(label as { es: string }).es}</span><span className="lang-en" aria-hidden={lang !== 'en'}>{(label as { en: string }).en}</span></>
                     )}
                   </div>
                   <div className="map-detail-stat-val">
                     {valStr ?? (
-                      <><span className="lang-es">{(val as { es: string }).es}</span><span className="lang-en">{(val as { en: string }).en}</span></>
+                      <><span className="lang-es" aria-hidden={lang !== 'es'}>{(val as { es: string }).es}</span><span className="lang-en" aria-hidden={lang !== 'en'}>{(val as { en: string }).en}</span></>
                     )}
                   </div>
                 </div>
