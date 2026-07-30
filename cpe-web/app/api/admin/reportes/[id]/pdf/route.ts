@@ -29,6 +29,18 @@ const PRINT_FIX_CSS = `
   /* facturación */
   .filter-bar, .fiscal-filter-bar, .export-bar { display: none !important; }
   .section { break-inside: avoid !important; }
+  /* Tabbed reports (e.g. modelo comercial): the PDF must contain every tab,
+     not just whichever one was active on screen. Force all tab panes
+     visible and stack them with a page break + heading between each. */
+  .tabs { display: none !important; }
+  .content { display: block !important; break-before: page !important; padding-top: 24px !important; }
+  .content:first-of-type { break-before: avoid !important; }
+  .content::before {
+    content: attr(data-pdf-title);
+    display: block; font-size: 16px; font-weight: 700; color: #1b3f6e;
+    text-transform: uppercase; letter-spacing: .04em;
+    margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #1b3f6e;
+  }
 </style>`
 
 export async function GET(
