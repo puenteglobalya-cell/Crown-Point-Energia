@@ -1,5 +1,8 @@
 import { createServerClient, createBrowserClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { AUTH_COOKIE_OPTIONS } from '@/lib/auth-cookie-options'
+
+export { AUTH_COOKIE_OPTIONS }
 
 type CookieEntry = { name: string; value: string; options?: CookieOptions }
 
@@ -9,6 +12,7 @@ export function createSupabaseServerClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: AUTH_COOKIE_OPTIONS,
       cookies: {
         getAll() { return cookieStore.getAll() },
         setAll(toSet: CookieEntry[]) {
@@ -34,6 +38,7 @@ export function createSupabaseServerAdminClient() {
 export function createSupabaseBrowserClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookieOptions: AUTH_COOKIE_OPTIONS }
   )
 }
