@@ -10,8 +10,10 @@ export async function POST(req: NextRequest) {
 
   // Public, pre-auth endpoint that triggers an admin.listUsers() call — rate
   // limit per IP so it can't be used to run up cost/load by hammering it.
+  // Sized for many real users behind one shared office IP, same reasoning
+  // as portal-login's limit.
   const ip = getClientIp(req)
-  if (!await checkRateLimit(`webauthn-login-options:${ip}`, 20, 5 * 60 * 1000)) {
+  if (!await checkRateLimit(`webauthn-login-options:${ip}`, 40, 5 * 60 * 1000)) {
     return NextResponse.json({ error: 'Demasiados intentos. Esperá unos minutos.' }, { status: 429 })
   }
 

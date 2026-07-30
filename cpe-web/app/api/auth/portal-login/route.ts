@@ -19,8 +19,12 @@ export async function POST(req: NextRequest) {
   // per-account lockout (covers repeated guesses against one email) — both
   // independent of Supabase's own internal rate limiting, and both
   // persisted server-side so they survive across serverless cold starts.
+  // The IP limit is deliberately a loose net, not the precise defense — many
+  // real users can share one public IP (office network, corporate VPN), so
+  // it's sized for a ~200-300 user org rather than a single person, and the
+  // per-account lockout below is what actually stops a targeted guess attack.
   const ip = getClientIp(req)
-  if (!await checkRateLimit(`portal-login:${ip}`, 15, 15 * 60 * 1000)) {
+  if (!await checkRateLimit(`portal-login:${ip}`, 40, 15 * 60 * 1000)) {
     return NextResponse.json({ error: LOCKED_ERROR }, { status: 429 })
   }
 
