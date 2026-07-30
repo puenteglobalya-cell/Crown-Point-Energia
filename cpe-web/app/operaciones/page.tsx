@@ -6,6 +6,7 @@ import { cmsLineBreaks } from '@/lib/cms-html'
 import { fetchOperationsBlocks, fetchBlockPhotosBySlug, sumWellsFromBlocks } from '@/lib/content-fetch'
 import ScrollSpy from '@/components/ScrollSpy'
 import PhotoCarousel from '@/components/PhotoCarousel'
+import { getEffectiveLang } from '@/lib/lang'
 
 export const revalidate = 60
 
@@ -47,6 +48,7 @@ export default async function OperacionesPage() {
 
   const f = s.fields
   const fe = s.fieldsEn
+  const lang = await getEffectiveLang(s.lang as 'es' | 'en')
   const heroImg = f['hero.operaciones.img'] || ''
 
   const mapBlocks: MapBlockData[] = blocks.map(b => ({
@@ -70,18 +72,18 @@ export default async function OperacionesPage() {
       >
         <div className="container">
           <div className="crumbs">
-            <Link href="/"><span className="lang-es">Inicio</span><span className="lang-en">Home</span></Link>
+            <Link href="/"><span className="lang-es" aria-hidden={lang !== 'es'}>Inicio</span><span className="lang-en" aria-hidden={lang !== 'en'}>Home</span></Link>
             <span>/</span>
-            <span><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
+            <span><span className="lang-es" aria-hidden={lang !== 'es'}>Operaciones</span><span className="lang-en" aria-hidden={lang !== 'en'}>Operations</span></span>
           </div>
-          <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
+          <span className="eyebrow"><span className="lang-es" aria-hidden={lang !== 'es'}>Operaciones</span><span className="lang-en" aria-hidden={lang !== 'en'}>Operations</span></span>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.operaciones.h1'] || 'Ocho concesiones.<br/>Tres cuencas.<br/>Un país.') }} />
-            <span className="lang-en" dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.operaciones.h1'] || 'Eight concessions.<br/>Three basins.<br/>One country.') }} />
+            <span className="lang-es" aria-hidden={lang !== 'es'} dangerouslySetInnerHTML={{ __html: cmsLineBreaks(f['page.operaciones.h1'] || 'Ocho concesiones.<br/>Tres cuencas.<br/>Un país.') }} />
+            <span className="lang-en" aria-hidden={lang !== 'en'} dangerouslySetInnerHTML={{ __html: cmsLineBreaks(fe['page.operaciones.h1'] || 'Eight concessions.<br/>Three basins.<br/>One country.') }} />
           </h1>
           <p>
-            <span className="lang-es">{f['page.operaciones.lede'] || 'Una cartera diversificada de áreas productivas y exploratorias, distribuidas estratégicamente entre el norte y el sur de Argentina.'}</span>
-            <span className="lang-en">{fe['page.operaciones.lede'] || 'A diversified portfolio of producing assets with development and exploration upside, strategically distributed across central and southern Argentina.'}</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>{f['page.operaciones.lede'] || 'Una cartera diversificada de áreas productivas y exploratorias, distribuidas estratégicamente entre el norte y el sur de Argentina.'}</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>{fe['page.operaciones.lede'] || 'A diversified portfolio of producing assets with development and exploration upside, strategically distributed across central and southern Argentina.'}</span>
           </p>
         </div>
       </section>
@@ -106,14 +108,14 @@ export default async function OperacionesPage() {
                 metaEs: 'Balance gas/oil', metaEn: 'Gas/oil balance' },
             ].map((k, i) => (
               <div className="kpi" key={i}>
-                <span className="kpi-label"><span className="lang-es">{k.labelEs}</span><span className="lang-en">{k.labelEn}</span></span>
+                <span className="kpi-label"><span className="lang-es" aria-hidden={lang !== 'es'}>{k.labelEs}</span><span className="lang-en" aria-hidden={lang !== 'en'}>{k.labelEn}</span></span>
                 <div>
                   <span className="kpi-value num">{k.val}</span>
                   {k.unit && <span className="kpi-unit">{k.unit}</span>}
-                  {k.unitEs && <span className="kpi-unit"><span className="lang-es">{k.unitEs}</span><span className="lang-en">{k.unitEn}</span></span>}
+                  {k.unitEs && <span className="kpi-unit"><span className="lang-es" aria-hidden={lang !== 'es'}>{k.unitEs}</span><span className="lang-en" aria-hidden={lang !== 'en'}>{k.unitEn}</span></span>}
                 </div>
                 <span className="kpi-meta">
-                  {k.metaEs && <><span className="lang-es">{k.metaEs}</span><span className="lang-en">{k.metaEn}</span></>}
+                  {k.metaEs && <><span className="lang-es" aria-hidden={lang !== 'es'}>{k.metaEs}</span><span className="lang-en" aria-hidden={lang !== 'en'}>{k.metaEn}</span></>}
                 </span>
               </div>
             ))}
@@ -125,24 +127,24 @@ export default async function OperacionesPage() {
         <div className="container">
           <div className="two-col">
             <aside className="left-rail">
-              <h4><span className="lang-es">Bloques</span><span className="lang-en">Blocks</span></h4>
+              <h4><span className="lang-es" aria-hidden={lang !== 'es'}>Bloques</span><span className="lang-en" aria-hidden={lang !== 'en'}>Blocks</span></h4>
               <p style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.5, margin: '4px 0 12px' }}>
-                <span className="lang-es">{blocks.length} bloques · 8 concesiones agrupadas</span>
-                <span className="lang-en">{blocks.length} blocks · 8 grouped concessions</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>{blocks.length} bloques · 8 concesiones agrupadas</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>{blocks.length} blocks · 8 grouped concessions</span>
               </p>
               <nav>
-                <a href="#mapa" className="active"><span className="lang-es">Mapa general</span><span className="lang-en">Map overview</span></a>
+                <a href="#mapa" className="active"><span className="lang-es" aria-hidden={lang !== 'es'}>Mapa general</span><span className="lang-en" aria-hidden={lang !== 'en'}>Map overview</span></a>
                 {explotacionBlocks.length > 0 && (
                   <span className="rail-section-label">
-                    <span className="lang-es">Explotación</span>
-                    <span className="lang-en">Production</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Explotación</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Production</span>
                   </span>
                 )}
                 {[...explotacionBlocks, ...otherBlocks].map(b => <a href={`#${b.slug}`} key={b.slug}>{b.titulo}</a>)}
                 {exploracionBlocks.length > 0 && (
                   <span className="rail-section-label">
-                    <span className="lang-es">Exploración</span>
-                    <span className="lang-en">Exploration</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Exploración</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Exploration</span>
                   </span>
                 )}
                 {exploracionBlocks.map(b => <a href={`#${b.slug}`} key={b.slug}>{b.titulo}</a>)}
@@ -150,11 +152,11 @@ export default async function OperacionesPage() {
             </aside>
             <main>
               <div className="section-block" id="mapa">
-                <span className="eyebrow"><span className="lang-es">Mapa de operaciones</span><span className="lang-en">Operations map</span></span>
-                <h2 style={{ marginTop: 8 }}><span className="lang-es">Dónde operamos.</span><span className="lang-en">Where we operate.</span></h2>
+                <span className="eyebrow"><span className="lang-es" aria-hidden={lang !== 'es'}>Mapa de operaciones</span><span className="lang-en" aria-hidden={lang !== 'en'}>Operations map</span></span>
+                <h2 style={{ marginTop: 8 }}><span className="lang-es" aria-hidden={lang !== 'es'}>Dónde operamos.</span><span className="lang-en" aria-hidden={lang !== 'en'}>Where we operate.</span></h2>
                 <p className="lede">
-                  <span className="lang-es">Nuestros bloques se distribuyen entre Mendoza, Chubut y Santa Cruz, en tres cuencas históricamente productoras.</span>
-                  <span className="lang-en">Our blocks span Mendoza, Chubut and Santa Cruz across three historically producing basins.</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Nuestros bloques se distribuyen entre Mendoza, Chubut y Santa Cruz, en tres cuencas históricamente productoras.</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Our blocks span Mendoza, Chubut and Santa Cruz across three historically producing basins.</span>
                 </p>
                 <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: 'var(--s-6) var(--s-4)', marginTop: 'var(--s-6)', overflow: 'hidden' }}>
                   <MapSection blocks={mapBlocks} style={{ maxHeight: 760, margin: '0 auto' }} />
@@ -165,12 +167,12 @@ export default async function OperacionesPage() {
               {[...explotacionBlocks, ...otherBlocks].length > 0 && (
                 <div className="ops-section-header" id="explotacion">
                   <span className="eyebrow" style={{ color: 'var(--cp-green)' }}>
-                    <span className="lang-es">Explotación</span>
-                    <span className="lang-en">Production</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Explotación</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Production</span>
                   </span>
                   <h2 style={{ marginTop: 6 }}>
-                    <span className="lang-es">Áreas productivas</span>
-                    <span className="lang-en">Producing areas</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Áreas productivas</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Producing areas</span>
                   </h2>
                 </div>
               )}
@@ -187,8 +189,8 @@ export default async function OperacionesPage() {
                     <span className="eyebrow">{b.eyebrow}</span>
                     <h2 style={{ marginTop: 8 }}>{b.titulo}</h2>
                     <p className="lede">
-                      <span className="lang-es">{b.lede_es}</span>
-                      <span className="lang-en">{b.lede_en}</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>{b.lede_es}</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>{b.lede_en}</span>
                     </p>
 
                     {photos.length > 0 && (
@@ -206,21 +208,21 @@ export default async function OperacionesPage() {
                     )}
                     {blockMap && (
                       <figcaption style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '6px 0 0', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
-                        <span className="lang-es">Mapa de ubicación</span>
-                        <span className="lang-en">Location map</span>
+                        <span className="lang-es" aria-hidden={lang !== 'es'}>Mapa de ubicación</span>
+                        <span className="lang-en" aria-hidden={lang !== 'en'}>Location map</span>
                       </figcaption>
                     )}
 
                     <div className="block-card" style={{ borderTop: `3px solid ${comm.color}` }}>
                       <header className="block-card-hd">
                         <h3>
-                          <span className="lang-es">{b.card_title_es}</span>
-                          <span className="lang-en">{b.card_title_en}</span>
+                          <span className="lang-es" aria-hidden={lang !== 'es'}>{b.card_title_es}</span>
+                          <span className="lang-en" aria-hidden={lang !== 'en'}>{b.card_title_en}</span>
                         </h3>
                         <div className="chips">
                           <span className="chip" style={{ background: `${comm.color}20`, color: comm.color, fontWeight: 600 }}>
-                            <span className="lang-es">{comm.es}</span>
-                            <span className="lang-en">{comm.en}</span>
+                            <span className="lang-es" aria-hidden={lang !== 'es'}>{comm.es}</span>
+                            <span className="lang-en" aria-hidden={lang !== 'en'}>{comm.en}</span>
                           </span>
                           {b.chips.map((chip, ci) => (
                             <span className="chip" key={ci}>{chip}</span>
@@ -231,8 +233,8 @@ export default async function OperacionesPage() {
                         <div>
                           {b.body_es.map((para, pi) => (
                             <p key={pi}>
-                              <span className="lang-es">{para}</span>
-                              <span className="lang-en">{b.body_en[pi] ?? ''}</span>
+                              <span className="lang-es" aria-hidden={lang !== 'es'}>{para}</span>
+                              <span className="lang-en" aria-hidden={lang !== 'en'}>{b.body_en[pi] ?? ''}</span>
                             </p>
                           ))}
                         </div>
@@ -240,8 +242,8 @@ export default async function OperacionesPage() {
                           {b.stats.map((stat, si) => (
                             <div key={si}>
                               <span>
-                                <span className="lang-es">{stat.label_es}</span>
-                                <span className="lang-en">{stat.label_en}</span>
+                                <span className="lang-es" aria-hidden={lang !== 'es'}>{stat.label_es}</span>
+                                <span className="lang-en" aria-hidden={lang !== 'en'}>{stat.label_en}</span>
                               </span>
                               <span>{stat.val}</span>
                             </div>
@@ -259,12 +261,12 @@ export default async function OperacionesPage() {
                   style={{ borderTop: '1px solid var(--rule)', paddingTop: 'var(--s-8)', marginTop: 'var(--s-4)' }}
                 >
                   <span className="eyebrow" style={{ color: 'var(--cp-bordeaux, #7a2a3a)' }}>
-                    <span className="lang-es">Exploración</span>
-                    <span className="lang-en">Exploration</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Exploración</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Exploration</span>
                   </span>
                   <h2 style={{ marginTop: 6 }}>
-                    <span className="lang-es">Áreas exploratorias</span>
-                    <span className="lang-en">Exploration areas</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Áreas exploratorias</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Exploration areas</span>
                   </h2>
                 </div>
               )}
@@ -281,8 +283,8 @@ export default async function OperacionesPage() {
                     <span className="eyebrow">{b.eyebrow}</span>
                     <h2 style={{ marginTop: 8 }}>{b.titulo}</h2>
                     <p className="lede">
-                      <span className="lang-es">{b.lede_es}</span>
-                      <span className="lang-en">{b.lede_en}</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>{b.lede_es}</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>{b.lede_en}</span>
                     </p>
 
                     {photos.length > 0 && (
@@ -301,21 +303,21 @@ export default async function OperacionesPage() {
                     )}
                     {blockMap && (
                       <figcaption style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '6px 0 0', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
-                        <span className="lang-es">Mapa de ubicación</span>
-                        <span className="lang-en">Location map</span>
+                        <span className="lang-es" aria-hidden={lang !== 'es'}>Mapa de ubicación</span>
+                        <span className="lang-en" aria-hidden={lang !== 'en'}>Location map</span>
                       </figcaption>
                     )}
 
                     <div className="block-card" style={{ borderTop: `3px solid ${comm.color}` }}>
                       <header className="block-card-hd">
                         <h3>
-                          <span className="lang-es">{b.card_title_es}</span>
-                          <span className="lang-en">{b.card_title_en}</span>
+                          <span className="lang-es" aria-hidden={lang !== 'es'}>{b.card_title_es}</span>
+                          <span className="lang-en" aria-hidden={lang !== 'en'}>{b.card_title_en}</span>
                         </h3>
                         <div className="chips">
                           <span className="chip" style={{ background: `${comm.color}20`, color: comm.color, fontWeight: 600 }}>
-                            <span className="lang-es">{comm.es}</span>
-                            <span className="lang-en">{comm.en}</span>
+                            <span className="lang-es" aria-hidden={lang !== 'es'}>{comm.es}</span>
+                            <span className="lang-en" aria-hidden={lang !== 'en'}>{comm.en}</span>
                           </span>
                           {b.chips.map((chip, ci) => (
                             <span className="chip" key={ci}>{chip}</span>
@@ -326,8 +328,8 @@ export default async function OperacionesPage() {
                         <div>
                           {b.body_es.map((para, pi) => (
                             <p key={pi}>
-                              <span className="lang-es">{para}</span>
-                              <span className="lang-en">{b.body_en[pi] ?? ''}</span>
+                              <span className="lang-es" aria-hidden={lang !== 'es'}>{para}</span>
+                              <span className="lang-en" aria-hidden={lang !== 'en'}>{b.body_en[pi] ?? ''}</span>
                             </p>
                           ))}
                         </div>
@@ -335,8 +337,8 @@ export default async function OperacionesPage() {
                           {b.stats.map((stat, si) => (
                             <div key={si}>
                               <span>
-                                <span className="lang-es">{stat.label_es}</span>
-                                <span className="lang-en">{stat.label_en}</span>
+                                <span className="lang-es" aria-hidden={lang !== 'es'}>{stat.label_es}</span>
+                                <span className="lang-en" aria-hidden={lang !== 'en'}>{stat.label_en}</span>
                               </span>
                               <span>{stat.val}</span>
                             </div>
@@ -351,8 +353,8 @@ export default async function OperacionesPage() {
               {blocks.length === 0 && (
                 <div className="section-block">
                   <p style={{ color: 'var(--fg-muted)', fontStyle: 'italic' }}>
-                    <span className="lang-es">Sin bloques registrados.</span>
-                    <span className="lang-en">No blocks registered.</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Sin bloques registrados.</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>No blocks registered.</span>
                   </p>
                 </div>
               )}

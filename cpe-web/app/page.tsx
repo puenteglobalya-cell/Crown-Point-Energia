@@ -96,8 +96,8 @@ export default async function HomePage() {
           <div className="container hero-content">
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>
-                <span className="lang-es">TSXV: CWV · Petróleo y gas · Argentina</span>
-                <span className="lang-en">TSXV: CWV · Oil &amp; gas · Argentina</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>TSXV: CWV · Petróleo y gas · Argentina</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>TSXV: CWV · Oil &amp; gas · Argentina</span>
               </span>
             </div>
             <h1 className="hero-title">
@@ -118,12 +118,12 @@ export default async function HomePage() {
             </p>
             <div className="hero-cta">
               <Link className="btn btn-primary" href="/inversores">
-                <span className="lang-es">Resumen del inversor</span>
-                <span className="lang-en">Investor overview</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Resumen del inversor</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Investor overview</span>
               </Link>
               <Link className="btn btn-secondary" href="/operaciones">
-                <span className="lang-es">Ver operaciones</span>
-                <span className="lang-en">See operations</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Ver operaciones</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>See operations</span>
               </Link>
             </div>
             {show['investor.quotePanel'] !== false && (
@@ -135,10 +135,10 @@ export default async function HomePage() {
                   <span className="hq-delta pos" data-cpe-field="stock.delta">{delta}</span>
                 </div>
                 <div className="hq-row hq-sub">
-                  <span><span className="lang-es">Beta</span><span className="lang-en">Beta</span> · <span data-cpe-field="stock.beta">{beta}</span></span>
-                  <span><span className="lang-es">Vol.</span><span className="lang-en">Vol.</span> <span data-cpe-field="stock.vol30">{vol30}</span></span>
-                  <span><span className="lang-es">Cap.</span><span className="lang-en">Mkt&nbsp;cap</span> <span data-cpe-field="stock.cap">{cap}</span></span>
-                  <span className="hq-stale"><span className="lang-es">Actualizado al cierre anterior</span><span className="lang-en">Updated at prior close</span></span>
+                  <span><span className="lang-es" aria-hidden={lang !== 'es'}>Beta</span><span className="lang-en" aria-hidden={lang !== 'en'}>Beta</span> · <span data-cpe-field="stock.beta">{beta}</span></span>
+                  <span><span className="lang-es" aria-hidden={lang !== 'es'}>Vol.</span><span className="lang-en" aria-hidden={lang !== 'en'}>Vol.</span> <span data-cpe-field="stock.vol30">{vol30}</span></span>
+                  <span><span className="lang-es" aria-hidden={lang !== 'es'}>Cap.</span><span className="lang-en" aria-hidden={lang !== 'en'}>Mkt&nbsp;cap</span> <span data-cpe-field="stock.cap">{cap}</span></span>
+                  <span className="hq-stale"><span className="lang-es" aria-hidden={lang !== 'es'}>Actualizado al cierre anterior</span><span className="lang-en" aria-hidden={lang !== 'en'}>Updated at prior close</span></span>
                 </div>
               </div>
             )}
@@ -151,7 +151,7 @@ export default async function HomePage() {
         <section className="basins-strip" aria-label="Cuencas de operación" data-cpe-section="basinsStrip">
           <div className="container">
             <div className="bs-row">
-              <span className="eyebrow"><span className="lang-es">Presencia operativa</span><span className="lang-en">Operating footprint</span></span>
+              <span className="eyebrow"><span className="lang-es" aria-hidden={lang !== 'es'}>Presencia operativa</span><span className="lang-en" aria-hidden={lang !== 'en'}>Operating footprint</span></span>
               <div className="bs-list">
                 {[
                   { num: '01', name: 'Cuyana', es: 'Cuyo, Mendoza', en: 'Cuyo, Mendoza' },
@@ -162,8 +162,8 @@ export default async function HomePage() {
                     <span className="bs-num num">{b.num}</span>
                     <div>
                       <strong>{b.name}</strong>
-                      <span className="lang-es">{b.es}</span>
-                      <span className="lang-en">{b.en}</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>{b.es}</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>{b.en}</span>
                     </div>
                   </div>
                 ))}
@@ -187,8 +187,8 @@ export default async function HomePage() {
               <div className="nums-item" key={s.es}>
                 <span className="nums-val num">{s.val}</span>
                 <span className="nums-label">
-                  <span className="lang-es">{s.es}</span>
-                  <span className="lang-en">{s.en}</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>{s.es}</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>{s.en}</span>
                 </span>
               </div>
             ))}
@@ -202,61 +202,61 @@ export default async function HomePage() {
           <div className="container">
             <div className="section-head reveal">
               <div>
-                <span className="eyebrow"><span className="lang-es">{kpiPeriodoEs}</span><span className="lang-en">{kpiPeriodoEn}</span></span>
+                <span className="eyebrow"><span className="lang-es" aria-hidden={lang !== 'es'}>{kpiPeriodoEs}</span><span className="lang-en" aria-hidden={lang !== 'en'}>{kpiPeriodoEn}</span></span>
                 <h2 className="section-title">
-                  <span className="lang-es">Nuestra Escala</span>
-                  <span className="lang-en">An at-scale operation<br/>on a clean balance sheet.</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Nuestra Escala</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>An at-scale operation<br/>on a clean balance sheet.</span>
                 </h2>
               </div>
               <p>
-                <span className="lang-es">Producción diaria, reservas certificadas y disciplina de capital. Datos al cierre del último trimestre, conforme a NI 51-101.</span>
-                <span className="lang-en">Daily production, certified reserves and disciplined capital allocation. Figures as of last reported quarter, per NI 51-101.</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Producción diaria, reservas certificadas y disciplina de capital. Datos al cierre del último trimestre, conforme a NI 51-101.</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Daily production, certified reserves and disciplined capital allocation. Figures as of last reported quarter, per NI 51-101.</span>
               </p>
             </div>
             <div className="kpi-grid kpi-grid-3 reveal">
               <div className="kpi">
-                <span className="kpi-label"><span className="lang-es">Producción diaria</span><span className="lang-en">Daily production</span></span>
+                <span className="kpi-label"><span className="lang-es" aria-hidden={lang !== 'es'}>Producción diaria</span><span className="lang-en" aria-hidden={lang !== 'en'}>Daily production</span></span>
                 <div>
                   <span className="kpi-value num" data-cpe-field="kpi.production.value">{kpiProdVal}</span>
                   <span className="kpi-unit" data-cpe-field="kpi.production.unit">{kpiProdUnit}</span>
                 </div>
                 <span className="kpi-meta">
                   <span className="badge" data-cpe-field="kpi.production.delta">{kpiProdDelta}</span>
-                  <span className="lang-es">86% petróleo · 14% gas</span>
-                  <span className="lang-en">86% oil · 14% gas</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>86% petróleo · 14% gas</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>86% oil · 14% gas</span>
                 </span>
               </div>
               <div className="kpi">
-                <span className="kpi-label"><span className="lang-es">Reservas 2P</span><span className="lang-en">2P reserves</span></span>
+                <span className="kpi-label"><span className="lang-es" aria-hidden={lang !== 'es'}>Reservas 2P</span><span className="lang-en" aria-hidden={lang !== 'en'}>2P reserves</span></span>
                 <div>
                   <span className="kpi-value num" data-cpe-field="kpi.reserves.value">{kpiResVal}</span>
                   <span className="kpi-unit" data-cpe-field="kpi.reserves.unit">{kpiResUnit}</span>
                 </div>
                 <span className="kpi-meta">
                   <span className="badge" data-cpe-field="kpi.reserves.delta">{kpiResDelta}</span>
-                  <span className="lang-es">vida útil estimada</span>
-                  <span className="lang-en">reserve life</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>vida útil estimada</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>reserve life</span>
                 </span>
               </div>
               <div className="kpi">
-                <span className="kpi-label"><span className="lang-es">Concesiones</span><span className="lang-en">Concessions</span></span>
+                <span className="kpi-label"><span className="lang-es" aria-hidden={lang !== 'es'}>Concesiones</span><span className="lang-en" aria-hidden={lang !== 'en'}>Concessions</span></span>
                 <div>
                   <span className="kpi-value num" data-cpe-field="kpi.blocks.value">{kpiBlkVal}</span>
                   <span className="kpi-unit" data-cpe-field="kpi.blocks.unit">
-                    <span className="lang-es">{kpiBlkUnit}</span>
-                    <span className="lang-en">concessions in 3 basins</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>{kpiBlkUnit}</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>concessions in 3 basins</span>
                   </span>
                 </div>
                 <span className="kpi-meta">
                   <span className="badge" data-cpe-field="kpi.blocks.delta">{kpiBlkDelta}</span>
-                  <span className="lang-es">superficie operada</span>
-                  <span className="lang-en">operated acreage</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>superficie operada</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>operated acreage</span>
                 </span>
               </div>
             </div>
             <p className="kpi-foot">
-              <span className="lang-es">Cifras gerenciales no auditadas en base a los estados contables de CPE Inc. Para detalle ver <Link href="/inversores#financieros">Estados financieros</Link>.</span>
-              <span className="lang-en">Unaudited management figures based on CPE Inc. financial statements. See <Link href="/inversores#financieros">Financial statements</Link> for detail.</span>
+              <span className="lang-es" aria-hidden={lang !== 'es'}>Cifras gerenciales no auditadas en base a los estados contables de CPE Inc. Para detalle ver <Link href="/inversores#financieros">Estados financieros</Link>.</span>
+              <span className="lang-en" aria-hidden={lang !== 'en'}>Unaudited management figures based on CPE Inc. financial statements. See <Link href="/inversores#financieros">Financial statements</Link> for detail.</span>
             </p>
           </div>
         </section>
@@ -266,8 +266,8 @@ export default async function HomePage() {
       <section className="statement-section" data-cpe-section="statement">
         <div className="container">
           <blockquote className="statement-quote reveal">
-            <span className="lang-es">{f['statement.home.es'] || 'Crecimiento disciplinado con activos reales.'}</span>
-            <span className="lang-en">{f['statement.home.en'] || 'Disciplined growth backed by real assets.'}</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>{f['statement.home.es'] || 'Crecimiento disciplinado con activos reales.'}</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>{f['statement.home.en'] || 'Disciplined growth backed by real assets.'}</span>
           </blockquote>
         </div>
       </section>
@@ -278,15 +278,15 @@ export default async function HomePage() {
           <div className="container">
             <div className="section-head reveal">
               <div>
-                <span className="eyebrow"><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></span>
+                <span className="eyebrow"><span className="lang-es" aria-hidden={lang !== 'es'}>Operaciones</span><span className="lang-en" aria-hidden={lang !== 'en'}>Operations</span></span>
                 <h2 className="section-title">
-                  <span className="lang-es">8 concesiones<br/>en tres cuencas.</span>
-                  <span className="lang-en">8 concessions<br/>across three basins.</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>8 concesiones<br/>en tres cuencas.</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>8 concessions<br/>across three basins.</span>
                 </h2>
               </div>
               <p>
-                <span className="lang-es">Cartera diversificada de áreas convencionales y no convencionales, con foco en gas natural y crudo liviano.</span>
-                <span className="lang-en">Diversified portfolio of conventional and unconventional assets, focused on natural gas and light crude oil.</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Cartera diversificada de áreas convencionales y no convencionales, con foco en gas natural y crudo liviano.</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Diversified portfolio of conventional and unconventional assets, focused on natural gas and light crude oil.</span>
               </p>
             </div>
             <div className="ops-layout reveal">
@@ -297,19 +297,19 @@ export default async function HomePage() {
                     <div className="ops-card-hd">
                       <span className="ops-card-num num">{String(i + 1).padStart(2, '0')}</span>
                       <span className="chip">
-                        <span className="lang-es">{b.operador ? 'Operador' : 'Participación'}</span>
-                        <span className="lang-en">{b.operador ? 'Operator' : 'Working interest'}</span>
+                        <span className="lang-es" aria-hidden={lang !== 'es'}>{b.operador ? 'Operador' : 'Participación'}</span>
+                        <span className="lang-en" aria-hidden={lang !== 'en'}>{b.operador ? 'Operator' : 'Working interest'}</span>
                         {b.wi ? ` · ${b.wi}` : ''}
                       </span>
                     </div>
                     <h3 className="ops-card-title">{b.titulo}</h3>
                     <p>
-                      <span className="lang-es">{b.subtitulo_es}</span>
-                      <span className="lang-en">{b.subtitulo_en}</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>{b.subtitulo_es}</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>{b.subtitulo_en}</span>
                     </p>
                     <Link className="btn-ghost" href={`/operaciones#${b.slug}`}>
-                      <span className="lang-es">Detalle del bloque</span>
-                      <span className="lang-en">Block detail</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>Detalle del bloque</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>Block detail</span>
                     </Link>
                   </li>
                 ))}
@@ -324,41 +324,41 @@ export default async function HomePage() {
         <section className="invest-feature" data-cpe-section="investor">
           <div className="container invest-grid">
             <div className="invest-copy reveal">
-              <span className="eyebrow"><span className="lang-es">Para inversores</span><span className="lang-en">For investors</span></span>
+              <span className="eyebrow"><span className="lang-es" aria-hidden={lang !== 'es'}>Para inversores</span><span className="lang-en" aria-hidden={lang !== 'en'}>For investors</span></span>
               <h2 className="section-title">
-                <span className="lang-es">Una historia de valor<br/>respaldada por activos reales.</span>
-                <span className="lang-en">A value story<br/>backed by real assets.</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Una historia de valor<br/>respaldada por activos reales.</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>A value story<br/>backed by real assets.</span>
               </h2>
               <p className="invest-lede">
-                <span className="lang-es">Reservas certificadas bajo NI 51-101, contratos de suministro energético en USD y moneda local indexada, y un equipo con más de 25 años de experiencia en el upstream argentino.</span>
-                <span className="lang-en">NI 51-101 certified reserves, energy supply contracts denominated in USD and indexed local currency, and a team with 25+ years of Argentine upstream experience.</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Reservas certificadas bajo NI 51-101, contratos de suministro energético en USD y moneda local indexada, y un equipo con más de 25 años de experiencia en el upstream argentino.</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>NI 51-101 certified reserves, energy supply contracts denominated in USD and indexed local currency, and a team with 25+ years of Argentine upstream experience.</span>
               </p>
               <ul className="invest-list">
                 <li>
                   <span className="bullet"></span>
                   <div>
-                    <strong><span className="lang-es">Producción base diversificada</span><span className="lang-en">Diversified base production</span></strong>
-                    <span className="lang-es">Mix balanceado de gas natural, crudo y NGL en cinco bloques y tres cuencas.</span>
-                    <span className="lang-en">Balanced mix of natural gas, crude and NGLs across five blocks in three basins.</span>
+                    <strong><span className="lang-es" aria-hidden={lang !== 'es'}>Producción base diversificada</span><span className="lang-en" aria-hidden={lang !== 'en'}>Diversified base production</span></strong>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Mix balanceado de gas natural, crudo y NGL en cinco bloques y tres cuencas.</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Balanced mix of natural gas, crude and NGLs across five blocks in three basins.</span>
                   </div>
                 </li>
                 <li>
                   <span className="bullet"></span>
                   <div>
-                    <strong><span className="lang-es">Pipeline de crecimiento</span><span className="lang-en">Growth pipeline</span></strong>
-                    <span className="lang-es">Plan de {f['inv.thesis.4.val'] || '12'} pozos para 2026–2027 enfocados en gas y crudo de bajo punto de equilibrio.</span>
-                    <span className="lang-en">{f['inv.thesis.4.val'] || '12'}-well program for 2026–2027 targeting low-breakeven gas and oil.</span>
+                    <strong><span className="lang-es" aria-hidden={lang !== 'es'}>Pipeline de crecimiento</span><span className="lang-en" aria-hidden={lang !== 'en'}>Growth pipeline</span></strong>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Plan de {f['inv.thesis.4.val'] || '12'} pozos para 2026–2027 enfocados en gas y crudo de bajo punto de equilibrio.</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>{f['inv.thesis.4.val'] || '12'}-well program for 2026–2027 targeting low-breakeven gas and oil.</span>
                   </div>
                 </li>
               </ul>
               <div className="invest-cta">
                 <Link className="btn btn-primary" href="/inversores">
-                  <span className="lang-es">Ver resumen completo</span>
-                  <span className="lang-en">See full overview</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Ver resumen completo</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>See full overview</span>
                 </Link>
                 <Link className="btn-ghost" href="/inversores#financieros">
-                  <span className="lang-es">Últimos estados financieros</span>
-                  <span className="lang-en">Latest financials</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Últimos estados financieros</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Latest financials</span>
                 </Link>
               </div>
             </div>
@@ -366,8 +366,8 @@ export default async function HomePage() {
             {show['investor.quotePanel'] !== false && (
               <aside className="invest-panel reveal" data-cpe-section="investor.quotePanel">
                 <header>
-                  <span className="eyebrow"><span className="lang-es">Cotización TSX Venture</span><span className="lang-en">TSX Venture quote</span></span>
-                  <span className="chip"><span className="live-dot" style={{ background: 'var(--cp-green)' }}></span><span className="lang-es">Cierre anterior</span><span className="lang-en">Prior close</span></span>
+                  <span className="eyebrow"><span className="lang-es" aria-hidden={lang !== 'es'}>Cotización TSX Venture</span><span className="lang-en" aria-hidden={lang !== 'en'}>TSX Venture quote</span></span>
+                  <span className="chip"><span className="live-dot" style={{ background: 'var(--cp-green)' }}></span><span className="lang-es" aria-hidden={lang !== 'es'}>Cierre anterior</span><span className="lang-en" aria-hidden={lang !== 'en'}>Prior close</span></span>
                 </header>
                 <div className="ip-price">
                   <span className="num" data-cpe-field="stock.price">{price}</span>
@@ -379,19 +379,19 @@ export default async function HomePage() {
                     <tr data-cpe-section="investor.beta"><td>Beta</td><td className="num" data-cpe-field="stock.beta">{beta}</td></tr>
                   )}
                   {show['investor.vol30'] !== false && (
-                    <tr data-cpe-section="investor.vol30"><td><span className="lang-es">Vol. promedio (30d)</span><span className="lang-en">Avg vol (30d)</span></td><td className="num" data-cpe-field="stock.vol30">{vol30}</td></tr>
+                    <tr data-cpe-section="investor.vol30"><td><span className="lang-es" aria-hidden={lang !== 'es'}>Vol. promedio (30d)</span><span className="lang-en" aria-hidden={lang !== 'en'}>Avg vol (30d)</span></td><td className="num" data-cpe-field="stock.vol30">{vol30}</td></tr>
                   )}
                   {show['investor.high52'] !== false && (
-                    <tr data-cpe-section="investor.high52"><td><span className="lang-es">Máx. 52 sem.</span><span className="lang-en">52w high</span></td><td className="num" data-cpe-field="stock.high52">{stockHigh52}</td></tr>
+                    <tr data-cpe-section="investor.high52"><td><span className="lang-es" aria-hidden={lang !== 'es'}>Máx. 52 sem.</span><span className="lang-en" aria-hidden={lang !== 'en'}>52w high</span></td><td className="num" data-cpe-field="stock.high52">{stockHigh52}</td></tr>
                   )}
                   {show['investor.low52'] !== false && (
-                    <tr data-cpe-section="investor.low52"><td><span className="lang-es">Mín. 52 sem.</span><span className="lang-en">52w low</span></td><td className="num" data-cpe-field="stock.low52">{stockLow52}</td></tr>
+                    <tr data-cpe-section="investor.low52"><td><span className="lang-es" aria-hidden={lang !== 'es'}>Mín. 52 sem.</span><span className="lang-en" aria-hidden={lang !== 'en'}>52w low</span></td><td className="num" data-cpe-field="stock.low52">{stockLow52}</td></tr>
                   )}
                   {show['investor.cap'] !== false && (
-                    <tr data-cpe-section="investor.cap"><td><span className="lang-es">Capitalización</span><span className="lang-en">Market cap</span></td><td className="num" data-cpe-field="stock.cap">{cap}</td></tr>
+                    <tr data-cpe-section="investor.cap"><td><span className="lang-es" aria-hidden={lang !== 'es'}>Capitalización</span><span className="lang-en" aria-hidden={lang !== 'en'}>Market cap</span></td><td className="num" data-cpe-field="stock.cap">{cap}</td></tr>
                   )}
                   {show['investor.shares'] !== false && (
-                    <tr data-cpe-section="investor.shares"><td><span className="lang-es">Acciones en circulación</span><span className="lang-en">Shares outstanding</span></td><td className="num" data-cpe-field="stock.shares">{stockShares}</td></tr>
+                    <tr data-cpe-section="investor.shares"><td><span className="lang-es" aria-hidden={lang !== 'es'}>Acciones en circulación</span><span className="lang-en" aria-hidden={lang !== 'en'}>Shares outstanding</span></td><td className="num" data-cpe-field="stock.shares">{stockShares}</td></tr>
                   )}
                   </tbody>
                 </table>
@@ -407,11 +407,11 @@ export default async function HomePage() {
                       <path d="M0 55 L20 50 L40 53 L60 48 L80 45 L100 50 L120 40 L140 38 L160 42 L180 30 L200 32 L220 25 L240 28 L260 18 L280 22 L280 80 L0 80 Z" fill="url(#sparkFill)"/>
                       <path d="M0 55 L20 50 L40 53 L60 48 L80 45 L100 50 L120 40 L140 38 L160 42 L180 30 L200 32 L220 25 L240 28 L260 18 L280 22" fill="none" stroke="var(--accent2)" strokeWidth="1.5"/>
                     </svg>
-                    <span className="ip-spark-meta"><span className="lang-es">12 meses</span><span className="lang-en">12 months</span>{f['stock.delta'] && f['stock.delta'] !== '+0.00%' ? ` · ${f['stock.delta']}` : ''}</span>
+                    <span className="ip-spark-meta"><span className="lang-es" aria-hidden={lang !== 'es'}>12 meses</span><span className="lang-en" aria-hidden={lang !== 'en'}>12 months</span>{f['stock.delta'] && f['stock.delta'] !== '+0.00%' ? ` · ${f['stock.delta']}` : ''}</span>
                   </div>
                 )}
                 <footer>
-                  <Link className="btn-ghost" href="/inversores"><span className="lang-es">Ver historial</span><span className="lang-en">See history</span></Link>
+                  <Link className="btn-ghost" href="/inversores"><span className="lang-es" aria-hidden={lang !== 'es'}>Ver historial</span><span className="lang-en" aria-hidden={lang !== 'en'}>See history</span></Link>
                 </footer>
               </aside>
             )}
@@ -425,13 +425,13 @@ export default async function HomePage() {
           <div className="container">
             <div className="section-head reveal">
               <div>
-                <span className="eyebrow"><span className="lang-es">Hechos relevantes CNV</span><span className="lang-en">CNV material facts</span></span>
+                <span className="eyebrow"><span className="lang-es" aria-hidden={lang !== 'es'}>Hechos relevantes CNV</span><span className="lang-en" aria-hidden={lang !== 'en'}>CNV material facts</span></span>
                 <h2 className="section-title">
-                  <span className="lang-es">Últimas novedades.</span>
-                  <span className="lang-en">Latest releases.</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Últimas novedades.</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Latest releases.</span>
                 </h2>
               </div>
-              <Link className="btn-ghost" href="/inversores#hechos-cnv"><span className="lang-es">Todos los hechos relevantes</span><span className="lang-en">All material facts</span></Link>
+              <Link className="btn-ghost" href="/inversores#hechos-cnv"><span className="lang-es" aria-hidden={lang !== 'es'}>Todos los hechos relevantes</span><span className="lang-en" aria-hidden={lang !== 'en'}>All material facts</span></Link>
             </div>
             {latestHechos.length > 0 ? (
               <ul className="press-list reveal">
@@ -440,8 +440,8 @@ export default async function HomePage() {
                     <span className="press-date num">{fmtFechaHome(item.fecha)}</span>
                     <div>
                       <span className="chip">
-                        <span className="lang-es">Hecho relevante</span>
-                        <span className="lang-en">Material fact</span>
+                        <span className="lang-es" aria-hidden={lang !== 'es'}>Hecho relevante</span>
+                        <span className="lang-en" aria-hidden={lang !== 'en'}>Material fact</span>
                       </span>
                       <h3>{item.descripcion}</h3>
                     </div>
@@ -459,12 +459,12 @@ export default async function HomePage() {
             ) : (
               <div style={{ padding: 'var(--s-6) 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
                 <p style={{ color: 'var(--fg-muted)', fontSize: 14, margin: 0 }}>
-                  <span className="lang-es">No hay hechos relevantes recientes. Consultá el archivo completo.</span>
-                  <span className="lang-en">No recent material facts. See the full archive.</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>No hay hechos relevantes recientes. Consultá el archivo completo.</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>No recent material facts. See the full archive.</span>
                 </p>
                 <a href="/inversores#hechos-cnv" style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                  <span className="lang-es">Ver hechos relevantes →</span>
-                  <span className="lang-en">See material facts →</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Ver hechos relevantes →</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>See material facts →</span>
                 </a>
               </div>
             )}
@@ -478,14 +478,14 @@ export default async function HomePage() {
           <div className="container">
             <div className="cc-grid reveal">
               <div className="cc-copy">
-                <span className="eyebrow"><span className="lang-es">Contacto institucional</span><span className="lang-en">Institutional contact</span></span>
+                <span className="eyebrow"><span className="lang-es" aria-hidden={lang !== 'es'}>Contacto institucional</span><span className="lang-en" aria-hidden={lang !== 'en'}>Institutional contact</span></span>
                 <h2 className="section-title">
-                  <span className="lang-es">¿Eres analista,<br/>inversor o socio?</span>
-                  <span className="lang-en">Are you an analyst,<br/>investor or partner?</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>¿Eres analista,<br/>inversor o socio?</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Are you an analyst,<br/>investor or partner?</span>
                 </h2>
                 <p>
-                  <span className="lang-es">Nuestro equipo de Investor Relations responde consultas, agenda reuniones one-on-one y comparte materiales complementarios bajo NDA.</span>
-                  <span className="lang-en">Our Investor Relations team responds to enquiries, schedules one-on-one meetings and shares supporting materials under NDA.</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Nuestro equipo de Investor Relations responde consultas, agenda reuniones one-on-one y comparte materiales complementarios bajo NDA.</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Our Investor Relations team responds to enquiries, schedules one-on-one meetings and shares supporting materials under NDA.</span>
                 </p>
               </div>
               <div className="cc-card">
@@ -495,26 +495,26 @@ export default async function HomePage() {
                 </div>
                 <div className="cc-channel">
                   <span className="cc-key">
-                    <span className="lang-es">Comercialización hidrocarburos</span>
-                    <span className="lang-en">Hydrocarbon trading</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Comercialización hidrocarburos</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Hydrocarbon trading</span>
                   </span>
                   <a href="mailto:comercial@crownpointenergy.com" className="cc-val">comercial@crownpointenergy.com</a>
                 </div>
                 <div className="cc-channel">
                   <span className="cc-key">
-                    <span className="lang-es">Proveedores &amp; compras</span>
-                    <span className="lang-en">Suppliers &amp; procurement</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Proveedores &amp; compras</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Suppliers &amp; procurement</span>
                   </span>
                   <a href="mailto:compras@crownpointenergy.com" className="cc-val">compras@crownpointenergy.com</a>
                 </div>
                 <div className="cc-channel">
-                  <span className="cc-key"><span className="lang-es">Oficinas Buenos Aires</span><span className="lang-en">Buenos Aires office</span></span>
+                  <span className="cc-key"><span className="lang-es" aria-hidden={lang !== 'es'}>Oficinas Buenos Aires</span><span className="lang-en" aria-hidden={lang !== 'en'}>Buenos Aires office</span></span>
                   <span className="cc-val">Godoy Cruz 2769, Piso 4 — C1425FQK</span>
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                   <Link className="btn btn-primary cc-btn" href="/contacto" style={{ flex: 1, minWidth: 160 }}>
-                    <span className="lang-es">Ver todos los contactos</span>
-                    <span className="lang-en">All contacts</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Ver todos los contactos</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>All contacts</span>
                   </Link>
                   <a
                     href="https://www.linkedin.com/company/crown-point-energia-sa"

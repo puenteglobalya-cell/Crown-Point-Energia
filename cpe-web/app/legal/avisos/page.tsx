@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getEffectiveLang } from '@/lib/lang'
 
 export const metadata = {
   title: 'Avisos legales / Advisories — Crown Point Energy',
@@ -32,19 +33,20 @@ const abbrevs = [
   { abbr: 'WI',                     es: 'participación de trabajo',             en: 'working interest' },
 ]
 
-export default function AvisosPage() {
+export default async function AvisosPage() {
+  const lang = await getEffectiveLang('es')
   return (
     <>
       <section className="page-hero">
         <div className="container">
           <div className="crumbs">
-            <Link href="/"><span className="lang-es">Inicio</span><span className="lang-en">Home</span></Link>
+            <Link href="/"><span className="lang-es" aria-hidden={lang !== 'es'}>Inicio</span><span className="lang-en" aria-hidden={lang !== 'en'}>Home</span></Link>
             <span>/</span>
-            <span><span className="lang-es">Avisos legales</span><span className="lang-en">Advisories</span></span>
+            <span><span className="lang-es" aria-hidden={lang !== 'es'}>Avisos legales</span><span className="lang-en" aria-hidden={lang !== 'en'}>Advisories</span></span>
           </div>
           <h1 style={{ marginTop: 14 }}>
-            <span className="lang-es">Avisos legales</span>
-            <span className="lang-en">Advisories</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>Avisos legales</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>Advisories</span>
           </h1>
         </div>
       </section>
@@ -63,7 +65,7 @@ export default function AvisosPage() {
         <div className="container" style={{ maxWidth: 800 }}>
 
           {/* ── ESPAÑOL ── */}
-          <div className="legal-body lang-es">
+          <div className="legal-body lang-es" aria-hidden={lang !== 'es'}>
 
             <h2>Declaraciones Prospectivas</h2>
             <p>
@@ -124,7 +126,7 @@ export default function AvisosPage() {
           </div>
 
           {/* ── ENGLISH ── */}
-          <div className="legal-body lang-en">
+          <div className="legal-body lang-en" aria-hidden={lang !== 'en'}>
 
             <h2>Forward-Looking Statements</h2>
             <p>

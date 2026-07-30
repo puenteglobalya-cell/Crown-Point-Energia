@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
+import { getEffectiveLang } from '@/lib/lang'
 
 export const revalidate = 60
 
@@ -79,6 +80,8 @@ export default async function ComunicadoDetailPage({ params }: { params: { id: s
 
   if (!data) notFound()
 
+  const lang = await getEffectiveLang('es')
+
   const label = TIPO_LABELS[data.tipo] ?? { es: data.tipo, en: data.tipo }
   const docUrl = data.url || (data.storage_path ? publicUrl(data.storage_path) : null)
 
@@ -100,29 +103,29 @@ export default async function ComunicadoDetailPage({ params }: { params: { id: s
       <section className="page-hero">
         <div className="container">
           <div className="crumbs">
-            <Link href="/"><span className="lang-es">Inicio</span><span className="lang-en">Home</span></Link>
+            <Link href="/"><span className="lang-es" aria-hidden={lang !== 'es'}>Inicio</span><span className="lang-en" aria-hidden={lang !== 'en'}>Home</span></Link>
             <span>/</span>
-            <Link href="/comunicados"><span className="lang-es">Comunicados</span><span className="lang-en">Press releases</span></Link>
+            <Link href="/comunicados"><span className="lang-es" aria-hidden={lang !== 'es'}>Comunicados</span><span className="lang-en" aria-hidden={lang !== 'en'}>Press releases</span></Link>
             <span>/</span>
             <span>{data.periodo || fmtFecha(data.fecha)}</span>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 'var(--s-4)', flexWrap: 'wrap' }}>
             <span className="chip">
-              <span className="lang-es">{label.es}</span>
-              <span className="lang-en">{label.en}</span>
+              <span className="lang-es" aria-hidden={lang !== 'es'}>{label.es}</span>
+              <span className="lang-en" aria-hidden={lang !== 'en'}>{label.en}</span>
             </span>
             <span style={{ fontSize: 13, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
               {fmtFecha(data.fecha)}
             </span>
           </div>
           <h1 style={{ marginTop: 0 }}>
-            <span className="lang-es">{data.titulo_es}</span>
-            <span className="lang-en">{data.titulo_en || data.titulo_es}</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>{data.titulo_es}</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>{data.titulo_en || data.titulo_es}</span>
           </h1>
           {(data.resumen_es || data.resumen_en) && (
             <p style={{ marginTop: 'var(--s-4)' }}>
-              <span className="lang-es">{data.resumen_es}</span>
-              <span className="lang-en">{data.resumen_en || data.resumen_es}</span>
+              <span className="lang-es" aria-hidden={lang !== 'es'}>{data.resumen_es}</span>
+              <span className="lang-en" aria-hidden={lang !== 'en'}>{data.resumen_en || data.resumen_es}</span>
             </p>
           )}
         </div>
@@ -141,30 +144,30 @@ export default async function ComunicadoDetailPage({ params }: { params: { id: s
                   style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
                 >
                   <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 13V3M6 9l4 4 4-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 17h14" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>
-                  <span className="lang-es">Descargar comunicado</span>
-                  <span className="lang-en">Download release</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Descargar comunicado</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Download release</span>
                 </a>
                 <Link href="/comunicados" className="btn" style={{ textDecoration: 'none' }}>
-                  <span className="lang-es">← Ver todos</span>
-                  <span className="lang-en">← All releases</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>← Ver todos</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>← All releases</span>
                 </Link>
               </div>
             ) : (
               <div style={{ marginBottom: 'var(--s-8)' }}>
                 <Link href="/comunicados" className="btn" style={{ textDecoration: 'none' }}>
-                  <span className="lang-es">← Ver todos los comunicados</span>
-                  <span className="lang-en">← All press releases</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>← Ver todos los comunicados</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>← All press releases</span>
                 </Link>
               </div>
             )}
 
             {/* Disclaimer */}
             <p style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.6, borderTop: '1px solid var(--rule)', paddingTop: 'var(--s-6)' }}>
-              <span className="lang-es">
+              <span className="lang-es" aria-hidden={lang !== 'es'}>
                 Este comunicado fue publicado por Crown Point Energía S.A. y/o Crown Point Energy Inc. (TSXV: CWV).
                 Las declaraciones prospectivas están sujetas a riesgos e incertidumbres que podrían diferir materialmente de los resultados reales.
               </span>
-              <span className="lang-en">
+              <span className="lang-en" aria-hidden={lang !== 'en'}>
                 This release was published by Crown Point Energía S.A. and/or Crown Point Energy Inc. (TSXV: CWV).
                 Forward-looking statements are subject to risks and uncertainties that could cause actual results to differ materially.
               </span>
