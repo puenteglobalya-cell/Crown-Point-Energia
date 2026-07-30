@@ -6,6 +6,7 @@ import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 import { looksLikeBot, HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 import { dbError } from '@/lib/api-error'
 import { enviarConfirmacionPostulacion } from '@/lib/email'
+import { safeContentType } from '@/lib/upload-mime'
 
 export const dynamic = 'force-dynamic'
 
@@ -106,10 +107,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Formato no permitido. Usá PDF, DOC o DOCX.' }, { status: 400 })
       }
 
-      const path = `carreras/${Date.now()}-${nombre.replace(/\s+/g, '_').slice(0, 40)}.${ext}`
+      // Strip everything but word chars/hyphens — nombre is free text from the
+      // applicant, and unescaped '/' or '..' has no business in a storage key.
+      const safeName = nombre.replace(/[^\w-]+/g, '_').slice(0, 40)
+      const path = `carreras/${Date.now()}-${safeName}.${ext}`
       const { error: uploadErr } = await supabase.storage
         .from('documents')
-        .upload(path, cv, { upsert: false })
+        .upload(path, cv, { upsert: false, contentType: safeContentType(ext) })
 
       if (!uploadErr) {
         cv_path = path

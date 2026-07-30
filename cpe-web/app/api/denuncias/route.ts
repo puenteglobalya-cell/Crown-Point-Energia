@@ -6,6 +6,7 @@ import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 import { looksLikeBot, HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 import { enviarNotificacionDenuncia } from '@/lib/email'
 import { dbError } from '@/lib/api-error'
+import { safeContentType } from '@/lib/upload-mime'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,7 +67,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Formato no permitido. Usá PDF, imagen o Word.' }, { status: 400 })
       }
       const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-      const { error: uploadErr } = await supabase.storage.from('denuncias-evidencia').upload(path, evidencia, { upsert: false })
+      // contentType forced from the validated extension, never trusting the
+      // client's own File.type — otherwise a file named "evidencia.jpg"
+      // could be uploaded with Content-Type: text/html and get rendered as
+      // HTML when a compliance officer opens the evidence link.
+      const { error: uploadErr } = await supabase.storage
+        .from('denuncias-evidencia')
+        .upload(path, evidencia, { upsert: false, contentType: safeContentType(ext) })
       if (!uploadErr) {
         evidencia_path = path
         evidencia_name = evidencia.name
