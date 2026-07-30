@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
     ? storage_path.replace(/^\/+/, '')
     : null
 
-  const VALID_TYPES = ['ingresos', 'produccion', 'financiero', 'accionista', 'henry_hub', 'ice_brent', 'facturacion']
+  const VALID_TYPES = ['ingresos', 'produccion', 'financiero', 'accionista', 'henry_hub', 'ice_brent', 'facturacion', 'comercial']
   if (typeof type_id !== 'string' || !VALID_TYPES.includes(type_id)) {
     return NextResponse.json({ error: `Tipo de reporte inválido: ${type_id}` }, { status: 400 })
   }

@@ -16,7 +16,7 @@ import { generarReporteProduccionHTML } from '@/lib/generador/htmlReportProducci
 import { generarReporteFacturacionHTML } from '@/lib/generador/htmlReportFacturacion'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-type ReportType = 'ingresos' | 'accionista' | 'produccion' | 'financiero' | 'henry_hub' | 'ice_brent' | 'facturacion'
+type ReportType = 'ingresos' | 'accionista' | 'produccion' | 'financiero' | 'henry_hub' | 'ice_brent' | 'facturacion' | 'comercial'
 type Step = 'type' | 'select' | 'parsing' | 'preview' | 'uploading' | 'done'
 
 const isMacroType = (t: ReportType) => t === 'henry_hub' || t === 'ice_brent'
@@ -29,6 +29,7 @@ const TYPES: { id: ReportType; label: string; desc: string; ext: string; icon: s
   { id: 'financiero',  label: 'Reporte Financiero',     desc: 'Estados financieros (P&L, balance)',      ext: '.xlsx,.xls',  icon: '💰' },
   { id: 'henry_hub',   label: 'Henry Hub (Gas)',         desc: 'Pegar tabla de CME Group',                ext: 'pegar texto', icon: '🔵' },
   { id: 'ice_brent',   label: 'ICE Brent (Petróleo)',   desc: 'Pegar tabla de ICE Futures Europe',       ext: 'pegar texto', icon: '🟢' },
+  { id: 'comercial',   label: 'Modelo de Comercialización', desc: 'Pegar el HTML completo del reporte', ext: 'pegar HTML',  icon: '🛢️' },
 ]
 
 const MACRO_HINTS: Record<string, { url: string; col: string; placeholder: string }> = {
@@ -65,6 +66,8 @@ export default function PortalSubirPage() {
   const [doneId, setDoneId] = useState('')
   const [existingFactId, setExistingFactId] = useState<string | null>(null)
   const [existingLineas, setExistingLineas] = useState<LineaFacturacion[] | null>(null)
+  const [comercialHtml, setComercialHtml] = useState('')
+  const [existingComercialId, setExistingComercialId] = useState<string | null>(null)
   const [mergeStats, setMergeStats] = useState<{ added: number; skipped: number } | null>(null)
   const [showPreview, setShowPreview] = useState(false)
   const [previewHtml, setPreviewHtml] = useState('')
@@ -143,6 +146,25 @@ export default function PortalSubirPage() {
     }
   }
 
+  async function handleParseComercialHtml() {
+    setErr('')
+    const html = comercialHtml.trim()
+    if (!html.startsWith('<!DOCTYPE') && !html.startsWith('<!doctype') && !html.startsWith('<html')) {
+      setErr('Eso no parece ser un documento HTML completo (tiene que empezar con <!DOCTYPE html> o <html>).')
+      return
+    }
+    setTitulo(`Modelo de Comercialización — ${new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}`)
+    try {
+      const listRes = await fetch('/api/admin/reportes')
+      if (listRes.ok) {
+        const list = await listRes.json() as Array<{ id: string; type_id: string; estado: string }>
+        const found = list.find(r => r.type_id === 'comercial' && r.estado === 'publicado')
+        if (found) setExistingComercialId(found.id)
+      }
+    } catch { /* best-effort — falls back to creating a new report */ }
+    setStep('preview')
+  }
+
   function handleParseMacroText() {
     setErr('')
     try {
@@ -203,6 +225,10 @@ export default function PortalSubirPage() {
         datos   = datosMacro
         html    = generarHTMLMacro(datosMacro, titulo.trim())
         periodo = datosMacro.periodo
+      } else if (tipo === 'comercial' && comercialHtml.trim()) {
+        datos   = {}
+        html    = comercialHtml.trim()
+        periodo = new Date().toISOString().slice(0, 7)
       } else {
         throw new Error('Sin datos para guardar')
       }
@@ -232,6 +258,20 @@ export default function PortalSubirPage() {
         })
         if (!res.ok) throw new Error((await res.json() as { error?: string }).error ?? 'Error al actualizar')
         setDoneId(existingFactId)
+        setStep('done')
+        return  // skip normal POST
+      }
+
+      // Modelo Comercial: always update the same published report in place
+      // instead of creating a new row each time it's re-pasted
+      if (existingComercialId && tipo === 'comercial') {
+        const res = await fetch(`/api/admin/reportes/${existingComercialId}`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ datos, html, titulo: titulo.trim(), periodo, estado }),
+        })
+        if (!res.ok) throw new Error((await res.json() as { error?: string }).error ?? 'Error al actualizar')
+        setDoneId(existingComercialId)
         setStep('done')
         return  // skip normal POST
       }
@@ -267,6 +307,7 @@ export default function PortalSubirPage() {
     setMacroSnap(null); setIncludeMacro(true); setCclRate(null)
     setTitulo(''); setDoneId(''); setErr('')
     setExistingFactId(null); setExistingLineas(null); setMergeStats(null)
+    setComercialHtml(''); setExistingComercialId(null)
     setShowPreview(false); setPreviewHtml('')
     if (fileRef.current) fileRef.current.value = ''
   }
@@ -284,6 +325,8 @@ export default function PortalSubirPage() {
       return generarReporteGenericoHTML(datosGenerico)
     if (isMacroType(tipo) && datosMacro)
       return generarHTMLMacro(datosMacro, titulo.trim() || tipoMeta.label)
+    if (tipo === 'comercial' && comercialHtml.trim())
+      return comercialHtml.trim()
     return ''
   }
 
@@ -436,8 +479,60 @@ td{padding:6px 12px;border-bottom:1px solid #eee;font-family:monospace}</style><
           )
         })()}
 
-        {/* STEP: select file (non-macro types) */}
-        {step === 'select' && !isMacroType(tipo) && (
+        {/* STEP: paste (Modelo Comercial — full HTML) */}
+        {step === 'select' && tipo === 'comercial' && (
+          <>
+            <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button onClick={() => setStep('type')} style={{ background: 'none', border: 'none', fontSize: 13, color: 'var(--fg-muted)', cursor: 'pointer' }}>
+                ← cambiar tipo
+              </button>
+              <span style={{ fontSize: 12, color: 'var(--fg-soft)', fontFamily: 'var(--font-mono)', background: 'var(--surface)', border: '1px solid var(--rule)', padding: '3px 10px', borderRadius: 20 }}>
+                {tipoMeta.icon} {tipoMeta.label}
+              </span>
+            </div>
+
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: '20px 24px', marginBottom: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', margin: '0 0 4px' }}>
+                Pegá el documento HTML completo del reporte
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: 0, lineHeight: 1.5 }}>
+                Desde &lt;!DOCTYPE html&gt; hasta &lt;/html&gt;. Si ya existe un Modelo de Comercialización publicado, esto lo actualiza en el mismo lugar — no crea un duplicado.
+              </p>
+            </div>
+
+            <textarea
+              value={comercialHtml}
+              onChange={e => setComercialHtml(e.target.value)}
+              placeholder="<!DOCTYPE html>..."
+              rows={14}
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                fontFamily: 'var(--font-mono)', fontSize: 11,
+                padding: '14px 16px', borderRadius: 'var(--r-lg)',
+                border: '1px solid var(--rule)', background: 'var(--surface)',
+                color: 'var(--fg)', resize: 'vertical', lineHeight: 1.6,
+                marginBottom: 16,
+              }}
+            />
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                className="btn btn-primary"
+                style={{ padding: '12px 28px' }}
+                disabled={!comercialHtml.trim()}
+                onClick={handleParseComercialHtml}
+              >
+                Procesar →
+              </button>
+              <button className="btn" style={{ padding: '12px 16px' }} onClick={reset}>
+                Cancelar
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* STEP: select file (non-macro, non-comercial types) */}
+        {step === 'select' && !isMacroType(tipo) && tipo !== 'comercial' && (
           <>
             <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
               <button onClick={() => setStep('type')} style={{ background: 'none', border: 'none', fontSize: 13, color: 'var(--fg-muted)', cursor: 'pointer' }}>
@@ -506,7 +601,7 @@ td{padding:6px 12px;border-bottom:1px solid #eee;font-family:monospace}</style><
           <div style={{ marginBottom: 40 }}>
             <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', padding: '28px', marginBottom: 20 }}>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-0.01em', color: 'var(--accent)' }}>
-                ✓ {isMacroType(tipo) ? 'Datos procesados correctamente' : 'Archivo procesado correctamente'}
+                ✓ {isMacroType(tipo) || tipo === 'comercial' ? 'Datos procesados correctamente' : 'Archivo procesado correctamente'}
               </h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px' }}>
                 {tipo === 'ingresos' && datosIngresos && <>
@@ -574,6 +669,12 @@ td{padding:6px 12px;border-bottom:1px solid #eee;font-family:monospace}</style><
                   {kv('Gas (sem. ' + datosProduccion.semana2 + ')', `${Math.round(datosProduccion.gas.total.semana2).toLocaleString('es-AR')} Mm³/d`)}
                   {kv('Áreas — petróleo', `${datosProduccion.petroleo.areas.length}`)}
                   {kv('Días con serie diaria', `${datosProduccion.serieDiaria.length}`)}
+                </>}
+                {tipo === 'comercial' && comercialHtml.trim() && <>
+                  {kv('Tamaño', `${(comercialHtml.trim().length / 1024).toFixed(1)} KB`)}
+                  {existingComercialId
+                    ? kv('Acción', 'Actualiza el reporte publicado existente')
+                    : kv('Acción', 'Crea un nuevo reporte')}
                 </>}
                 {isMacroType(tipo) && datosMacro && <>
                   {kv('Fuente', tipo === 'henry_hub' ? 'Henry Hub — CME · NYMEX' : 'ICE Brent Crude')}
