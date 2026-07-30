@@ -112,8 +112,8 @@ export function DroneHud({ lang = 'es' }: Props) {
         <div className="hud-cell">
           <span>TSXV: CWV</span>
           <span className="hud-sep">|</span>
-          <span className="lang-es">Crown Point Energía S.A.</span>
-          <span className="lang-en">Crown Point Energy Inc.</span>
+          <span className="lang-es" aria-hidden={lang !== 'es'}>Crown Point Energía S.A.</span>
+          <span className="lang-en" aria-hidden={lang !== 'en'}>Crown Point Energy Inc.</span>
         </div>
       </div>
 

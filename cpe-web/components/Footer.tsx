@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-export default function Footer() {
+export default function Footer({ lang = 'es' }: { lang?: 'es' | 'en' }) {
   return (
     <footer className="site-footer">
       <div className="container">
@@ -8,11 +8,11 @@ export default function Footer() {
           {/* Brand */}
           <div className="footer-brand">
             <strong>
-              <span className="lang-es">Crown Point Energía S.A.</span>
-              <span className="lang-en">Crown Point Energy Inc.</span>
+              <span className="lang-es" aria-hidden={lang !== 'es'}>Crown Point Energía S.A.</span>
+              <span className="lang-en" aria-hidden={lang !== 'en'}>Crown Point Energy Inc.</span>
             </strong>
-            <p className="lang-es">Empresa argentina de petróleo y gas con casa matriz internacional. Operamos en las cuencas Neuquina, Cuyana (Mendoza) y Golfo San Jorge (Chubut – Santa Cruz). Holding Crown Point Energy Inc. cotiza en TSXV: CWV.</p>
-            <p className="lang-en">Canadian holding company with oil &amp; gas operations in Argentina through Crown Point Energía S.A. We operate in the Neuquén, Cuyana (Mendoza) and San Jorge Gulf (Chubut – Santa Cruz) basins. Listed on TSXV: CWV.</p>
+            <p className="lang-es" aria-hidden={lang !== 'es'}>Empresa argentina de petróleo y gas con casa matriz internacional. Operamos en las cuencas Neuquina, Cuyana (Mendoza) y Golfo San Jorge (Chubut – Santa Cruz). Holding Crown Point Energy Inc. cotiza en TSXV: CWV.</p>
+            <p className="lang-en" aria-hidden={lang !== 'en'}>Canadian holding company with oil &amp; gas operations in Argentina through Crown Point Energía S.A. We operate in the Neuquén, Cuyana (Mendoza) and San Jorge Gulf (Chubut – Santa Cruz) basins. Listed on TSXV: CWV.</p>
             <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
               <a
                 href="https://www.linkedin.com/company/crown-point-energia-sa"
@@ -41,20 +41,20 @@ export default function Footer() {
 
           {/* Inversores */}
           <div className="footer-col">
-            <h5><span className="lang-es">Inversores</span><span className="lang-en">Investors</span></h5>
+            <h5><span className="lang-es" aria-hidden={lang !== 'es'}>Inversores</span><span className="lang-en" aria-hidden={lang !== 'en'}>Investors</span></h5>
             <ul>
-              <li><Link href="/inversores"><span className="lang-es">Resumen IR</span><span className="lang-en">IR overview</span></Link></li>
-              <li><Link href="/comunicados"><span className="lang-es">Comunicados</span><span className="lang-en">Press releases</span></Link></li>
-              <li><Link href="/inversores#financieros"><span className="lang-es">Estados financieros</span><span className="lang-en">Financial statements</span></Link></li>
-              <li><Link href="/inversores#on"><span className="lang-es">Obligaciones negociables</span><span className="lang-en">Notes program</span></Link></li>
-              <li><Link href="/inversores#cobertura"><span className="lang-es">Cobertura de analistas</span><span className="lang-en">Analyst coverage</span></Link></li>
-              <li><Link href="/inversores#calendario"><span className="lang-es">Calendario financiero</span><span className="lang-en">Financial calendar</span></Link></li>
+              <li><Link href="/inversores"><span className="lang-es" aria-hidden={lang !== 'es'}>Resumen IR</span><span className="lang-en" aria-hidden={lang !== 'en'}>IR overview</span></Link></li>
+              <li><Link href="/comunicados"><span className="lang-es" aria-hidden={lang !== 'es'}>Comunicados</span><span className="lang-en" aria-hidden={lang !== 'en'}>Press releases</span></Link></li>
+              <li><Link href="/inversores#financieros"><span className="lang-es" aria-hidden={lang !== 'es'}>Estados financieros</span><span className="lang-en" aria-hidden={lang !== 'en'}>Financial statements</span></Link></li>
+              <li><Link href="/inversores#on"><span className="lang-es" aria-hidden={lang !== 'es'}>Obligaciones negociables</span><span className="lang-en" aria-hidden={lang !== 'en'}>Notes program</span></Link></li>
+              <li><Link href="/inversores#cobertura"><span className="lang-es" aria-hidden={lang !== 'es'}>Cobertura de analistas</span><span className="lang-en" aria-hidden={lang !== 'en'}>Analyst coverage</span></Link></li>
+              <li><Link href="/inversores#calendario"><span className="lang-es" aria-hidden={lang !== 'es'}>Calendario financiero</span><span className="lang-en" aria-hidden={lang !== 'en'}>Financial calendar</span></Link></li>
             </ul>
           </div>
 
           {/* Operaciones */}
           <div className="footer-col">
-            <h5><span className="lang-es">Operaciones</span><span className="lang-en">Operations</span></h5>
+            <h5><span className="lang-es" aria-hidden={lang !== 'es'}>Operaciones</span><span className="lang-en" aria-hidden={lang !== 'en'}>Operations</span></h5>
             <ul>
               <li><Link href="/operaciones#cerro">Cerro de Los Leones</Link></li>
               <li><Link href="/operaciones#tordillo">El Tordillo · La Tapera</Link></li>
@@ -65,21 +65,21 @@ export default function Footer() {
 
           {/* Compañía */}
           <div className="footer-col">
-            <h5><span className="lang-es">Compañía</span><span className="lang-en">Company</span></h5>
+            <h5><span className="lang-es" aria-hidden={lang !== 'es'}>Compañía</span><span className="lang-en" aria-hidden={lang !== 'en'}>Company</span></h5>
             <ul>
-              <li><Link href="/acerca"><span className="lang-es">Acerca de nosotros</span><span className="lang-en">About us</span></Link></li>
-              <li><Link href="/acerca#estrategia"><span className="lang-es">Estrategia</span><span className="lang-en">Strategy</span></Link></li>
+              <li><Link href="/acerca"><span className="lang-es" aria-hidden={lang !== 'es'}>Acerca de nosotros</span><span className="lang-en" aria-hidden={lang !== 'en'}>About us</span></Link></li>
+              <li><Link href="/acerca#estrategia"><span className="lang-es" aria-hidden={lang !== 'es'}>Estrategia</span><span className="lang-en" aria-hidden={lang !== 'en'}>Strategy</span></Link></li>
               <li><Link href="/acerca#management">Management</Link></li>
-              <li><Link href="/carreras"><span className="lang-es">Carreras</span><span className="lang-en">Careers</span></Link></li>
-              <li><Link href="/comercial"><span className="lang-es">Comercial</span><span className="lang-en">Commercial</span></Link></li>
-              <li><Link href="/contacto"><span className="lang-es">Contacto</span><span className="lang-en">Contact</span></Link></li>
-              <li><Link href="/portal"><span className="lang-es">Portal de inversores</span><span className="lang-en">Investor portal</span></Link></li>
+              <li><Link href="/carreras"><span className="lang-es" aria-hidden={lang !== 'es'}>Carreras</span><span className="lang-en" aria-hidden={lang !== 'en'}>Careers</span></Link></li>
+              <li><Link href="/comercial"><span className="lang-es" aria-hidden={lang !== 'es'}>Comercial</span><span className="lang-en" aria-hidden={lang !== 'en'}>Commercial</span></Link></li>
+              <li><Link href="/contacto"><span className="lang-es" aria-hidden={lang !== 'es'}>Contacto</span><span className="lang-en" aria-hidden={lang !== 'en'}>Contact</span></Link></li>
+              <li><Link href="/portal"><span className="lang-es" aria-hidden={lang !== 'es'}>Portal de inversores</span><span className="lang-en" aria-hidden={lang !== 'en'}>Investor portal</span></Link></li>
             </ul>
           </div>
 
           {/* Contacto + Línea ética */}
           <div className="footer-col">
-            <h5><span className="lang-es">Contacto directo</span><span className="lang-en">Direct contact</span></h5>
+            <h5><span className="lang-es" aria-hidden={lang !== 'es'}>Contacto directo</span><span className="lang-en" aria-hidden={lang !== 'en'}>Direct contact</span></h5>
             <ul>
               <li>Godoy Cruz 2769, Piso&nbsp;4</li>
               <li>C1425FQK, Buenos Aires</li>
@@ -93,12 +93,12 @@ export default function Footer() {
               borderRadius: 'var(--r-md)',
             }}>
               <div style={{ fontSize: 10, letterSpacing: '0.14em', fontWeight: 700, textTransform: 'uppercase', color: 'var(--cp-green)', marginBottom: 6 }}>
-                <span className="lang-es">Línea ética</span>
-                <span className="lang-en">Ethics hotline</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Línea ética</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Ethics hotline</span>
               </div>
               <p style={{ fontSize: 12, lineHeight: 1.6, margin: '0 0 8px', color: 'rgba(222,224,242,0.55)' }}>
-                <span className="lang-es">Canal confidencial para reportar conductas contrarias al Código de Ética.</span>
-                <span className="lang-en">Confidential channel to report conduct contrary to the Code of Ethics.</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Canal confidencial para reportar conductas contrarias al Código de Ética.</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Confidential channel to report conduct contrary to the Code of Ethics.</span>
               </p>
               <a href="mailto:etica@crownpointenergy.com" style={{ fontSize: 12, fontWeight: 600, color: 'rgba(222,224,242,0.75)', letterSpacing: '0.02em' }}>
                 etica@crownpointenergy.com
@@ -109,23 +109,23 @@ export default function Footer() {
 
         {/* Legal disclaimer */}
         <div className="footer-legal">
-          <p className="lang-es">
+          <p className="lang-es" aria-hidden={lang !== 'es'}>
             <strong>Información forward-looking:</strong> Este sitio puede contener declaraciones prospectivas en el sentido de la legislación canadiense de valores. Dichas declaraciones implican riesgos e incertidumbres conocidos y desconocidos que podrían provocar que los resultados reales difieran materialmente. Crown Point Energy Inc. no asume ninguna obligación de actualizar declaraciones prospectivas.
           </p>
-          <p className="lang-en">
+          <p className="lang-en" aria-hidden={lang !== 'en'}>
             <strong>Forward-looking information:</strong> This site may contain forward-looking statements within the meaning of applicable Canadian securities legislation. Such statements involve known and unknown risks and uncertainties that could cause actual results to differ materially. Crown Point Energy Inc. does not assume any obligation to update forward-looking statements.
           </p>
           <p style={{ marginTop: 8 }}>
             <strong>TSXV:</strong>{' '}
-            <span className="lang-es">Ni la TSX Venture Exchange ni su Proveedor de Servicios de Regulación (conforme a ese término se define en las políticas de TSX Venture Exchange) aceptan responsabilidad por la idoneidad o exactitud de este sitio.</span>
-            <span className="lang-en">Neither TSX Venture Exchange nor its Regulation Services Provider accepts responsibility for the adequacy or accuracy of this site.</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>Ni la TSX Venture Exchange ni su Proveedor de Servicios de Regulación (conforme a ese término se define en las políticas de TSX Venture Exchange) aceptan responsabilidad por la idoneidad o exactitud de este sitio.</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>Neither TSX Venture Exchange nor its Regulation Services Provider accepts responsibility for the adequacy or accuracy of this site.</span>
             {' '}<strong>CNV:</strong>{' '}
-            <span className="lang-es">Crown Point Energía S.A. se encuentra inscripta en el Registro de Emisoras de la Comisión Nacional de Valores de la República Argentina.</span>
-            <span className="lang-en">Crown Point Energy Inc. (through its subsidiary Crown Point Energía S.A.) is registered as an issuer with the Comisión Nacional de Valores (Argentine Securities Commission).</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>Crown Point Energía S.A. se encuentra inscripta en el Registro de Emisoras de la Comisión Nacional de Valores de la República Argentina.</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>Crown Point Energy Inc. (through its subsidiary Crown Point Energía S.A.) is registered as an issuer with the Comisión Nacional de Valores (Argentine Securities Commission).</span>
           </p>
           <p style={{ marginTop: 8 }}>
-            <span className="lang-es">Las reservas de petróleo y gas se reportan conforme a los estándares de la Canadian Securities Administrators (CSA) National Instrument 51-101. BOE puede ser un concepto engañoso ya que un barril de petróleo equivalente puede no representar la misma relación de valor que entre petróleo y gas natural.</span>
-            <span className="lang-en">Oil and gas reserves are reported in accordance with Canadian Securities Administrators (CSA) National Instrument 51-101 standards. BOE may be a misleading measure as one barrel of oil equivalent may not represent the same value relationship between oil and natural gas.</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>Las reservas de petróleo y gas se reportan conforme a los estándares de la Canadian Securities Administrators (CSA) National Instrument 51-101. BOE puede ser un concepto engañoso ya que un barril de petróleo equivalente puede no representar la misma relación de valor que entre petróleo y gas natural.</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>Oil and gas reserves are reported in accordance with Canadian Securities Administrators (CSA) National Instrument 51-101 standards. BOE may be a misleading measure as one barrel of oil equivalent may not represent the same value relationship between oil and natural gas.</span>
           </p>
         </div>
 
@@ -133,20 +133,20 @@ export default function Footer() {
           <span suppressHydrationWarning>© {new Date().getFullYear()} Crown Point Energy Inc.&nbsp;·&nbsp;TSXV: CWV</span>
           <span style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <Link href="/legal/terminos" style={{ opacity: 0.7 }}>
-              <span className="lang-es">Términos y condiciones</span>
-              <span className="lang-en">Terms of Use</span>
+              <span className="lang-es" aria-hidden={lang !== 'es'}>Términos y condiciones</span>
+              <span className="lang-en" aria-hidden={lang !== 'en'}>Terms of Use</span>
             </Link>
             <Link href="/legal/privacidad" style={{ opacity: 0.7 }}>
-              <span className="lang-es">Privacidad y cookies</span>
-              <span className="lang-en">Privacy &amp; Cookies</span>
+              <span className="lang-es" aria-hidden={lang !== 'es'}>Privacidad y cookies</span>
+              <span className="lang-en" aria-hidden={lang !== 'en'}>Privacy &amp; Cookies</span>
             </Link>
             <Link href="/legal/avisos" style={{ opacity: 0.7 }}>
-              <span className="lang-es">Avisos legales</span>
-              <span className="lang-en">Advisories</span>
+              <span className="lang-es" aria-hidden={lang !== 'es'}>Avisos legales</span>
+              <span className="lang-en" aria-hidden={lang !== 'en'}>Advisories</span>
             </Link>
             <Link href="/legal/terminos#accesibilidad" style={{ opacity: 0.7 }}>
-              <span className="lang-es">Accesibilidad</span>
-              <span className="lang-en">Accessibility</span>
+              <span className="lang-es" aria-hidden={lang !== 'es'}>Accesibilidad</span>
+              <span className="lang-en" aria-hidden={lang !== 'en'}>Accessibility</span>
             </Link>
           </span>
         </div>

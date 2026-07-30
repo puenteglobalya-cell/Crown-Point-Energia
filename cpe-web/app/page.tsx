@@ -92,7 +92,7 @@ export default async function HomePage() {
             <div className="hero-veil"></div>
           </div>
           <DroneHud lang={lang} />
-          {heroVideo && <HeroVideoPip src={heroVideo} />}
+          {heroVideo && <HeroVideoPip src={heroVideo} lang={lang} />}
           <div className="container hero-content">
             <div className="hero-eyebrow">
               <span className="eyebrow" style={{ color: 'var(--cp-green-soft)' }}>

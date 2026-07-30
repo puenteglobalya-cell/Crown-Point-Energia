@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin/', '/portal/', '/auth/', '/api/', '/biblioteca', '/infografia', '/esg'],
+        disallow: ['/admin/', '/portal/', '/auth/', '/api/', '/biblioteca', '/infografia'],
       },
     ],
     // TEMP: pointing at the Vercel domain until DNS migrates — see sitemap.ts

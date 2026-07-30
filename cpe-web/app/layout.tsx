@@ -83,10 +83,10 @@ export const metadata: Metadata = {
     description: 'Empresa argentina de petróleo y gas. Producción propia en tres cuencas, listada en TSXV: CWV.',
     url: 'https://crownpointenergy.com',
     locale: 'es_AR',
-    images: [{ url: '/logo.png', width: 1200, height: 630, alt: 'Crown Point Energy' }],
+    images: [{ url: '/logo.png', width: 178, height: 103, alt: 'Crown Point Energy' }],
   },
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'Crown Point Energy — TSXV: CWV',
     description: 'Empresa argentina de petróleo y gas. Producción propia en tres cuencas, listada en TSXV: CWV.',
     images: ['/logo.png'],
@@ -183,11 +183,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         )}
         {showSiteChrome && <Header fields={state.fields} show={state.show} lang={lang} theme={theme} />}
         <main id="main-content">{children}</main>
-        {showSiteChrome && <Footer />}
+        {showSiteChrome && <Footer lang={lang} />}
         <CpeAdapter state={{ ...state, lang }} />
         <RevealObserver />
         {showSiteChrome && <BackToTop />}
-        {showSiteChrome && <CookieBanner />}
+        {showSiteChrome && <CookieBanner lang={lang} />}
       </body>
     </html>
   )
