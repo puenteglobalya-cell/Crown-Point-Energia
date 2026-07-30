@@ -1,6 +1,6 @@
 import { SPROULE_2P_2025, totalReserves } from '@/lib/reserves'
 
-export default function ReservesTable() {
+export default function ReservesTable({ lang }: { lang: 'es' | 'en' }) {
   const data  = SPROULE_2P_2025
   const total = totalReserves(data)
   const rows  = [...data.categories, total]
@@ -9,12 +9,12 @@ export default function ReservesTable() {
     <details className="reserves-details">
       <summary className="reserves-summary">
         <span className="reserves-summary__label">
-          <span className="lang-es">Reservas 2P Certificadas — {data.certifier}</span>
-          <span className="lang-en">Certified 2P Reserves — {data.certifier}</span>
+          <span className="lang-es" aria-hidden={lang !== 'es'}>Reservas 2P Certificadas — {data.certifier}</span>
+          <span className="lang-en" aria-hidden={lang !== 'en'}>Certified 2P Reserves — {data.certifier}</span>
         </span>
         <span className="reserves-summary__total">
-          <span className="lang-es">Total bruto <strong>{total.gross.toFixed(3)}</strong> MMboe</span>
-          <span className="lang-en">Total gross <strong>{total.gross.toFixed(3)}</strong> MMboe</span>
+          <span className="lang-es" aria-hidden={lang !== 'es'}>Total bruto <strong>{total.gross.toFixed(3)}</strong> MMboe</span>
+          <span className="lang-en" aria-hidden={lang !== 'en'}>Total gross <strong>{total.gross.toFixed(3)}</strong> MMboe</span>
         </span>
       </summary>
 
@@ -23,16 +23,16 @@ export default function ReservesTable() {
           <thead>
             <tr>
               <th scope="col">
-                <span className="lang-es">Categoría</span>
-                <span className="lang-en">Category</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Categoría</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Category</span>
               </th>
               <th scope="col" className="num">
-                <span className="lang-es">Bruto (MMboe)</span>
-                <span className="lang-en">Gross (MMboe)</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Bruto (MMboe)</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Gross (MMboe)</span>
               </th>
               <th scope="col" className="num">
-                <span className="lang-es">Neto (MMboe)</span>
-                <span className="lang-en">Net (MMboe)</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Neto (MMboe)</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Net (MMboe)</span>
               </th>
             </tr>
           </thead>
@@ -40,8 +40,8 @@ export default function ReservesTable() {
             {rows.map((r, i) => (
               <tr key={r.category} data-total={i === rows.length - 1 ? '' : undefined}>
                 <td>
-                  <span className="lang-es">{r.category}</span>
-                  <span className="lang-en">{r.category === 'Total 2P' ? 'Total 2P' : r.category === 'Total Probadas' ? 'Total Proved' : r.category === 'Total Probables' ? 'Total Probable' : r.category}</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>{r.category}</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>{r.category === 'Total 2P' ? 'Total 2P' : r.category === 'Total Probadas' ? 'Total Proved' : r.category === 'Total Probables' ? 'Total Probable' : r.category}</span>
                 </td>
                 <td className="num">{r.gross.toFixed(3)}</td>
                 <td className="num">{r.net.toFixed(3)}</td>
@@ -50,11 +50,11 @@ export default function ReservesTable() {
           </tbody>
         </table>
         <p className="reserves-footnote">
-          <span className="lang-es">
+          <span className="lang-es" aria-hidden={lang !== 'es'}>
             Certificadas al 31/12/2025 bajo NI 51-101. Volúmenes en MMboe (millones de barriles de petróleo equivalente).
             Bruto = participación de trabajo bruta; Neto = porción correspondiente a Crown Point después de regalías.
           </span>
-          <span className="lang-en">
+          <span className="lang-en" aria-hidden={lang !== 'en'}>
             Certified as of 31/12/2025 under NI 51-101. Volumes in MMboe (millions of barrels of oil equivalent).
             Gross = working interest share before royalties; Net = Crown Point share after royalties.
           </span>

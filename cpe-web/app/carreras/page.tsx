@@ -234,7 +234,7 @@ export default async function CarrerasPage() {
                   rrhh@crownpointenergy.com
                 </a>
               </div>
-              <ApplicationForm />
+              <ApplicationForm lang={lang} />
             </div>
           </div>
         </div>

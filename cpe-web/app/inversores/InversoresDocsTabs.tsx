@@ -36,7 +36,7 @@ function getQuarter(doc: Documento): string {
 
 const QUARTER_ORDER = ['Q1', 'Q2', 'Q3', 'Q4', 'Annual', 'Other']
 
-function DocRow({ d, supabaseUrl }: { d: Documento; supabaseUrl: string }) {
+function DocRow({ d, supabaseUrl, lang }: { d: Documento; supabaseUrl: string; lang: 'es' | 'en' }) {
   const ext = docExt(d.file_name)
   const url = publicUrl(d.storage_path, supabaseUrl)
   const kb = d.file_size ? Math.round(d.file_size / 1024) : null
@@ -46,14 +46,14 @@ function DocRow({ d, supabaseUrl }: { d: Documento; supabaseUrl: string }) {
     <li className="doc-item" style={{ padding: '10px 12px' }}>
       <div className="doc-icon">{ext}</div>
       <div className="doc-title">
-        <span className="lang-es">{d.titulo_es}</span>
-        <span className="lang-en">{d.titulo_en}</span>
+        <span className="lang-es" aria-hidden={lang !== 'es'}>{d.titulo_es}</span>
+        <span className="lang-en" aria-hidden={lang !== 'en'}>{d.titulo_en}</span>
         {size && <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontWeight: 400, display: 'block', marginTop: 2 }}>{size}</span>}
       </div>
       <div className="doc-meta">{d.periodo}</div>
       <a className="doc-action" href={url} target="_blank" rel="noreferrer">
-        <span className="lang-es">Descargar</span>
-        <span className="lang-en">Download</span>
+        <span className="lang-es" aria-hidden={lang !== 'es'}>Descargar</span>
+        <span className="lang-en" aria-hidden={lang !== 'en'}>Download</span>
       </a>
     </li>
   )
@@ -63,10 +63,12 @@ export default function InversoresDocsTabs({
   docs,
   tipo,
   supabaseUrl,
+  lang,
 }: {
   docs: Documento[]
   tipo: string
   supabaseUrl: string
+  lang: 'es' | 'en'
 }) {
   const filtered = docs.filter(d => d.tipo === tipo)
   const years = Array.from(new Set(filtered.map(getYear).filter(Boolean))).sort((a, b) => +b - +a)
@@ -76,8 +78,8 @@ export default function InversoresDocsTabs({
   if (filtered.length === 0) {
     return (
       <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
-        <span className="lang-es">Próximamente.</span>
-        <span className="lang-en">Coming soon.</span>
+        <span className="lang-es" aria-hidden={lang !== 'es'}>Próximamente.</span>
+        <span className="lang-en" aria-hidden={lang !== 'en'}>Coming soon.</span>
       </p>
     )
   }
@@ -158,8 +160,8 @@ export default function InversoresDocsTabs({
                     <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                       <path d="M8 2v8m0 0-3-3m3 3 3-3M2 12h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    <span className="lang-es">Descargar todo</span>
-                    <span className="lang-en">Download all</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Descargar todo</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Download all</span>
                   </button>
                 )}
               </div>
@@ -169,18 +171,18 @@ export default function InversoresDocsTabs({
                     <div className="ir-q-section" key={q}>
                       <div className="ir-q-label">
                         {q === 'Annual'
-                          ? <><span className="lang-es">Anual</span><span className="lang-en">Annual</span></>
+                          ? <><span className="lang-es" aria-hidden={lang !== 'es'}>Anual</span><span className="lang-en" aria-hidden={lang !== 'en'}>Annual</span></>
                           : q === 'Other'
-                          ? <><span className="lang-es">Otros</span><span className="lang-en">Other</span></>
+                          ? <><span className="lang-es" aria-hidden={lang !== 'es'}>Otros</span><span className="lang-en" aria-hidden={lang !== 'en'}>Other</span></>
                           : q}
                       </div>
                       <ul className="doc-list" style={{ margin: 0, padding: '4px 8px 8px' }}>
-                        {byQ[q].map(d => <DocRow key={d.id} d={d} supabaseUrl={supabaseUrl} />)}
+                        {byQ[q].map(d => <DocRow key={d.id} d={d} supabaseUrl={supabaseUrl} lang={lang} />)}
                       </ul>
                     </div>
                   )) : (
                     <ul className="doc-list" style={{ margin: 0, padding: '8px' }}>
-                      {yearDocs.map(d => <DocRow key={d.id} d={d} supabaseUrl={supabaseUrl} />)}
+                      {yearDocs.map(d => <DocRow key={d.id} d={d} supabaseUrl={supabaseUrl} lang={lang} />)}
                     </ul>
                   )}
                 </div>

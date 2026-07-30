@@ -162,7 +162,7 @@ export default async function ContactoPage() {
       {/* Locations map */}
       <section className="section-tight">
         <div className="container">
-          <UbicacionesMap />
+          <UbicacionesMap lang={lang} />
         </div>
       </section>
 
@@ -170,7 +170,7 @@ export default async function ContactoPage() {
       <section className="section">
         <div className="container">
           <div className="contact-grid">
-            <ContactForm />
+            <ContactForm lang={lang} />
 
             <aside className="contact-info-card">
               <h3 style={{ fontSize: 18, marginBottom: 'var(--s-5)', fontFamily: 'var(--font-display)' }}>
