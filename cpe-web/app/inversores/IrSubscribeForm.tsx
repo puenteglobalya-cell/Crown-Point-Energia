@@ -6,7 +6,7 @@ import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 
 type State = 'idle' | 'submitting' | 'done' | 'error'
 
-export default function IrSubscribeForm() {
+export default function IrSubscribeForm({ lang }: { lang: 'es' | 'en' }) {
   const [state, setState] = useState<State>('idle')
   const [errMsg, setErrMsg] = useState('')
 
@@ -40,12 +40,12 @@ export default function IrSubscribeForm() {
       <div style={{ padding: 'var(--s-6)', background: 'rgba(108,174,82,0.12)', border: '1px solid rgba(108,174,82,0.3)', borderRadius: 'var(--r-lg)', textAlign: 'center' }}>
         <div style={{ fontSize: 24, marginBottom: 8 }}>✓</div>
         <p style={{ color: '#8BD478', fontSize: 16, fontWeight: 600, margin: '0 0 4px' }}>
-          <span className="lang-es">Suscripcion confirmada</span>
-          <span className="lang-en">Subscription confirmed</span>
+          <span className="lang-es" aria-hidden={lang !== 'es'}>Suscripcion confirmada</span>
+          <span className="lang-en" aria-hidden={lang !== 'en'}>Subscription confirmed</span>
         </p>
         <p style={{ color: 'rgba(236,238,251,0.6)', fontSize: 13, margin: 0 }}>
-          <span className="lang-es">Recibiras los comunicados de prensa y resultados trimestrales en tu casilla.</span>
-          <span className="lang-en">You&apos;ll receive press releases and quarterly results in your inbox.</span>
+          <span className="lang-es" aria-hidden={lang !== 'es'}>Recibiras los comunicados de prensa y resultados trimestrales en tu casilla.</span>
+          <span className="lang-en" aria-hidden={lang !== 'en'}>You&apos;ll receive press releases and quarterly results in your inbox.</span>
         </p>
       </div>
     )
@@ -60,7 +60,7 @@ export default function IrSubscribeForm() {
         </div>
       )}
       <div className="form-row">
-        <label style={{ color: 'rgba(236,238,251,0.7)' }}><span className="lang-es">Nombre</span><span className="lang-en">Name</span></label>
+        <label style={{ color: 'rgba(236,238,251,0.7)' }}><span className="lang-es" aria-hidden={lang !== 'es'}>Nombre</span><span className="lang-en" aria-hidden={lang !== 'en'}>Name</span></label>
         <input type="text" name="nombre" required placeholder="—" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.18)', color: '#fff' }} />
       </div>
       <div className="form-row">
@@ -74,9 +74,9 @@ export default function IrSubscribeForm() {
         style={{ background: 'var(--cp-green)', color: 'var(--cp-navy-darker)', marginTop: 8 }}
       >
         {state === 'submitting' ? (
-          <><span className="lang-es">Enviando…</span><span className="lang-en">Sending…</span></>
+          <><span className="lang-es" aria-hidden={lang !== 'es'}>Enviando…</span><span className="lang-en" aria-hidden={lang !== 'en'}>Sending…</span></>
         ) : (
-          <><span className="lang-es">Suscribirme</span><span className="lang-en">Subscribe</span></>
+          <><span className="lang-es" aria-hidden={lang !== 'es'}>Suscribirme</span><span className="lang-en" aria-hidden={lang !== 'en'}>Subscribe</span></>
         )}
       </button>
     </form>

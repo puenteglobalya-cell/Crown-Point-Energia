@@ -51,7 +51,7 @@ function getYear(iso: string) {
   return iso ? Number(iso.slice(0, 4)) : 0
 }
 
-export default function ComunicadosList({ initialData }: { initialData: Comunicado[] }) {
+export default function ComunicadosList({ initialData, lang }: { initialData: Comunicado[]; lang: 'es' | 'en' }) {
   const [cat, setCat] = useState('all')
   const [search, setSearch] = useState('')
   const [subscribed, setSubscribed] = useState(false)
@@ -101,16 +101,16 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
           <div className="press-subscribe" style={{ marginTop: 0 }}>
             <div>
               <span className="eyebrow" style={{ color: 'var(--accent)' }}>
-                <span className="lang-es">Alertas de prensa</span>
-                <span className="lang-en">Press alerts</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Alertas de prensa</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Press alerts</span>
               </span>
               <h3 style={{ fontSize: 28, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em', marginTop: 8, marginBottom: 8 }}>
-                <span className="lang-es">Suscribite para recibir los comunicados.</span>
-                <span className="lang-en">Subscribe to receive press releases.</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Suscribite para recibir los comunicados.</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>Subscribe to receive press releases.</span>
               </h3>
               <p style={{ color: 'var(--fg-soft)', fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-                <span className="lang-es">Te notificaremos ante cada comunicado de prensa, resultado trimestral y evento material firmado por la Responsable de Relaciones con el Mercado.</span>
-                <span className="lang-en">We'll notify you of each press release, quarterly result and material event signed by the Investor Relations Officer.</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>Te notificaremos ante cada comunicado de prensa, resultado trimestral y evento material firmado por la Responsable de Relaciones con el Mercado.</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>We'll notify you of each press release, quarterly result and material event signed by the Investor Relations Officer.</span>
               </p>
             </div>
             {subscribed ? (
@@ -120,12 +120,12 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
                 </div>
                 <div>
                   <p style={{ fontWeight: 600, margin: '0 0 4px', color: 'var(--fg)' }}>
-                    <span className="lang-es">¡Suscripto!</span>
-                    <span className="lang-en">Subscribed!</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>¡Suscripto!</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Subscribed!</span>
                   </p>
                   <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: 0 }}>
-                    <span className="lang-es">Te notificaremos ante cada comunicado nuevo.</span>
-                    <span className="lang-en">We'll notify you on every new release.</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Te notificaremos ante cada comunicado nuevo.</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>We'll notify you on every new release.</span>
                   </p>
                 </div>
               </div>
@@ -133,8 +133,8 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
               <form className="press-subscribe-form" onSubmit={e => { e.preventDefault(); setSubscribed(true) }}>
                 <input type="email" required placeholder="correo@empresa.com" />
                 <button type="submit" className="btn btn-primary">
-                  <span className="lang-es">Suscribirme</span>
-                  <span className="lang-en">Subscribe</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Suscribirme</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Subscribe</span>
                 </button>
               </form>
             )}
@@ -149,7 +149,7 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
               <div className="filter-row">
                 {CATS.filter(c => c.key === 'all' || initialData.some(d => d.tipo === c.key)).map(c => (
                   <button key={c.key} className={`filter-chip${cat === c.key ? ' active' : ''}`} onClick={() => setCat(c.key)}>
-                    <span className="lang-es">{c.es}</span><span className="lang-en">{c.en}</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>{c.es}</span><span className="lang-en" aria-hidden={lang !== 'en'}>{c.en}</span>
                   </button>
                 ))}
               </div>
@@ -157,8 +157,8 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
 
             {filtered.length === 0 ? (
               <p style={{ color: 'var(--fg-muted)', fontSize: 14, padding: 'var(--s-6) 0' }}>
-                <span className="lang-es">No hay resultados para esa búsqueda.</span>
-                <span className="lang-en">No results for that search.</span>
+                <span className="lang-es" aria-hidden={lang !== 'es'}>No hay resultados para esa búsqueda.</span>
+                <span className="lang-en" aria-hidden={lang !== 'en'}>No results for that search.</span>
               </p>
             ) : years.map(year => {
               const items = paged.filter(r => getYear(r.fecha) === year)
@@ -167,8 +167,8 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
                   <div className="year-divider">
                     {year}{' '}
                     <span className="num">
-                      <span className="lang-es">{items.length} comunicados</span>
-                      <span className="lang-en">{items.length} releases</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>{items.length} comunicados</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>{items.length} releases</span>
                     </span>
                   </div>
                   <div className="press-card-grid">
@@ -182,25 +182,25 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
                         <>
                           <div className="press-card-top">
                             <span className="chip" style={{ background: catColor }}>
-                              <span className="lang-es">{catLabel.es}</span>
-                              <span className="lang-en">{catLabel.en}</span>
+                              <span className="lang-es" aria-hidden={lang !== 'es'}>{catLabel.es}</span>
+                              <span className="lang-en" aria-hidden={lang !== 'en'}>{catLabel.en}</span>
                             </span>
                             <span className="press-card-date">{fmtFecha(item.fecha)}</span>
                           </div>
                           <h3 className="press-card-title">
-                            <span className="lang-es">{item.titulo_es}</span>
-                            <span className="lang-en">{item.titulo_en}</span>
+                            <span className="lang-es" aria-hidden={lang !== 'es'}>{item.titulo_es}</span>
+                            <span className="lang-en" aria-hidden={lang !== 'en'}>{item.titulo_en}</span>
                           </h3>
                           {(item.resumen_es || item.resumen_en) && (
                             <p className="press-card-summary">
-                              <span className="lang-es">{item.resumen_es}</span>
-                              <span className="lang-en">{item.resumen_en}</span>
+                              <span className="lang-es" aria-hidden={lang !== 'es'}>{item.resumen_es}</span>
+                              <span className="lang-en" aria-hidden={lang !== 'en'}>{item.resumen_en}</span>
                             </p>
                           )}
                           <div className="press-card-cta" style={{ gap: 12 }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <span className="lang-es">Leer más</span>
-                              <span className="lang-en">Read more</span>
+                              <span className="lang-es" aria-hidden={lang !== 'es'}>Leer más</span>
+                              <span className="lang-en" aria-hidden={lang !== 'en'}>Read more</span>
                               <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
                             </span>
                             {item.url_pdf && (
@@ -242,12 +242,12 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
                   style={{ padding: '12px 32px', fontSize: 14 }}
                   onClick={() => setShowCount(c => c + PAGE_SIZE)}
                 >
-                  <span className="lang-es">Ver {Math.min(PAGE_SIZE, filtered.length - showCount)} más</span>
-                  <span className="lang-en">Show {Math.min(PAGE_SIZE, filtered.length - showCount)} more</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Ver {Math.min(PAGE_SIZE, filtered.length - showCount)} más</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Show {Math.min(PAGE_SIZE, filtered.length - showCount)} more</span>
                 </button>
                 <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 8 }}>
-                  <span className="lang-es">{showCount} de {filtered.length} comunicados</span>
-                  <span className="lang-en">{showCount} of {filtered.length} releases</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>{showCount} de {filtered.length} comunicados</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>{showCount} of {filtered.length} releases</span>
                 </p>
               </div>
             )}
@@ -256,16 +256,16 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
             <div className="press-subscribe">
               <div>
                 <span className="eyebrow" style={{ color: 'var(--accent)' }}>
-                  <span className="lang-es">Alertas de prensa</span>
-                  <span className="lang-en">Press alerts</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Alertas de prensa</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Press alerts</span>
                 </span>
                 <h3 style={{ fontSize: 28, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em', marginTop: 8, marginBottom: 8 }}>
-                  <span className="lang-es">Recibí los comunicados en tu casilla.</span>
-                  <span className="lang-en">Get releases in your inbox.</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Recibí los comunicados en tu casilla.</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Get releases in your inbox.</span>
                 </h3>
                 <p style={{ color: 'var(--fg-soft)', fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-                  <span className="lang-es">Suscribite para recibir comunicados de prensa, resultados trimestrales y eventos materiales.</span>
-                  <span className="lang-en">Subscribe to receive press releases, quarterly results and material events.</span>
+                  <span className="lang-es" aria-hidden={lang !== 'es'}>Suscribite para recibir comunicados de prensa, resultados trimestrales y eventos materiales.</span>
+                  <span className="lang-en" aria-hidden={lang !== 'en'}>Subscribe to receive press releases, quarterly results and material events.</span>
                 </p>
               </div>
               {subscribed ? (
@@ -275,12 +275,12 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
                   </div>
                   <div>
                     <p style={{ fontWeight: 600, margin: '0 0 4px', color: 'var(--fg)' }}>
-                      <span className="lang-es">¡Suscripto!</span>
-                      <span className="lang-en">Subscribed!</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>¡Suscripto!</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>Subscribed!</span>
                     </p>
                     <p style={{ fontSize: 13, color: 'var(--fg-soft)', margin: 0 }}>
-                      <span className="lang-es">Te notificaremos ante cada comunicado nuevo.</span>
-                      <span className="lang-en">We'll notify you on every new release.</span>
+                      <span className="lang-es" aria-hidden={lang !== 'es'}>Te notificaremos ante cada comunicado nuevo.</span>
+                      <span className="lang-en" aria-hidden={lang !== 'en'}>We'll notify you on every new release.</span>
                     </p>
                   </div>
                 </div>
@@ -291,8 +291,8 @@ export default function ComunicadosList({ initialData }: { initialData: Comunica
                 >
                   <input type="email" required placeholder="correo@empresa.com" />
                   <button type="submit" className="btn btn-primary">
-                    <span className="lang-es">Suscribirme</span>
-                    <span className="lang-en">Subscribe</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Suscribirme</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Subscribe</span>
                   </button>
                 </form>
               )}

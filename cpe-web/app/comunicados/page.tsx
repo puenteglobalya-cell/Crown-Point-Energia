@@ -46,7 +46,7 @@ export default async function ComunicadosPage() {
         </div>
       </section>
 
-      <ComunicadosList initialData={data ?? []} />
+      <ComunicadosList initialData={data ?? []} lang={lang} />
     </>
   )
 }

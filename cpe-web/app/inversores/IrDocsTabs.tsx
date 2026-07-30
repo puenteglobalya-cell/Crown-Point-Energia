@@ -43,7 +43,7 @@ function isStorageUrl(url: string) {
   return url.includes('supabase.co/storage')
 }
 
-function DocRow({ doc }: { doc: IrDocument }) {
+function DocRow({ doc, lang }: { doc: IrDocument; lang: 'es' | 'en' }) {
   const label = doc.tipo || (isStorageUrl(doc.url) ? 'PDF' : 'PDF')
   const title = doc.titulo_en || doc.titulo_es
 
@@ -51,8 +51,8 @@ function DocRow({ doc }: { doc: IrDocument }) {
     <li className="doc-item" style={{ padding: '10px 12px' }}>
       <div className="doc-icon">{label === 'FS' || label === 'MDA' || label === 'PDF' ? label : 'PDF'}</div>
       <div className="doc-title">
-        <span className="lang-es">{doc.titulo_es || title}</span>
-        <span className="lang-en">{doc.titulo_en || title}</span>
+        <span className="lang-es" aria-hidden={lang !== 'es'}>{doc.titulo_es || title}</span>
+        <span className="lang-en" aria-hidden={lang !== 'en'}>{doc.titulo_en || title}</span>
         {doc.entidad && doc.entidad !== 'CPI' && (
           <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontWeight: 600, letterSpacing: '0.08em', display: 'inline-block', marginLeft: 6, padding: '1px 6px', border: '1px solid var(--rule)', borderRadius: 'var(--r-pill)' }}>
             {doc.entidad}
@@ -64,8 +64,8 @@ function DocRow({ doc }: { doc: IrDocument }) {
       </div>
       <div className="doc-meta">{doc.periodo}</div>
       <a className="doc-action" href={doc.url} target="_blank" rel="noreferrer noopener">
-        <span className="lang-es">Descargar</span>
-        <span className="lang-en">Download</span>
+        <span className="lang-es" aria-hidden={lang !== 'es'}>Descargar</span>
+        <span className="lang-en" aria-hidden={lang !== 'en'}>Download</span>
       </a>
     </li>
   )
@@ -76,11 +76,13 @@ export default function IrDocsTabs({
   categoria,
   entidad,
   showEntidadTabs = false,
+  lang,
 }: {
   docs: IrDocument[]
   categoria: string
   entidad?: string
   showEntidadTabs?: boolean
+  lang: 'es' | 'en'
 }) {
   const byCat = docs.filter(d => d.categoria === categoria)
   const entidades = showEntidadTabs
@@ -109,8 +111,8 @@ export default function IrDocsTabs({
   if (byCat.length === 0) {
     return (
       <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
-        <span className="lang-es">Próximamente.</span>
-        <span className="lang-en">Coming soon.</span>
+        <span className="lang-es" aria-hidden={lang !== 'es'}>Próximamente.</span>
+        <span className="lang-en" aria-hidden={lang !== 'en'}>Coming soon.</span>
       </p>
     )
   }
@@ -176,13 +178,13 @@ export default function IrDocsTabs({
           <>
             <p className="ir-search-count">{searchResults.length} resultado{searchResults.length !== 1 ? 's' : ''}</p>
             <ul className="doc-list ir-accordion" style={{ margin: 0, padding: '4px 8px' }}>
-              {searchResults.map(d => <DocRow key={d.id} doc={d} />)}
+              {searchResults.map(d => <DocRow key={d.id} doc={d} lang={lang} />)}
             </ul>
           </>
         ) : (
           <p style={{ fontSize: 14, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
-            <span className="lang-es">Sin resultados para “{q}”.</span>
-            <span className="lang-en">No results for “{q}”.</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>Sin resultados para “{q}”.</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>No results for “{q}”.</span>
           </p>
         )
       ) : (
@@ -221,18 +223,18 @@ export default function IrDocsTabs({
                     <div className="ir-q-section" key={q}>
                       <div className="ir-q-label">
                         {q === 'Annual'
-                          ? <><span className="lang-es">Anual</span><span className="lang-en">Annual</span></>
+                          ? <><span className="lang-es" aria-hidden={lang !== 'es'}>Anual</span><span className="lang-en" aria-hidden={lang !== 'en'}>Annual</span></>
                           : q === 'Other'
-                          ? <><span className="lang-es">Otros</span><span className="lang-en">Other</span></>
+                          ? <><span className="lang-es" aria-hidden={lang !== 'es'}>Otros</span><span className="lang-en" aria-hidden={lang !== 'en'}>Other</span></>
                           : q}
                       </div>
                       <ul className="doc-list" style={{ margin: 0, padding: '4px 8px 8px' }}>
-                        {byQ[q].map(d => <DocRow key={d.id} doc={d} />)}
+                        {byQ[q].map(d => <DocRow key={d.id} doc={d} lang={lang} />)}
                       </ul>
                     </div>
                   )) : (
                     <ul className="doc-list" style={{ margin: 0, padding: '8px' }}>
-                      {yearDocs.map(d => <DocRow key={d.id} doc={d} />)}
+                      {yearDocs.map(d => <DocRow key={d.id} doc={d} lang={lang} />)}
                     </ul>
                   )}
                 </div>

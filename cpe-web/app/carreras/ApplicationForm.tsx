@@ -99,7 +99,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 // ── Main component ────────────────────────────────────────────────────────
 
-export default function ApplicationForm() {
+export default function ApplicationForm({ lang }: { lang: 'es' | 'en' }) {
   const [step, setStep] = useState<Step>(1)
   const [data, setData] = useState<StepData>(EMPTY)
   const [state, setState] = useState<FormState>('idle')
@@ -158,16 +158,16 @@ export default function ApplicationForm() {
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11l4 4 8-9" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </div>
         <h3 style={{ margin: '0 0 8px', fontSize: 22 }}>
-          <span className="lang-es">¡Postulación recibida!</span>
-          <span className="lang-en">Application received!</span>
+          <span className="lang-es" aria-hidden={lang !== 'es'}>¡Postulación recibida!</span>
+          <span className="lang-en" aria-hidden={lang !== 'en'}>Application received!</span>
         </h3>
         <p style={{ color: 'var(--fg-soft)', lineHeight: 1.6, margin: '0 0 6px' }}>
-          <span className="lang-es">Nuestro equipo de RRHH revisará tu perfil. Si hay una oportunidad que se ajuste, te contactaremos en un plazo máximo de 3 semanas.</span>
-          <span className="lang-en">Our HR team will review your profile. If there's a matching opportunity, we'll reach out within 3 weeks.</span>
+          <span className="lang-es" aria-hidden={lang !== 'es'}>Nuestro equipo de RRHH revisará tu perfil. Si hay una oportunidad que se ajuste, te contactaremos en un plazo máximo de 3 semanas.</span>
+          <span className="lang-en" aria-hidden={lang !== 'en'}>Our HR team will review your profile. If there's a matching opportunity, we'll reach out within 3 weeks.</span>
         </p>
         <p style={{ color: 'var(--fg-muted)', fontSize: 13 }}>
-          <span className="lang-es">Confirmación enviada a </span>
-          <span className="lang-en">Confirmation sent to </span>
+          <span className="lang-es" aria-hidden={lang !== 'es'}>Confirmación enviada a </span>
+          <span className="lang-en" aria-hidden={lang !== 'en'}>Confirmation sent to </span>
           <strong>{data.email}</strong>
         </p>
       </div>
@@ -238,8 +238,8 @@ export default function ApplicationForm() {
               onClick={() => setStep(2)}
               style={{ padding: '14px 28px' }}
             >
-              <span className="lang-es">Continuar</span>
-              <span className="lang-en">Continue</span>
+              <span className="lang-es" aria-hidden={lang !== 'es'}>Continuar</span>
+              <span className="lang-en" aria-hidden={lang !== 'en'}>Continue</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginLeft: 6 }}><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
           </div>
@@ -413,8 +413,8 @@ export default function ApplicationForm() {
                     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                   <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>
-                    <span className="lang-es">Arrastrá tu CV o hacé clic para seleccionar</span>
-                    <span className="lang-en">Drag your CV or click to select</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Arrastrá tu CV o hacé clic para seleccionar</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Drag your CV or click to select</span>
                   </span>
                 </>
               )}
@@ -433,8 +433,8 @@ export default function ApplicationForm() {
           <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, color: 'var(--fg-soft)', fontWeight: 400, letterSpacing: 0, textTransform: 'none', lineHeight: 1.5 }}>
             <input type="checkbox" required style={{ marginTop: 3 }} />
             <span>
-              <span className="lang-es">Acepto el tratamiento de mis datos personales según la <Link href="/legal/privacidad" style={{ color: 'var(--accent)', borderBottom: '1px solid currentColor' }}>Política de privacidad</Link>.</span>
-              <span className="lang-en">I agree to the processing of my personal data per the <Link href="/legal/privacidad" style={{ color: 'var(--accent)', borderBottom: '1px solid currentColor' }}>Privacy policy</Link>.</span>
+              <span className="lang-es" aria-hidden={lang !== 'es'}>Acepto el tratamiento de mis datos personales según la <Link href="/legal/privacidad" style={{ color: 'var(--accent)', borderBottom: '1px solid currentColor' }}>Política de privacidad</Link>.</span>
+              <span className="lang-en" aria-hidden={lang !== 'en'}>I agree to the processing of my personal data per the <Link href="/legal/privacidad" style={{ color: 'var(--accent)', borderBottom: '1px solid currentColor' }}>Privacy policy</Link>.</span>
             </span>
           </label>
 
@@ -451,9 +451,9 @@ export default function ApplicationForm() {
               style={{ padding: '16px 32px' }}
             >
               {state === 'submitting' ? (
-                <><span className="lang-es">Enviando…</span><span className="lang-en">Submitting…</span></>
+                <><span className="lang-es" aria-hidden={lang !== 'es'}>Enviando…</span><span className="lang-en" aria-hidden={lang !== 'en'}>Submitting…</span></>
               ) : (
-                <><span className="lang-es">Enviar postulación</span><span className="lang-en">Submit application</span></>
+                <><span className="lang-es" aria-hidden={lang !== 'es'}>Enviar postulación</span><span className="lang-en" aria-hidden={lang !== 'en'}>Submit application</span></>
               )}
             </button>
           </div>

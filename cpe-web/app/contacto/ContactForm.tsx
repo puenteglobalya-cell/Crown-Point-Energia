@@ -7,7 +7,7 @@ import { HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 
 type FormState = 'idle' | 'submitting' | 'done' | 'error'
 
-export default function ContactForm() {
+export default function ContactForm({ lang }: { lang: 'es' | 'en' }) {
   const [state, setState] = useState<FormState>('idle')
   const [errMsg, setErrMsg] = useState('')
 
@@ -49,11 +49,11 @@ export default function ContactForm() {
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11l4 4 8-9" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </div>
         <h3 style={{ margin: '0 0 8px', fontSize: 24 }}>
-          <span className="lang-es">Gracias!</span><span className="lang-en">Thank you!</span>
+          <span className="lang-es" aria-hidden={lang !== 'es'}>Gracias!</span><span className="lang-en" aria-hidden={lang !== 'en'}>Thank you!</span>
         </h3>
         <p style={{ color: 'var(--fg-soft)', lineHeight: 1.6 }}>
-          <span className="lang-es">Recibimos tu consulta. Nuestro equipo te respondera en un plazo maximo de 2 dias habiles.</span>
-          <span className="lang-en">We&apos;ve received your enquiry. Our team will reply within 2 business days.</span>
+          <span className="lang-es" aria-hidden={lang !== 'es'}>Recibimos tu consulta. Nuestro equipo te respondera en un plazo maximo de 2 dias habiles.</span>
+          <span className="lang-en" aria-hidden={lang !== 'en'}>We&apos;ve received your enquiry. Our team will reply within 2 business days.</span>
         </p>
       </div>
     )
@@ -68,23 +68,23 @@ export default function ContactForm() {
         </div>
       )}
       <div className="form-row">
-        <label><span className="lang-es">Tipo de consulta</span><span className="lang-en">Enquiry type</span></label>
+        <label><span className="lang-es" aria-hidden={lang !== 'es'}>Tipo de consulta</span><span className="lang-en" aria-hidden={lang !== 'en'}>Enquiry type</span></label>
         <select name="tipo" required>
           <option value=""></option>
-          <option value="Relaciones con Inversores"><span className="lang-es">Relaciones con Inversores</span><span className="lang-en">Investor Relations</span></option>
-          <option value="Operaciones y alianzas"><span className="lang-es">Operaciones y alianzas</span><span className="lang-en">Operations &amp; partnerships</span></option>
-          <option value="Proveedores y compras"><span className="lang-es">Proveedores y compras</span><span className="lang-en">Procurement &amp; suppliers</span></option>
-          <option value="Prensa y medios"><span className="lang-es">Prensa y medios</span><span className="lang-en">Press &amp; media</span></option>
-          <option value="Corporativo / general"><span className="lang-es">Corporativo / general</span><span className="lang-en">Corporate / general</span></option>
+          <option value="Relaciones con Inversores"><span className="lang-es" aria-hidden={lang !== 'es'}>Relaciones con Inversores</span><span className="lang-en" aria-hidden={lang !== 'en'}>Investor Relations</span></option>
+          <option value="Operaciones y alianzas"><span className="lang-es" aria-hidden={lang !== 'es'}>Operaciones y alianzas</span><span className="lang-en" aria-hidden={lang !== 'en'}>Operations &amp; partnerships</span></option>
+          <option value="Proveedores y compras"><span className="lang-es" aria-hidden={lang !== 'es'}>Proveedores y compras</span><span className="lang-en" aria-hidden={lang !== 'en'}>Procurement &amp; suppliers</span></option>
+          <option value="Prensa y medios"><span className="lang-es" aria-hidden={lang !== 'es'}>Prensa y medios</span><span className="lang-en" aria-hidden={lang !== 'en'}>Press &amp; media</span></option>
+          <option value="Corporativo / general"><span className="lang-es" aria-hidden={lang !== 'es'}>Corporativo / general</span><span className="lang-en" aria-hidden={lang !== 'en'}>Corporate / general</span></option>
         </select>
       </div>
       <div className="form-row cols-2">
         <div className="form-row">
-          <label><span className="lang-es">Nombre completo</span><span className="lang-en">Full name</span></label>
+          <label><span className="lang-es" aria-hidden={lang !== 'es'}>Nombre completo</span><span className="lang-en" aria-hidden={lang !== 'en'}>Full name</span></label>
           <input type="text" name="nombre" required />
         </div>
         <div className="form-row">
-          <label><span className="lang-es">Organización</span><span className="lang-en">Organization</span></label>
+          <label><span className="lang-es" aria-hidden={lang !== 'es'}>Organización</span><span className="lang-en" aria-hidden={lang !== 'en'}>Organization</span></label>
           <input type="text" name="organizacion" required />
         </div>
       </div>
@@ -94,19 +94,19 @@ export default function ContactForm() {
           <input type="email" name="email" required placeholder="you@firm.com" />
         </div>
         <div className="form-row">
-          <label><span className="lang-es">Teléfono</span><span className="lang-en">Phone</span></label>
+          <label><span className="lang-es" aria-hidden={lang !== 'es'}>Teléfono</span><span className="lang-en" aria-hidden={lang !== 'en'}>Phone</span></label>
           <input type="tel" name="telefono" placeholder="+54 ..." />
         </div>
       </div>
       <div className="form-row">
-        <label><span className="lang-es">Mensaje</span><span className="lang-en">Message</span></label>
+        <label><span className="lang-es" aria-hidden={lang !== 'es'}>Mensaje</span><span className="lang-en" aria-hidden={lang !== 'en'}>Message</span></label>
         <textarea name="mensaje" required placeholder="…"></textarea>
       </div>
       <label style={{ display: 'flex', gap: 10, alignItems: 'start', fontSize: 13, color: 'var(--fg-soft)', fontWeight: 400, letterSpacing: 0, textTransform: 'none', lineHeight: 1.5 }}>
         <input type="checkbox" required style={{ marginTop: 3 }} />
         <span>
-          <span className="lang-es">Acepto recibir comunicaciones de Crown Point Energy y la <Link href="/legal/privacidad" style={{ color: 'var(--accent)', borderBottom: '1px solid currentColor' }}>Política de privacidad</Link>.</span>
-          <span className="lang-en">I agree to receive communications from Crown Point Energy and the <Link href="/legal/privacidad" style={{ color: 'var(--accent)', borderBottom: '1px solid currentColor' }}>Privacy policy</Link>.</span>
+          <span className="lang-es" aria-hidden={lang !== 'es'}>Acepto recibir comunicaciones de Crown Point Energy y la <Link href="/legal/privacidad" style={{ color: 'var(--accent)', borderBottom: '1px solid currentColor' }}>Política de privacidad</Link>.</span>
+          <span className="lang-en" aria-hidden={lang !== 'en'}>I agree to receive communications from Crown Point Energy and the <Link href="/legal/privacidad" style={{ color: 'var(--accent)', borderBottom: '1px solid currentColor' }}>Privacy policy</Link>.</span>
         </span>
       </label>
       <button
@@ -116,9 +116,9 @@ export default function ContactForm() {
         style={{ justifySelf: 'start', padding: '16px 28px' }}
       >
         {state === 'submitting' ? (
-          <><span className="lang-es">Enviando…</span><span className="lang-en">Sending…</span></>
+          <><span className="lang-es" aria-hidden={lang !== 'es'}>Enviando…</span><span className="lang-en" aria-hidden={lang !== 'en'}>Sending…</span></>
         ) : (
-          <><span className="lang-es">Enviar consulta</span><span className="lang-en">Send enquiry</span></>
+          <><span className="lang-es" aria-hidden={lang !== 'es'}>Enviar consulta</span><span className="lang-en" aria-hidden={lang !== 'en'}>Send enquiry</span></>
         )}
       </button>
     </form>

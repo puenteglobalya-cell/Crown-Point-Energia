@@ -99,7 +99,7 @@ export default async function ComercialPage() {
 
             {/* Right — form */}
             <div>
-              <CommercialForm />
+              <CommercialForm lang={lang} />
               <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 'var(--s-6)', lineHeight: 1.6 }}>
                 <span className="lang-es" aria-hidden={lang !== 'es'}>
                   La información proporcionada se utiliza exclusivamente para gestionar su consulta comercial conforme a nuestra{' '}

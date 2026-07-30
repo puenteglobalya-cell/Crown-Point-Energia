@@ -61,7 +61,7 @@ function osmEmbedUrl(lat: number, lon: number, zoom: number) {
   return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lon}`
 }
 
-export function UbicacionesMap() {
+export function UbicacionesMap({ lang }: { lang: 'es' | 'en' }) {
   const [active, setActive] = useState(0)
   const loc = LOCATIONS[active]
 
@@ -71,8 +71,8 @@ export function UbicacionesMap() {
       <div className="ubicaciones-list">
         <div className="ubicaciones-header">
           <span className="ubicaciones-title">
-            <span className="lang-es">Ubicaciones ({LOCATIONS.length})</span>
-            <span className="lang-en">Locations ({LOCATIONS.length})</span>
+            <span className="lang-es" aria-hidden={lang !== 'es'}>Ubicaciones ({LOCATIONS.length})</span>
+            <span className="lang-en" aria-hidden={lang !== 'en'}>Locations ({LOCATIONS.length})</span>
           </span>
           <a
             href="https://www.linkedin.com/company/crown-point-energia-sa"
@@ -113,8 +113,8 @@ export function UbicacionesMap() {
                     className="ubicaciones-directions"
                     onClick={e => e.stopPropagation()}
                   >
-                    <span className="lang-es">Cómo llegar</span>
-                    <span className="lang-en">Get directions</span>
+                    <span className="lang-es" aria-hidden={lang !== 'es'}>Cómo llegar</span>
+                    <span className="lang-en" aria-hidden={lang !== 'en'}>Get directions</span>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
                     </svg>

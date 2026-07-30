@@ -196,7 +196,7 @@ export default async function InversoresPage() {
                     </div>
                   ))}
                 </div>
-                <ReservesTable />
+                <ReservesTable lang={lang} />
                 <p className="pull">
                   <span className="lang-es" aria-hidden={lang !== 'es'}>&ldquo;Ocho concesiones en tres cuencas — diversificación geológica real con un solo país.&rdquo;</span>
                   <span className="lang-en" aria-hidden={lang !== 'en'}>&ldquo;Eight concessions across three basins — real geological diversification within a single country.&rdquo;</span>
@@ -280,8 +280,8 @@ export default async function InversoresPage() {
                   <span className="lang-es" aria-hidden={lang !== 'es'}>Descargar kit del inversor (ZIP)</span>
                   <span className="lang-en" aria-hidden={lang !== 'en'}>Download investor kit (ZIP)</span>
                 </a>
-                {showFinancieros && <InversoresDocsTabs docs={allDocs} tipo="financiero" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />}
-                <IrDocsTabs docs={irDocs} categoria="financiero" showEntidadTabs />
+                {showFinancieros && <InversoresDocsTabs docs={allDocs} tipo="financiero" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} lang={lang} />}
+                <IrDocsTabs docs={irDocs} categoria="financiero" showEntidadTabs lang={lang} />
               </div>}
 
               {showAgm && <div className="section-block" id="agm">
@@ -294,7 +294,7 @@ export default async function InversoresPage() {
                   <span className="lang-es" aria-hidden={lang !== 'es'}>Circulares de información, notices y formularios de proxy de las asambleas anuales de Crown Point Energy Inc. Archivados en <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
                   <span className="lang-en" aria-hidden={lang !== 'en'}>Information circulars, notices and proxy forms for Crown Point Energy Inc. Annual General Meetings. Filed on <a href="https://www.sedarplus.ca" target="_blank" rel="noreferrer">SEDAR+</a>.</span>
                 </p>
-                <IrDocsTabs docs={irDocs} categoria="agm" />
+                <IrDocsTabs docs={irDocs} categoria="agm" lang={lang} />
               </div>}
 
               {showEstma && <div className="section-block" id="estma">
@@ -307,7 +307,7 @@ export default async function InversoresPage() {
                   <span className="lang-es" aria-hidden={lang !== 'es'}>Reportes de pagos a gobiernos bajo la Extractive Sector Transparency Measures Act (ESTMA) de Canadá. Crown Point Energy Inc. reporta sus pagos a gobiernos argentinos anualmente.</span>
                   <span className="lang-en" aria-hidden={lang !== 'en'}>Payments to governments reports under Canada's Extractive Sector Transparency Measures Act (ESTMA). Crown Point Energy Inc. reports annual payments to Argentine governments.</span>
                 </p>
-                <IrDocsTabs docs={irDocs} categoria="estma" />
+                <IrDocsTabs docs={irDocs} categoria="estma" lang={lang} />
               </div>}
 
               {showCnv && <div className="section-block" id="hechos-cnv">
@@ -449,11 +449,11 @@ export default async function InversoresPage() {
                   <a href="https://www.fixscr.com/emisor/view?type=emisor&id=4052" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>fixscr.com →</a>
                 </p>
                 <div style={{ marginTop: 'var(--s-6)' }}>
-                  <InversoresDocsTabs docs={allDocs} tipo="on" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
+                  <InversoresDocsTabs docs={allDocs} tipo="on" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} lang={lang} />
                 </div>
                 {irDocs.filter(d => d.categoria === 'on').length > 0 && (
                   <div style={{ marginTop: 'var(--s-6)' }}>
-                    <IrDocsTabs docs={irDocs} categoria="on" />
+                    <IrDocsTabs docs={irDocs} categoria="on" lang={lang} />
                   </div>
                 )}
               </div>}
@@ -462,10 +462,10 @@ export default async function InversoresPage() {
                 <span className="eyebrow"><span className="lang-es" aria-hidden={lang !== 'es'}>Compliance &amp; ESG</span><span className="lang-en" aria-hidden={lang !== 'en'}>Compliance &amp; ESG</span></span>
                 <h2 style={{ marginTop: 8 }}><span className="lang-es" aria-hidden={lang !== 'es'}>Gobierno corporativo</span><span className="lang-en" aria-hidden={lang !== 'en'}>Corporate governance</span></h2>
                 <p className="lede"><span className="lang-es" aria-hidden={lang !== 'es'}>Crown Point Energy Inc. cotiza en TSX Venture Exchange y reporta bajo las normas canadienses para emisores junior.</span><span className="lang-en" aria-hidden={lang !== 'en'}>Crown Point Energy Inc. is listed on TSX Venture Exchange and reports under Canadian junior issuer standards.</span></p>
-                <InversoresDocsTabs docs={allDocs} tipo="gobierno" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} />
+                <InversoresDocsTabs docs={allDocs} tipo="gobierno" supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!} lang={lang} />
                 {irDocs.filter(d => d.categoria === 'gobierno').length > 0 && (
                   <div style={{ marginTop: 'var(--s-4)' }}>
-                    <IrDocsTabs docs={irDocs} categoria="gobierno" />
+                    <IrDocsTabs docs={irDocs} categoria="gobierno" lang={lang} />
                   </div>
                 )}
                 <div style={{ marginTop: 'var(--s-5)', padding: '14px 18px', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', background: 'var(--bg-alt)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -681,7 +681,7 @@ export default async function InversoresPage() {
                 LinkedIn
               </a>
             </div>
-            <IrSubscribeForm />
+            <IrSubscribeForm lang={lang} />
           </div>
         </div>
       </section>
