@@ -3,6 +3,7 @@ import { getCmsState } from '@/lib/cms'
 import { cmsLineBreaks } from '@/lib/cms-html'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { fetchIrEvents, fetchIrAnalysts, fetchObligaciones, fetchShareholderMeetings, type ShareholderMeeting } from '@/lib/content-fetch'
+import { PRODUCTION_1Q2026, productionMixLabel } from '@/lib/production'
 import InversoresDocsTabs from './InversoresDocsTabs'
 import IrDocsTabs, { type IrDocument } from './IrDocsTabs'
 import IrSubscribeForm from './IrSubscribeForm'
@@ -173,10 +174,10 @@ export default async function InversoresPage() {
                 <div className="kpi-grid kpi-grid-3" style={{ marginTop: 'var(--s-6)' }}>
                   {[
                     { n: '01', labelEs: 'Producción', labelEn: 'Production',
-                      val: f['inv.thesis.1.val'] || '8,672',
-                      unit: f['inv.thesis.1.unit'] || 'boe/d',
-                      metaEs: f['inv.thesis.1.meta'] || '86% petróleo · 14% gas · Producción 1Q 2026',
-                      metaEn: fe['inv.thesis.1.meta'] || '86% oil · 14% gas · Production 1Q 2026' },
+                      val: f['inv.thesis.1.val'] || PRODUCTION_1Q2026.avgBoePerDay,
+                      unit: f['inv.thesis.1.unit'] || PRODUCTION_1Q2026.unit,
+                      metaEs: f['inv.thesis.1.meta'] || `${productionMixLabel('es')} · Producción ${PRODUCTION_1Q2026.period}`,
+                      metaEn: fe['inv.thesis.1.meta'] || `${productionMixLabel('en')} · Production ${PRODUCTION_1Q2026.period}` },
                     { n: '02', labelEs: 'Costos', labelEn: 'Costs',
                       val: f['inv.thesis.2.val'] || 'US$38.8',
                       unit: f['inv.thesis.2.unit'] || '/boe',

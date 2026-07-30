@@ -1,4 +1,5 @@
 import { SPROULE_2P_2025, totalReserves } from '@/lib/reserves'
+import { formatDecimal } from '@/lib/format'
 
 export default function ReservesTable({ lang }: { lang: 'es' | 'en' }) {
   const data  = SPROULE_2P_2025
@@ -13,8 +14,8 @@ export default function ReservesTable({ lang }: { lang: 'es' | 'en' }) {
           <span className="lang-en" aria-hidden={lang !== 'en'}>Certified 2P Reserves — {data.certifier}</span>
         </span>
         <span className="reserves-summary__total">
-          <span className="lang-es" aria-hidden={lang !== 'es'}>Total bruto <strong>{total.gross.toFixed(3)}</strong> MMboe</span>
-          <span className="lang-en" aria-hidden={lang !== 'en'}>Total gross <strong>{total.gross.toFixed(3)}</strong> MMboe</span>
+          <span className="lang-es" aria-hidden={lang !== 'es'}>Total bruto <strong>{formatDecimal(total.gross, 'es', 2)}</strong> MMboe</span>
+          <span className="lang-en" aria-hidden={lang !== 'en'}>Total gross <strong>{formatDecimal(total.gross, 'en', 2)}</strong> MMboe</span>
         </span>
       </summary>
 
@@ -43,8 +44,8 @@ export default function ReservesTable({ lang }: { lang: 'es' | 'en' }) {
                   <span className="lang-es" aria-hidden={lang !== 'es'}>{r.category}</span>
                   <span className="lang-en" aria-hidden={lang !== 'en'}>{r.category === 'Total 2P' ? 'Total 2P' : r.category === 'Total Probadas' ? 'Total Proved' : r.category === 'Total Probables' ? 'Total Probable' : r.category}</span>
                 </td>
-                <td className="num">{r.gross.toFixed(3)}</td>
-                <td className="num">{r.net.toFixed(3)}</td>
+                <td className="num">{formatDecimal(r.gross, lang, 2)}</td>
+                <td className="num">{formatDecimal(r.net, lang, 2)}</td>
               </tr>
             ))}
           </tbody>

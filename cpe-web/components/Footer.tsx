@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import ObfuscatedEmail from './ObfuscatedEmail'
 
 export default function Footer({ lang = 'es' }: { lang?: 'es' | 'en' }) {
   return (
@@ -83,7 +84,7 @@ export default function Footer({ lang = 'es' }: { lang?: 'es' | 'en' }) {
             <ul>
               <li>Godoy Cruz 2769, Piso&nbsp;4</li>
               <li>C1425FQK, Buenos Aires</li>
-              <li><a href="mailto:ir@crownpointenergy.com">ir@crownpointenergy.com</a></li>
+              <li><ObfuscatedEmail user="ir" domain="crownpointenergy.com" /></li>
               <li>+54 11-5032-5600</li>
             </ul>
             <div style={{
@@ -100,9 +101,7 @@ export default function Footer({ lang = 'es' }: { lang?: 'es' | 'en' }) {
                 <span className="lang-es" aria-hidden={lang !== 'es'}>Canal confidencial para reportar conductas contrarias al Código de Ética.</span>
                 <span className="lang-en" aria-hidden={lang !== 'en'}>Confidential channel to report conduct contrary to the Code of Ethics.</span>
               </p>
-              <a href="mailto:etica@crownpointenergy.com" style={{ fontSize: 12, fontWeight: 600, color: 'rgba(222,224,242,0.75)', letterSpacing: '0.02em' }}>
-                etica@crownpointenergy.com
-              </a>
+              <ObfuscatedEmail user="etica" domain="crownpointenergy.com" style={{ fontSize: 12, fontWeight: 600, color: 'rgba(222,224,242,0.75)', letterSpacing: '0.02em' }} />
             </div>
           </div>
         </div>
