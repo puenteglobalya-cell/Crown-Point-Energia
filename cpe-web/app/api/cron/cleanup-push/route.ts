@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import webpush from 'web-push'
 import { logger } from '@/lib/logger'
+import { secureCompare } from '@/lib/secure-compare'
 
 // Runs weekly (Sunday 03:00 UTC) via Vercel Cron.
 // Proactively sends a silent push to every subscription and removes stale ones (404/410).
@@ -28,7 +29,7 @@ export async function GET(req: Request) {
   const auth = req.headers instanceof Headers
     ? req.headers.get('authorization')
     : (req as Request & { headers: Record<string, string> }).headers['authorization']
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!secureCompare(auth ?? '', `Bearer ${process.env.CRON_SECRET}`)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
