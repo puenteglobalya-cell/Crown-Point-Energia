@@ -20,7 +20,7 @@ function Field({ children }: { children: React.ReactNode }) {
 }
 
 export default function ReservasClient() {
-  const [tab, setTab] = useState<'cargar' | 'calcular' | 'resultados'>('cargar')
+  const [tab, setTab] = useState<'cargar' | 'calcular' | 'resultados' | 'pareto'>('cargar')
   const [data, setData] = useState<Data | null>(null)
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState('')
@@ -42,14 +42,14 @@ export default function ReservasClient() {
         </h1>
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--rule)' }}>
-          {(['cargar', 'calcular', 'resultados'] as const).map(t => (
+          {(['cargar', 'calcular', 'resultados', 'pareto'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
               background: 'none', border: 'none', padding: '10px 4px', marginRight: 16,
               fontSize: 13, fontWeight: 600, cursor: 'pointer',
               color: tab === t ? 'var(--accent)' : 'var(--fg-muted)',
               borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
             }}>
-              {t === 'cargar' ? 'Cargar datos' : t === 'calcular' ? 'Calcular escenario' : 'Resultados'}
+              {t === 'cargar' ? 'Cargar datos' : t === 'calcular' ? 'Calcular escenario' : t === 'resultados' ? 'Resultados' : 'Pareto de escenarios'}
             </button>
           ))}
         </div>
@@ -73,6 +73,7 @@ export default function ReservasClient() {
         )}
         {tab === 'calcular' && <CalcularTab data={data} />}
         {tab === 'resultados' && <ResultadosTab data={data} />}
+        {tab === 'pareto' && <ParetoTab />}
       </div>
     </div>
   )
@@ -427,5 +428,100 @@ function ResultadosTab({ data }: { data: Data }) {
         </div>
       )}
     </Seccion>
+  )
+}
+
+type ParetoPunto = {
+  escenario_id: number; nombre: string; es_base: boolean
+  capex_total_usd: number; npv_usd: number; irr_pct: number | null
+  payback_anios: number | null; tasa_descuento: number | null; es_eficiente: boolean
+}
+
+function ParetoTab() {
+  const [puntos, setPuntos] = useState<ParetoPunto[] | null>(null)
+  const [err, setErr] = useState('')
+
+  async function cargar() {
+    setErr(''); setPuntos(null)
+    const res = await fetch('/api/portal/reservas/pareto')
+    if (!res.ok) { setErr((await res.json()).error ?? 'Error'); return }
+    setPuntos(await res.json())
+  }
+  useEffect(() => { cargar() }, [])
+
+  return (
+    <Seccion title="NPV vs. CAPEX total — comparación entre escenarios">
+      <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 14 }}>
+        Cada punto es un escenario ya calculado (pestaña "Calcular escenario"). Los marcados en verde son
+        eficientes en el sentido de Pareto — ningún otro escenario tiene más NPV con igual o menor CAPEX.
+        Se recalcula automáticamente con lo que tengas cargado, no hay nada fijo.
+      </p>
+      {err && <p style={{ color: 'var(--cp-negative)', fontSize: 13 }}>{err}</p>}
+      {puntos === null && !err && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Cargando…</p>}
+      {puntos !== null && puntos.length === 0 && (
+        <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Todavía no hay escenarios calculados — corré al menos dos en la pestaña "Calcular escenario" para poder comparar.</p>
+      )}
+      {puntos && puntos.length > 0 && (
+        <>
+          <ParetoScatter puntos={puntos} />
+          <div style={{ overflowX: 'auto', marginTop: 20 }}>
+            <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                  <th style={{ padding: '6px 8px' }}>Escenario</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>CAPEX total</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>NPV</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>IRR</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>Payback</th>
+                  <th style={{ padding: '6px 8px' }}>Pareto-eficiente</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...puntos].sort((a, b) => b.npv_usd - a.npv_usd).map(p => (
+                  <tr key={p.escenario_id} style={{ borderBottom: '1px solid var(--rule)' }}>
+                    <td style={{ padding: '6px 8px' }}>{p.nombre}{p.es_base ? ' (base)' : ''}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>US$ {(p.capex_total_usd / 1e6).toFixed(2)} MM</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>US$ {(p.npv_usd / 1e6).toFixed(2)} MM</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{p.irr_pct != null ? `${p.irr_pct.toFixed(1)}%` : '—'}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{p.payback_anios != null ? `${p.payback_anios.toFixed(1)} a.` : '—'}</td>
+                    <td style={{ padding: '6px 8px', color: p.es_eficiente ? '#2d7a4a' : 'var(--fg-muted)', fontWeight: p.es_eficiente ? 700 : 400 }}>{p.es_eficiente ? '✓ eficiente' : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </Seccion>
+  )
+}
+
+function ParetoScatter({ puntos }: { puntos: ParetoPunto[] }) {
+  const W = 560, H = 320, PAD = 48
+  const capexMax = Math.max(...puntos.map(p => p.capex_total_usd), 1)
+  const npvMin = Math.min(...puntos.map(p => p.npv_usd), 0)
+  const npvMax = Math.max(...puntos.map(p => p.npv_usd), 1)
+  const npvRange = npvMax - npvMin || 1
+
+  const x = (v: number) => PAD + (v / capexMax) * (W - PAD * 2)
+  const y = (v: number) => H - PAD - ((v - npvMin) / npvRange) * (H - PAD * 2)
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ maxWidth: 600, background: 'var(--bg)', borderRadius: 8 }}>
+      <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD} stroke="var(--rule)" />
+      <line x1={PAD} y1={PAD} x2={PAD} y2={H - PAD} stroke="var(--rule)" />
+      <text x={W / 2} y={H - 10} textAnchor="middle" fontSize="11" fill="var(--fg-muted)">CAPEX total (USD)</text>
+      <text x={14} y={H / 2} textAnchor="middle" fontSize="11" fill="var(--fg-muted)" transform={`rotate(-90 14 ${H / 2})`}>NPV (USD)</text>
+      {npvMin < 0 && (
+        <line x1={PAD} y1={y(0)} x2={W - PAD} y2={y(0)} stroke="var(--rule)" strokeDasharray="4 3" />
+      )}
+      {puntos.map(p => (
+        <g key={p.escenario_id}>
+          <circle cx={x(p.capex_total_usd)} cy={y(p.npv_usd)} r={p.es_eficiente ? 6 : 4.5}
+            fill={p.es_eficiente ? '#2d7a4a' : 'var(--fg-muted)'} stroke="var(--bg)" strokeWidth={1.5} />
+          <text x={x(p.capex_total_usd) + 8} y={y(p.npv_usd) + 3} fontSize="10" fill="var(--fg-soft)">{p.nombre}</text>
+        </g>
+      ))}
+    </svg>
   )
 }
