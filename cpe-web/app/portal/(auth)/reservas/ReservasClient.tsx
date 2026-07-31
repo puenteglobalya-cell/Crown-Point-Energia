@@ -223,7 +223,7 @@ function CalcularTab({ data }: { data: Data }) {
   const [escenarioId, setEscenarioId] = useState('')
   const [tasa, setTasa] = useState('0.10')
   const [loading, setLoading] = useState(false)
-  const [resultado, setResultado] = useState<Record<string, number> | null>(null)
+  const [resultado, setResultado] = useState<Record<string, number | null> | null>(null)
   const [err, setErr] = useState('')
 
   async function calcular() {
@@ -263,8 +263,11 @@ function CalcularTab({ data }: { data: Data }) {
         <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px' }}>
           <Kv label="Pozos simulados" val={String(resultado.pozos)} />
           <Kv label="Filas mensuales generadas" val={String(resultado.filas)} />
-          <Kv label="Cash flow total (neto)" val={`US$ ${(resultado.total_cashflow / 1e6).toFixed(2)} MM`} />
-          <Kv label={`NPV @ ${(resultado.tasa_anual * 100).toFixed(1)}%`} val={`US$ ${(resultado.npv / 1e6).toFixed(2)} MM`} />
+          <Kv label="Años agregados (por yacimiento + consolidado)" val={String(resultado.anios)} />
+          <Kv label="Cash flow total (neto)" val={`US$ ${((resultado.total_cashflow ?? 0) / 1e6).toFixed(2)} MM`} />
+          <Kv label={`NPV @ ${((resultado.tasa_descuento ?? 0) * 100).toFixed(1)}%`} val={`US$ ${((resultado.npv_usd ?? 0) / 1e6).toFixed(2)} MM`} />
+          <Kv label="IRR" val={resultado.irr_pct != null ? `${resultado.irr_pct.toFixed(1)}%` : '— (sin cambio de signo detectable)'} />
+          <Kv label="Payback" val={resultado.payback_anios != null ? `${resultado.payback_anios.toFixed(1)} años` : '— (no se recupera en el horizonte)'} />
         </div>
       )}
     </Seccion>
@@ -282,28 +285,83 @@ function Kv({ label: l, val }: { label: string; val: string }) {
 
 function ResultadosTab({ data }: { data: Data }) {
   const [escenarioId, setEscenarioId] = useState('')
+  const [vista, setVista] = useState<'mensual' | 'anual'>('mensual')
   const [rows, setRows] = useState<Row[]>([])
+  const [rowsAnual, setRowsAnual] = useState<Row[]>([])
   const [loading, setLoading] = useState(false)
 
   async function cargar(id: string) {
     setEscenarioId(id)
-    if (!id) { setRows([]); return }
+    if (!id) { setRows([]); setRowsAnual([]); return }
     setLoading(true)
-    const res = await fetch(`/api/portal/reservas/resultados?escenario_id=${id}`)
-    setRows(res.ok ? await res.json() : [])
+    const [rMensual, rAnual] = await Promise.all([
+      fetch(`/api/portal/reservas/resultados?escenario_id=${id}`),
+      fetch(`/api/portal/reservas/resultados?escenario_id=${id}&vista=anual`),
+    ])
+    setRows(rMensual.ok ? await rMensual.json() : [])
+    setRowsAnual(rAnual.ok ? await rAnual.json() : [])
     setLoading(false)
   }
 
   const pozoNombre = (id: unknown) => data.pozos.find(p => p.id === id)?.nombre ?? id
+  const yacimientoNombre = (id: unknown) => id == null ? 'Consolidado' : (data.yacimientos.find(y => y.id === id)?.nombre ?? id)
 
   return (
-    <Seccion title="Cash flow mensual por escenario">
+    <Seccion title="Resultados por escenario">
       <Field><label style={label}>Escenario</label>
         <Select name="escenario_id" value={escenarioId} onChange={e => cargar(e.target.value)} opts={data.escenarios.map(e => ({ value: String(e.id), label: String(e.nombre) }))} />
       </Field>
+      {escenarioId && (
+        <div style={{ display: 'flex', gap: 16, marginBottom: 14 }}>
+          {(['mensual', 'anual'] as const).map(v => (
+            <button key={v} onClick={() => setVista(v)} style={{
+              background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: 0,
+              color: vista === v ? 'var(--accent)' : 'var(--fg-muted)',
+              textDecoration: vista === v ? 'underline' : 'none',
+            }}>
+              {v === 'mensual' ? 'Cash flow mensual (por pozo)' : 'Resumen anual (por yacimiento + consolidado)'}
+            </button>
+          ))}
+        </div>
+      )}
       {loading && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Cargando…</p>}
-      {!loading && escenarioId && rows.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — corré el cálculo primero en la pestaña anterior.</p>}
-      {rows.length > 0 && (
+      {!loading && escenarioId && vista === 'mensual' && rows.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — corré el cálculo primero en la pestaña anterior.</p>}
+      {!loading && escenarioId && vista === 'anual' && rowsAnual.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — corré el cálculo primero en la pestaña anterior.</p>}
+
+      {vista === 'anual' && rowsAnual.length > 0 && (
+        <div style={{ overflowX: 'auto', marginTop: 12 }}>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                <th style={{ padding: '6px 8px' }}>Yacimiento</th>
+                <th style={{ padding: '6px 8px' }}>Año</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Ingresos</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>EBITDA</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>D&amp;A</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>EBIT</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Resultado neto</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Netback (USD/BOE)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rowsAnual.map(r => (
+                <tr key={String(r.id)} style={{ borderBottom: '1px solid var(--rule)', fontWeight: r.yacimiento_id == null ? 700 : 400 }}>
+                  <td style={{ padding: '6px 8px' }}>{String(yacimientoNombre(r.yacimiento_id))}</td>
+                  <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{String(r.anio)}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Number(r.ingresos_usd).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Number(r.ebitda_usd).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Number(r.depreciacion_usd).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Number(r.ebit_usd).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Number(r.resultado_neto_usd).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{r.netback_usd_boe != null ? Number(r.netback_usd_boe).toFixed(2) : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {vista === 'mensual' && rows.length > 0 && (
         <div style={{ overflowX: 'auto', marginTop: 12 }}>
           <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead>

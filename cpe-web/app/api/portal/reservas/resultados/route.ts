@@ -8,8 +8,20 @@ export async function GET(req: NextRequest) {
 
   const escenarioId = req.nextUrl.searchParams.get('escenario_id')
   if (!escenarioId) return NextResponse.json({ error: 'Falta escenario_id' }, { status: 400 })
+  const vista = req.nextUrl.searchParams.get('vista') ?? 'mensual'
 
   const db = createSupabaseServerAdminClient()
+
+  if (vista === 'anual') {
+    const { data, error } = await db
+      .from('resultados_escenario_anual')
+      .select('*')
+      .eq('escenario_id', escenarioId)
+      .order('anio')
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data ?? [])
+  }
+
   const { data, error } = await db
     .from('cashflow_mensual')
     .select('*')

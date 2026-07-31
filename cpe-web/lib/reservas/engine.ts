@@ -176,7 +176,9 @@ export async function calcularEscenario(escenarioId: number) {
 
       const part = vigente(participaciones.filter(p => p.concesion_id === concesion.id), fecha)
       const participacionPct = part?.porcentaje ?? 1
-      const cashFlowNeto = resultadoNeto * participacionPct
+      // Cash flow real: la amortización es no-cash (se vuelve a sumar) y el
+      // CAPEX sí es una salida de caja real en el mes en que ocurre.
+      const cashFlowNeto = (resultadoNeto + depreciacionUsd - capexUsd) * participacionPct
 
       // Límite económico: dos meses consecutivos de cash flow negativo cortan el pozo
       if (cashFlowNeto < 0) {
@@ -237,4 +239,187 @@ export function calcularNPV(cashflows: { fecha: string; cash_flow_neto_usd: numb
     if (meses < 0) return npv
     return npv + cf.cash_flow_neto_usd / Math.pow(1 + tasaMensual, meses)
   }, 0)
+}
+
+// ─── Agregado anual por yacimiento + consolidado ─────────────────────────
+// Complementa cashflow_mensual (por pozo) con un resumen ejecutivo anual
+// (EBITDA, D&A, EBIT, neto, netback) por yacimiento y a nivel consolidado
+// (yacimiento_id = null).
+export async function calcularAgregadosAnuales(escenarioId: number) {
+  const db = createSupabaseServerAdminClient()
+
+  const [cfRes, pozosRes, concesionesRes] = await Promise.all([
+    db.from('cashflow_mensual').select('*').eq('escenario_id', escenarioId),
+    db.from('pozos').select('id, concesion_id'),
+    db.from('concesiones').select('id, yacimiento_id'),
+  ])
+  const err = [cfRes, pozosRes, concesionesRes].find(r => r.error)
+  if (err?.error) throw new Error(err.error.message)
+
+  const pozos = pozosRes.data ?? []
+  const concesiones = concesionesRes.data ?? []
+  const yacimientoDePozo = (pozoId: number) => {
+    const p = pozos.find(p => p.id === pozoId)
+    if (!p) return null
+    return concesiones.find(c => c.id === p.concesion_id)?.yacimiento_id ?? null
+  }
+
+  type Acc = {
+    produccion_petroleo_bbl: number; produccion_gas_mcf: number; ingresos_usd: number
+    regalias_usd: number; opex_usd: number; depreciacion_usd: number
+    resultado_antes_ganancias_usd: number; impuesto_ganancias_usd: number; resultado_neto_usd: number
+  }
+  const empty = (): Acc => ({
+    produccion_petroleo_bbl: 0, produccion_gas_mcf: 0, ingresos_usd: 0,
+    regalias_usd: 0, opex_usd: 0, depreciacion_usd: 0,
+    resultado_antes_ganancias_usd: 0, impuesto_ganancias_usd: 0, resultado_neto_usd: 0,
+  })
+
+  const porYacimiento = new Map<string, Acc>() // key = `${yacimientoId ?? 'consolidado'}_${anio}`
+  const porConsolidado = new Map<number, Acc>() // key = anio
+
+  for (const cf of cfRes.data ?? []) {
+    const anio = Number(String(cf.fecha).slice(0, 4))
+    const yacId = yacimientoDePozo(cf.pozo_id)
+    const keyYac = `${yacId ?? 'null'}_${anio}`
+
+    for (const [map, key] of [[porYacimiento, keyYac] as const]) {
+      const acc = map.get(key) ?? empty()
+      acc.produccion_petroleo_bbl += cf.bbl_petroleo
+      acc.produccion_gas_mcf += cf.mcf_gas
+      acc.ingresos_usd += cf.ingreso_bruto_usd
+      acc.regalias_usd += cf.regalias_usd
+      acc.opex_usd += cf.opex_fijo_usd + cf.opex_variable_usd
+      acc.depreciacion_usd += cf.depreciacion_usd
+      acc.resultado_antes_ganancias_usd += cf.resultado_antes_ganancias_usd
+      acc.impuesto_ganancias_usd += cf.impuesto_ganancias_usd
+      acc.resultado_neto_usd += cf.cash_flow_neto_usd
+      map.set(key, acc)
+    }
+
+    const accCons = porConsolidado.get(anio) ?? empty()
+    accCons.produccion_petroleo_bbl += cf.bbl_petroleo
+    accCons.produccion_gas_mcf += cf.mcf_gas
+    accCons.ingresos_usd += cf.ingreso_bruto_usd
+    accCons.regalias_usd += cf.regalias_usd
+    accCons.opex_usd += cf.opex_fijo_usd + cf.opex_variable_usd
+    accCons.depreciacion_usd += cf.depreciacion_usd
+    accCons.resultado_antes_ganancias_usd += cf.resultado_antes_ganancias_usd
+    accCons.impuesto_ganancias_usd += cf.impuesto_ganancias_usd
+    accCons.resultado_neto_usd += cf.cash_flow_neto_usd
+    porConsolidado.set(anio, accCons)
+  }
+
+  function fila(yacimientoId: number | null, anio: number, acc: Acc) {
+    const boe = acc.produccion_petroleo_bbl + acc.produccion_gas_mcf / 6000
+    const ebitda = acc.ingresos_usd - acc.regalias_usd - acc.opex_usd
+    return {
+      escenario_id: escenarioId,
+      yacimiento_id: yacimientoId,
+      anio,
+      produccion_petroleo_bbl: acc.produccion_petroleo_bbl,
+      produccion_gas_mcf: acc.produccion_gas_mcf,
+      ingresos_usd: acc.ingresos_usd,
+      regalias_usd: acc.regalias_usd,
+      opex_usd: acc.opex_usd,
+      ebitda_usd: ebitda,
+      depreciacion_usd: acc.depreciacion_usd,
+      ebit_usd: ebitda - acc.depreciacion_usd,
+      intereses_usd: 0, // deuda corporativa es a nivel consolidado empresa, no por yacimiento — ver deuda_notas
+      impuesto_ganancias_usd: acc.impuesto_ganancias_usd,
+      resultado_neto_usd: acc.resultado_neto_usd,
+      netback_usd_boe: boe > 0 ? ebitda / boe : null,
+    }
+  }
+
+  // Filas por yacimiento real (se ignoran pozos con yacimiento no resuelto —
+  // datos incompletos, no deberían contaminar el consolidado con un yacimiento_id null)
+  const filas: Record<string, unknown>[] = []
+  for (const [key, acc] of porYacimiento) {
+    const [yacRaw, anioRaw] = key.split('_')
+    if (yacRaw === 'null') continue
+    filas.push(fila(Number(yacRaw), Number(anioRaw), acc))
+  }
+  // Filas consolidado (yacimiento_id = null) — siempre suma TODOS los pozos del escenario
+  for (const [anio, acc] of porConsolidado) {
+    filas.push(fila(null, anio, acc))
+  }
+  const filasFinal = filas
+
+  await db.from('resultados_escenario_anual').delete().eq('escenario_id', escenarioId)
+  if (filasFinal.length > 0) {
+    const { error } = await db.from('resultados_escenario_anual').insert(filasFinal)
+    if (error) throw new Error(error.message)
+  }
+
+  return { anios: filasFinal.length }
+}
+
+// ─── Métricas del escenario: NPV, IRR, payback ───────────────────────────
+function irrAnual(cashflowsAnuales: number[]): number | null {
+  // Bisección entre -99% y 1000% — robusto para series con un único cambio
+  // de signo (CAPEX inicial negativo, luego flujo positivo), que es el caso
+  // típico de un pozo/yacimiento.
+  const npvAt = (r: number) => cashflowsAnuales.reduce((s, cf, t) => s + cf / Math.pow(1 + r, t), 0)
+  let lo = -0.99, hi = 10
+  if (npvAt(lo) * npvAt(hi) > 0) return null // no hay cambio de signo detectable en el rango
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2
+    const v = npvAt(mid)
+    if (Math.abs(v) < 1) return mid
+    if (npvAt(lo) * v < 0) hi = mid
+    else lo = mid
+  }
+  return (lo + hi) / 2
+}
+
+export async function calcularMetricasEscenario(escenarioId: number, tasaAnual: number, horizonteAnios: number) {
+  const db = createSupabaseServerAdminClient()
+  const { data: cashflows, error } = await db
+    .from('cashflow_mensual')
+    .select('fecha, cash_flow_neto_usd')
+    .eq('escenario_id', escenarioId)
+    .order('fecha')
+  if (error) throw new Error(error.message)
+
+  const fechaBase = cashflows?.[0]?.fecha ?? new Date().toISOString().slice(0, 10)
+  const npv = calcularNPV(cashflows ?? [], tasaAnual, fechaBase)
+  const totalCashflow = (cashflows ?? []).reduce((s, c) => s + c.cash_flow_neto_usd, 0)
+
+  // Serie anual para IRR y payback
+  const porAnio = new Map<number, number>()
+  for (const cf of cashflows ?? []) {
+    const anioIdx = Math.floor(monthsBetween(fechaBase, cf.fecha) / 12)
+    porAnio.set(anioIdx, (porAnio.get(anioIdx) ?? 0) + cf.cash_flow_neto_usd)
+  }
+  const maxAnio = Math.max(0, ...porAnio.keys())
+  const serieAnual = Array.from({ length: maxAnio + 1 }, (_, i) => porAnio.get(i) ?? 0)
+
+  const irr = irrAnual(serieAnual)
+
+  let acumulado = 0
+  let paybackAnios: number | null = null
+  for (let i = 0; i < serieAnual.length; i++) {
+    acumulado += serieAnual[i]
+    if (acumulado >= 0 && paybackAnios === null) {
+      paybackAnios = i + (serieAnual[i] !== 0 ? 1 - acumulado / serieAnual[i] : 0)
+      break
+    }
+  }
+
+  const row = {
+    escenario_id: escenarioId,
+    tasa_descuento: tasaAnual,
+    horizonte_anios: horizonteAnios,
+    npv_usd: npv,
+    irr_pct: irr !== null ? irr * 100 : null,
+    payback_anios: paybackAnios,
+  }
+
+  const { error: upsertErr } = await db
+    .from('escenario_metricas')
+    .upsert(row, { onConflict: 'escenario_id,tasa_descuento,horizonte_anios' })
+  if (upsertErr) throw new Error(upsertErr.message)
+
+  return { ...row, total_cashflow: totalCashflow }
 }
