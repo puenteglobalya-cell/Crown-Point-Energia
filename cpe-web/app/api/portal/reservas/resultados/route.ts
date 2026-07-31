@@ -22,6 +22,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data ?? [])
   }
 
+  if (vista === 'depletion') {
+    const { data, error } = await db
+      .from('reservas_depletion_anual')
+      .select('*')
+      .eq('escenario_id', escenarioId)
+      .order('anio')
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data ?? [])
+  }
+
   const { data, error } = await db
     .from('cashflow_mensual')
     .select('*')

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireReservasAccess } from '@/lib/reservas/access'
-import { calcularEscenario, calcularAgregadosAnuales, calcularMetricasEscenario } from '@/lib/reservas/engine'
+import { calcularEscenario, calcularAgregadosAnuales, calcularMetricasEscenario, calcularDepletionReservas } from '@/lib/reservas/engine'
 import { isSameOrigin } from '@/lib/csrf'
 
 export async function POST(req: NextRequest) {
@@ -20,8 +20,9 @@ export async function POST(req: NextRequest) {
     const resumen = await calcularEscenario(escenarioId)
     const agregados = await calcularAgregadosAnuales(escenarioId)
     const metricas = await calcularMetricasEscenario(escenarioId, tasaAnual, horizonteAnios)
+    const depletion = await calcularDepletionReservas(escenarioId)
 
-    return NextResponse.json({ ...resumen, ...agregados, ...metricas })
+    return NextResponse.json({ ...resumen, ...agregados, ...metricas, ...depletion })
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 })
   }

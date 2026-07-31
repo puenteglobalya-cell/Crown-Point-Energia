@@ -152,9 +152,21 @@ export const ENTITIES: EntityConfig[] = [
     displayCols: (r, d) => [{ label: 'Yacimiento', value: nombreDe(d, 'yacimientos', r.yacimiento_id) }, { label: 'USD/BOE', value: String(r.usd_por_boe) }],
   },
   {
+    tabla: 'opex_fijo_pozo',
+    title: '10b. OPEX fijo por pozo (por concesión, USD/mes por pozo activo)',
+    helpText: 'A diferencia de "OPEX fijo" (por concesión), este monto se aplica una vez por cada pozo activo ese mes.',
+    fields: [
+      { name: 'concesion_id', label: 'Concesión', type: 'select', optionsFrom: 'concesiones', required: true },
+      { name: 'fecha_desde', label: 'Vigente desde', type: 'date', required: true },
+      { name: 'usd_mes_pozo', label: 'USD/mes por pozo', type: 'number', step: '0.01', required: true },
+      { name: 'concepto', label: 'Concepto', type: 'text' },
+    ],
+    displayCols: (r, d) => [{ label: 'Concesión', value: nombreDe(d, 'concesiones', r.concesion_id) }, { label: 'USD/mes/pozo', value: String(r.usd_mes_pozo) }, { label: 'Concepto', value: String(r.concepto ?? '—') }],
+  },
+  {
     tabla: 'formulas_precio',
     title: '11. Fórmula de precio',
-    helpText: 'precio = referencia × (1 − DDE%) / divisor − descuento adicional',
+    helpText: 'precio = referencia × (1 − DDE%) / divisor − descuento adicional − tarifa de almacenamiento (USD/m3/día × días, convertido a USD/bbl)',
     fields: [
       { name: 'yacimiento_id', label: 'Yacimiento', type: 'select', optionsFrom: 'yacimientos', required: true },
       { name: 'producto', label: 'Producto', type: 'select', staticOptions: [{ value: 'petroleo', label: 'Petróleo' }, { value: 'gas', label: 'Gas' }] },
@@ -163,6 +175,9 @@ export const ENTITIES: EntityConfig[] = [
       { name: 'dde_pct', label: 'DDE %', type: 'number', step: '0.01' },
       { name: 'divisor', label: 'Divisor (ej. 0.97)', type: 'number', step: '0.0001', defaultValue: 1 },
       { name: 'descuento_adicional_usd', label: 'Descuento adicional USD', type: 'number', step: '0.01' },
+      { name: 'tarifa_almacenamiento_usd_m3_dia', label: 'Tarifa de almacenamiento (USD/m3/día)', type: 'number', step: '0.000001' },
+      { name: 'dias_almacenamiento', label: 'Días de almacenamiento', type: 'number', step: '0.01' },
+      { name: 'factor_m3_a_bbl', label: 'Factor conversión m3→bbl', type: 'number', step: '0.000001', defaultValue: 6.2898 },
     ],
     displayCols: (r, d) => [{ label: 'Yacimiento', value: nombreDe(d, 'yacimientos', r.yacimiento_id) }, { label: 'Producto', value: String(r.producto) }, { label: 'Ref', value: String(r.referencia) }],
   },
@@ -195,6 +210,9 @@ export const ENTITIES: EntityConfig[] = [
       { name: 'tipo', label: 'Tipo', type: 'select', staticOptions: [
         { value: 'perforacion', label: 'Perforación' }, { value: 'workover', label: 'Workover' },
         { value: 'pulling', label: 'Pulling' }, { value: 'facilities', label: 'Facilities' },
+      ] },
+      { name: 'subtipo', label: 'Subtipo (opcional)', type: 'select', staticOptions: [
+        { value: 'inyeccion', label: 'Inyección' }, { value: 'produccion', label: 'Producción' }, { value: 'conversion', label: 'Conversión' },
       ] },
       { name: 'fecha', label: 'Fecha', type: 'date', required: true },
       { name: 'capex_usd', label: 'CAPEX USD', type: 'number', step: '0.01', required: true },

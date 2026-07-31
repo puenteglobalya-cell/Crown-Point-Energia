@@ -285,21 +285,24 @@ function Kv({ label: l, val }: { label: string; val: string }) {
 
 function ResultadosTab({ data }: { data: Data }) {
   const [escenarioId, setEscenarioId] = useState('')
-  const [vista, setVista] = useState<'mensual' | 'anual'>('mensual')
+  const [vista, setVista] = useState<'mensual' | 'anual' | 'depletion'>('mensual')
   const [rows, setRows] = useState<Row[]>([])
   const [rowsAnual, setRowsAnual] = useState<Row[]>([])
+  const [rowsDepletion, setRowsDepletion] = useState<Row[]>([])
   const [loading, setLoading] = useState(false)
 
   async function cargar(id: string) {
     setEscenarioId(id)
-    if (!id) { setRows([]); setRowsAnual([]); return }
+    if (!id) { setRows([]); setRowsAnual([]); setRowsDepletion([]); return }
     setLoading(true)
-    const [rMensual, rAnual] = await Promise.all([
+    const [rMensual, rAnual, rDepletion] = await Promise.all([
       fetch(`/api/portal/reservas/resultados?escenario_id=${id}`),
       fetch(`/api/portal/reservas/resultados?escenario_id=${id}&vista=anual`),
+      fetch(`/api/portal/reservas/resultados?escenario_id=${id}&vista=depletion`),
     ])
     setRows(rMensual.ok ? await rMensual.json() : [])
     setRowsAnual(rAnual.ok ? await rAnual.json() : [])
+    setRowsDepletion(rDepletion.ok ? await rDepletion.json() : [])
     setLoading(false)
   }
 
@@ -312,14 +315,14 @@ function ResultadosTab({ data }: { data: Data }) {
         <Select name="escenario_id" value={escenarioId} onChange={e => cargar(e.target.value)} opts={data.escenarios.map(e => ({ value: String(e.id), label: String(e.nombre) }))} />
       </Field>
       {escenarioId && (
-        <div style={{ display: 'flex', gap: 16, marginBottom: 14 }}>
-          {(['mensual', 'anual'] as const).map(v => (
+        <div style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
+          {(['mensual', 'anual', 'depletion'] as const).map(v => (
             <button key={v} onClick={() => setVista(v)} style={{
               background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: 0,
               color: vista === v ? 'var(--accent)' : 'var(--fg-muted)',
               textDecoration: vista === v ? 'underline' : 'none',
             }}>
-              {v === 'mensual' ? 'Cash flow mensual (por pozo)' : 'Resumen anual (por yacimiento + consolidado)'}
+              {v === 'mensual' ? 'Cash flow mensual (por pozo)' : v === 'anual' ? 'Resumen anual (por yacimiento + consolidado)' : 'Depleción de reservas P1/P2/P3'}
             </button>
           ))}
         </div>
@@ -327,6 +330,36 @@ function ResultadosTab({ data }: { data: Data }) {
       {loading && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Cargando…</p>}
       {!loading && escenarioId && vista === 'mensual' && rows.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — corré el cálculo primero en la pestaña anterior.</p>}
       {!loading && escenarioId && vista === 'anual' && rowsAnual.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — corré el cálculo primero en la pestaña anterior.</p>}
+      {!loading && escenarioId && vista === 'depletion' && rowsDepletion.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — necesita reservas cargadas (sección 15) y haber corrido el cálculo.</p>}
+
+      {vista === 'depletion' && rowsDepletion.length > 0 && (
+        <div style={{ overflowX: 'auto', marginTop: 12 }}>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                <th style={{ padding: '6px 8px' }}>Yacimiento</th>
+                <th style={{ padding: '6px 8px' }}>Categoría</th>
+                <th style={{ padding: '6px 8px' }}>Año</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Apertura (BOE)</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Depleción (BOE)</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Cierre (BOE)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rowsDepletion.map(r => (
+                <tr key={String(r.id)} style={{ borderBottom: '1px solid var(--rule)' }}>
+                  <td style={{ padding: '6px 8px' }}>{String(yacimientoNombre(r.yacimiento_id))}</td>
+                  <td style={{ padding: '6px 8px' }}>{String(r.categoria)}</td>
+                  <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{String(r.anio)}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Number(r.apertura_boe).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Number(r.depletion_boe).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{Number(r.cierre_boe).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {vista === 'anual' && rowsAnual.length > 0 && (
         <div style={{ overflowX: 'auto', marginTop: 12 }}>
