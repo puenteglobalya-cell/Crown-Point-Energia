@@ -34,6 +34,7 @@ export default async function PortalLayout({ children }: { children: React.React
         canViewReports={permissions.has('view_reports')}
         canViewDashboard={permissions.has('view_dashboard')}
         canViewComercial={permissions.has('view_comercial')}
+        canViewReservas={permissions.has('view_reservas')}
         theme={theme}
       />
       <main className="portal-main">

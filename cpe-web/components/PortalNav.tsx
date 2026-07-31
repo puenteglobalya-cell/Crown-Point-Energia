@@ -42,6 +42,7 @@ export default function PortalNav({
   canViewReports = true,
   canViewDashboard = true,
   canViewComercial = true,
+  canViewReservas = false,
   theme: initialTheme = 'light',
 }: {
   email: string
@@ -50,6 +51,7 @@ export default function PortalNav({
   canViewReports?: boolean
   canViewDashboard?: boolean
   canViewComercial?: boolean
+  canViewReservas?: boolean
   theme?: string
 }) {
   const [signingOut, setSigningOut] = useState(false)
@@ -93,6 +95,11 @@ export default function PortalNav({
       {canUpload && (
         <Link href="/portal/subir" className="portal-nav-link" onClick={() => setMenuOpen(false)}>
           Subir reporte
+        </Link>
+      )}
+      {canViewReservas && (
+        <Link href="/portal/reservas" className="portal-nav-link" onClick={() => setMenuOpen(false)}>
+          Simulador de reservas
         </Link>
       )}
     </>

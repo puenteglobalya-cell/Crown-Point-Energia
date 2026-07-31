@@ -13,6 +13,7 @@ export const PERMISSIONS = {
   manage_users:    'Gestionar usuarios',
   manage_cms:      'Panel CMS / Admin',
   view_investor:   'Ver sección inversores',
+  view_reservas:   'Ver simulador de reservas',
 } as const
 
 export type Permission = keyof typeof PERMISSIONS
