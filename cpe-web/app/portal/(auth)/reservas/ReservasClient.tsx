@@ -19,8 +19,19 @@ function Field({ children }: { children: React.ReactNode }) {
   return <div style={field}>{children}</div>
 }
 
+const GRUPOS_CARGA: { titulo: string; tablas: string[] }[] = [
+  { titulo: 'Estructura', tablas: ['provincias', 'yacimientos', 'concesiones', 'concesion_participacion'] },
+  { titulo: 'Pozos y producción', tablas: ['pozos', 'pozos_tipo', 'curvas_produccion', 'intervenciones'] },
+  { titulo: 'Precios', tablas: ['formulas_precio', 'precios_referencia', 'precios_mensuales'] },
+  { titulo: 'Costos e impuestos', tablas: ['opex_fijo', 'opex_variable', 'opex_fijo_pozo', 'regalias'] },
+  { titulo: 'Escenarios', tablas: ['escenarios'] },
+  { titulo: 'Reservas', tablas: ['reservas_anuales', 'parametros_certeza_reservas'] },
+  { titulo: 'Financiero', tablas: ['supuestos_generales', 'deuda_notas', 'comparables_mercado'] },
+]
+
 export default function ReservasClient() {
   const [tab, setTab] = useState<'cargar' | 'calcular' | 'resultados' | 'pareto'>('cargar')
+  const [seccionActiva, setSeccionActiva] = useState(ENTITIES[0].tabla)
   const [data, setData] = useState<Data | null>(null)
 
   async function reload() {
@@ -31,9 +42,11 @@ export default function ReservasClient() {
 
   if (!data) return <div style={{ padding: 40 }}>Cargando…</div>
 
+  const activa = ENTITIES.find(e => e.tabla === seccionActiva) ?? ENTITIES[0]
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
-      <div style={{ maxWidth: 920, margin: '0 auto' }}>
+      <div style={{ maxWidth: tab === 'cargar' ? 1180 : 920, margin: '0 auto' }}>
         <Link href="/portal" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>← Portal</Link>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: '8px 0 20px' }}>
           Simulador de reservas
@@ -53,16 +66,43 @@ export default function ReservasClient() {
         </div>
 
         {tab === 'cargar' && (
-          <>
-            {ENTITIES.map(cfg => (
-              <EntitySection
-                key={cfg.tabla}
-                cfg={cfg}
-                data={data}
-                reload={reload}
-              />
-            ))}
-          </>
+          <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+            <nav style={{
+              width: 220, flexShrink: 0, position: 'sticky', top: 24,
+              background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)',
+              padding: '12px 8px', maxHeight: 'calc(100vh - 48px)', overflowY: 'auto',
+            }}>
+              {GRUPOS_CARGA.map(grupo => (
+                <div key={grupo.titulo} style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg-muted)', padding: '6px 10px 4px' }}>
+                    {grupo.titulo}
+                  </div>
+                  {grupo.tablas.map(tabla => {
+                    const cfg = ENTITIES.find(e => e.tabla === tabla)
+                    if (!cfg) return null
+                    const isActive = cfg.tabla === seccionActiva
+                    return (
+                      <button
+                        key={tabla}
+                        onClick={() => setSeccionActiva(tabla)}
+                        style={{
+                          display: 'block', width: '100%', textAlign: 'left', background: isActive ? 'var(--accent-pale, rgba(31,37,102,0.08))' : 'none',
+                          border: 'none', borderRadius: 'var(--r-md)', padding: '8px 10px', marginBottom: 2,
+                          fontSize: 12, fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--accent)' : 'var(--fg-soft)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {cfg.title.replace(/^\d+[a-z]?\.\s*/, '')}
+                      </button>
+                    )
+                  })}
+                </div>
+              ))}
+            </nav>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <EntitySection key={activa.tabla} cfg={activa} data={data} reload={reload} />
+            </div>
+          </div>
         )}
         {tab === 'calcular' && <CalcularTab data={data} />}
         {tab === 'resultados' && <ResultadosTab data={data} />}
