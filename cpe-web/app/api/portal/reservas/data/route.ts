@@ -42,3 +42,45 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json(data, { status: 201 })
 }
+
+export async function PATCH(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireReservasAccess()
+  if (!auth) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+  const body = await req.json()
+  const { tabla, id, valores } = body as { tabla: Tabla; id: number; valores: Record<string, unknown> }
+
+  if (!TABLES.includes(tabla)) {
+    return NextResponse.json({ error: `Tabla inválida: ${tabla}` }, { status: 400 })
+  }
+  if (!Number.isFinite(id)) {
+    return NextResponse.json({ error: 'id inválido' }, { status: 400 })
+  }
+
+  const db = createSupabaseServerAdminClient()
+  const { data, error } = await db.from(tabla).update(valores).eq('id', id).select().single()
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  return NextResponse.json(data)
+}
+
+export async function DELETE(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireReservasAccess()
+  if (!auth) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+  const body = await req.json()
+  const { tabla, id } = body as { tabla: Tabla; id: number }
+
+  if (!TABLES.includes(tabla)) {
+    return NextResponse.json({ error: `Tabla inválida: ${tabla}` }, { status: 400 })
+  }
+  if (!Number.isFinite(id)) {
+    return NextResponse.json({ error: 'id inválido' }, { status: 400 })
+  }
+
+  const db = createSupabaseServerAdminClient()
+  const { error } = await db.from(tabla).delete().eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  return NextResponse.json({ ok: true })
+}

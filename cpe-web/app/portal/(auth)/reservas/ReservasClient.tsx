@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-
-type Row = Record<string, unknown>
-type Data = Record<string, Row[]>
+import { ENTITIES, type Data, type Row, type EntityConfig, type FieldConfig } from './entityConfig'
 
 const box: React.CSSProperties = {
   background: 'var(--surface)', border: '1px solid var(--rule)',
@@ -33,21 +31,6 @@ export default function ReservasClient() {
   }
   useEffect(() => { reload() }, [])
 
-  async function submit(tabla: string, valores: Record<string, unknown>) {
-    setErr(''); setMsg('')
-    const res = await fetch('/api/portal/reservas/data', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ tabla, valores }),
-    })
-    if (!res.ok) {
-      setErr((await res.json()).error ?? 'Error al guardar')
-      return
-    }
-    setMsg(`${tabla}: registro creado ✓`)
-    reload()
-  }
-
   if (!data) return <div style={{ padding: 40 }}>Cargando…</div>
 
   return (
@@ -74,7 +57,20 @@ export default function ReservasClient() {
         {err && <div style={{ fontSize: 13, color: 'var(--cp-negative)', padding: '10px 14px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 16 }}>{err}</div>}
         {msg && <div style={{ fontSize: 13, color: 'var(--cp-positive, #2d7a4a)', padding: '10px 14px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 16 }}>{msg}</div>}
 
-        {tab === 'cargar' && <CargarTab data={data} submit={submit} />}
+        {tab === 'cargar' && (
+          <>
+            {ENTITIES.map(cfg => (
+              <EntitySection
+                key={cfg.tabla}
+                cfg={cfg}
+                data={data}
+                setErr={setErr}
+                setMsg={setMsg}
+                reload={reload}
+              />
+            ))}
+          </>
+        )}
         {tab === 'calcular' && <CalcularTab data={data} />}
         {tab === 'resultados' && <ResultadosTab data={data} />}
       </div>
@@ -100,223 +96,126 @@ function Select({ opts, ...props }: { opts: { value: string; label: string }[] }
   )
 }
 
-function CargarTab({ data, submit }: { data: Data; submit: (t: string, v: Record<string, unknown>) => void }) {
-  const yacOpts = data.yacimientos.map(y => ({ value: String(y.id), label: String(y.nombre) }))
-  const concOpts = data.concesiones.map(c => ({ value: String(c.id), label: String(c.nombre) }))
-  const pozoOpts = data.pozos.map(p => ({ value: String(p.id), label: String(p.nombre) }))
-  const pozoTipoOpts = data.pozos_tipo.map(p => ({ value: String(p.id), label: String(p.nombre) }))
-  const provOpts = data.provincias.map(p => ({ value: String(p.id), label: String(p.nombre) }))
+function fieldOpts(f: FieldConfig, data: Data): { value: string; label: string }[] {
+  if (f.staticOptions) return f.staticOptions
+  if (f.optionsFrom) return (data[f.optionsFrom] ?? []).map(r => ({ value: String(r.id), label: String(r.nombre ?? r.id) }))
+  return []
+}
+
+function parseValue(f: FieldConfig, raw: FormDataEntryValue | null): unknown {
+  if (f.type === 'checkbox') return raw === 'on'
+  if (raw === null || raw === '') return f.required ? '' : null
+  if (f.type === 'number') return Number(raw)
+  return raw
+}
+
+function EntitySection({ cfg, data, setErr, setMsg, reload }: {
+  cfg: EntityConfig; data: Data; setErr: (s: string) => void; setMsg: (s: string) => void; reload: () => void
+}) {
+  const [editing, setEditing] = useState<Row | null>(null)
+  const rows = data[cfg.tabla] ?? []
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setErr(''); setMsg('')
+    const f = new FormData(e.currentTarget)
+    const valores: Record<string, unknown> = {}
+    for (const field of cfg.fields) valores[field.name] = parseValue(field, f.get(field.name))
+
+    const isEdit = editing !== null
+    const res = await fetch('/api/portal/reservas/data', {
+      method: isEdit ? 'PATCH' : 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(isEdit ? { tabla: cfg.tabla, id: editing!.id, valores } : { tabla: cfg.tabla, valores }),
+    })
+    if (!res.ok) {
+      setErr((await res.json()).error ?? 'Error al guardar')
+      return
+    }
+    setMsg(`${cfg.tabla}: ${isEdit ? 'registro actualizado' : 'registro creado'} ✓`)
+    setEditing(null)
+    e.currentTarget.reset()
+    reload()
+  }
+
+  async function onDelete(row: Row) {
+    if (!confirm('¿Eliminar este registro? Si otros registros dependen de él, la base va a rechazar el borrado.')) return
+    setErr(''); setMsg('')
+    const res = await fetch('/api/portal/reservas/data', {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tabla: cfg.tabla, id: row.id }),
+    })
+    if (!res.ok) {
+      setErr((await res.json()).error ?? 'Error al eliminar')
+      return
+    }
+    setMsg(`${cfg.tabla}: registro eliminado ✓`)
+    if (editing?.id === row.id) setEditing(null)
+    reload()
+  }
 
   return (
-    <>
-      <Seccion title="1. Provincia">
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('provincias', { nombre: f.get('nombre'), alicuota_iibb: Number(f.get('alicuota_iibb')) })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Nombre</label><input name="nombre" required style={input} /></Field>
-          <Field><label style={label}>Alícuota IIBB (ej. 0.03 = 3%)</label><input name="alicuota_iibb" type="number" step="0.0001" defaultValue="0.03" style={input} /></Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-        <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 10 }}>Cargadas: {data.provincias.map(p => p.nombre).join(', ') || '—'}</p>
-      </Seccion>
+    <Seccion title={cfg.title}>
+      {cfg.helpText && <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10 }}>{cfg.helpText}</p>}
 
-      <Seccion title="2. Yacimiento">
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('yacimientos', { nombre: f.get('nombre'), provincia_id: Number(f.get('provincia_id')), tipo_recuperacion: f.get('tipo_recuperacion') })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Nombre</label><input name="nombre" required style={input} /></Field>
-          <Field><label style={label}>Provincia</label><Select name="provincia_id" opts={provOpts} required /></Field>
-          <Field><label style={label}>Tipo de recuperación</label>
-            <select name="tipo_recuperacion" style={input}><option value="primaria">Primaria</option><option value="secundaria">Secundaria</option></select>
+      {rows.length > 0 && (
+        <div style={{ marginBottom: 16, overflowX: 'auto' }}>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+            <tbody>
+              {rows.map(r => (
+                <tr key={String(r.id)} style={{ borderBottom: '1px solid var(--rule)' }}>
+                  {cfg.displayCols(r, data).map((c, i) => (
+                    <td key={i} style={{ padding: '6px 8px', color: 'var(--fg-soft)' }}>
+                      <span style={{ color: 'var(--fg-muted)', marginRight: 4 }}>{c.label}:</span>{c.value}
+                    </td>
+                  ))}
+                  <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                    <button type="button" onClick={() => setEditing(r)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 12, marginRight: 10 }}>Editar</button>
+                    <button type="button" onClick={() => onDelete(r)} style={{ background: 'none', border: 'none', color: 'var(--cp-negative)', cursor: 'pointer', fontSize: 12 }}>Borrar</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <form key={String(editing?.id ?? 'new')} onSubmit={onSubmit}>
+        {editing && (
+          <div style={{ fontSize: 12, color: 'var(--accent)', marginBottom: 10 }}>
+            Editando registro #{String(editing.id)} —{' '}
+            <button type="button" onClick={() => setEditing(null)} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', textDecoration: 'underline', cursor: 'pointer', fontSize: 12 }}>
+              cancelar y cargar uno nuevo
+            </button>
+          </div>
+        )}
+        {cfg.fields.map(f => (
+          <Field key={f.name}>
+            <label style={label}>{f.label}</label>
+            {f.type === 'select' ? (
+              <Select name={f.name} required={f.required} defaultValue={editing ? String(editing[f.name] ?? '') : ''} opts={fieldOpts(f, data)} />
+            ) : f.type === 'checkbox' ? (
+              <label style={{ fontSize: 13, display: 'flex', gap: 6, alignItems: 'center' }}>
+                <input type="checkbox" name={f.name} defaultChecked={editing ? Boolean(editing[f.name]) : Boolean(f.defaultValue)} /> {f.label}
+              </label>
+            ) : (
+              <input
+                name={f.name}
+                type={f.type}
+                step={f.step}
+                min={f.min}
+                max={f.max}
+                required={f.required}
+                defaultValue={editing ? String(editing[f.name] ?? '') : (f.defaultValue !== undefined ? String(f.defaultValue) : undefined)}
+                style={input}
+              />
+            )}
           </Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-        <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 10 }}>Cargados: {data.yacimientos.map(y => y.nombre).join(', ') || '—'}</p>
-      </Seccion>
-
-      <Seccion title="3. Concesión">
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('concesiones', { nombre: f.get('nombre'), yacimiento_id: Number(f.get('yacimiento_id')), fecha_inicio: f.get('fecha_inicio'), fecha_vencimiento: f.get('fecha_vencimiento') })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Nombre</label><input name="nombre" required style={input} /></Field>
-          <Field><label style={label}>Yacimiento</label><Select name="yacimiento_id" opts={yacOpts} required /></Field>
-          <Field><label style={label}>Fecha inicio</label><input name="fecha_inicio" type="date" required style={input} /></Field>
-          <Field><label style={label}>Fecha vencimiento</label><input name="fecha_vencimiento" type="date" required style={input} /></Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-        <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 10 }}>Cargadas: {data.concesiones.map(c => c.nombre).join(', ') || '—'}</p>
-      </Seccion>
-
-      <Seccion title="4. Participación en la concesión">
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('concesion_participacion', { concesion_id: Number(f.get('concesion_id')), fecha_desde: f.get('fecha_desde'), porcentaje: Number(f.get('porcentaje')), motivo: f.get('motivo') || null })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Concesión</label><Select name="concesion_id" opts={concOpts} required /></Field>
-          <Field><label style={label}>Vigente desde</label><input name="fecha_desde" type="date" required style={input} /></Field>
-          <Field><label style={label}>% participación (0 a 1, ej. 0.5)</label><input name="porcentaje" type="number" step="0.0001" min="0" max="1" required style={input} /></Field>
-          <Field><label style={label}>Motivo</label><input name="motivo" style={input} /></Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-      </Seccion>
-
-      <Seccion title="5. Pozo">
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('pozos', { nombre: f.get('nombre'), concesion_id: Number(f.get('concesion_id')), tipo: f.get('tipo'), fecha_alta: f.get('fecha_alta') })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Nombre</label><input name="nombre" required style={input} /></Field>
-          <Field><label style={label}>Concesión</label><Select name="concesion_id" opts={concOpts} required /></Field>
-          <Field><label style={label}>Tipo</label>
-            <select name="tipo" style={input}>
-              <option value="productor_petroleo">Productor petróleo</option>
-              <option value="productor_gas">Productor gas</option>
-              <option value="inyector_agua">Inyector agua</option>
-            </select>
-          </Field>
-          <Field><label style={label}>Fecha de alta</label><input name="fecha_alta" type="date" required style={input} /></Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-        <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 10 }}>Cargados: {data.pozos.map(p => p.nombre).join(', ') || '—'}</p>
-      </Seccion>
-
-      <Seccion title="6. Pozo tipo (curva de referencia)">
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('pozos_tipo', { nombre: f.get('nombre'), yacimiento_id: Number(f.get('yacimiento_id')), categoria: f.get('categoria') })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Nombre</label><input name="nombre" required style={input} /></Field>
-          <Field><label style={label}>Yacimiento</label><Select name="yacimiento_id" opts={yacOpts} required /></Field>
-          <Field><label style={label}>Categoría</label>
-            <select name="categoria" style={input}>
-              <option value="basico">Básico</option><option value="drilling">Drilling</option>
-              <option value="workover">Workover</option><option value="pulling">Pulling</option>
-            </select>
-          </Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-      </Seccion>
-
-      <Seccion title="7. Curva de producción (fila mensual)">
-        <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10 }}>Elegí pozo O pozo tipo, no ambos. mes_offset = 0 es el primer mes de la curva.</p>
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('curvas_produccion', {
-            pozo_id: f.get('pozo_id') ? Number(f.get('pozo_id')) : null,
-            pozo_tipo_id: f.get('pozo_tipo_id') ? Number(f.get('pozo_tipo_id')) : null,
-            mes_offset: Number(f.get('mes_offset')),
-            bbl_petroleo: Number(f.get('bbl_petroleo') || 0),
-            mcf_gas: Number(f.get('mcf_gas') || 0),
-          })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Pozo (opcional)</label><Select name="pozo_id" opts={pozoOpts} /></Field>
-          <Field><label style={label}>Pozo tipo (opcional)</label><Select name="pozo_tipo_id" opts={pozoTipoOpts} /></Field>
-          <Field><label style={label}>Mes offset</label><input name="mes_offset" type="number" min="0" required style={input} /></Field>
-          <Field><label style={label}>bbl petróleo/mes</label><input name="bbl_petroleo" type="number" step="0.001" style={input} /></Field>
-          <Field><label style={label}>mcf gas/mes</label><input name="mcf_gas" type="number" step="0.001" style={input} /></Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-      </Seccion>
-
-      <Seccion title="8. Regalías">
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('regalias', { concesion_id: Number(f.get('concesion_id')), fecha_desde: f.get('fecha_desde'), porcentaje: Number(f.get('porcentaje')) })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Concesión</label><Select name="concesion_id" opts={concOpts} required /></Field>
-          <Field><label style={label}>Vigente desde</label><input name="fecha_desde" type="date" required style={input} /></Field>
-          <Field><label style={label}>% regalía (ej. 0.12)</label><input name="porcentaje" type="number" step="0.0001" required style={input} /></Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-      </Seccion>
-
-      <Seccion title="9. OPEX fijo (por concesión, mensual)">
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('opex_fijo', { concesion_id: Number(f.get('concesion_id')), fecha_desde: f.get('fecha_desde'), monto_usd_mes: Number(f.get('monto_usd_mes')), concepto: f.get('concepto') || null })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Concesión</label><Select name="concesion_id" opts={concOpts} required /></Field>
-          <Field><label style={label}>Vigente desde</label><input name="fecha_desde" type="date" required style={input} /></Field>
-          <Field><label style={label}>USD/mes</label><input name="monto_usd_mes" type="number" step="0.01" required style={input} /></Field>
-          <Field><label style={label}>Concepto</label><input name="concepto" style={input} /></Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-      </Seccion>
-
-      <Seccion title="10. OPEX variable (por yacimiento, USD/BOE)">
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('opex_variable', { yacimiento_id: Number(f.get('yacimiento_id')), fecha_desde: f.get('fecha_desde'), usd_por_boe: Number(f.get('usd_por_boe')) })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Yacimiento</label><Select name="yacimiento_id" opts={yacOpts} required /></Field>
-          <Field><label style={label}>Vigente desde</label><input name="fecha_desde" type="date" required style={input} /></Field>
-          <Field><label style={label}>USD/BOE</label><input name="usd_por_boe" type="number" step="0.0001" required style={input} /></Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-      </Seccion>
-
-      <Seccion title="11. Fórmula de precio (Brent × (1 − DDE%)/divisor − descuento)">
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('formulas_precio', {
-            yacimiento_id: Number(f.get('yacimiento_id')), producto: f.get('producto'), fecha_desde: f.get('fecha_desde'),
-            referencia: f.get('referencia') || 'brent', dde_pct: Number(f.get('dde_pct') || 0),
-            divisor: Number(f.get('divisor') || 1), descuento_adicional_usd: Number(f.get('descuento_adicional_usd') || 0),
-          })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Yacimiento</label><Select name="yacimiento_id" opts={yacOpts} required /></Field>
-          <Field><label style={label}>Producto</label><select name="producto" style={input}><option value="petroleo">Petróleo</option><option value="gas">Gas</option></select></Field>
-          <Field><label style={label}>Vigente desde</label><input name="fecha_desde" type="date" required style={input} /></Field>
-          <Field><label style={label}>Referencia (brent, wti…)</label><input name="referencia" defaultValue="brent" style={input} /></Field>
-          <Field><label style={label}>DDE %</label><input name="dde_pct" type="number" step="0.01" style={input} /></Field>
-          <Field><label style={label}>Divisor (ej. 0.97)</label><input name="divisor" type="number" step="0.0001" defaultValue="1" style={input} /></Field>
-          <Field><label style={label}>Descuento adicional USD</label><input name="descuento_adicional_usd" type="number" step="0.01" style={input} /></Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-      </Seccion>
-
-      <Seccion title="12. Precio de referencia (ej. Brent mensual)">
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('precios_referencia', { referencia: f.get('referencia'), fecha: f.get('fecha'), precio_usd: Number(f.get('precio_usd')) })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Referencia</label><input name="referencia" defaultValue="brent" required style={input} /></Field>
-          <Field><label style={label}>Mes</label><input name="fecha" type="date" required style={input} /></Field>
-          <Field><label style={label}>Precio USD</label><input name="precio_usd" type="number" step="0.0001" required style={input} /></Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-      </Seccion>
-
-      <Seccion title="13. Escenario">
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('escenarios', { nombre: f.get('nombre'), descripcion: f.get('descripcion') || null, es_base: f.get('es_base') === 'on' })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Nombre</label><input name="nombre" required style={input} /></Field>
-          <Field><label style={label}>Descripción</label><input name="descripcion" style={input} /></Field>
-          <Field><label><input type="checkbox" name="es_base" /> Es el escenario base</label></Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-        <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 10 }}>Cargados: {data.escenarios.map(e => e.nombre).join(', ') || '—'}</p>
-      </Seccion>
-
-      <Seccion title="14. Intervención (drilling / workover / pulling / facilities)">
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget)
-          submit('intervenciones', {
-            pozo_id: f.get('pozo_id') ? Number(f.get('pozo_id')) : null,
-            concesion_id: Number(f.get('concesion_id')), tipo: f.get('tipo'), fecha: f.get('fecha'),
-            capex_usd: Number(f.get('capex_usd')), vida_util_meses: f.get('vida_util_meses') ? Number(f.get('vida_util_meses')) : null,
-            pozo_tipo_id: f.get('pozo_tipo_id') ? Number(f.get('pozo_tipo_id')) : null,
-            escenario_id: f.get('escenario_id') ? Number(f.get('escenario_id')) : null,
-          })
-          e.currentTarget.reset() }}>
-          <Field><label style={label}>Pozo (vacío si es drilling de un pozo nuevo)</label><Select name="pozo_id" opts={pozoOpts} /></Field>
-          <Field><label style={label}>Concesión</label><Select name="concesion_id" opts={concOpts} required /></Field>
-          <Field><label style={label}>Tipo</label>
-            <select name="tipo" style={input}>
-              <option value="perforacion">Perforación</option><option value="workover">Workover</option>
-              <option value="pulling">Pulling</option><option value="facilities">Facilities</option>
-            </select>
-          </Field>
-          <Field><label style={label}>Fecha</label><input name="fecha" type="date" required style={input} /></Field>
-          <Field><label style={label}>CAPEX USD</label><input name="capex_usd" type="number" step="0.01" required style={input} /></Field>
-          <Field><label style={label}>Vida útil (meses, para amortización)</label><input name="vida_util_meses" type="number" style={input} /></Field>
-          <Field><label style={label}>Curva que activa (pozo tipo)</label><Select name="pozo_tipo_id" opts={pozoTipoOpts} /></Field>
-          <Field><label style={label}>Escenario (vacío = plan base)</label><Select name="escenario_id" opts={data.escenarios.map(e => ({ value: String(e.id), label: String(e.nombre) }))} /></Field>
-          <button className="btn btn-primary" type="submit">Guardar</button>
-        </form>
-      </Seccion>
-    </>
+        ))}
+        <button className="btn btn-primary" type="submit">{editing ? 'Guardar cambios' : 'Guardar'}</button>
+      </form>
+    </Seccion>
   )
 }
 
