@@ -7,9 +7,9 @@ const TABLES = [
   'provincias', 'yacimientos', 'concesiones', 'concesion_participacion',
   'pozos', 'pozos_tipo', 'curvas_produccion', 'intervenciones',
   'formulas_precio', 'precios_referencia', 'precios_mensuales',
-  'opex_fijo', 'opex_variable', 'regalias', 'escenarios',
+  'opex_fijo', 'opex_variable', 'opex_fijo_pozo', 'regalias', 'escenarios',
   'reservas_anuales', 'parametros_certeza_reservas', 'supuestos_generales', 'deuda_notas', 'comparables_mercado',
-  'resultados_escenario_anual', 'escenario_metricas',
+  'resultados_escenario_anual', 'escenario_metricas', 'reservas_depletion_anual',
 ] as const
 type Tabla = typeof TABLES[number]
 

@@ -35,7 +35,7 @@ export async function calcularEscenario(escenarioId: number) {
 
   const [
     pozosRes, curvasRes, intervencionesRes, participacionRes, regaliasRes,
-    opexFijoRes, opexVarRes, formulasRes, preciosRefRes, preciosMensRes,
+    opexFijoRes, opexVarRes, opexFijoPozoRes, formulasRes, preciosRefRes, preciosMensRes,
     provinciasRes, yacimientosRes, concesionesRes, ganRes, dycRes,
   ] = await Promise.all([
     db.from('pozos').select('*'),
@@ -45,6 +45,7 @@ export async function calcularEscenario(escenarioId: number) {
     db.from('regalias').select('*'),
     db.from('opex_fijo').select('*'),
     db.from('opex_variable').select('*'),
+    db.from('opex_fijo_pozo').select('*'),
     db.from('formulas_precio').select('*'),
     db.from('precios_referencia').select('*'),
     db.from('precios_mensuales').select('*'),
@@ -56,7 +57,7 @@ export async function calcularEscenario(escenarioId: number) {
   ])
 
   const err = [pozosRes, curvasRes, intervencionesRes, participacionRes, regaliasRes,
-    opexFijoRes, opexVarRes, formulasRes, preciosRefRes, preciosMensRes,
+    opexFijoRes, opexVarRes, opexFijoPozoRes, formulasRes, preciosRefRes, preciosMensRes,
     provinciasRes, yacimientosRes, concesionesRes, ganRes, dycRes].find(r => r.error)
   if (err?.error) throw new Error(err.error.message)
 
@@ -67,6 +68,7 @@ export async function calcularEscenario(escenarioId: number) {
   const regalias = regaliasRes.data ?? []
   const opexFijo = opexFijoRes.data ?? []
   const opexVar = opexVarRes.data ?? []
+  const opexFijoPozo = opexFijoPozoRes.data ?? []
   const formulas = formulasRes.data ?? []
   const preciosRef = preciosRefRes.data ?? []
   const preciosMens = preciosMensRes.data ?? []
@@ -97,7 +99,15 @@ export async function calcularEscenario(escenarioId: number) {
     if (!formula) return 0
     const ref = preciosRef.find(r => r.referencia === formula.referencia && r.fecha === fecha)
     if (!ref) return 0
-    return (ref.precio_usd * (1 - formula.dde_pct / 100)) / (formula.divisor || 1) - formula.descuento_adicional_usd
+    const precioNetoCuenca = (ref.precio_usd * (1 - formula.dde_pct / 100)) / (formula.divisor || 1) - formula.descuento_adicional_usd
+    // Tarifa de almacenamiento: USD/m3/día × días, convertido a USD/bbl con
+    // el factor de conversión configurado (primera aproximación — validar
+    // contra el Excel de referencia y ajustar factor_m3_a_bbl si no calza).
+    const tarifaUsdM3 = formula.tarifa_almacenamiento_usd_m3_dia ?? 0
+    const dias = formula.dias_almacenamiento ?? 0
+    const factorM3aBbl = formula.factor_m3_a_bbl || 6.2898
+    const deduccionAlmacenamiento = (tarifaUsdM3 * dias) / factorM3aBbl
+    return precioNetoCuenca - deduccionAlmacenamiento
   }
 
   const filas: Record<string, unknown>[] = []
@@ -156,6 +166,10 @@ export async function calcularEscenario(escenarioId: number) {
       const variable = vigente(opexVar.filter(o => o.yacimiento_id === yacimiento.id), fecha)
       const boe = bbl + mcf / 6000
       const opexVarUsd = boe * (variable?.usd_por_boe ?? 0)
+      // Fijo por pozo: se carga por pozo activo (cada pozo del loop suma el
+      // suyo, no se prorratea entre pozos como el opex_fijo por concesión)
+      const fijoPozo = vigente(opexFijoPozo.filter(o => o.concesion_id === concesion.id), fecha)
+      const opexFijoPozoUsd = fijoPozo?.usd_mes_pozo ?? 0
 
       // CAPEX/amortización: intervenciones de este pozo con vida útil vigente ese mes
       let depreciacionUsd = 0
@@ -170,7 +184,7 @@ export async function calcularEscenario(escenarioId: number) {
         }
       }
 
-      const baseImponible = ingresoBruto - regaliaUsd - iibbUsd - dycUsd - opexFijoUsd - opexVarUsd - depreciacionUsd
+      const baseImponible = ingresoBruto - regaliaUsd - iibbUsd - dycUsd - opexFijoUsd - opexVarUsd - opexFijoPozoUsd - depreciacionUsd
       const impuestoGanancias = baseImponible > 0 ? baseImponible * alicuotaGanancias : 0
       const resultadoNeto = baseImponible - impuestoGanancias
 
@@ -202,6 +216,7 @@ export async function calcularEscenario(escenarioId: number) {
         debitos_creditos_usd: dycUsd,
         opex_fijo_usd: opexFijoUsd,
         opex_variable_usd: opexVarUsd,
+        opex_fijo_pozo_usd: opexFijoPozoUsd,
         capex_usd: capexUsd,
         depreciacion_usd: depreciacionUsd,
         resultado_antes_ganancias_usd: baseImponible,
@@ -289,7 +304,7 @@ export async function calcularAgregadosAnuales(escenarioId: number) {
       acc.produccion_gas_mcf += cf.mcf_gas
       acc.ingresos_usd += cf.ingreso_bruto_usd
       acc.regalias_usd += cf.regalias_usd
-      acc.opex_usd += cf.opex_fijo_usd + cf.opex_variable_usd
+      acc.opex_usd += cf.opex_fijo_usd + cf.opex_variable_usd + cf.opex_fijo_pozo_usd
       acc.depreciacion_usd += cf.depreciacion_usd
       acc.resultado_antes_ganancias_usd += cf.resultado_antes_ganancias_usd
       acc.impuesto_ganancias_usd += cf.impuesto_ganancias_usd
@@ -302,7 +317,7 @@ export async function calcularAgregadosAnuales(escenarioId: number) {
     accCons.produccion_gas_mcf += cf.mcf_gas
     accCons.ingresos_usd += cf.ingreso_bruto_usd
     accCons.regalias_usd += cf.regalias_usd
-    accCons.opex_usd += cf.opex_fijo_usd + cf.opex_variable_usd
+    accCons.opex_usd += cf.opex_fijo_usd + cf.opex_variable_usd + cf.opex_fijo_pozo_usd
     accCons.depreciacion_usd += cf.depreciacion_usd
     accCons.resultado_antes_ganancias_usd += cf.resultado_antes_ganancias_usd
     accCons.impuesto_ganancias_usd += cf.impuesto_ganancias_usd
@@ -422,4 +437,69 @@ export async function calcularMetricasEscenario(escenarioId: number, tasaAnual: 
   if (upsertErr) throw new Error(upsertErr.message)
 
   return { ...row, total_cashflow: totalCashflow }
+}
+
+// ─── Roll-forward de depleción de reservas ───────────────────────────────
+// Opening (reserve report) → Depletion (producción del año, del motor) →
+// Closing, por yacimiento/categoría/año. Requiere haber corrido
+// calcularAgregadosAnuales() antes para tener resultados_escenario_anual.
+export async function calcularDepletionReservas(escenarioId: number) {
+  const db = createSupabaseServerAdminClient()
+
+  const [reservasRes, resultadosRes] = await Promise.all([
+    db.from('reservas_anuales').select('*').or(`escenario_id.eq.${escenarioId},escenario_id.is.null`),
+    db.from('resultados_escenario_anual').select('*').eq('escenario_id', escenarioId).not('yacimiento_id', 'is', null),
+  ])
+  const err = [reservasRes, resultadosRes].find(r => r.error)
+  if (err?.error) throw new Error(err.error.message)
+
+  const reservas = reservasRes.data ?? []
+  const resultados = (resultadosRes.data ?? []).sort((a, b) => a.anio - b.anio)
+
+  const yacimientoIds = Array.from(new Set(reservas.map(r => r.yacimiento_id)))
+  const categorias = ['P1', 'P2', 'P3'] as const
+
+  const filas: Record<string, unknown>[] = []
+
+  for (const yacId of yacimientoIds) {
+    const produccionPorAnio = resultados
+      .filter(r => r.yacimiento_id === yacId)
+      .map(r => ({ anio: r.anio, boe: r.produccion_petroleo_bbl + r.produccion_gas_mcf / 6000 }))
+
+    for (const categoria of categorias) {
+      // Apertura base: el reserve report más reciente para este yacimiento/categoría
+      const reporte = reservas
+        .filter(r => r.yacimiento_id === yacId && r.categoria === categoria)
+        .sort((a, b) => String(b.fecha_corte).localeCompare(String(a.fecha_corte)))[0]
+      if (!reporte) continue
+
+      let cierrePrevio = reporte.reservas_boe
+      const anioBase = reporte.anio
+
+      for (const { anio, boe: produccionBoe } of produccionPorAnio) {
+        if (anio < anioBase) continue
+        const apertura = cierrePrevio
+        const depletion = Math.min(produccionBoe, Math.max(apertura, 0))
+        const cierre = Math.max(apertura - depletion, 0)
+        filas.push({
+          escenario_id: escenarioId,
+          yacimiento_id: yacId,
+          categoria,
+          anio,
+          apertura_boe: apertura,
+          depletion_boe: depletion,
+          cierre_boe: cierre,
+        })
+        cierrePrevio = cierre
+      }
+    }
+  }
+
+  await db.from('reservas_depletion_anual').delete().eq('escenario_id', escenarioId)
+  if (filas.length > 0) {
+    const { error: insErr } = await db.from('reservas_depletion_anual').insert(filas)
+    if (insErr) throw new Error(insErr.message)
+  }
+
+  return { depletion_filas: filas.length }
 }
