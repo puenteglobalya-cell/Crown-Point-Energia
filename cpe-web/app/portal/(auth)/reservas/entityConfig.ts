@@ -68,13 +68,20 @@ export const ENTITIES: EntityConfig[] = [
   {
     tabla: 'concesion_participacion',
     title: '4. Participación en la concesión',
+    helpText: 'Dejá "Hasta" vacío si este porcentaje sigue vigente. Poné una fecha si en algún momento cambia a otro porcentaje (farm-out, reversión, etc.) — cargá ese siguiente tramo como un registro nuevo con su propio "Desde".',
     fields: [
       { name: 'concesion_id', label: 'Concesión', type: 'select', optionsFrom: 'concesiones', required: true },
-      { name: 'fecha_desde', label: 'Vigente desde', type: 'date', required: true },
+      { name: 'fecha_desde', label: 'Desde', type: 'date', required: true },
+      { name: 'fecha_hasta', label: 'Hasta (vacío = vigente)', type: 'date' },
       { name: 'porcentaje', label: '% participación (0 a 1)', type: 'number', step: '0.0001', min: 0, max: 1, required: true },
       { name: 'motivo', label: 'Motivo', type: 'text' },
     ],
-    displayCols: (r, d) => [{ label: 'Concesión', value: nombreDe(d, 'concesiones', r.concesion_id) }, { label: 'Desde', value: String(r.fecha_desde) }, { label: '%', value: String(r.porcentaje) }],
+    displayCols: (r, d) => [
+      { label: 'Concesión', value: nombreDe(d, 'concesiones', r.concesion_id) },
+      { label: 'Desde', value: String(r.fecha_desde) },
+      { label: 'Hasta', value: r.fecha_hasta ? String(r.fecha_hasta) : 'vigente' },
+      { label: '%', value: String(r.porcentaje) },
+    ],
   },
   {
     tabla: 'pozos',
