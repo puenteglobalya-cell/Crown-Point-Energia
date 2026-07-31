@@ -22,8 +22,6 @@ function Field({ children }: { children: React.ReactNode }) {
 export default function ReservasClient() {
   const [tab, setTab] = useState<'cargar' | 'calcular' | 'resultados' | 'pareto'>('cargar')
   const [data, setData] = useState<Data | null>(null)
-  const [err, setErr] = useState('')
-  const [msg, setMsg] = useState('')
 
   async function reload() {
     const r = await fetch('/api/portal/reservas/data', { cache: 'no-store' })
@@ -54,9 +52,6 @@ export default function ReservasClient() {
           ))}
         </div>
 
-        {err && <div style={{ fontSize: 13, color: 'var(--cp-negative)', padding: '10px 14px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 16 }}>{err}</div>}
-        {msg && <div style={{ fontSize: 13, color: 'var(--cp-positive, #2d7a4a)', padding: '10px 14px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 16 }}>{msg}</div>}
-
         {tab === 'cargar' && (
           <>
             {ENTITIES.map(cfg => (
@@ -64,8 +59,6 @@ export default function ReservasClient() {
                 key={cfg.tabla}
                 cfg={cfg}
                 data={data}
-                setErr={setErr}
-                setMsg={setMsg}
                 reload={reload}
               />
             ))}
@@ -110,10 +103,12 @@ function parseValue(f: FieldConfig, raw: FormDataEntryValue | null): unknown {
   return raw
 }
 
-function EntitySection({ cfg, data, setErr, setMsg, reload }: {
-  cfg: EntityConfig; data: Data; setErr: (s: string) => void; setMsg: (s: string) => void; reload: () => void
+function EntitySection({ cfg, data, reload }: {
+  cfg: EntityConfig; data: Data; reload: () => void
 }) {
   const [editing, setEditing] = useState<Row | null>(null)
+  const [err, setErr] = useState('')
+  const [msg, setMsg] = useState('')
   const rows = data[cfg.tabla] ?? []
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -159,9 +154,11 @@ function EntitySection({ cfg, data, setErr, setMsg, reload }: {
   return (
     <Seccion title={cfg.title}>
       {cfg.helpText && <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10 }}>{cfg.helpText}</p>}
+      {err && <div style={{ fontSize: 13, color: 'var(--cp-negative)', padding: '10px 14px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 12 }}>{err}</div>}
+      {msg && <div style={{ fontSize: 13, color: 'var(--cp-positive, #2d7a4a)', padding: '10px 14px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 12 }}>{msg}</div>}
 
       {cfg.tabla === 'curvas_produccion' && (
-        <ImportarCurvaExcel data={data} setErr={setErr} setMsg={setMsg} reload={reload} />
+        <ImportarCurvaExcel data={data} reload={reload} />
       )}
 
       {rows.length > 0 && (
@@ -530,14 +527,16 @@ function ParetoScatter({ puntos }: { puntos: ParetoPunto[] }) {
   )
 }
 
-function ImportarCurvaExcel({ data, setErr, setMsg, reload }: {
-  data: Data; setErr: (s: string) => void; setMsg: (s: string) => void; reload: () => void
+function ImportarCurvaExcel({ data, reload }: {
+  data: Data; reload: () => void
 }) {
   const [destino, setDestino] = useState<'pozo' | 'pozo_tipo'>('pozo')
   const [destinoId, setDestinoId] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<{ meses: number; primerMes: string; ultimoMes: string; totalBblAnio1: number } | null>(null)
   const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+  const [msg, setMsg] = useState('')
 
   const opts = destino === 'pozo'
     ? data.pozos.map(p => ({ value: String(p.id), label: String(p.nombre) }))
@@ -588,6 +587,8 @@ function ImportarCurvaExcel({ data, setErr, setMsg, reload }: {
         Busca automáticamente una fila con columnas "Fecha", "Pet" y "Gas" (m3/d y Mm3/d) y convierte a bbl/mes y Mcf/mes.
         Reemplaza toda la curva existente del pozo/pozo tipo elegido.
       </p>
+      {err && <div style={{ fontSize: 12, color: 'var(--cp-negative)', padding: '8px 12px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 10 }}>{err}</div>}
+      {msg && <div style={{ fontSize: 12, color: 'var(--cp-positive, #2d7a4a)', padding: '8px 12px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 10 }}>{msg}</div>}
       <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div>
           <label style={label}>Destino</label>
