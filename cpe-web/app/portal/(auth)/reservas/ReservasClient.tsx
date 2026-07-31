@@ -160,6 +160,10 @@ function EntitySection({ cfg, data, setErr, setMsg, reload }: {
     <Seccion title={cfg.title}>
       {cfg.helpText && <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10 }}>{cfg.helpText}</p>}
 
+      {cfg.tabla === 'curvas_produccion' && (
+        <ImportarCurvaExcel data={data} setErr={setErr} setMsg={setMsg} reload={reload} />
+      )}
+
       {rows.length > 0 && (
         <div style={{ marginBottom: 16, overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
@@ -523,5 +527,92 @@ function ParetoScatter({ puntos }: { puntos: ParetoPunto[] }) {
         </g>
       ))}
     </svg>
+  )
+}
+
+function ImportarCurvaExcel({ data, setErr, setMsg, reload }: {
+  data: Data; setErr: (s: string) => void; setMsg: (s: string) => void; reload: () => void
+}) {
+  const [destino, setDestino] = useState<'pozo' | 'pozo_tipo'>('pozo')
+  const [destinoId, setDestinoId] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<{ meses: number; primerMes: string; ultimoMes: string; totalBblAnio1: number } | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const opts = destino === 'pozo'
+    ? data.pozos.map(p => ({ value: String(p.id), label: String(p.nombre) }))
+    : data.pozos_tipo.map(p => ({ value: String(p.id), label: String(p.nombre) }))
+
+  async function handleFile(f: File) {
+    setFile(f); setErr(''); setMsg(''); setPreview(null)
+    try {
+      const { parseCurvaExcel } = await import('@/lib/reservas/parseCurvaExcel')
+      const filas = await parseCurvaExcel(f)
+      const anio1 = filas.slice(0, 12).reduce((s, x) => s + x.bbl_petroleo, 0)
+      setPreview({ meses: filas.length, primerMes: filas[0].fecha, ultimoMes: filas[filas.length - 1].fecha, totalBblAnio1: anio1 })
+      ;(f as unknown as { __filas?: unknown }).__filas = filas
+    } catch (e) {
+      setErr((e as Error).message)
+      setFile(null)
+    }
+  }
+
+  async function importar() {
+    if (!file || !destinoId) return
+    setLoading(true); setErr(''); setMsg('')
+    try {
+      const filas = (file as unknown as { __filas: unknown }).__filas
+      const res = await fetch('/api/portal/reservas/curva-import', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(destino === 'pozo'
+          ? { pozo_id: Number(destinoId), filas }
+          : { pozo_tipo_id: Number(destinoId), filas }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Error al importar')
+      setMsg(`Curva importada: ${json.filas} meses cargados ✓`)
+      setFile(null); setPreview(null); setDestinoId('')
+      reload()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ background: 'var(--bg)', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)', padding: 16, marginBottom: 16 }}>
+      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: '0 0 10px' }}>Importar curva desde Excel</p>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
+        Busca automáticamente una fila con columnas "Fecha", "Pet" y "Gas" (m3/d y Mm3/d) y convierte a bbl/mes y Mcf/mes.
+        Reemplaza toda la curva existente del pozo/pozo tipo elegido.
+      </p>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div>
+          <label style={label}>Destino</label>
+          <select value={destino} onChange={e => { setDestino(e.target.value as 'pozo' | 'pozo_tipo'); setDestinoId('') }} style={{ ...input, width: 140 }}>
+            <option value="pozo">Pozo</option>
+            <option value="pozo_tipo">Pozo tipo</option>
+          </select>
+        </div>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <label style={label}>{destino === 'pozo' ? 'Pozo' : 'Pozo tipo'}</label>
+          <Select opts={opts} value={destinoId} onChange={e => setDestinoId(e.target.value)} />
+        </div>
+        <div>
+          <label style={label}>Archivo .xlsx</label>
+          <input type="file" accept=".xlsx,.xls" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} style={{ fontSize: 12 }} />
+        </div>
+      </div>
+      {preview && (
+        <div style={{ fontSize: 12, color: 'var(--fg-soft)', marginBottom: 10 }}>
+          {preview.meses} meses detectados ({preview.primerMes} a {preview.ultimoMes}) — año 1: {Math.round(preview.totalBblAnio1).toLocaleString('es-AR')} bbl de petróleo.
+        </div>
+      )}
+      <button className="btn btn-primary" disabled={!file || !destinoId || loading} onClick={importar} style={{ padding: '8px 20px', fontSize: 12 }}>
+        {loading ? 'Importando…' : 'Importar curva'}
+      </button>
+    </div>
   )
 }
