@@ -26,7 +26,7 @@ export default function ReservasClient() {
   const [msg, setMsg] = useState('')
 
   async function reload() {
-    const r = await fetch('/api/portal/reservas/data')
+    const r = await fetch('/api/portal/reservas/data', { cache: 'no-store' })
     if (r.ok) setData(await r.json())
   }
   useEffect(() => { reload() }, [])

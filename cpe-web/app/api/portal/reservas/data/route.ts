@@ -3,6 +3,8 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireReservasAccess } from '@/lib/reservas/access'
 import { isSameOrigin } from '@/lib/csrf'
 
+export const dynamic = 'force-dynamic'
+
 const TABLES = [
   'provincias', 'yacimientos', 'concesiones', 'concesion_participacion',
   'pozos', 'pozos_tipo', 'curvas_produccion', 'intervenciones',
@@ -24,7 +26,7 @@ export async function GET() {
 
   const data: Record<string, unknown> = {}
   TABLES.forEach((t, i) => { data[t] = results[i].data })
-  return NextResponse.json(data)
+  return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } })
 }
 
 export async function POST(req: NextRequest) {
