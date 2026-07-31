@@ -26,6 +26,14 @@ export type EntityConfig = {
 const nombreDe = (data: Data, tabla: string, id: unknown) =>
   String(data[tabla]?.find(r => r.id === id)?.nombre ?? id ?? '—')
 
+// Factor de certeza vigente más reciente para una categoría (P1/P2/P3)
+const factorCertezaDe = (data: Data, categoria: string): number => {
+  const rows = (data.parametros_certeza_reservas ?? [])
+    .filter(r => r.categoria === categoria)
+    .sort((a, b) => String(b.fecha_desde).localeCompare(String(a.fecha_desde)))
+  return rows[0] ? Number(rows[0].factor) : 1
+}
+
 export const ENTITIES: EntityConfig[] = [
   {
     tabla: 'provincias',
@@ -195,5 +203,82 @@ export const ENTITIES: EntityConfig[] = [
       { name: 'escenario_id', label: 'Escenario (vacío = plan base)', type: 'select', optionsFrom: 'escenarios' },
     ],
     displayCols: (r, d) => [{ label: 'Tipo', value: String(r.tipo) }, { label: 'Fecha', value: String(r.fecha) }, { label: 'CAPEX', value: String(r.capex_usd) }, { label: 'Concesión', value: nombreDe(d, 'concesiones', r.concesion_id) }],
+  },
+  {
+    tabla: 'reservas_anuales',
+    title: '15. Reservas P1/P2/P3 por yacimiento',
+    helpText: 'Se reporta por año, según el reserve report (ej. "al 31/12/24"), no mensual.',
+    fields: [
+      { name: 'yacimiento_id', label: 'Yacimiento', type: 'select', optionsFrom: 'yacimientos', required: true },
+      { name: 'escenario_id', label: 'Escenario (vacío = reporte base/auditado)', type: 'select', optionsFrom: 'escenarios' },
+      { name: 'anio', label: 'Año', type: 'number', required: true },
+      { name: 'categoria', label: 'Categoría', type: 'select', staticOptions: [{ value: 'P1', label: 'P1 — Probadas' }, { value: 'P2', label: 'P2 — Probables' }, { value: 'P3', label: 'P3 — Posibles' }] },
+      { name: 'reservas_bbl', label: 'Reservas (bbl)', type: 'number', step: '0.01' },
+      { name: 'reservas_boe', label: 'Reservas (BOE)', type: 'number', step: '0.01' },
+      { name: 'fecha_corte', label: 'Fecha de corte del reserve report', type: 'date', required: true },
+      { name: 'factor_certeza_override', label: 'Factor de certeza puntual (vacío = usa el default de la categoría)', type: 'number', step: '0.0001', min: 0, max: 1 },
+    ],
+    displayCols: (r, d) => [
+      { label: 'Yacimiento', value: nombreDe(d, 'yacimientos', r.yacimiento_id) }, { label: 'Año', value: String(r.anio) },
+      { label: 'Cat.', value: String(r.categoria) }, { label: 'BOE bruto', value: String(r.reservas_boe) },
+      { label: 'Factor', value: r.factor_certeza_override != null ? `${r.factor_certeza_override} (override)` : `${factorCertezaDe(d, String(r.categoria))} (default)` },
+      { label: 'BOE ajustado', value: (Number(r.reservas_boe) * (r.factor_certeza_override != null ? Number(r.factor_certeza_override) : factorCertezaDe(d, String(r.categoria)))).toFixed(1) },
+    ],
+  },
+  {
+    tabla: 'parametros_certeza_reservas',
+    title: '15b. Factor de certeza por categoría (P1/P2/P3)',
+    helpText: 'Pondera las reservas de cada categoría según el grado de certeza que defina la empresa. Se aplica por defecto a todas las filas de reservas_anuales de esa categoría, salvo que el registro tenga un override puntual.',
+    fields: [
+      { name: 'categoria', label: 'Categoría', type: 'select', staticOptions: [{ value: 'P1', label: 'P1 — Probadas' }, { value: 'P2', label: 'P2 — Probables' }, { value: 'P3', label: 'P3 — Posibles' }] },
+      { name: 'factor', label: 'Factor (0 a 1, ej. 0.5 = 50%)', type: 'number', step: '0.0001', min: 0, max: 1, required: true },
+      { name: 'fecha_desde', label: 'Vigente desde', type: 'date', required: true },
+    ],
+    displayCols: r => [{ label: 'Categoría', value: String(r.categoria) }, { label: 'Factor', value: String(r.factor) }, { label: 'Desde', value: String(r.fecha_desde) }],
+  },
+  {
+    tabla: 'supuestos_generales',
+    title: '16. Supuestos generales (precio, WI, premium/descuento)',
+    fields: [
+      { name: 'escenario_id', label: 'Escenario', type: 'select', optionsFrom: 'escenarios', required: true },
+      { name: 'yacimiento_id', label: 'Yacimiento', type: 'select', optionsFrom: 'yacimientos', required: true },
+      { name: 'tipo_curva_precio', label: 'Curva de precio', type: 'text', defaultValue: 'brent_futuros' },
+      { name: 'premium_descuento_usd', label: 'Premium/descuento USD', type: 'number', step: '0.0001' },
+      { name: 'working_interest_pct', label: 'Working interest (0 a 1)', type: 'number', step: '0.0001', min: 0, max: 1, defaultValue: 1 },
+    ],
+    displayCols: (r, d) => [{ label: 'Escenario', value: nombreDe(d, 'escenarios', r.escenario_id) }, { label: 'Yacimiento', value: nombreDe(d, 'yacimientos', r.yacimiento_id) }, { label: 'WI%', value: String(r.working_interest_pct) }],
+  },
+  {
+    tabla: 'deuda_notas',
+    title: '17. Deuda corporativa (obligaciones negociables)',
+    fields: [
+      { name: 'serie', label: 'Serie (ej. Serie III)', type: 'text', required: true },
+      { name: 'moneda', label: 'Moneda', type: 'text', defaultValue: 'USD' },
+      { name: 'saldo_usd_mm', label: 'Saldo (USD MM)', type: 'number', step: '0.0001', required: true },
+      { name: 'fecha_corte', label: 'Fecha de corte', type: 'date', required: true },
+      { name: 'tasa_interes_pct', label: 'Tasa de interés %', type: 'number', step: '0.0001' },
+      { name: 'garantia', label: 'Garantía', type: 'select', staticOptions: [{ value: 'secured', label: 'Secured' }, { value: 'unsecured', label: 'Unsecured' }] },
+      { name: 'fecha_vencimiento', label: 'Fecha de vencimiento', type: 'date' },
+    ],
+    displayCols: r => [{ label: 'Serie', value: String(r.serie) }, { label: 'Saldo MM', value: String(r.saldo_usd_mm) }, { label: 'Corte', value: String(r.fecha_corte) }],
+  },
+  {
+    tabla: 'comparables_mercado',
+    title: '18. Comparables de mercado',
+    fields: [
+      { name: 'empresa', label: 'Empresa', type: 'text', required: true },
+      { name: 'pais', label: 'País', type: 'text' },
+      { name: 'fecha_corte', label: 'Fecha de corte', type: 'date', required: true },
+      { name: 'market_cap_usd_mm', label: 'Market cap (USD MM)', type: 'number', step: '0.01' },
+      { name: 'deuda_neta_usd_mm', label: 'Deuda neta (USD MM)', type: 'number', step: '0.01' },
+      { name: 'ev_usd_mm', label: 'EV (USD MM)', type: 'number', step: '0.01' },
+      { name: 'dividend_yield_pct', label: 'Dividend yield %', type: 'number', step: '0.0001' },
+      { name: 'reservas_p1_mmboe', label: 'Reservas P1 (MMboe)', type: 'number', step: '0.01' },
+      { name: 'reservas_p2_mmboe', label: 'Reservas P2 (MMboe)', type: 'number', step: '0.01' },
+      { name: 'npv10_p1_usd_mm', label: 'NPV10 P1 (USD MM)', type: 'number', step: '0.01' },
+      { name: 'npv10_p2_usd_mm', label: 'NPV10 P2 (USD MM)', type: 'number', step: '0.01' },
+      { name: 'produccion_kboepd', label: 'Producción (kboe/d)', type: 'number', step: '0.01' },
+    ],
+    displayCols: r => [{ label: 'Empresa', value: String(r.empresa) }, { label: 'País', value: String(r.pais ?? '—') }, { label: 'EV MM', value: String(r.ev_usd_mm ?? '—') }],
   },
 ]

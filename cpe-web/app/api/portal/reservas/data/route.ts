@@ -8,6 +8,8 @@ const TABLES = [
   'pozos', 'pozos_tipo', 'curvas_produccion', 'intervenciones',
   'formulas_precio', 'precios_referencia', 'precios_mensuales',
   'opex_fijo', 'opex_variable', 'regalias', 'escenarios',
+  'reservas_anuales', 'parametros_certeza_reservas', 'supuestos_generales', 'deuda_notas', 'comparables_mercado',
+  'resultados_escenario_anual', 'escenario_metricas',
 ] as const
 type Tabla = typeof TABLES[number]
 
