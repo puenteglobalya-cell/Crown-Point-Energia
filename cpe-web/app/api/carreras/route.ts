@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 3 applications per 30 minutes per IP — CV uploads are expensive
-  const guardia = await proteger(req, { nombre: 'carreras', max: 3, ventanaMs: 30 * 60 * 1000 })
+  const guardia = await proteger(req, { nombre: 'carreras', publico: true, max: 3, ventanaMs: 30 * 60 * 1000 })
   if (!guardia.permitido) return guardia.respuesta
 
   try {

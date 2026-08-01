@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 3 submissions per hour per IP — this is a sensitive channel, not a form to spam-test
-  const guardia = await proteger(req, { nombre: 'denuncias', max: 3, ventanaMs: 60 * 60 * 1000 })
+  const guardia = await proteger(req, { nombre: 'denuncias', publico: true, max: 3, ventanaMs: 60 * 60 * 1000 })
   if (!guardia.permitido) return guardia.respuesta
 
   try {

@@ -11,9 +11,17 @@ import { ipBloqueada, registrarViolacion } from '@/lib/ip-blacklist'
 //      (que puede disparar el bloqueo) y se devuelve 429.
 //   3. Si no, pasa.
 //
-// La blacklist es transversal: las violaciones se cuentan por IP sin importar
-// en qué endpoint ocurran, así que rotar entre login, contacto y postulaciones
-// no sirve para esquivar el escalado.
+// La blacklist SÓLO se aplica a los endpoints públicos — los formularios
+// abiertos a cualquiera desde internet. Los endpoints de acceso (login,
+// passkeys) y los internos quedan afuera a propósito: detrás de una IP hay
+// muchas personas, y bloquear una oficina entera del portal porque alguien
+// spameó el formulario de contacto es peor que el abuso que se evita. Esos
+// endpoints conservan su rate limit, y el login además tiene su lockout por
+// cuenta, que es la defensa que de verdad frena un ataque dirigido.
+//
+// Entre los públicos la blacklist sí es transversal: las violaciones se cuentan
+// por IP sin importar en cuál de ellos ocurran, así que rotar entre contacto,
+// denuncias y postulaciones no sirve para esquivar el escalado.
 //
 // Se deja aparte de `lib/ratelimit.ts` para no arrastrar el cliente de
 // Supabase a todos los consumidores del rate limit.
@@ -33,6 +41,12 @@ type Opciones = {
   mensaje?: string
   /** Clave extra además de la IP (por ejemplo el user id), si el endpoint ya la usaba. */
   claveExtra?: string
+  /**
+   * Endpoint público (formulario abierto a internet). Sólo estos alimentan la
+   * blacklist escalada y son bloqueados por ella. Por defecto false: un
+   * endpoint nuevo no bloquea a nadie hasta que se decida explícitamente.
+   */
+  publico?: boolean
 }
 
 const MENSAJE_DEFECTO = 'Demasiados intentos. Esperá unos minutos.'
@@ -54,9 +68,11 @@ export async function proteger(
   const ip = getClientIp(req)
   const mensaje = opciones.mensaje ?? MENSAJE_DEFECTO
 
-  const bloqueo = await ipBloqueada(ip)
-  if (bloqueo.bloqueada) {
-    return { permitido: false, ip, respuesta: respuesta429(MENSAJE_BLOQUEO, bloqueo.retryAfterSeconds) }
+  if (opciones.publico) {
+    const bloqueo = await ipBloqueada(ip)
+    if (bloqueo.bloqueada) {
+      return { permitido: false, ip, respuesta: respuesta429(MENSAJE_BLOQUEO, bloqueo.retryAfterSeconds) }
+    }
   }
 
   const ventanaSeg = Math.ceil(opciones.ventanaMs / 1000)
@@ -73,7 +89,9 @@ export async function proteger(
 
   const ok = await checkRateLimit(`${opciones.nombre}:${ip}`, opciones.max, opciones.ventanaMs)
   if (!ok) {
-    const nuevoBloqueo = await registrarViolacion(ip, opciones.nombre)
+    // Sólo los públicos suman violación. Un exceso en el login no puede
+    // terminar bloqueando a nadie: se responde 429 y nada más.
+    const nuevoBloqueo = opciones.publico ? await registrarViolacion(ip, opciones.nombre) : null
     return {
       permitido: false,
       ip,

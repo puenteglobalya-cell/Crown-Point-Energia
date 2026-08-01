@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   // 5 per hour per IP, plus the escalating IP blacklist
   const guardia = await proteger(req, {
-    nombre: 'ir-subscribe', max: 5, ventanaMs: 60 * 60 * 1000,
+    nombre: 'ir-subscribe', publico: true, max: 5, ventanaMs: 60 * 60 * 1000,
     mensaje: 'Demasiados intentos. Intentá más tarde.',
   })
   if (!guardia.permitido) return guardia.respuesta

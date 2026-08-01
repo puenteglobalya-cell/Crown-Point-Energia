@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 5 submissions per 10 minutes per IP, plus the escalating IP blacklist
-  const guardia = await proteger(req, { nombre: 'contacto', max: 5, ventanaMs: 10 * 60 * 1000 })
+  const guardia = await proteger(req, { nombre: 'contacto', publico: true, max: 5, ventanaMs: 10 * 60 * 1000 })
   if (!guardia.permitido) return guardia.respuesta
 
   try {

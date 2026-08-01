@@ -86,8 +86,24 @@ Escalado, contando violaciones por IP en una ventana móvil de 24 hs y
 | 6ª | 24 horas |
 | 10ª | 7 días |
 
-Endpoints cubiertos: `portal-login`, `webauthn/login-options`, `contacto`,
-`denuncias`, `carreras` (postulaciones), `ir-subscribe`, `rrhh/analizar`.
+**El bloqueo se aplica sólo a los formularios públicos**, que son los expuestos
+a cualquiera desde internet:
+
+| Endpoint | Rate limit | Alimenta y sufre la blacklist |
+|---|---|---|
+| `contacto` | 5 / 10 min | sí |
+| `denuncias` | 3 / 60 min | sí |
+| `carreras` (postulaciones) | 3 / 30 min | sí |
+| `ir-subscribe` | 5 / 60 min | sí |
+| `portal-login` | 40 / 15 min | **no** |
+| `webauthn/login-options` | 40 / 15 min | **no** |
+| `rrhh/analizar` | 30 / 60 min | **no** |
+
+Los de acceso quedan afuera a propósito: detrás de una IP hay muchas personas,
+y dejar a una oficina entera sin poder entrar al portal porque alguien spameó
+el formulario de contacto es peor que el abuso que se evita. Conservan su rate
+limit, y el login además tiene su lockout por cuenta, que es la defensa que de
+verdad frena un ataque dirigido a una cuenta.
 
 Operación (consultas listas en el `.sql`): ver quién está bloqueado, ver qué
 hizo una IP antes del bloqueo, y desbloquear a mano. **Esto último va a hacer
