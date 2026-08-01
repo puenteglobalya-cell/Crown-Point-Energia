@@ -283,6 +283,10 @@ type Resultado = {
   npv_usd?: number; tasa_descuento?: number; irr_pct?: number | null
   payback_anios?: number | null; diagnosticos?: Diagnostico[]
   npv_por_tasa?: NpvPorTasa[]
+  cuadre_amortizacion?: {
+    capex_amortizable_usd: number; amortizacion_total_usd: number
+    abandono_usd: number; diferencia_usd: number; cuadra: boolean
+  }
 }
 
 const mm = (v: number) => `US$ ${(v / 1e6).toFixed(2)} MM`
@@ -355,6 +359,23 @@ function CalcularTab({ data }: { data: Data }) {
           <Kv label={`NPV @ ${((resultado.tasa_descuento ?? 0) * 100).toFixed(1)}%`} val={`US$ ${((resultado.npv_usd ?? 0) / 1e6).toFixed(2)} MM`} />
           <Kv label="IRR" val={resultado.irr_pct != null ? `${resultado.irr_pct.toFixed(1)}%` : '— (sin cambio de signo detectable)'} />
           <Kv label="Payback" val={resultado.payback_anios != null ? `${resultado.payback_anios.toFixed(1)} años` : '— (no se recupera en el horizonte)'} />
+        </div>
+      )}
+      {resultado?.cuadre_amortizacion && (
+        <div style={{
+          marginTop: 18, padding: '10px 14px', borderRadius: 'var(--r-md)', fontSize: 12,
+          border: `1px solid ${resultado.cuadre_amortizacion.cuadra ? '#2d7a4a' : 'var(--cp-negative)'}`,
+          background: resultado.cuadre_amortizacion.cuadra ? 'rgba(45,122,74,0.06)' : 'rgba(179,59,46,0.06)',
+        }}>
+          <strong style={{ color: resultado.cuadre_amortizacion.cuadra ? '#2d7a4a' : 'var(--cp-negative)' }}>
+            {resultado.cuadre_amortizacion.cuadra ? '✓ La amortización cuadra con el CAPEX' : '✕ La amortización no cuadra con el CAPEX'}
+          </strong>
+          <div style={{ color: 'var(--fg-soft)', marginTop: 4 }}>
+            Amortizado {mm(resultado.cuadre_amortizacion.amortizacion_total_usd)} sobre un CAPEX amortizable de{' '}
+            {mm(resultado.cuadre_amortizacion.capex_amortizable_usd)}
+            {resultado.cuadre_amortizacion.abandono_usd > 0 && <> · abandono {mm(resultado.cuadre_amortizacion.abandono_usd)} (no amortizable, es costo de cierre)</>}
+            {!resultado.cuadre_amortizacion.cuadra && <> · <strong>diferencia {mm(resultado.cuadre_amortizacion.diferencia_usd)}</strong></>}
+          </div>
         </div>
       )}
       {resultado && (resultado.npv_por_tasa?.length ?? 0) > 0 && (

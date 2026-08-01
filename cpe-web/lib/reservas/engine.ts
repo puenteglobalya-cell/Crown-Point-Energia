@@ -445,18 +445,26 @@ export async function calcularEscenario(
   // mes se reparte entre los pozos en proporción a lo que produjo cada uno.
   const usarUoP = metodoAmortizacion !== 'lineal'
 
-  // Base de reservas por yacimiento: P1+P2+P3 del reporte más reciente.
-  const reservasBase = new Map<number, number>()
+  // Base de reservas: la producción total que el propio escenario proyecta
+  // para el yacimiento. Todo yacimiento tiene al menos su producción básica,
+  // así que la base siempre existe — no depende de que el reserve report esté
+  // cargado. Y como la base es exactamente lo que se va a producir, el residual
+  // llega a cero justo cuando se agota la curva: el CAPEX queda amortizado al
+  // 100% por construcción.
+  //
+  // Las reservas del reserve report (P1+P2+P3) se leen igual, para poder
+  // avisar cuando la curva y el informe del evaluador no coinciden.
+  const reservasReporte = new Map<number, number>()
   for (const r of (reservasAnuales ?? [])) {
-    const previo = reservasBase.get(r.yacimiento_id)
     const masReciente = (reservasAnuales ?? [])
       .filter((x: any) => x.yacimiento_id === r.yacimiento_id && x.categoria === r.categoria)
       .sort((a: any, b: any) => String(b.fecha_corte).localeCompare(String(a.fecha_corte)))[0]
     if (masReciente?.id !== r.id) continue // sólo el reporte más reciente de cada categoría
-    reservasBase.set(r.yacimiento_id, (previo ?? 0) + Number(r.reservas_boe ?? 0))
+    reservasReporte.set(r.yacimiento_id, (reservasReporte.get(r.yacimiento_id) ?? 0) + Number(r.reservas_boe ?? 0))
   }
 
   const depreciacionPorPozoMes = new Map<string, number>()
+  const yacimientosConUoP = new Set<number>()
 
   if (usarUoP) {
     // Producción y CAPEX por yacimiento y mes
@@ -476,11 +484,19 @@ export async function calcularEscenario(
 
     const deplYacMes = new Map<string, number>()
     for (const [yacId, meses] of mesesPorYac) {
-      const base = reservasBase.get(yacId) ?? 0
       const nombreYac = yacimientoPorId.get(yacId)?.nombre ?? `#${yacId}`
+      // La base es la producción total proyectada del yacimiento.
+      const base = [...meses].reduce((acc, f) => acc + (prodYacMes.get(`${yacId}|${f}`) ?? 0), 0)
       if (!(base > 0)) {
-        diag.add('amortizacion_sin_reservas', `${nombreYac}: sin reservas cargadas no se puede amortizar por unidades de producción — se usa la vida útil lineal de cada intervención`)
+        diag.add('amortizacion_sin_produccion', `${nombreYac}: no produce nada en el escenario, así que no hay base contra la cual amortizar — se usa la vida útil lineal`)
         continue
+      }
+      const delReporte = reservasReporte.get(yacId)
+      if (delReporte != null && delReporte > 0) {
+        const desvio = Math.abs(base - delReporte) / delReporte
+        if (desvio > 0.10) {
+          diag.add('curva_vs_reserve_report', `${nombreYac}: la curva proyecta ${Math.round(base).toLocaleString('es-AR')} BOE y el reserve report tiene ${Math.round(delReporte).toLocaleString('es-AR')} BOE (${(desvio * 100).toFixed(0)}% de diferencia) — la amortización usa la curva`)
+        }
       }
       const cuotas = amortizacionUnidadesProduccion(base, [...meses].sort().map(fecha => ({
         fecha,
@@ -488,10 +504,8 @@ export async function calcularEscenario(
         produccionBoe: prodYacMes.get(`${yacId}|${fecha}`) ?? 0,
       })))
       for (const c of cuotas) deplYacMes.set(`${yacId}|${c.fecha}`, c.cuota)
-      const residual = cuotas[cuotas.length - 1]?.residualFinal ?? 0
-      if (residual > 1) {
-        diag.add('capex_sin_amortizar', `${nombreYac}: quedan US$ ${Math.round(residual).toLocaleString('es-AR')} de CAPEX sin amortizar al final del horizonte (las reservas duran más que la corrida)`)
-      }
+      yacimientosConUoP.add(yacId)
+
     }
 
     // Reparto de la cuota del yacimiento entre sus pozos, en proporción a lo
@@ -514,8 +528,7 @@ export async function calcularEscenario(
   for (const registros of registrosPorPozo.values()) {
     for (const r of registros) {
       const uop = depreciacionPorPozoMes.get(`${r.pozo.id}|${r.fecha}`)
-      const tieneBase = usarUoP && (reservasBase.get(r.yacimiento.id) ?? 0) > 0
-      r.depreciacionUsd = tieneBase ? (uop ?? 0) : r.depreciacionLineal
+      r.depreciacionUsd = usarUoP && yacimientosConUoP.has(r.yacimiento.id) ? (uop ?? 0) : r.depreciacionLineal
     }
   }
 
@@ -532,6 +545,9 @@ export async function calcularEscenario(
 
   // ─── Pasada 2: economía por pozo-mes ──────────────────────────────────
   const filas: Record<string, unknown>[] = []
+  // El abandono se suma dentro de capex_usd, pero no es CAPEX amortizable: es
+  // un costo de cierre. Se lleva aparte para poder chequear el cuadre.
+  let abandonoTotal = 0
 
   for (const registros of registrosPorPozo.values()) {
     let mesesNegativosSeguidos = 0
@@ -631,9 +647,43 @@ export async function calcularEscenario(
         // mes de cierre (afecta también el CAPEX total del Pareto).
         ultima.capex_usd = (ultima.capex_usd as number) + costoAbandono
         ultima.cash_flow_neto_usd = (ultima.cash_flow_neto_usd as number) - costoAbandono * part
+        abandonoTotal += costoAbandono
         diag.add('abandono_imputado', `Pozo "${registros[0].pozo.nombre}": costo de abandono de US$ ${costoAbandono.toLocaleString('es-AR')} imputado en ${String(ultima.fecha).slice(0, 7)}`)
       }
     }
+  }
+
+  // ─── Cuadre: la amortización total tiene que dar el CAPEX total ───────
+  // Es el chequeo que cierra el método. Si un pozo se corta por límite
+  // económico antes de agotar su curva, la parte de su inversión que no se
+  // llegó a amortizar queda sin deducir; contablemente eso es una BAJA por
+  // abandono, y se imputa en el último mes de vida del pozo. Con eso el
+  // cuadre da exacto y además queda bien tratado el efecto impositivo.
+  const capexAmortizable = filas.reduce((acc, f) => acc + (f.capex_usd as number), 0) - abandonoTotal
+  const amortizado = filas.reduce((acc, f) => acc + (f.depreciacion_usd as number), 0)
+  const faltante = capexAmortizable - amortizado
+
+  if (faltante > 1 && filas.length > 0) {
+    const ultima = filas[filas.length - 1]
+    const nuevaDepr = (ultima.depreciacion_usd as number) + faltante
+    // Se recalcula la fila afectada de punta a punta: la baja es deducible,
+    // así que cambia el impuesto y el flujo, no sólo la línea de amortización.
+    const base = (ultima.resultado_antes_ganancias_usd as number) - faltante
+    const impuesto = base > 0 ? base * alicuotaGanancias : 0
+    const neto = base - impuesto
+    const part = ultima.participacion_pct as number
+    ultima.depreciacion_usd = nuevaDepr
+    ultima.resultado_antes_ganancias_usd = base
+    ultima.impuesto_ganancias_usd = impuesto
+    ultima.resultado_neto_usd = neto
+    ultima.cash_flow_neto_usd = (neto + nuevaDepr - (ultima.capex_usd as number)) * part
+    diag.add('baja_por_abandono', `US$ ${Math.round(faltante).toLocaleString('es-AR')} de CAPEX quedaron sin amortizar porque algún pozo se cortó antes de agotar su curva — se imputan como baja en el último mes`)
+  }
+
+  const amortizadoFinal = filas.reduce((acc, f) => acc + (f.depreciacion_usd as number), 0)
+  const descuadre = Math.abs(capexAmortizable - amortizadoFinal)
+  if (descuadre > 1) {
+    diag.add('descuadre_amortizacion', `La amortización total (US$ ${Math.round(amortizadoFinal).toLocaleString('es-AR')}) no coincide con el CAPEX amortizable (US$ ${Math.round(capexAmortizable).toLocaleString('es-AR')}) — diferencia de US$ ${Math.round(descuadre).toLocaleString('es-AR')}`)
   }
 
   // El barrido de fechas corre el motor decenas de veces y no necesita
@@ -649,7 +699,16 @@ export async function calcularEscenario(
     }
   }
 
-  return { filas: filas.length, pozos: registrosPorPozo.size, diagnosticos: diag.lista(), cashflow: filas }
+  return {
+    filas: filas.length, pozos: registrosPorPozo.size, diagnosticos: diag.lista(), cashflow: filas,
+    cuadre_amortizacion: {
+      capex_amortizable_usd: capexAmortizable,
+      amortizacion_total_usd: amortizadoFinal,
+      abandono_usd: abandonoTotal,
+      diferencia_usd: capexAmortizable - amortizadoFinal,
+      cuadra: descuadre <= 1,
+    },
+  }
 }
 
 function monthsBetween(desdeIso: string, fechaIso: string): number {
