@@ -405,15 +405,11 @@ Implementado, además de las 14 correcciones del motor:
 | One-line por pozo, con corte desarrolladas / no desarrolladas | ✅ |
 | Economía incremental (base / wedge / total) | ✅ |
 | Duplicar escenario | ✅ |
+| Gráficos en pantalla (perfil, flujo acumulado, waterfall) | ✅ |
+| Carga masiva pegando desde Excel en todas las secciones | ✅ |
 
 ### Lo que queda
 
-- **Gráficos en la pantalla de resultados.** El informe PDF ya los tiene
-  (perfil de producción, flujo acumulado con el payback); falta llevarlos a la
-  pantalla, donde hoy todo es tabla.
-- **Carga masiva pegando desde Excel** en las secciones de carga. Hoy están el
-  importador de curvas y el generador de Arps, pero el resto sigue siendo un
-  registro por vez.
 - **PDP / PDNP / PUD como clasificación del evaluador.** El one-line ya da el
   corte económico entre pozos existentes y por perforar, que responde la
   pregunta de fondo; falta la clasificación formal de tres niveles, que la

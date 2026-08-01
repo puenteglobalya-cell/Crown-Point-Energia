@@ -58,6 +58,44 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(data, { status: 201 })
 }
 
+// Inserción masiva desde el pegado de una planilla. Va aparte del POST de a
+// uno para poder informar cuántas entraron y cortar limpio si algo falla.
+export async function PUT(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const auth = await requireReservasAccess()
+  if (!auth) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+  const body = await req.json()
+  const { tabla, filas } = body as { tabla: Tabla; filas: Record<string, unknown>[] }
+
+  if (!TABLES.includes(tabla)) {
+    return NextResponse.json({ error: `Tabla inválida: ${tabla}` }, { status: 400 })
+  }
+  if (!Array.isArray(filas) || filas.length === 0) {
+    return NextResponse.json({ error: 'No hay filas para insertar' }, { status: 400 })
+  }
+  if (filas.length > 2000) {
+    return NextResponse.json({ error: `Son ${filas.length} filas y el tope por pegado es 2000. Partilo en tandas.` }, { status: 400 })
+  }
+
+  const db = createSupabaseServerAdminClient()
+  const CHUNK = 500
+  let insertadas = 0
+  for (let i = 0; i < filas.length; i += CHUNK) {
+    const tanda = filas.slice(i, i + CHUNK)
+    const { error } = await db.from(tabla).insert(tanda)
+    if (error) {
+      return NextResponse.json({
+        error: `${error.message} (falló a partir de la fila ${i + 1}; se insertaron ${insertadas})`,
+        insertadas,
+      }, { status: 400 })
+    }
+    insertadas += tanda.length
+  }
+
+  return NextResponse.json({ ok: true, insertadas })
+}
+
 export async function PATCH(req: NextRequest) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const auth = await requireReservasAccess()

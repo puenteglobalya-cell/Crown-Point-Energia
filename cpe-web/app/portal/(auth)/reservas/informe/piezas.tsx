@@ -181,3 +181,68 @@ export const cssImpresion = `
   .informe .kpi-val { font-size: 15px; }
 }
 `
+
+// Waterfall del año o del total: de dónde sale el ingreso bruto y qué se lo
+// va comiendo hasta llegar al resultado. Responde "¿por qué el EBITDA es ése?"
+// mucho más rápido que una fila de tabla.
+export type PasoWaterfall = { etiqueta: string; monto: number; tipo: 'base' | 'resta' | 'total' }
+
+export function GraficoWaterfall({ pasos }: { pasos: PasoWaterfall[] }) {
+  if (pasos.length === 0) return <p className="pie">Sin datos.</p>
+  const W = 760, H = 260, PAD_L = 54, PAD_B = 56, PAD_T = 16
+
+  // Acumulado para saber a qué altura arranca cada barra
+  let acum = 0
+  const barras = pasos.map(p => {
+    if (p.tipo === 'total') return { ...p, desde: 0, hasta: p.monto }
+    const desde = acum
+    acum += p.tipo === 'resta' ? -Math.abs(p.monto) : p.monto
+    return { ...p, desde, hasta: acum }
+  })
+
+  const vals = barras.flatMap(b => [b.desde, b.hasta]).concat(0)
+  const min = Math.min(...vals), max = Math.max(...vals)
+  const rango = max - min || 1
+  const bw = (W - PAD_L - 16) / barras.length
+  const y = (v: number) => H - PAD_B - ((v - min) / rango) * (H - PAD_B - PAD_T)
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="grafico">
+      {[0, 0.5, 1].map(t => {
+        const v = min + rango * t
+        return (
+          <g key={t}>
+            <line x1={PAD_L} y1={y(v)} x2={W - 16} y2={y(v)} stroke="#e2e2e8" />
+            <text x={PAD_L - 6} y={y(v) + 3} className="eje" textAnchor="end">{(v / 1e6).toFixed(0)}MM</text>
+          </g>
+        )
+      })}
+      <line x1={PAD_L} y1={y(0)} x2={W - 16} y2={y(0)} stroke="#9a9aa5" />
+      {barras.map((b, i) => {
+        const x = PAD_L + i * bw + bw * 0.18
+        const w = bw * 0.64
+        const y1 = y(Math.max(b.desde, b.hasta)), y2 = y(Math.min(b.desde, b.hasta))
+        const color = b.tipo === 'total' ? AZUL : b.tipo === 'resta' ? '#d99b91' : '#8f97c9'
+        return (
+          <g key={b.etiqueta}>
+            <rect x={x} y={y1} width={w} height={Math.max(y2 - y1, 1.5)} rx={2} fill={color} />
+            <text x={x + w / 2} y={y1 - 4} className="eje" textAnchor="middle">
+              {(Math.abs(b.monto) / 1e6).toFixed(1)}
+            </text>
+            {/* Etiquetas en dos líneas: los nombres no entran en una sola */}
+            {b.etiqueta.split(' ').reduce<string[][]>((lineas, palabra) => {
+              const ult = lineas[lineas.length - 1]
+              if (ult && (ult.join(' ') + ' ' + palabra).length <= 12) ult.push(palabra)
+              else lineas.push([palabra])
+              return lineas
+            }, []).slice(0, 2).map((linea, j) => (
+              <text key={j} x={x + w / 2} y={H - PAD_B + 14 + j * 11} className="eje" textAnchor="middle">
+                {linea.join(' ')}
+              </text>
+            ))}
+          </g>
+        )
+      })}
+    </svg>
+  )
+}

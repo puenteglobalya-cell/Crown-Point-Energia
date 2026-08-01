@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ENTITIES, type Data, type Row, type EntityConfig, type FieldConfig } from './entityConfig'
+import { GraficoProduccion, GraficoFlujo, GraficoWaterfall, cssImpresion, type PasoWaterfall } from './informe/piezas'
 
 const box: React.CSSProperties = {
   background: 'var(--surface)', border: '1px solid var(--rule)',
@@ -202,6 +203,8 @@ function EntitySection({ cfg, data, reload }: {
       {cfg.helpText && <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10 }}>{cfg.helpText}</p>}
       {err && <div style={{ fontSize: 13, color: 'var(--cp-negative)', padding: '10px 14px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 12 }}>{err}</div>}
       {msg && <div style={{ fontSize: 13, color: 'var(--cp-positive, #2d7a4a)', padding: '10px 14px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 12 }}>{msg}</div>}
+
+      <PegarDesdeExcel cfg={cfg} data={data} reload={reload} />
 
       {cfg.tabla === 'curvas_produccion' && (
         <>
@@ -458,7 +461,7 @@ function Kv({ label: l, val }: { label: string; val: string }) {
 
 function ResultadosTab({ data }: { data: Data }) {
   const [escenarioId, setEscenarioId] = useState('')
-  const [vista, setVista] = useState<'mensual' | 'anual' | 'oneline' | 'depletion' | 'fdc'>('mensual')
+  const [vista, setVista] = useState<'graficos' | 'mensual' | 'anual' | 'oneline' | 'depletion' | 'fdc'>('graficos')
   const [rows, setRows] = useState<Row[]>([])
   const [rowsAnual, setRowsAnual] = useState<Row[]>([])
   const [rowsDepletion, setRowsDepletion] = useState<Row[]>([])
@@ -529,13 +532,13 @@ function ResultadosTab({ data }: { data: Data }) {
       )}
       {escenarioId && (
         <div style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
-          {(['mensual', 'anual', 'oneline', 'depletion', 'fdc'] as const).map(v => (
+          {(['graficos', 'mensual', 'anual', 'oneline', 'depletion', 'fdc'] as const).map(v => (
             <button key={v} onClick={() => setVista(v)} style={{
               background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: 0,
               color: vista === v ? 'var(--accent)' : 'var(--fg-muted)',
               textDecoration: vista === v ? 'underline' : 'none',
             }}>
-              {v === 'mensual' ? 'Cash flow mensual (por pozo)' : v === 'anual' ? 'Resumen anual (por yacimiento + consolidado)' : v === 'oneline' ? 'One-line por pozo' : v === 'depletion' ? 'Depleción de reservas P1/P2/P3' : 'Capital de desarrollo futuro (FDC)'}
+              {v === 'graficos' ? 'Gráficos' : v === 'mensual' ? 'Cash flow mensual (por pozo)' : v === 'anual' ? 'Resumen anual (por yacimiento + consolidado)' : v === 'oneline' ? 'One-line por pozo' : v === 'depletion' ? 'Depleción de reservas P1/P2/P3' : 'Capital de desarrollo futuro (FDC)'}
             </button>
           ))}
         </div>
@@ -545,6 +548,7 @@ function ResultadosTab({ data }: { data: Data }) {
       {!loading && escenarioId && vista === 'anual' && rowsAnual.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — corré el cálculo primero en la pestaña anterior.</p>}
       {!loading && escenarioId && vista === 'depletion' && rowsDepletion.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — necesita reservas cargadas (sección 15) y haber corrido el cálculo.</p>}
 
+      {vista === 'graficos' && escenarioId && <PanelGraficos rowsAnual={rowsAnual} />}
       {vista === 'fdc' && escenarioId && <PanelFdc escenarioId={escenarioId} />}
       {vista === 'oneline' && escenarioId && <PanelOneLine escenarioId={escenarioId} />}
 
@@ -2279,6 +2283,179 @@ function PanelClonar({ escenarioId, data }: { escenarioId: string; data: Data })
             {Object.entries(res.copiado).map(([k, v]) => `${v} ${k.replace(/_/g, ' ')}`).join(' · ')}. {res.aviso}
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Gráficos ────────────────────────────────────────────────────────────
+// El informe PDF ya los tenía; en pantalla todo era tabla. Se reusan las
+// mismas piezas, así que lo que se ve acá es exactamente lo que se imprime.
+function PanelGraficos({ rowsAnual }: { rowsAnual: Row[] }) {
+  const consolidado = rowsAnual.filter(a => a.yacimiento_id == null)
+  if (consolidado.length === 0) {
+    return <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — corré el cálculo primero.</p>
+  }
+
+  // El flujo acumulado se arma del resumen anual: resultado neto + amortización
+  // (que es no-cash) − CAPEX. Es el mismo criterio que usa el motor.
+  let acum = 0
+  const flujo = [...consolidado].sort((a, b) => Number(a.anio) - Number(b.anio)).map(a => {
+    const neto = Number(a.resultado_neto_usd) + Number(a.depreciacion_usd)
+    acum += neto
+    return { anio: Number(a.anio), neto_usd: neto, acumulado_usd: acum }
+  })
+
+  const tot = (k: string) => consolidado.reduce((s, a) => s + Number(a[k] ?? 0), 0)
+  const pasos: PasoWaterfall[] = [
+    { etiqueta: 'Ingreso bruto', monto: tot('ingresos_usd'), tipo: 'base' },
+    { etiqueta: 'Regalías', monto: tot('regalias_usd'), tipo: 'resta' },
+    { etiqueta: 'OPEX', monto: tot('opex_usd'), tipo: 'resta' },
+    { etiqueta: 'EBITDA', monto: tot('ebitda_usd'), tipo: 'total' },
+    { etiqueta: 'Amortización', monto: tot('depreciacion_usd'), tipo: 'resta' },
+    { etiqueta: 'Imp. ganancias', monto: tot('impuesto_ganancias_usd'), tipo: 'resta' },
+    { etiqueta: 'Resultado neto', monto: tot('resultado_neto_usd'), tipo: 'total' },
+  ]
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      {/* Las piezas traen su propia hoja de estilos, la misma del informe */}
+      <style>{cssImpresion}</style>
+      <div className="informe" style={{ padding: 0, maxWidth: 'none', background: 'transparent' }}>
+        <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 14 }}>
+          Los mismos gráficos que salen en el informe para PDF. Todo neto a CPE.
+        </p>
+
+        <h3 style={{ marginTop: 0 }}>Perfil de producción</h3>
+        <GraficoProduccion filas={consolidado} />
+
+        <h3>Flujo de caja anual y acumulado</h3>
+        <GraficoFlujo filas={flujo} />
+
+        <h3>De dónde sale el resultado</h3>
+        <p className="pie">
+          Acumulado de todo el horizonte. Las barras claras suman, las rojizas restan y las azules son subtotales.
+          Cifras en millones de USD.
+        </p>
+        <GraficoWaterfall pasos={pasos} />
+      </div>
+    </div>
+  )
+}
+
+// ─── Pegar filas desde Excel ─────────────────────────────────────────────
+// Cargar precios mensuales de 3 referencias por 20 años eran 720 formularios
+// de a uno. Se pega lo copiado de la planilla, se ve qué entra y qué no, y
+// recién ahí se guarda.
+function PegarDesdeExcel({ cfg, data, reload }: { cfg: EntityConfig; data: Data; reload: () => void }) {
+  const [abierto, setAbierto] = useState(false)
+  const [texto, setTexto] = useState('')
+  const [res, setRes] = useState<Awaited<ReturnType<typeof import('@/lib/reservas/pegarFilas')['parsearPegado']>> | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+  const [msg, setMsg] = useState('')
+
+  async function analizar(t: string) {
+    setTexto(t); setErr(''); setMsg('')
+    if (t.trim() === '') { setRes(null); return }
+    const { parsearPegado } = await import('@/lib/reservas/pegarFilas')
+    const opciones: Record<string, { id: unknown; nombre?: unknown }[]> = {}
+    for (const f of cfg.fields) {
+      if (f.optionsFrom) opciones[f.optionsFrom] = (data[f.optionsFrom] ?? []) as { id: unknown; nombre?: unknown }[]
+    }
+    setRes(parsearPegado(t, cfg.fields as any, opciones))
+  }
+
+  async function guardar() {
+    if (!res || res.validas === 0) return
+    setLoading(true); setErr(''); setMsg('')
+    try {
+      const r = await fetch('/api/portal/reservas/data', {
+        method: 'PUT', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ tabla: cfg.tabla, filas: res.filas.filter(f => f.errores.length === 0).map(f => f.valores) }),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      setMsg(`${j.insertadas} filas cargadas ✓`)
+      setTexto(''); setRes(null)
+      reload()
+    } catch (e) { setErr((e as Error).message) } finally { setLoading(false) }
+  }
+
+  const columnasEsperadas = cfg.fields.map(f => f.label.split(/[(—-]/)[0].trim()).join(' · ')
+
+  if (!abierto) {
+    return (
+      <button type="button" onClick={() => setAbierto(true)} style={{
+        background: 'none', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)',
+        padding: '7px 14px', marginBottom: 14, fontSize: 12, color: 'var(--fg-soft)', cursor: 'pointer',
+      }}>
+        ⇈ Pegar varias filas desde Excel
+      </button>
+    )
+  }
+
+  return (
+    <div style={{ background: 'var(--bg)', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)', padding: 16, marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: 0 }}>Pegar varias filas desde Excel</p>
+        <button type="button" onClick={() => { setAbierto(false); setTexto(''); setRes(null) }}
+          style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', fontSize: 12 }}>cerrar</button>
+      </div>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
+        Copiá el rango de la planilla y pegalo acá. Si la primera fila son los títulos de las columnas, se usa
+        para ordenarlas solas; si no, se toma el orden de los campos del formulario.
+        En los campos que apuntan a otra tabla podés poner el <strong>nombre</strong> en lugar del id.
+        Las fechas van en aaaa-mm-dd o dd/mm/aaaa, y los números aceptan formato argentino.
+      </p>
+      <p style={{ fontSize: 10, color: 'var(--fg-muted)', margin: '0 0 8px', fontFamily: 'var(--font-mono)' }}>
+        Columnas: {columnasEsperadas}
+      </p>
+
+      {err && <div style={{ fontSize: 12, color: 'var(--cp-negative)', padding: '8px 12px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 10 }}>{err}</div>}
+      {msg && <div style={{ fontSize: 12, color: 'var(--cp-positive, #2d7a4a)', padding: '8px 12px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 10 }}>{msg}</div>}
+
+      <textarea value={texto} onChange={e => analizar(e.target.value)} rows={6}
+        placeholder="Pegá acá el rango copiado de Excel…"
+        style={{ ...input, fontFamily: 'var(--font-mono)', fontSize: 11, resize: 'vertical' }} />
+
+      {res && res.filas.length > 0 && (
+        <>
+          <p style={{ fontSize: 12, margin: '10px 0 6px' }}>
+            <strong style={{ color: res.validas > 0 ? '#2d7a4a' : 'var(--fg-muted)' }}>{res.validas} filas listas</strong>
+            {res.invalidas > 0 && <span style={{ color: 'var(--cp-negative)' }}> · {res.invalidas} con problemas</span>}
+            <span style={{ color: 'var(--fg-muted)' }}> · {res.usoEncabezado ? 'se detectó una fila de títulos' : 'sin títulos, se usó el orden de los campos'}</span>
+          </p>
+          <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid var(--rule)', borderRadius: 6 }}>
+            <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+              <tbody>
+                {res.filas.slice(0, 60).map(f => (
+                  <tr key={f.linea} style={{ borderBottom: '1px solid var(--rule)', background: f.errores.length ? 'rgba(179,59,46,0.06)' : undefined }}>
+                    <td style={{ padding: '3px 6px', color: 'var(--fg-muted)', width: 30 }}>{f.linea}</td>
+                    <td style={{ padding: '3px 6px' }}>
+                      {f.errores.length === 0
+                        ? <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--fg-soft)' }}>
+                            {Object.entries(f.valores).filter(([, v]) => v !== null && v !== '').map(([k, v]) => `${k}=${v}`).join('  ')}
+                          </span>
+                        : <span style={{ color: 'var(--cp-negative)' }}>{f.errores.join(' · ')}</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {res.filas.length > 60 && <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '4px 0 0' }}>…y {res.filas.length - 60} filas más.</p>}
+
+          <button className="btn btn-primary" type="button" disabled={loading || res.validas === 0} onClick={guardar}
+            style={{ padding: '8px 20px', fontSize: 12, marginTop: 10 }}>
+            {loading ? 'Cargando…' : `Cargar ${res.validas} filas`}
+          </button>
+          {res.invalidas > 0 && (
+            <span style={{ fontSize: 11, color: 'var(--fg-muted)', marginLeft: 10 }}>
+              Las filas con problemas no se cargan; corregilas en la planilla y volvé a pegar.
+            </span>
+          )}
+        </>
       )}
     </div>
   )
