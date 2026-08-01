@@ -4,7 +4,7 @@ Checklist de tareas que quedan del lado del equipo (SQL, deploy y configuración
 en Supabase / Vercel). El código ya está mergeado en `main`; esto es lo que
 falta para que todo quede operativo en producción.
 
-Última actualización: 2026-07-03
+Última actualización: 2026-08-01
 
 ---
 
@@ -64,6 +64,103 @@ dashboard, export CSV).
 ### 3. Guardar en el CMS
 Entrar a `/admin/cms` y tocar **"Guardar"** una vez. Dispara
 `revalidateTag('cms')` y refresca el cache (incluye los mapas de operaciones).
+
+---
+
+## 🔴 Simulador de reservas — mergear a `main`
+
+**La rama `claude/github-data-lec4yg` tiene 18 commits sin mergear.** `CLAUDE.md`
+pide mergear cada 2-3 commits justamente para no repetir el incidente de
+hero-video/EBITDA, donde 11 commits terminados nunca llegaron a producción.
+Todo el trabajo del simulador está ahí: hasta que no se mergee y se redeploye,
+nada de esto está vivo.
+
+---
+
+## 🔴 Simulador de reservas — SQL a correr en Supabase
+
+En el **SQL Editor**, en este orden. Los tres son idempotentes.
+
+```
+supabase/20260801_reservas_abandono.sql
+supabase/20260801_reservas_certeza_incremental.sql
+supabase/20260801_pozos_tipo_gsj.sql
+supabase/20260801_campanas_perforacion.sql
+supabase/20260801_proyectos_consolidado.sql
+supabase/20260801_reservas_reconciliacion.sql
+supabase/20260801_costos_corporativos.sql
+supabase/20260801_price_decks.sql
+supabase/20260801_metodo_amortizacion.sql
+```
+
+- **`reservas_abandono`** agrega `pozos.costo_abandono_usd`. NI 51-101 pide
+  informar las reservas netas de costos de abandono y remediación; sin esta
+  columna el motor no los cobra y **el VAN queda sobrestimado**. Después de
+  correrla hay que cargar el costo por pozo en la sección "Pozo".
+- **`reservas_certeza_incremental`** agrega el saldo de reservas ponderado por
+  el grado de certeza al roll-forward. Sin ella el cálculo corre igual, sólo
+  faltan esos valores en la tabla de depleción.
+- **`pozos_tipo_gsj`** crea las 4 curvas tipo del Golfo San Jorge (GSJ_CH,
+  GSJ_PQO, GSJ_BLG, GSJ_WO). Avisa por `raise warning` si falta crear algún
+  yacimiento antes. Las curvas mensuales se cargan después desde la pantalla,
+  con el importador de Excel o el generador de declinación de Arps.
+
+- **`campanas_perforacion`** crea la tabla `campanas` y agrega a
+  `intervenciones` los campos de campaña, orden, inicio de perforación y días
+  por etapa. Habilita la pestaña **"Cronograma"**, que es la que responde la
+  pregunta de fondo del simulador: **cuándo perforar cada pozo para aprovechar
+  el % de participación vigente**. Sin esta migración la pestaña no encuentra
+  campañas y el resto del simulador sigue funcionando igual.
+
+- **`proyectos_consolidado`** crea `proyectos` y `costos_proyecto`, y cuelga
+  los escenarios de un proyecto. Habilita la pestaña **"Consolidado"** (la
+  empresa como suma de proyectos) y, sobre todo, el lugar donde va el **precio
+  de compra de un área** — el número que define si una adquisición cierra.
+
+- **`reservas_reconciliacion`** crea `reservas_movimientos` y agrega al
+  roll-forward una columna por categoría. Es lo que convierte la depleción en
+  una **reconciliación de reservas de NI 51-101** — hasta ahora teníamos 1 de
+  las 7 categorías obligatorias.
+- **`costos_corporativos`** crea la tabla de G&A y estructura. Junto con la
+  deuda ya cargada, permite que el consolidado pase de "suma de proyectos" a
+  **valor de empresa**.
+
+- **`price_decks`** crea curvas de precio con nombre propio. Evita cargar 240
+  cotizaciones a mano por referencia, y es lo que permite correr el mismo
+  escenario contra un deck de **pronóstico** y otro **constante**, que es lo que
+  pide NI 51-101. Sin la migración, los precios se siguen resolviendo contra
+  `precios_referencia` igual que antes.
+
+- **`metodo_amortizacion`** deja elegir entre unidades de producción (default)
+  y lineal. El motor ya amortiza por unidades de producción aunque la migración
+  no haya corrido; la columna sirve para poder forzar lineal en un escenario.
+  **Para que funcione hace falta tener cargadas las reservas del yacimiento**:
+  sin ellas cae a la vida útil lineal e informa un aviso.
+
+El motor lee las columnas nuevas de forma defensiva, así que el simulador
+funciona con o sin estas migraciones aplicadas.
+
+**Confirmar aparte** si estas dos, que son anteriores a esta tanda, ya se
+corrieron: `20260801_reservas_certeza.sql` y `20260802_reservas_gaps.sql`.
+
+---
+
+## 🟠 Simulador — datos que se cargan pero el motor no usa
+
+Riesgo real de error silencioso: alguien carga un dato esperando que cambie el
+resultado y no cambia nada. Ya quedaron marcados con ⚠ en la pantalla, pero hay
+que decidir qué hacer con ellos.
+
+| Campo / tabla | Situación |
+|---|---|
+| `supuestos_generales.working_interest_pct` | **El más peligroso.** Parece la participación pero el motor usa `concesion_participacion`, que además admite tramos con fechas. |
+| `supuestos_generales` (toda la tabla) | Ningún campo entra en el cálculo. |
+| `comparables_mercado` | Se guarda, no se usa. |
+| `reservas_anuales.reservas_bbl` | El motor usa sólo `reservas_boe`. |
+| `intervenciones.subtipo` | Informativo (PERF_INY / WO_PROD, etc.), no afecta el cálculo. |
+
+Lo más limpio sería eliminar `supuestos_generales` y `comparables_mercado` del
+simulador, pero conviene confirmar antes que no haya nada cargado que importe.
 
 ---
 
