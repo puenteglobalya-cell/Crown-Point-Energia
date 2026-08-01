@@ -35,7 +35,7 @@ const GRUPOS_CARGA: { titulo: string; tablas: string[] }[] = [
 ]
 
 export default function ReservasClient() {
-  const [tab, setTab] = useState<'cargar' | 'cronograma' | 'calcular' | 'resultados' | 'consolidado' | 'pareto'>('cargar')
+  const [tab, setTab] = useState<'cargar' | 'cronograma' | 'calcular' | 'resultados' | 'consolidado' | 'comparables' | 'pareto'>('cargar')
   const [seccionActiva, setSeccionActiva] = useState(ENTITIES[0].tabla)
   const [data, setData] = useState<Data | null>(null)
 
@@ -58,14 +58,14 @@ export default function ReservasClient() {
         </h1>
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--rule)' }}>
-          {(['cargar', 'cronograma', 'calcular', 'resultados', 'consolidado', 'pareto'] as const).map(t => (
+          {(['cargar', 'cronograma', 'calcular', 'resultados', 'consolidado', 'comparables', 'pareto'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
               background: 'none', border: 'none', padding: '10px 4px', marginRight: 16,
               fontSize: 13, fontWeight: 600, cursor: 'pointer',
               color: tab === t ? 'var(--accent)' : 'var(--fg-muted)',
               borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
             }}>
-              {t === 'cargar' ? 'Cargar datos' : t === 'cronograma' ? 'Cronograma' : t === 'calcular' ? 'Calcular escenario' : t === 'resultados' ? 'Resultados' : t === 'consolidado' ? 'Consolidado' : 'Pareto de escenarios'}
+              {t === 'cargar' ? 'Cargar datos' : t === 'cronograma' ? 'Cronograma' : t === 'calcular' ? 'Calcular escenario' : t === 'resultados' ? 'Resultados' : t === 'consolidado' ? 'Consolidado' : t === 'comparables' ? 'Comparables' : 'Pareto de escenarios'}
             </button>
           ))}
         </div>
@@ -113,6 +113,7 @@ export default function ReservasClient() {
         {tab === 'calcular' && <CalcularTab data={data} />}
         {tab === 'resultados' && <ResultadosTab data={data} />}
         {tab === 'consolidado' && <ConsolidadoTab />}
+        {tab === 'comparables' && <ComparablesTab data={data} />}
         {tab === 'pareto' && <ParetoTab />}
       </div>
     </div>
@@ -2458,5 +2459,178 @@ function PegarDesdeExcel({ cfg, data, reload }: { cfg: EntityConfig; data: Data;
         </>
       )}
     </div>
+  )
+}
+
+// ─── Valuación por comparables ───────────────────────────────────────────
+// La otra mitad de la valuación: el DCF dice cuánto valen los flujos, los
+// comparables a cuánto paga el mercado activos parecidos. Si el DCF da muy
+// distinto del múltiplo de los pares, hay algo para explicar.
+type Multiplo = { metrica: string; n: number; mediana: number | null; promedio: number | null }
+type Implicito = { metrica: string; etiqueta: string; multiplo: number; base: number; ev_implicito_usd_mm: number; equity_implicito_usd_mm: number }
+type Comparables = {
+  comparables: Record<string, any>[]
+  multiplos: Multiplo[] | null
+  cpe: { reservas_p1_mmboe: number; reservas_2p_mmboe: number; produccion_kboepd: number; npv10_usd_mm: number | null; deuda_neta_usd_mm: number } | null
+  implicito: Implicito[] | null
+  rango: { minimo_usd_mm: number; mediana_usd_mm: number | null; maximo_usd_mm: number; equity_mediana_usd_mm: number } | null
+  aviso: string | null
+}
+
+const NOMBRE_MULTIPLO: Record<string, string> = {
+  ev_por_boe_p1: 'EV / boe P1 (USD/boe)',
+  ev_por_boe_p2: 'EV / boe P2 (USD/boe)',
+  ev_por_kboepd: 'EV / kboe/d (USD MM por mil boe/d)',
+  ev_sobre_npv10_p1: 'EV / NPV10 P1 (veces)',
+  ev_sobre_npv10_p2: 'EV / NPV10 P2 (veces)',
+}
+const num = (v: number | null | undefined, dec = 2) =>
+  v == null ? '—' : v.toLocaleString('es-AR', { minimumFractionDigits: dec, maximumFractionDigits: dec })
+
+function ComparablesTab({ data }: { data: Data }) {
+  const [escenarioId, setEscenarioId] = useState('')
+  const [d, setD] = useState<Comparables | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function cargar(id: string) {
+    setEscenarioId(id); setD(null); setErr('')
+    if (!id) return
+    setLoading(true)
+    try {
+      const r = await fetch(`/api/portal/reservas/comparables?escenario_id=${id}`, { cache: 'no-store' })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      setD(j)
+    } catch (e) { setErr((e as Error).message) } finally { setLoading(false) }
+  }
+
+  return (
+    <Seccion title="Valuación por comparables de mercado">
+      <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 14 }}>
+        Contrasta el valor técnico contra lo que el mercado paga por activos parecidos. Los múltiplos salen de las
+        empresas cargadas en "Comparables de mercado" y se aplican a las métricas de CPE que sale del propio
+        escenario. Se informa la <strong>mediana</strong> además del promedio: con pocos comparables, uno atípico
+        corre el promedio y la mediana no.
+      </p>
+
+      <Field><label style={label}>Escenario (de donde salen reservas, producción y NPV10 de CPE)</label>
+        <Select value={escenarioId} onChange={e => cargar(e.target.value)}
+          opts={(data.escenarios ?? []).map(e => ({ value: String(e.id), label: String(e.nombre) }))} />
+      </Field>
+
+      {err && <p style={{ color: 'var(--cp-negative)', fontSize: 13 }}>{err}</p>}
+      {loading && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Calculando múltiplos…</p>}
+      {d?.aviso && <p style={{ fontSize: 12, color: '#d69e2e' }}>{d.aviso}</p>}
+
+      {d?.rango && (
+        <div style={{ border: '2px solid var(--accent)', borderRadius: 'var(--r-md)', padding: '14px 16px', margin: '4px 0 18px' }}>
+          <p style={{ fontSize: 12, fontWeight: 700, margin: '0 0 8px' }}>Valor implícito de CPE según los comparables</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px' }}>
+            <Kv label="EV implícito (mediana)" val={`US$ ${num(d.rango.mediana_usd_mm, 1)} MM`} />
+            <Kv label="Rango de EV" val={`US$ ${num(d.rango.minimo_usd_mm, 1)} – ${num(d.rango.maximo_usd_mm, 1)} MM`} />
+            <Kv label="Deuda neta" val={`US$ ${num(d.cpe?.deuda_neta_usd_mm, 1)} MM`} />
+            <Kv label="Equity implícito (mediana)" val={`US$ ${num(d.rango.equity_mediana_usd_mm, 1)} MM`} />
+          </div>
+          {d.cpe?.npv10_usd_mm != null && d.rango.mediana_usd_mm != null && (
+            <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '10px 0 0' }}>
+              El NPV10 del escenario da <strong>US$ {num(d.cpe.npv10_usd_mm, 1)} MM</strong>, o sea{' '}
+              {(d.rango.mediana_usd_mm / d.cpe.npv10_usd_mm).toFixed(2)}× contra el EV implícito por múltiplos.
+              Una brecha grande en cualquier dirección es algo para explicar, no para promediar.
+            </p>
+          )}
+        </div>
+      )}
+
+      {d?.implicito && d.implicito.length > 0 && (
+        <>
+          <p style={{ fontSize: 12, fontWeight: 700, margin: '0 0 6px' }}>Valor implícito por múltiplo</p>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', marginBottom: 18 }}>
+            <thead>
+              <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                <th style={{ padding: '6px 8px' }}>Múltiplo</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Mediana pares</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Base CPE</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>EV implícito</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Equity implícito</th>
+              </tr>
+            </thead>
+            <tbody>
+              {d.implicito.map(i => (
+                <tr key={i.metrica} style={{ borderBottom: '1px solid var(--rule)' }}>
+                  <td style={{ padding: '6px 8px' }}>{i.etiqueta}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{num(i.multiplo)}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{num(i.base)}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>US$ {num(i.ev_implicito_usd_mm, 1)} MM</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>US$ {num(i.equity_implicito_usd_mm, 1)} MM</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {d?.multiplos && (
+        <>
+          <p style={{ fontSize: 12, fontWeight: 700, margin: '0 0 6px' }}>Múltiplos de los comparables</p>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', marginBottom: 18 }}>
+            <thead>
+              <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                <th style={{ padding: '6px 8px' }}>Métrica</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Empresas con dato</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Mediana</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Promedio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {d.multiplos.map(m => (
+                <tr key={m.metrica} style={{ borderBottom: '1px solid var(--rule)' }}>
+                  <td style={{ padding: '6px 8px' }}>{NOMBRE_MULTIPLO[m.metrica] ?? m.metrica}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: m.n < 3 ? '#d69e2e' : undefined }}>{m.n}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{num(m.mediana)}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)' }}>{num(m.promedio)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 18 }}>
+            En ámbar, los múltiplos que salen de menos de 3 empresas: una mediana de dos datos no es una mediana.
+          </p>
+        </>
+      )}
+
+      {d && d.comparables.length > 0 && (
+        <>
+          <p style={{ fontSize: 12, fontWeight: 700, margin: '0 0 6px' }}>Detalle de los comparables</p>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                  <th style={{ padding: '6px 8px' }}>Empresa</th><th style={{ padding: '6px 8px' }}>País</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>EV (MM)</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>EV/boe P1</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>EV/boe P2</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>EV/kboe/d</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>EV/NPV10</th>
+                </tr>
+              </thead>
+              <tbody>
+                {d.comparables.map((c, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid var(--rule)' }}>
+                    <td style={{ padding: '6px 8px' }}>{c.empresa}</td>
+                    <td style={{ padding: '6px 8px', color: 'var(--fg-muted)' }}>{c.pais ?? '—'}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{num(c.ev_usd_mm, 0)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{num(c.ev_por_boe_p1)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{num(c.ev_por_boe_p2)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{num(c.ev_por_kboepd)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{num(c.ev_sobre_npv10_p1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </Seccion>
   )
 }

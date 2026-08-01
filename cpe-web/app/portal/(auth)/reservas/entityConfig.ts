@@ -411,8 +411,8 @@ export const ENTITIES: EntityConfig[] = [
   },
   {
     tabla: 'supuestos_generales',
-    title: '16. Supuestos generales — ⚠ el motor NO usa esta tabla',
-    helpText: '⚠ ATENCIÓN: ninguno de estos campos entra hoy en el cálculo. En particular, el "working interest" de acá NO afecta nada: la participación que usa el motor es la de la sección "Participación en la concesión", que además admite tramos con fechas. Se deja la tabla para no perder lo que ya esté cargado, pero cargarla acá no cambia ningún número.',
+    title: '16. Supuestos generales (valuación de empresa)',
+    helpText: 'Supuestos para la valuación de la empresa en marcha, no para el cash flow de reservas: el motor no los lee. Ojo con el "working interest" de acá — NO es el que usa el motor. La participación que afecta el cálculo es la de "Participación en la concesión", que además admite tramos con fechas.',
     fields: [
       { name: 'escenario_id', label: 'Escenario', type: 'select', optionsFrom: 'escenarios', required: true },
       { name: 'yacimiento_id', label: 'Yacimiento', type: 'select', optionsFrom: 'yacimientos', required: true },
@@ -462,8 +462,8 @@ export const ENTITIES: EntityConfig[] = [
   },
   {
     tabla: 'comparables_mercado',
-    helpText: '⚠ Tabla de referencia: se guarda pero el motor no la usa en ningún cálculo.',
-    title: '18. Comparables de mercado',
+    helpText: 'Empresas comparables para valuar por múltiplos: EV/boe de reservas, EV por barril diario de producción y EV/NPV10. Es la otra mitad de la valuación — el DCF dice cuánto valen los flujos, los comparables a cuánto paga el mercado activos parecidos. Se usan en la pestaña "Comparables".',
+    title: '18. Comparables de mercado (valuación por múltiplos)',
     fields: [
       { name: 'empresa', label: 'Empresa', type: 'text', required: true },
       { name: 'pais', label: 'País', type: 'text' },

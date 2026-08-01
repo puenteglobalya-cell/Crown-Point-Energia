@@ -198,24 +198,28 @@ corrieron: `20260801_reservas_certeza.sql` y `20260802_reservas_gaps.sql`.
 
 ---
 
-## 🟠 Simulador — datos que se cargan pero el motor no usa
+## 🟢 Simulador — dos tablas que NO alimentan el cash flow (a propósito)
 
-Riesgo real de error silencioso: alguien carga un dato esperando que cambie el
-resultado y no cambia nada. Ya quedaron marcados con ⚠ en la pantalla, pero hay
-que decidir qué hacer con ellos.
+No son datos muertos: son inputs de la **valuación de la empresa en marcha**,
+que es otra cosa que el cash flow de reservas. Confirmado por el cliente, no se
+eliminan.
 
-| Campo / tabla | Situación |
-|---|---|
-| `supuestos_generales.working_interest_pct` | **El más peligroso.** Parece la participación pero el motor usa `concesion_participacion`, que además admite tramos con fechas. |
-| `supuestos_generales` (toda la tabla) | Ningún campo entra en el cálculo. |
-| `comparables_mercado` | Se guarda, no se usa. |
-| `reservas_anuales.reservas_bbl` | El motor usa sólo `reservas_boe`. |
-| `intervenciones.subtipo` | Informativo (PERF_INY / WO_PROD, etc.), no afecta el cálculo. |
+- **`comparables_mercado`** → ya se usa: alimenta la pestaña **"Comparables"**,
+  que calcula EV/boe, EV por barril diario y EV/NPV10 de los pares y los aplica
+  a las métricas de CPE para obtener un valor implícito.
+- **`supuestos_generales`** → supuestos de valuación de empresa. El motor de
+  reservas no los lee.
 
-Lo más limpio sería eliminar `supuestos_generales` y `comparables_mercado` del
-simulador, pero conviene confirmar antes que no haya nada cargado que importe.
+⚠ Lo único que sigue siendo una trampa: **`supuestos_generales.working_interest_pct`
+NO es la participación que usa el motor**. La que afecta el cálculo es la de
+"Participación en la concesión", que además admite tramos con fechas. Quedó
+aclarado en el formulario.
+
+Informativos, tampoco afectan el cálculo: `reservas_anuales.reservas_bbl` (el
+motor usa la columna BOE) e `intervenciones.subtipo`.
 
 ---
+
 
 ## 🟠 Deuda de seguridad — upgrade mayor de Next.js (deliberadamente no aplicado)
 
