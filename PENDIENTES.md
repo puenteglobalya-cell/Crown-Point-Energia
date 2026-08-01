@@ -75,6 +75,7 @@ En el **SQL Editor**, en este orden. Los tres son idempotentes.
 supabase/20260801_reservas_abandono.sql
 supabase/20260801_reservas_certeza_incremental.sql
 supabase/20260801_pozos_tipo_gsj.sql
+supabase/20260801_campanas_perforacion.sql
 ```
 
 - **`reservas_abandono`** agrega `pozos.costo_abandono_usd`. NI 51-101 pide
@@ -88,6 +89,13 @@ supabase/20260801_pozos_tipo_gsj.sql
   GSJ_PQO, GSJ_BLG, GSJ_WO). Avisa por `raise warning` si falta crear algún
   yacimiento antes. Las curvas mensuales se cargan después desde la pantalla,
   con el importador de Excel o el generador de declinación de Arps.
+
+- **`campanas_perforacion`** crea la tabla `campanas` y agrega a
+  `intervenciones` los campos de campaña, orden, inicio de perforación y días
+  por etapa. Habilita la pestaña **"Cronograma"**, que es la que responde la
+  pregunta de fondo del simulador: **cuándo perforar cada pozo para aprovechar
+  el % de participación vigente**. Sin esta migración la pestaña no encuentra
+  campañas y el resto del simulador sigue funcionando igual.
 
 El motor lee las columnas nuevas de forma defensiva, así que el simulador
 funciona con o sin estas migraciones aplicadas.

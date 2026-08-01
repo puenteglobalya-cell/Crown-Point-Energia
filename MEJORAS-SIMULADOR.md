@@ -10,6 +10,46 @@ y la impone desde el sistema**. Nuestro simulador hoy está más cerca de ARIES
 sin la madurez de ARIES: 22 tablas de carga manual y ninguna validación previa.
 Las mejoras de abajo empujan hacia el modelo scenario-centric.
 
+## Objetivo del simulador (confirmado por el cliente)
+
+**La participación de CPE en la concesión cambia de porcentaje en el tiempo, así
+que hay que decidir cuándo perforar cada pozo para optimizar el cash flow.**
+Esa es la pregunta que el simulador tiene que responder, y ordena las
+prioridades de abajo.
+
+Implementado: **campañas de perforación con restricción de equipos**
+(`supabase/20260801_campanas_perforacion.sql`, `lib/reservas/cronograma.ts`,
+pestaña "Cronograma").
+
+Se cargan días de perforación, días de terminación, días de mudanza y cantidad
+de equipos, y el cronograma se **deriva** — cada pozo va al primer equipo que
+se libera, en lugar de escribir cada fecha a mano:
+
+- **1 equipo de perforación** → perforaciones escalonadas, una atrás de la otra.
+- **2 equipos** → dos pozos avanzan en paralelo.
+- **Equipos de terminación aparte** → el equipo de perforación pasa al pozo
+  siguiente mientras otro termina el anterior. Es el solapamiento parcial, y
+  hace visible el cuello de botella: con 2 equipos de perforación y 1 de
+  terminación, la terminación es la que manda.
+
+Los días de cada etapa se pueden pisar pozo por pozo
+(`intervenciones.dias_perforacion`) para el pozo que se sabe más lento.
+
+El cronograma se previsualiza con un Gantt y recién se aplica cuando se
+confirma; al aplicar escribe la primera producción como fecha de arranque de la
+curva y el inicio de perforación como mes de imputación del CAPEX.
+
+**Lo que falta para cerrar el objetivo**: hoy se mueve la campaña a mano, se
+aplica y se corre el cálculo para comparar. El paso que falta es el **barrido
+automático**: probar N fechas de inicio (mes a mes durante, digamos, 3 años),
+correr el motor para cada una y graficar VAN contra fecha de inicio, marcando
+los saltos donde cambia el % de participación. Ahí el óptimo se lee de un
+gráfico en lugar de tantear. Es la mejora de mayor valor que queda, y ahora es
+barata porque el cronograma ya está parametrizado — es un `for` sobre
+`fecha_inicio`.
+
+---
+
 Prioridad: 🔴 alta (bloquea confianza en el número) · 🟠 media · 🟢 nice-to-have.
 
 ---
