@@ -28,13 +28,13 @@ const GRUPOS_CARGA: { titulo: string; tablas: string[] }[] = [
   { titulo: 'Pozos y producción', tablas: ['pozos', 'pozos_tipo', 'curvas_produccion', 'campanas', 'intervenciones'] },
   { titulo: 'Precios', tablas: ['formulas_precio', 'precios_referencia', 'precios_mensuales'] },
   { titulo: 'Costos e impuestos', tablas: ['opex_fijo', 'opex_variable', 'opex_fijo_pozo', 'regalias'] },
-  { titulo: 'Escenarios', tablas: ['escenarios'] },
+  { titulo: 'Proyectos y escenarios', tablas: ['proyectos', 'costos_proyecto', 'escenarios'] },
   { titulo: 'Reservas', tablas: ['reservas_anuales', 'parametros_certeza_reservas'] },
   { titulo: 'Financiero', tablas: ['supuestos_generales', 'deuda_notas', 'comparables_mercado'] },
 ]
 
 export default function ReservasClient() {
-  const [tab, setTab] = useState<'cargar' | 'cronograma' | 'calcular' | 'resultados' | 'pareto'>('cargar')
+  const [tab, setTab] = useState<'cargar' | 'cronograma' | 'calcular' | 'resultados' | 'consolidado' | 'pareto'>('cargar')
   const [seccionActiva, setSeccionActiva] = useState(ENTITIES[0].tabla)
   const [data, setData] = useState<Data | null>(null)
 
@@ -57,14 +57,14 @@ export default function ReservasClient() {
         </h1>
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--rule)' }}>
-          {(['cargar', 'cronograma', 'calcular', 'resultados', 'pareto'] as const).map(t => (
+          {(['cargar', 'cronograma', 'calcular', 'resultados', 'consolidado', 'pareto'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
               background: 'none', border: 'none', padding: '10px 4px', marginRight: 16,
               fontSize: 13, fontWeight: 600, cursor: 'pointer',
               color: tab === t ? 'var(--accent)' : 'var(--fg-muted)',
               borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
             }}>
-              {t === 'cargar' ? 'Cargar datos' : t === 'cronograma' ? 'Cronograma' : t === 'calcular' ? 'Calcular escenario' : t === 'resultados' ? 'Resultados' : 'Pareto de escenarios'}
+              {t === 'cargar' ? 'Cargar datos' : t === 'cronograma' ? 'Cronograma' : t === 'calcular' ? 'Calcular escenario' : t === 'resultados' ? 'Resultados' : t === 'consolidado' ? 'Consolidado' : 'Pareto de escenarios'}
             </button>
           ))}
         </div>
@@ -111,6 +111,7 @@ export default function ReservasClient() {
         {tab === 'cronograma' && <CronogramaTab data={data} reload={reload} />}
         {tab === 'calcular' && <CalcularTab data={data} />}
         {tab === 'resultados' && <ResultadosTab data={data} />}
+        {tab === 'consolidado' && <ConsolidadoTab />}
         {tab === 'pareto' && <ParetoTab />}
       </div>
     </div>
@@ -1418,5 +1419,185 @@ function BarridoChart({ res }: { res: RespuestaBarrido }) {
         Las líneas rojas punteadas son los cambios de participación en la concesión — normalmente ahí están los escalones de la curva.
       </p>
     </div>
+  )
+}
+
+// ─── Consolidado por proyecto ────────────────────────────────────────────
+// La empresa como suma de proyectos. Lo que hace útil esta vista para nuevos
+// negocios es separar el VAN operativo del costo de entrada: un área puede
+// tener una operación excelente y no cerrar al precio que piden por ella.
+type ProyectoConsolidado = {
+  proyecto_id: number; nombre: string; tipo: string
+  escenario: { id: number; nombre: string } | null
+  sin_resultados: boolean; meses: number
+  npv_operativo_usd: number; npv_costos_entrada_usd: number; npv_total_usd: number
+  capex_desarrollo_usd: number; costo_entrada_usd: number; ingresos_totales_usd: number
+  costos: { concepto: string; tipo: string; fecha: string; monto_usd: number; aplicar_participacion: boolean }[]
+}
+type RespuestaConsolidado = {
+  tasa_descuento: number
+  fecha_base_descuento: string
+  proyectos: ProyectoConsolidado[]
+  excluidos: string[]
+  aviso: string | null
+  total: {
+    proyectos: number; con_resultados: number; fecha_base_descuento: string
+    npv_operativo_usd: number; npv_costos_entrada_usd: number; npv_total_usd: number
+    capex_desarrollo_usd: number; costo_entrada_usd: number
+    npv_por_tasa: { tasa: number; npv_usd: number }[]
+  } | null
+}
+
+function ConsolidadoTab() {
+  const [tasa, setTasa] = useState('0.10')
+  const [res, setRes] = useState<RespuestaConsolidado | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function cargar() {
+    setLoading(true); setErr('')
+    try {
+      const r = await fetch(`/api/portal/reservas/consolidado?tasa=${tasa}`, { cache: 'no-store' })
+      const json = await r.json()
+      if (!r.ok) throw new Error(json.error ?? 'Error')
+      setRes(json)
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
+  useEffect(() => { cargar() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <Seccion title="Consolidado de la empresa — suma de proyectos">
+      <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 14 }}>
+        Cada proyecto entra con su escenario base ya calculado, neto a CPE, más los costos que no cuelgan de
+        ningún pozo (precio de compra del área, bono de firma, compromiso exploratorio).
+        Todos los proyectos se descuentan a la <strong>misma fecha base</strong>, si no la suma no significa nada.
+      </p>
+
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 16 }}>
+        <div style={{ minWidth: 130 }}>
+          <label style={label}>Tasa de descuento</label>
+          <input value={tasa} onChange={e => setTasa(e.target.value)} type="number" step="0.01" style={input} />
+        </div>
+        <button className="btn btn-primary" disabled={loading} onClick={cargar} style={{ padding: '9px 20px', fontSize: 12 }}>
+          {loading ? 'Calculando…' : 'Recalcular'}
+        </button>
+      </div>
+
+      {err && <p style={{ color: 'var(--cp-negative)', fontSize: 13 }}>{err}</p>}
+      {res?.aviso && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{res.aviso}</p>}
+
+      {res?.total && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px', marginBottom: 20 }}>
+            <Kv label="Proyectos en el consolidado" val={`${res.total.con_resultados} de ${res.total.proyectos} con resultados`} />
+            <Kv label="Descontado a" val={`${res.total.fecha_base_descuento} @ ${(res.tasa_descuento * 100).toFixed(1)}%`} />
+            <Kv label="VAN operativo" val={mm(res.total.npv_operativo_usd)} />
+            <Kv label="Costo de entrada (VAN)" val={mm(res.total.npv_costos_entrada_usd)} />
+            <Kv label="CAPEX de desarrollo" val={mm(res.total.capex_desarrollo_usd)} />
+            <Kv label="VAN TOTAL de la empresa" val={mm(res.total.npv_total_usd)} />
+          </div>
+
+          <div style={{ overflowX: 'auto', marginBottom: 20 }}>
+            <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                  <th style={{ padding: '6px 8px' }}>Proyecto</th>
+                  <th style={{ padding: '6px 8px' }}>Tipo</th>
+                  <th style={{ padding: '6px 8px' }}>Escenario base</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>VAN operativo</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>Costo de entrada</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>VAN total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {res.proyectos.map(p => (
+                  <tr key={p.proyecto_id} style={{ borderBottom: '1px solid var(--rule)' }}>
+                    <td style={{ padding: '6px 8px' }}>
+                      {p.nombre}
+                      {p.sin_resultados && <span style={{ color: 'var(--cp-negative)', fontSize: 11 }}> · sin resultados, corré el cálculo</span>}
+                    </td>
+                    <td style={{ padding: '6px 8px', color: 'var(--fg-muted)' }}>{p.tipo}</td>
+                    <td style={{ padding: '6px 8px' }}>{p.escenario?.nombre ?? '—'}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(p.npv_operativo_usd)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: p.npv_costos_entrada_usd < 0 ? 'var(--cp-negative)' : undefined }}>
+                      {p.npv_costos_entrada_usd === 0 ? '—' : mm(p.npv_costos_entrada_usd)}
+                    </td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700, color: p.npv_total_usd < 0 ? 'var(--cp-negative)' : '#2d7a4a' }}>
+                      {mm(p.npv_total_usd)}
+                    </td>
+                  </tr>
+                ))}
+                <tr style={{ borderTop: '2px solid var(--rule)', fontWeight: 700 }}>
+                  <td style={{ padding: '8px' }} colSpan={3}>TOTAL EMPRESA</td>
+                  <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(res.total.npv_operativo_usd)}</td>
+                  <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(res.total.npv_costos_entrada_usd)}</td>
+                  <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(res.total.npv_total_usd)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p style={{ fontSize: 12, fontWeight: 700, margin: '0 0 4px', color: 'var(--fg)' }}>
+            Consolidado a las cinco tasas de NI 51-101
+          </p>
+          <table style={{ fontSize: 12, borderCollapse: 'collapse', marginBottom: 16 }}>
+            <tbody>
+              {res.total.npv_por_tasa.map(t => (
+                <tr key={t.tasa} style={{ borderBottom: '1px solid var(--rule)' }}>
+                  <td style={{ padding: '5px 24px 5px 8px', fontFamily: 'var(--font-mono)' }}>
+                    {t.tasa === 0 ? 'Sin descontar' : `${(t.tasa * 100).toFixed(0)}%`}
+                  </td>
+                  <td style={{ padding: '5px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{mm(t.npv_usd)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {res.proyectos.some(p => p.costos.length > 0) && (
+            <>
+              <p style={{ fontSize: 12, fontWeight: 700, margin: '12px 0 6px', color: 'var(--fg)' }}>Costos de entrada cargados</p>
+              <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                    <th style={{ padding: '6px 8px' }}>Proyecto</th>
+                    <th style={{ padding: '6px 8px' }}>Concepto</th>
+                    <th style={{ padding: '6px 8px' }}>Fecha</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right' }}>Monto</th>
+                    <th style={{ padding: '6px 8px' }}>Base</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {res.proyectos.flatMap(p => p.costos.map((c, i) => (
+                    <tr key={`${p.proyecto_id}-${i}`} style={{ borderBottom: '1px solid var(--rule)' }}>
+                      <td style={{ padding: '6px 8px' }}>{p.nombre}</td>
+                      <td style={{ padding: '6px 8px' }}>{c.concepto}</td>
+                      <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{c.fecha}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(c.monto_usd)}</td>
+                      <td style={{ padding: '6px 8px', fontSize: 11, color: 'var(--fg-muted)' }}>
+                        {c.aplicar_participacion ? '100% → se netea' : 'ya es lo que paga CPE'}
+                      </td>
+                    </tr>
+                  )))}
+                </tbody>
+              </table>
+            </>
+          )}
+
+          {res.excluidos.length > 0 && (
+            <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 12 }}>
+              Excluidos del consolidado: {res.excluidos.join(', ')}.
+            </p>
+          )}
+          <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 12 }}>
+            El consolidado todavía no baja G&amp;A corporativo ni intereses de deuda: es la suma de los proyectos,
+            no un valor de empresa completo.
+          </p>
+        </>
+      )}
+    </Seccion>
   )
 }

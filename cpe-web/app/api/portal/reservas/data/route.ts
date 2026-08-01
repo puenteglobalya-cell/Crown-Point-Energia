@@ -15,7 +15,7 @@ const TABLES = [
   'provincias', 'yacimientos', 'concesiones', 'concesion_participacion',
   'pozos', 'pozos_tipo', 'curvas_produccion', 'campanas', 'intervenciones',
   'formulas_precio', 'precios_referencia', 'precios_mensuales',
-  'opex_fijo', 'opex_variable', 'opex_fijo_pozo', 'regalias', 'escenarios',
+  'opex_fijo', 'opex_variable', 'opex_fijo_pozo', 'regalias', 'proyectos', 'costos_proyecto', 'escenarios',
   'reservas_anuales', 'parametros_certeza_reservas', 'supuestos_generales', 'deuda_notas', 'comparables_mercado',
 ] as const
 type Tabla = typeof TABLES[number]

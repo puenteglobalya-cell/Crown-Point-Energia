@@ -287,6 +287,44 @@ un PDF con paginación y numeración controladas haría falta Puppeteer o simila
 
 ---
 
+## 11. ✅ Proyectos, costo de entrada y consolidado
+
+`supabase/20260801_proyectos_consolidado.sql` + pestaña "Consolidado".
+
+Se agregó un nivel por encima del escenario: **proyecto**. Cada proyecto
+agrupa sus escenarios y el marcado como base es el que entra al consolidado,
+que —definido por el cliente— es la **suma de los proyectos**.
+
+Lo que no entraba en el modelo anterior son los desembolsos que no cuelgan de
+un pozo, y son justo los que deciden un negocio nuevo: `costos_proyecto` cubre
+**precio de compra del área**, bono de firma, compromiso exploratorio, G&A del
+proyecto y pasivo de abandono asumido.
+
+La vista separa **VAN operativo** de **costo de entrada**, que es la lectura
+que importa para una adquisición: un área puede tener una operación muy buena
+y aun así no cerrar al precio que piden por ella. El total se informa además a
+las cinco tasas de NI 51-101.
+
+Dos decisiones de modelado explícitas:
+
+- **Base del monto.** El resto de los inputs se carga al 100% y el motor los
+  netea, pero un precio de compra normalmente ya es lo que paga CPE por la
+  porción que adquiere. Por eso `aplicar_participacion` es un check explícito
+  en el formulario y no un supuesto silencioso.
+- **Fecha base común.** Todos los proyectos se descuentan a la misma fecha —
+  la más temprana entre el primer flujo y el primer costo de entrada, porque
+  una compra de área se paga antes de que el activo produzca. Sin eso, sumar
+  proyectos que arrancan en años distintos no significa nada.
+
+**Lo que el consolidado todavía NO hace**: no baja G&A corporativo ni intereses
+de deuda (`deuda_notas` sigue sin usarse y `intereses_usd` sigue en 0). Es la
+suma de los proyectos, no un valor de empresa. Falta también amortizar el
+costo de entrada a efectos del impuesto a las ganancias: la columna
+`amortizable_meses` ya está en el esquema pero el cálculo todavía lo trata como
+salida de caja pura.
+
+---
+
 ## Extra — unidades explícitas en la UI
 
 No es una de las 10, pero es riesgo real: el parser convierte m3/d → bbl/mes y

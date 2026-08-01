@@ -76,6 +76,7 @@ supabase/20260801_reservas_abandono.sql
 supabase/20260801_reservas_certeza_incremental.sql
 supabase/20260801_pozos_tipo_gsj.sql
 supabase/20260801_campanas_perforacion.sql
+supabase/20260801_proyectos_consolidado.sql
 ```
 
 - **`reservas_abandono`** agrega `pozos.costo_abandono_usd`. NI 51-101 pide
@@ -96,6 +97,11 @@ supabase/20260801_campanas_perforacion.sql
   pregunta de fondo del simulador: **cuándo perforar cada pozo para aprovechar
   el % de participación vigente**. Sin esta migración la pestaña no encuentra
   campañas y el resto del simulador sigue funcionando igual.
+
+- **`proyectos_consolidado`** crea `proyectos` y `costos_proyecto`, y cuelga
+  los escenarios de un proyecto. Habilita la pestaña **"Consolidado"** (la
+  empresa como suma de proyectos) y, sobre todo, el lugar donde va el **precio
+  de compra de un área** — el número que define si una adquisición cierra.
 
 El motor lee las columnas nuevas de forma defensiva, así que el simulador
 funciona con o sin estas migraciones aplicadas.
