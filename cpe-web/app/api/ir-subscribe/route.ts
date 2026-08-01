@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isSameOrigin } from '@/lib/csrf'
-import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
+import { proteger } from '@/lib/proteccion'
 import { looksLikeBot, HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 import { str } from '@/lib/input'
 
@@ -12,11 +12,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const ip = getClientIp(req)
-  const allowed = await checkRateLimit(`ir-subscribe:${ip}`, 5, 60 * 60 * 1000) // 5 per hour
-  if (!allowed) {
-    return NextResponse.json({ error: 'Demasiados intentos. Intentá más tarde.' }, { status: 429 })
-  }
+  // 5 per hour per IP, plus the escalating IP blacklist
+  const guardia = await proteger(req, {
+    nombre: 'ir-subscribe', max: 5, ventanaMs: 60 * 60 * 1000,
+    mensaje: 'Demasiados intentos. Intentá más tarde.',
+  })
+  if (!guardia.permitido) return guardia.respuesta
 
   try {
     const body = await req.json()

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireComplianceUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
-import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
+import { proteger } from '@/lib/proteccion'
 import { looksLikeBot, HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 import { enviarNotificacionDenuncia } from '@/lib/email'
 import { dbError } from '@/lib/api-error'
@@ -21,10 +21,8 @@ export async function POST(req: NextRequest) {
   }
 
   // 3 submissions per hour per IP — this is a sensitive channel, not a form to spam-test
-  const ip = getClientIp(req)
-  if (!await checkRateLimit(`denuncias:${ip}`, 3, 60 * 60 * 1000)) {
-    return NextResponse.json({ error: 'Demasiados intentos. Esperá unos minutos.' }, { status: 429 })
-  }
+  const guardia = await proteger(req, { nombre: 'denuncias', max: 3, ventanaMs: 60 * 60 * 1000 })
+  if (!guardia.permitido) return guardia.respuesta
 
   try {
     const form = await req.formData()

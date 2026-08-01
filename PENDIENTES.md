@@ -67,6 +67,35 @@ Entrar a `/admin/cms` y tocar **"Guardar"** una vez. Dispara
 
 ---
 
+## 🔴 Blacklist escalada de IPs — SQL a correr
+
+```
+supabase/ip-blacklist-schema.sql
+```
+
+Crea `ip_violaciones` (log) e `ip_bloqueos` (bloqueos vigentes). **Sin esta
+migración la capa no bloquea nada**: falla abierta a propósito, así que el
+rate limit sigue funcionando igual pero no escala.
+
+Escalado, contando violaciones por IP en una ventana móvil de 24 hs y
+**cruzando endpoints** (rotar de endpoint no sirve para esquivarlo):
+
+| Violaciones en 24 hs | Bloqueo |
+|---|---|
+| 3ª | 1 hora |
+| 6ª | 24 horas |
+| 10ª | 7 días |
+
+Endpoints cubiertos: `portal-login`, `webauthn/login-options`, `contacto`,
+`denuncias`, `carreras` (postulaciones), `ir-subscribe`, `rrhh/analizar`.
+
+Operación (consultas listas en el `.sql`): ver quién está bloqueado, ver qué
+hizo una IP antes del bloqueo, y desbloquear a mano. **Esto último va a hacer
+falta**: detrás de un NAT corporativo o una red móvil hay muchos usuarios
+compartiendo una IP, así que un bloqueo puede alcanzar a gente legítima.
+
+---
+
 ## 🔴 Simulador de reservas — mergear a `main`
 
 **La rama `claude/github-data-lec4yg` tiene 18 commits sin mergear.** `CLAUDE.md`

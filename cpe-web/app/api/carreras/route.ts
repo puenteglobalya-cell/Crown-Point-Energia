@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireHrUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
-import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
+import { proteger } from '@/lib/proteccion'
 import { looksLikeBot, HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 import { dbError } from '@/lib/api-error'
 import { enviarConfirmacionPostulacion } from '@/lib/email'
@@ -16,10 +16,8 @@ export async function POST(req: NextRequest) {
   }
 
   // 3 applications per 30 minutes per IP — CV uploads are expensive
-  const ip = getClientIp(req)
-  if (!await checkRateLimit(`carreras:${ip}`, 3, 30 * 60 * 1000)) {
-    return NextResponse.json({ error: 'Demasiados intentos. Esperá unos minutos.' }, { status: 429 })
-  }
+  const guardia = await proteger(req, { nombre: 'carreras', max: 3, ventanaMs: 30 * 60 * 1000 })
+  if (!guardia.permitido) return guardia.respuesta
 
   try {
     const form = await req.formData()

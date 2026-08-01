@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isSameOrigin } from '@/lib/csrf'
-import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
+import { proteger } from '@/lib/proteccion'
 import { looksLikeBot, HONEYPOT_FIELD, TIMESTAMP_FIELD } from '@/lib/antispam'
 import { enviarConfirmacionContacto } from '@/lib/email'
 import { str } from '@/lib/input'
@@ -13,11 +13,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // 5 submissions per 10 minutes per IP
-  const ip = getClientIp(req)
-  if (!await checkRateLimit(`contacto:${ip}`, 5, 10 * 60 * 1000)) {
-    return NextResponse.json({ error: 'Demasiados intentos. Esperá unos minutos.' }, { status: 429 })
-  }
+  // 5 submissions per 10 minutes per IP, plus the escalating IP blacklist
+  const guardia = await proteger(req, { nombre: 'contacto', max: 5, ventanaMs: 10 * 60 * 1000 })
+  if (!guardia.permitido) return guardia.respuesta
 
   try {
     const body = await req.json()

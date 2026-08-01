@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase'
 import { isSameOrigin } from '@/lib/csrf'
-import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
+import { proteger } from '@/lib/proteccion'
 import { checkLockout, recordFailedAttempt, resetAttempts } from '@/lib/login-lockout'
 
 const GENERIC_ERROR = 'Email o contraseña inválidos.'
@@ -23,10 +23,10 @@ export async function POST(req: NextRequest) {
   // real users can share one public IP (office network, corporate VPN), so
   // it's sized for a ~200-300 user org rather than a single person, and the
   // per-account lockout below is what actually stops a targeted guess attack.
-  const ip = getClientIp(req)
-  if (!await checkRateLimit(`portal-login:${ip}`, 40, 15 * 60 * 1000)) {
-    return NextResponse.json({ error: LOCKED_ERROR }, { status: 429 })
-  }
+  const guardia = await proteger(req, {
+    nombre: 'portal-login', max: 40, ventanaMs: 15 * 60 * 1000, mensaje: LOCKED_ERROR,
+  })
+  if (!guardia.permitido) return guardia.respuesta
 
   const lockout = await checkLockout(email)
   if (lockout.locked) {

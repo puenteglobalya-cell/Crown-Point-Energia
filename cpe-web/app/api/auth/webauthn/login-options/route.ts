@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateAuthenticationOptions } from '@simplewebauthn/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { getRpID, CHALLENGE_COOKIE } from '@/lib/webauthn'
-import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
+import { proteger } from '@/lib/proteccion'
 
 export async function POST(req: NextRequest) {
   const { email } = await req.json()
@@ -12,10 +12,8 @@ export async function POST(req: NextRequest) {
   // limit per IP so it can't be used to run up cost/load by hammering it.
   // Sized for many real users behind one shared office IP, same reasoning
   // as portal-login's limit.
-  const ip = getClientIp(req)
-  if (!await checkRateLimit(`webauthn-login-options:${ip}`, 40, 5 * 60 * 1000)) {
-    return NextResponse.json({ error: 'Demasiados intentos. Esperá unos minutos.' }, { status: 429 })
-  }
+  const guardia = await proteger(req, { nombre: 'webauthn-login-options', max: 40, ventanaMs: 5 * 60 * 1000 })
+  if (!guardia.permitido) return guardia.respuesta
 
   const db = createSupabaseServerAdminClient()
   const { data: users } = await db.auth.admin.listUsers()
