@@ -79,6 +79,7 @@ supabase/20260801_campanas_perforacion.sql
 supabase/20260801_proyectos_consolidado.sql
 supabase/20260801_reservas_reconciliacion.sql
 supabase/20260801_costos_corporativos.sql
+supabase/20260801_price_decks.sql
 ```
 
 - **`reservas_abandono`** agrega `pozos.costo_abandono_usd`. NI 51-101 pide
@@ -112,6 +113,12 @@ supabase/20260801_costos_corporativos.sql
 - **`costos_corporativos`** crea la tabla de G&A y estructura. Junto con la
   deuda ya cargada, permite que el consolidado pase de "suma de proyectos" a
   **valor de empresa**.
+
+- **`price_decks`** crea curvas de precio con nombre propio. Evita cargar 240
+  cotizaciones a mano por referencia, y es lo que permite correr el mismo
+  escenario contra un deck de **pronóstico** y otro **constante**, que es lo que
+  pide NI 51-101. Sin la migración, los precios se siguen resolviendo contra
+  `precios_referencia` igual que antes.
 
 El motor lee las columnas nuevas de forma defensiva, así que el simulador
 funciona con o sin estas migraciones aplicadas.

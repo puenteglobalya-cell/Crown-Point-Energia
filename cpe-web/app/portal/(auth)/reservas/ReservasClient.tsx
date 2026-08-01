@@ -26,7 +26,7 @@ const MAX_FILAS_LISTA = 100
 const GRUPOS_CARGA: { titulo: string; tablas: string[] }[] = [
   { titulo: 'Estructura', tablas: ['provincias', 'yacimientos', 'concesiones', 'concesion_participacion'] },
   { titulo: 'Pozos y producción', tablas: ['pozos', 'pozos_tipo', 'curvas_produccion', 'campanas', 'intervenciones'] },
-  { titulo: 'Precios', tablas: ['formulas_precio', 'precios_referencia', 'precios_mensuales'] },
+  { titulo: 'Precios', tablas: ['formulas_precio', 'price_decks', 'price_deck_puntos', 'precios_referencia', 'precios_mensuales'] },
   { titulo: 'Costos e impuestos', tablas: ['opex_fijo', 'opex_variable', 'opex_fijo_pozo', 'regalias'] },
   { titulo: 'Proyectos y escenarios', tablas: ['proyectos', 'costos_proyecto', 'escenarios'] },
   { titulo: 'Reservas', tablas: ['reservas_anuales', 'reservas_movimientos', 'parametros_certeza_reservas'] },

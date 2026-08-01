@@ -116,7 +116,7 @@ Prioridad: 🔴 alta (bloquea confianza en el número) · 🟠 media · 🟢 nic
 
 ---
 
-## 1. 🔴 Preflight: validar el escenario ANTES de correrlo
+## 1. ✅ Preflight: validar el escenario ANTES de correrlo
 
 **Hoy**: los diagnósticos que agregué aparecen *después* de calcular. Si falta
 la cotización de Brent de un mes, el motor asume precio 0, produce ingresos 0
@@ -135,7 +135,7 @@ extrayéndola a una función `validarEscenario()` que no escriba nada.
 
 ---
 
-## 2. 🔴 Price decks nombrados y reutilizables
+## 2. ✅ Price decks nombrados y reutilizables
 
 **Hoy**: `precios_referencia` se carga fila por fila, un registro por
 referencia y por mes. Para 20 años son 240 registros a mano por cada
@@ -156,7 +156,7 @@ obliga a rehacer el trabajo.
 
 ---
 
-## 3. 🔴 Análisis de sensibilidad con tornado chart
+## 3. ✅ Análisis de sensibilidad con tornado chart
 
 **Hoy**: no existe. Para saber cuánto pesa el precio del crudo en el NPV hay
 que crear escenarios a mano y compararlos en el Pareto.
@@ -374,3 +374,44 @@ clase de error más difícil de detectar.
    del mes en una columna aparte: es la pista de auditoría del proyecto
    completo. Reservas y depleción quedan en volumen físico al 100% — son
    barriles en el subsuelo.
+
+
+---
+
+## Estado al cierre de esta ronda
+
+Implementado, además de las 14 correcciones del motor:
+
+| | Estado |
+|---|---|
+| VAN a las 5 tasas de NI 51-101, antes y después de impuestos | ✅ |
+| Costo de abandono (ARO) | ✅ |
+| Curvas por declinación de Arps | ✅ |
+| Campañas con restricción de equipos + Gantt | ✅ |
+| Barrido de fechas de inicio + comparación de equipos | ✅ |
+| Base neta a CPE en todo el reporte | ✅ |
+| Export a Excel con fórmulas vivas | ✅ |
+| Proyectos, precio de compra de áreas y consolidado | ✅ |
+| Informe PDF con dashboard | ✅ |
+| Validación previa (preflight) | ✅ |
+| Sensibilidad con tornado | ✅ |
+| Reconciliación de reservas — 7 categorías | ✅ |
+| Escudo fiscal del costo de entrada | ✅ |
+| Capa corporativa: G&A + intereses → valor de empresa | ✅ |
+| Price decks (pronóstico y constante) | ✅ |
+
+Pendiente, sin bloquear nada:
+
+- **PDP / PDNP / PUD** (mejora 6 del análisis de mercado): NI 51-101 distingue,
+  dentro de las probadas, entre desarrolladas en producción, desarrolladas no
+  en producción y no desarrolladas. El esquema no tiene esa dimensión, así que
+  hoy no se puede decir qué porción del 2P es PUD.
+- **Capital de desarrollo futuro (FDC) por año**: los datos ya están en
+  `intervenciones`; falta la vista que los agregue.
+- **Clonar escenario + diff**, **vista one-line por pozo**, **carga masiva
+  pegando desde Excel**, **gráficos en la pantalla de resultados**,
+  **economía incremental (wedge)**, **trazabilidad de corridas**.
+- **Amortización del CAPEX a la participación con la que se incurrió**: hoy se
+  amortiza a la participación del mes corriente. En un análisis que gira
+  alrededor de un cambio de participación puede correr el óptimo uno o dos
+  meses.

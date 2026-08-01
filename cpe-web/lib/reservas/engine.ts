@@ -126,10 +126,22 @@ export async function cargarContexto(escenarioId: number) {
     traerTodo<any>(() => db.from('parametros_impuesto_ganancias').select('*').eq('nivel', 'consolidado').order('id')),
     traerTodo<any>(() => db.from('parametros_debitos_creditos').select('*').order('id')),
   ])
+
+  // Price deck del escenario. Tablas opcionales: sin la migración
+  // 20260801_price_decks.sql el motor sigue resolviendo contra
+  // precios_referencia como hasta ahora.
+  const { data: escenarioRow } = await db.from('escenarios').select('*').eq('id', escenarioId).maybeSingle()
+  const deckId = (escenarioRow as any)?.price_deck_id ?? null
+  const [deckRows, deckPuntos] = deckId == null ? [[] as any[], [] as any[]] : await Promise.all([
+    traerTodo<any>(() => db.from('price_decks').select('*').eq('id', deckId).order('id')).catch(() => [] as any[]),
+    traerTodo<any>(() => db.from('price_deck_puntos').select('*').eq('price_deck_id', deckId).order('id')).catch(() => [] as any[]),
+  ])
+
   return {
     pozos, curvas, intervencionesRaw, participaciones, regalias,
     opexFijo, opexVar, opexFijoPozo, formulas, preciosRef, preciosMens,
     provincias, yacimientos, concesiones, ganancias, debitosCreditos,
+    deck: (deckRows[0] ?? null) as any, deckPuntos,
   }
 }
 
@@ -158,6 +170,7 @@ export async function calcularEscenario(
     pozos, curvas, intervencionesRaw, participaciones, regalias,
     opexFijo, opexVar, opexFijoPozo, formulas, preciosRef, preciosMens,
     provincias, yacimientos, concesiones, ganancias, debitosCreditos,
+    deck, deckPuntos,
   } = opciones.contexto ?? await cargarContexto(escenarioId)
 
   const intervenciones = [...intervencionesRaw].sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))
@@ -215,6 +228,39 @@ export async function calcularEscenario(
   const precioRefPorClave = new Map<string, any>(
     preciosRef.map(r => [`${r.referencia}|${mesDe(r.fecha)}`, r]),
   )
+  // ─── Precio de referencia desde el price deck ─────────────────────────
+  // El deck da unos pocos puntos anuales; entre ellos se interpola linealmente
+  // y después del último se aplica la escalación configurada. Un deck
+  // constante es simplemente uno con escalación 0.
+  const puntosPorRef = new Map<string, { anio: number; precio: number }[]>()
+  for (const p of deckPuntos ?? []) {
+    const arr = puntosPorRef.get(p.referencia) ?? []
+    arr.push({ anio: Number(p.anio), precio: Number(p.precio_usd) })
+    puntosPorRef.set(p.referencia, arr)
+  }
+  for (const arr of puntosPorRef.values()) arr.sort((a, b) => a.anio - b.anio)
+
+  function precioDeck(referencia: string, fecha: string): number | null {
+    const pts = puntosPorRef.get(referencia)
+    if (!pts || pts.length === 0) return null
+    const t = Number(fecha.slice(0, 4)) + (Number(fecha.slice(5, 7)) - 1) / 12
+
+    if (t <= pts[0].anio) return pts[0].precio
+    const ultimo = pts[pts.length - 1]
+    if (t >= ultimo.anio) {
+      const escal = Number((deck as any)?.escalacion_anual ?? 0)
+      return ultimo.precio * Math.pow(1 + escal, t - ultimo.anio)
+    }
+    for (let i = 1; i < pts.length; i++) {
+      if (t <= pts[i].anio) {
+        const a = pts[i - 1], b = pts[i]
+        const w = (t - a.anio) / (b.anio - a.anio || 1)
+        return a.precio + (b.precio - a.precio) * w
+      }
+    }
+    return ultimo.precio
+  }
+
   const formulasPorYacProd = new Map<string, any[]>()
   for (const f of formulas) {
     const key = `${f.yacimiento_id}|${f.producto}`
@@ -232,12 +278,16 @@ export async function calcularEscenario(
       diag.add('precio_sin_formula', `${yacimiento.nombre}: no hay precio mensual ni fórmula de precio para ${producto} — se toma 0`)
       return 0
     }
-    const ref = precioRefPorClave.get(`${formula.referencia}|${mesDe(fecha)}`)
-    if (!ref) {
+    // Orden de resolución de la referencia: el price deck del escenario si
+    // hay uno, y si no la tabla de cotizaciones cargada mes a mes.
+    const precioRef = precioDeck(formula.referencia, fecha)
+      ?? precioRefPorClave.get(`${formula.referencia}|${mesDe(fecha)}`)?.precio_usd
+      ?? null
+    if (precioRef == null) {
       diag.add('precio_sin_referencia', `${yacimiento.nombre}: falta la cotización "${formula.referencia}" de ${producto} en ${fecha.slice(0, 7)} — se toma 0`)
       return 0
     }
-    const precioNetoCuenca = (ref.precio_usd * (1 - formula.dde_pct / 100)) / (formula.divisor || 1) - formula.descuento_adicional_usd
+    const precioNetoCuenca = (precioRef * (1 - formula.dde_pct / 100)) / (formula.divisor || 1) - formula.descuento_adicional_usd
     // Tarifa de almacenamiento: USD/m3/día × días, convertido a USD/bbl con
     // el factor de conversión configurado (primera aproximación — validar
     // contra el Excel de referencia y ajustar factor_m3_a_bbl si no calza).

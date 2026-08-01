@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 const TABLES = [
   'provincias', 'yacimientos', 'concesiones', 'concesion_participacion',
   'pozos', 'pozos_tipo', 'curvas_produccion', 'campanas', 'intervenciones',
-  'formulas_precio', 'precios_referencia', 'precios_mensuales',
+  'formulas_precio', 'price_decks', 'price_deck_puntos', 'precios_referencia', 'precios_mensuales',
   'opex_fijo', 'opex_variable', 'opex_fijo_pozo', 'regalias', 'proyectos', 'costos_proyecto', 'escenarios',
   'reservas_anuales', 'reservas_movimientos', 'parametros_certeza_reservas', 'supuestos_generales', 'costos_corporativos', 'deuda_notas', 'comparables_mercado',
 ] as const

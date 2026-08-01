@@ -190,6 +190,42 @@ export const ENTITIES: EntityConfig[] = [
     displayCols: (r, d) => [{ label: 'Yacimiento', value: nombreDe(d, 'yacimientos', r.yacimiento_id) }, { label: 'Producto', value: String(r.producto) }, { label: 'Ref', value: String(r.referencia) }],
   },
   {
+    tabla: 'price_decks',
+    title: '11a. Price deck (curva de precios con nombre)',
+    helpText: 'Evita cargar 240 cotizaciones a mano por referencia. Un deck son unos pocos puntos anuales más una escalación para los años siguientes: entre puntos se interpola. Un escenario apunta a un deck y cambiarlo recalcula todo. Para NI 51-101, que pide precios de pronóstico Y constantes, se arman dos decks y se corre el mismo escenario contra cada uno (un deck constante es uno con escalación 0).',
+    fields: [
+      { name: 'nombre', label: 'Nombre (ej. "Pronóstico Sproule 2026")', type: 'text', required: true },
+      { name: 'tipo', label: 'Tipo', type: 'select', staticOptions: [
+        { value: 'pronostico', label: 'Pronóstico' }, { value: 'constante', label: 'Constante' },
+        { value: 'strip', label: 'Strip de mercado' }, { value: 'sensibilidad', label: 'Sensibilidad (Bull/Bear)' },
+      ] },
+      { name: 'escalacion_anual', label: 'Escalación anual después del último punto (0.02 = 2%)', type: 'number', step: '0.0001', defaultValue: 0 },
+      { name: 'descripcion', label: 'Descripción', type: 'text' },
+      { name: 'notas', label: 'Notas', type: 'text' },
+    ],
+    displayCols: r => [
+      { label: 'Nombre', value: String(r.nombre) }, { label: 'Tipo', value: String(r.tipo) },
+      { label: 'Escalación', value: `${(Number(r.escalacion_anual) * 100).toFixed(2)}%` },
+    ],
+  },
+  {
+    tabla: 'price_deck_puntos',
+    title: '11b. Punto del price deck',
+    helpText: 'Un punto por referencia y por año. Entre años cargados se interpola linealmente; después del último se aplica la escalación del deck. Con cargar 2027, 2030 y 2035 ya queda definida toda la curva. La referencia tiene que coincidir con la que usa la fórmula de precio (ej. "brent").',
+    fields: [
+      { name: 'price_deck_id', label: 'Price deck', type: 'select', optionsFrom: 'price_decks', required: true },
+      { name: 'referencia', label: 'Referencia (ej. brent)', type: 'text', required: true },
+      { name: 'anio', label: 'Año', type: 'number', required: true },
+      { name: 'precio_usd', label: 'Precio USD', type: 'number', step: '0.0001', required: true },
+    ],
+    displayCols: (r, d) => [
+      { label: 'Deck', value: nombreDe(d, 'price_decks', r.price_deck_id) },
+      { label: 'Ref.', value: String(r.referencia) },
+      { label: 'Año', value: String(r.anio) },
+      { label: 'USD', value: String(r.precio_usd) },
+    ],
+  },
+  {
     tabla: 'precios_referencia',
     title: '12. Precio de referencia (ej. Brent mensual)',
     fields: [
@@ -257,6 +293,7 @@ export const ENTITIES: EntityConfig[] = [
     fields: [
       { name: 'nombre', label: 'Nombre', type: 'text', required: true },
       { name: 'proyecto_id', label: 'Proyecto', type: 'select', optionsFrom: 'proyectos' },
+      { name: 'price_deck_id', label: 'Price deck (vacío = usa las cotizaciones cargadas mes a mes)', type: 'select', optionsFrom: 'price_decks' },
       { name: 'descripcion', label: 'Descripción', type: 'text' },
       { name: 'es_base', label: 'Es el escenario base', type: 'checkbox' },
     ],
