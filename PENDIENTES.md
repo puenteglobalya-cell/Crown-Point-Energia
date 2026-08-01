@@ -124,9 +124,18 @@ nada de esto está vivo.
 
 ## 🔴 Simulador de reservas — SQL a correr en Supabase
 
-En el **SQL Editor**, en este orden. Los tres son idempotentes.
+> **Estado: corrido en producción el 01-08-2026.** Queda pendiente sólo
+> `20260801_pozos_tipo_gsj.sql`, que busca los yacimientos por nombre y hay que
+> correr **después** de cargar El Tordillo, Puesto Quiroga y Bloque G desde el
+> simulador. La base quedó con la estructura completa (36 tablas) y sin datos.
+
+En el **SQL Editor**, en este orden. Todos son idempotentes.
 
 ```
+supabase/20260730_reservas_base.sql          ← PRIMERO, crea el schema base
+supabase/20260731_reservas_ganancias.sql
+supabase/20260801_reservas_certeza.sql
+supabase/20260802_reservas_gaps.sql
 supabase/20260801_reservas_abandono.sql
 supabase/20260801_reservas_certeza_incremental.sql
 supabase/20260801_pozos_tipo_gsj.sql
@@ -193,8 +202,19 @@ supabase/20260801_trazabilidad_corridas.sql
 El motor lee las columnas nuevas de forma defensiva, así que el simulador
 funciona con o sin estas migraciones aplicadas.
 
-**Confirmar aparte** si estas dos, que son anteriores a esta tanda, ya se
-corrieron: `20260801_reservas_certeza.sql` y `20260802_reservas_gaps.sql`.
+**`20260730_reservas_base.sql` va primero, siempre.** Las tablas base del
+simulador se habían creado a mano en Supabase y nunca se versionaron; recién se
+agregaron al repo el 01-08-2026, después de que un intento de provisionar una
+base limpia fallara en la primera migración con `relation "reservas_anuales"
+does not exist`. Todo lo demás son `alter table` o tablas satélite que asumen
+ese schema.
+
+Dos cosas del SQL Editor de Supabase que hacen perder tiempo si no se saben:
+corre cada bloque en **una transacción**, así que un error revierte el script
+entero y no queda nada a medias — hay que arreglar y volver a correrlo completo.
+Y `create policy` **no** acepta `if not exists`: si la política ya está, tira
+error y se lleva puesto el resto del bloque. Por eso las políticas nuevas van
+con guarda contra `pg_policies`.
 
 ---
 
