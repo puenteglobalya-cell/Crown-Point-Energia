@@ -281,9 +281,26 @@ Con formato: encabezados con color, panel congelado, autofiltro, anchos y
 formatos numéricos (miles, USD, porcentaje), y la fila de consolidado
 resaltada.
 
-**Falta el PDF.** La vía barata es una ruta `/portal/reservas/informe` con CSS
-`@media print` y "imprimir a PDF" del navegador, sin sumar dependencias. Para
-un PDF con paginación y numeración controladas haría falta Puppeteer o similar.
+### Informe final en PDF, con dashboard ✅
+
+`/portal/reservas/informe?escenario_id=N`, con botón en la pestaña
+"Resultados". Es una página pensada para imprimirse: fondo blanco, tinta
+oscura, saltos de página controlados y sin nada de la interfaz de edición.
+Se guarda como PDF con Imprimir → Guardar como PDF, sin sumar dependencias.
+
+Contenido: portada con escenario y proyecto, **dashboard** de ocho KPIs (VAN,
+TIR, payback, CAPEX, EUR, netback, cash flow, horizonte), perfil de producción
+apilado petróleo/gas en BOE, flujo anual con la curva de acumulado y el cruce
+de payback marcado, tabla de VAN a las cinco tasas de NI 51-101, resumen anual
+consolidado, detalle por yacimiento y depleción de reservas.
+
+Los gráficos son **SVG inline y no canvas**: el canvas se imprime mal y según
+el navegador sale en blanco.
+
+Verificado imprimiendo de verdad. Los gráficos y la hoja de estilos se
+extrajeron a `informe/piezas.tsx` para poder renderizarlos fuera de Next, y
+con eso se generó un PDF A4 con Chromium headless: salen 3 páginas, con los
+cortes donde corresponde y los gráficos vectoriales nítidos.
 
 ---
 

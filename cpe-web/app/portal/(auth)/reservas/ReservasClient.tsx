@@ -476,6 +476,10 @@ function ResultadosTab({ data }: { data: Data }) {
             style={{ padding: '7px 16px', fontSize: 12, textDecoration: 'none', display: 'inline-block' }}>
             ↓ Descargar Excel (con fórmulas)
           </a>
+          <a className="btn" href={`/portal/reservas/informe?escenario_id=${escenarioId}`} target="_blank" rel="noopener"
+            style={{ padding: '7px 16px', fontSize: 12, textDecoration: 'none', display: 'inline-block', marginLeft: 8 }}>
+            ↗ Informe para PDF (con dashboard)
+          </a>
           <span style={{ fontSize: 11, color: 'var(--fg-muted)', marginLeft: 10 }}>
             Las columnas derivadas van como fórmulas de Excel, no como valores — para poder auditar el cálculo
             y cruzarlo contra el Excel de referencia.
