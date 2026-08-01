@@ -45,6 +45,7 @@ export type DatosExport = {
   anual: Fila[]
   depletion: Fila[]
   npvPorTasa: { tasa: number; npv_antes_impuestos_usd: number; npv_despues_impuestos_usd: number }[]
+  cuadre?: { capex_amortizable_usd: number; amortizacion_total_usd: number; abandono_usd: number; diferencia_usd: number; cuadra: boolean } | null
   nombrePozo: (id: unknown) => string
   nombreYacimiento: (id: unknown) => string
 }
@@ -71,6 +72,25 @@ export async function construirExcel(d: DatosExport): Promise<ExcelJS.Buffer> {
     r.getCell(1).font = { bold: true, size: 10 }
     r.getCell(2).font = { size: 10 }
   }
+  // Cuadre de amortización: el chequeo que cierra el método de unidades de
+  // producción. Va en la portada porque es lo primero que se mira al validar.
+  if (d.cuadre) {
+    portada.addRow([])
+    const t = portada.addRow(['Cuadre de amortización', d.cuadre.cuadra ? 'CUADRA' : 'NO CUADRA — revisar'])
+    t.getCell(1).font = { bold: true, size: 11, color: { argb: AZUL } }
+    t.getCell(2).font = { bold: true, size: 11, color: { argb: d.cuadre.cuadra ? 'FF2D7A4A' : 'FFB33B2E' } }
+    for (const [k, v] of [
+      ['CAPEX amortizable', d.cuadre.capex_amortizable_usd],
+      ['Amortización total', d.cuadre.amortizacion_total_usd],
+      ['Diferencia', d.cuadre.diferencia_usd],
+      ['Costo de abandono (no amortizable)', d.cuadre.abandono_usd],
+    ] as [string, number][]) {
+      const r = portada.addRow([k, v])
+      r.getCell(1).font = { size: 10 }
+      r.getCell(2).numFmt = USD
+    }
+  }
+
   portada.addRow([])
   const nota = portada.addRow(['Cómo leer esta planilla', ''])
   nota.getCell(1).font = { bold: true, size: 11, color: { argb: AZUL } }
@@ -81,6 +101,8 @@ export async function construirExcel(d: DatosExport): Promise<ExcelJS.Buffer> {
     'El resumen anual y el VAN también son fórmulas contra el detalle mensual, no valores pegados.',
     'Cambiar un número del detalle recalcula el resto de la planilla.',
     'Reservas y depleción están en volumen físico al 100%: son barriles en el subsuelo, no participación.',
+    'La amortización es por unidades de producción: cuota = valor residual x (producción del mes / reservas remanentes).',
+    'La hoja de depleción es la reconciliación de NI 51-101: apertura + movimientos - producción = cierre.',
   ]) {
     const r = portada.addRow(['', linea])
     r.getCell(2).font = { size: 10, italic: true }
@@ -220,7 +242,13 @@ export async function construirExcel(d: DatosExport): Promise<ExcelJS.Buffer> {
       { header: 'Categoría', key: 'cat', width: 11 },
       { header: 'Año', key: 'anio', width: 8 },
       { header: 'Apertura (BOE)', key: 'ap', width: 16, fmt: NUM },
-      { header: 'Depleción (BOE)', key: 'dep', width: 16, fmt: NUM },
+      { header: 'Revisiones técnicas', key: 'rev', width: 14, fmt: NUM },
+      { header: 'Extensiones y rec. mejorada', key: 'ext', width: 15, fmt: NUM },
+      { header: 'Descubrimientos', key: 'desc', width: 14, fmt: NUM },
+      { header: 'Adquisiciones', key: 'adq', width: 13, fmt: NUM },
+      { header: 'Cesiones', key: 'ces', width: 13, fmt: NUM },
+      { header: 'Factores económicos', key: 'fec', width: 14, fmt: NUM },
+      { header: 'Producción', key: 'dep', width: 14, fmt: NUM },
       { header: 'Cierre (BOE)\n(fórmula)', key: 'cie', width: 16, fmt: NUM },
       { header: 'Factor certeza', key: 'fac', width: 13, fmt: PCT },
       { header: 'Cierre ponderado\n(fórmula)', key: 'cier', width: 17, fmt: NUM },
@@ -230,14 +258,21 @@ export async function construirExcel(d: DatosExport): Promise<ExcelJS.Buffer> {
       dep.addRow({
         yac: d.nombreYacimiento(r.yacimiento_id),
         cat: String(r.categoria), anio: Number(r.anio),
-        ap: Number(r.apertura_boe), dep: Number(r.depletion_boe),
-        cie: { formula: `D${f}-E${f}` },
+        ap: Number(r.apertura_boe),
+        rev: Number(r.revision_tecnica_boe ?? 0), ext: Number(r.extension_boe ?? 0),
+        desc: Number(r.descubrimiento_boe ?? 0), adq: Number(r.adquisicion_boe ?? 0),
+        ces: Number(r.cesion_boe ?? 0), fec: Number(r.factores_economicos_boe ?? 0),
+        dep: Number(r.depletion_boe),
+        // apertura + los seis movimientos − producción
+        cie: { formula: `D${f}+E${f}+F${f}+G${f}+H${f}+I${f}+J${f}-K${f}` },
         fac: r.factor_certeza != null ? Number(r.factor_certeza) : null,
-        cier: r.factor_certeza != null ? { formula: `F${f}*G${f}` } : null,
+        cier: r.factor_certeza != null ? { formula: `L${f}*M${f}` } : null,
       })
     })
     dep.addRow([])
     dep.addRow(['', '', '', 'P1/P2/P3 son Probadas / Probables / Posibles incrementales: la producción agota primero las probadas.'])
+      .getCell(4).font = { italic: true, size: 9 }
+    dep.addRow(['', '', '', 'Las seis columnas de movimiento son las categorías que exige NI 51-101 y salen del informe del evaluador.'])
       .getCell(4).font = { italic: true, size: 9 }
   }
 

@@ -183,18 +183,29 @@ export default function InformeClient() {
           <section>
             <h3>Depleción de reservas</h3>
             <p className="pie">
-              P1/P2/P3 son Probadas / Probables / Posibles incrementales: la producción agota primero las probadas
-              y sólo el excedente pasa a probables y después a posibles. Volumen físico al 100%.
+              Reconciliación de NI 51-101: <strong>apertura + movimientos − producción = cierre</strong>.
+              P1/P2/P3 son Probadas / Probables / Posibles incrementales, así que la producción agota primero las
+              probadas y sólo el excedente pasa a probables y después a posibles. Volumen físico al 100%.
+              Las seis columnas de movimiento salen del informe del evaluador.
             </p>
             <table>
               <thead>
-                <tr><th>Yacimiento</th><th>Cat.</th><th>Año</th><th className="der">Apertura (BOE)</th><th className="der">Depleción</th><th className="der">Cierre</th></tr>
+                <tr>
+                  <th>Yacimiento</th><th>Cat.</th><th>Año</th>
+                  <th className="der">Apertura</th>
+                  <th className="der">Revis.</th><th className="der">Extens.</th><th className="der">Descub.</th>
+                  <th className="der">Adquis.</th><th className="der">Cesion.</th><th className="der">Fact.ec.</th>
+                  <th className="der">Producción</th><th className="der">Cierre</th>
+                </tr>
               </thead>
               <tbody>
                 {d.depletion.map(r => (
                   <tr key={r.id}>
                     <td>{r.yacimiento}</td><td>{r.categoria}</td><td className="mono">{r.anio}</td>
                     <td className="der mono">{n0(Number(r.apertura_boe))}</td>
+                    {(['revision_tecnica_boe', 'extension_boe', 'descubrimiento_boe', 'adquisicion_boe', 'cesion_boe', 'factores_economicos_boe'] as const).map(k => (
+                      <td key={k} className="der mono">{r[k] == null || Number(r[k]) === 0 ? '—' : n0(Number(r[k]))}</td>
+                    ))}
                     <td className="der mono">{n0(Number(r.depletion_boe))}</td>
                     <td className="der mono fuerte">{n0(Number(r.cierre_boe))}</td>
                   </tr>

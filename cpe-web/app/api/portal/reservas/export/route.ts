@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireReservasAccess } from '@/lib/reservas/access'
-import { traerTodo, calcularNpvPorTasa } from '@/lib/reservas/engine'
+import { traerTodo, calcularNpvPorTasa, calcularEscenario } from '@/lib/reservas/engine'
 import { construirExcel } from '@/lib/reservas/exportExcel'
 
 // Descarga del escenario completo en Excel, con fórmulas vivas para poder
@@ -35,6 +35,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'El escenario no tiene resultados. Corré el cálculo antes de exportar.' }, { status: 400 })
     }
 
+    // Corrida en seco sólo para obtener el cuadre de amortización; no escribe.
+    const seco = await calcularEscenario(escenarioId, 240, { persistir: false }).catch(() => null)
+
     const nombrePozo = new Map<number, string>(pozos.map(p => [p.id, p.nombre]))
     const nombreYac = new Map<number, string>(yacimientos.map(y => [y.id, y.nombre]))
     const nombreEscenario = escenario.data?.nombre ?? `Escenario ${escenarioId}`
@@ -44,6 +47,7 @@ export async function GET(req: NextRequest) {
       generado: new Date().toISOString().slice(0, 16).replace('T', ' '),
       tasaDescuento: tasa,
       cashflow, anual, depletion, npvPorTasa,
+      cuadre: seco?.cuadre_amortizacion ?? null,
       nombrePozo: id => nombrePozo.get(Number(id)) ?? `Pozo #${id}`,
       nombreYacimiento: id => nombreYac.get(Number(id)) ?? `Yacimiento #${id}`,
     })

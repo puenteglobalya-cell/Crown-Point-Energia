@@ -67,6 +67,16 @@ Entrar a `/admin/cms` y tocar **"Guardar"** una vez. Dispara
 
 ---
 
+## 🔴 Simulador de reservas — mergear a `main`
+
+**La rama `claude/github-data-lec4yg` tiene 18 commits sin mergear.** `CLAUDE.md`
+pide mergear cada 2-3 commits justamente para no repetir el incidente de
+hero-video/EBITDA, donde 11 commits terminados nunca llegaron a producción.
+Todo el trabajo del simulador está ahí: hasta que no se mergee y se redeploye,
+nada de esto está vivo.
+
+---
+
 ## 🔴 Simulador de reservas — SQL a correr en Supabase
 
 En el **SQL Editor**, en este orden. Los tres son idempotentes.
@@ -129,6 +139,28 @@ supabase/20260801_metodo_amortizacion.sql
 
 El motor lee las columnas nuevas de forma defensiva, así que el simulador
 funciona con o sin estas migraciones aplicadas.
+
+**Confirmar aparte** si estas dos, que son anteriores a esta tanda, ya se
+corrieron: `20260801_reservas_certeza.sql` y `20260802_reservas_gaps.sql`.
+
+---
+
+## 🟠 Simulador — datos que se cargan pero el motor no usa
+
+Riesgo real de error silencioso: alguien carga un dato esperando que cambie el
+resultado y no cambia nada. Ya quedaron marcados con ⚠ en la pantalla, pero hay
+que decidir qué hacer con ellos.
+
+| Campo / tabla | Situación |
+|---|---|
+| `supuestos_generales.working_interest_pct` | **El más peligroso.** Parece la participación pero el motor usa `concesion_participacion`, que además admite tramos con fechas. |
+| `supuestos_generales` (toda la tabla) | Ningún campo entra en el cálculo. |
+| `comparables_mercado` | Se guarda, no se usa. |
+| `reservas_anuales.reservas_bbl` | El motor usa sólo `reservas_boe`. |
+| `intervenciones.subtipo` | Informativo (PERF_INY / WO_PROD, etc.), no afecta el cálculo. |
+
+Lo más limpio sería eliminar `supuestos_generales` y `comparables_mercado` del
+simulador, pero conviene confirmar antes que no haya nada cargado que importe.
 
 ---
 

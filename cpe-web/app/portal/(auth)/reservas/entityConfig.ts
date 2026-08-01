@@ -332,7 +332,7 @@ export const ENTITIES: EntityConfig[] = [
         { value: 'perforacion', label: 'Perforación' }, { value: 'workover', label: 'Workover' },
         { value: 'pulling', label: 'Pulling' }, { value: 'facilities', label: 'Facilities' },
       ] },
-      { name: 'subtipo', label: 'Subtipo (opcional)', type: 'select', staticOptions: [
+      { name: 'subtipo', label: 'Subtipo (opcional) — informativo, no afecta el cálculo', type: 'select', staticOptions: [
         { value: 'inyeccion', label: 'Inyección' }, { value: 'produccion', label: 'Producción' }, { value: 'conversion', label: 'Conversión' },
       ] },
       { name: 'campana_id', label: 'Campaña (opcional — si la elegís, la fecha la calcula el cronograma)', type: 'select', optionsFrom: 'campanas' },
@@ -356,7 +356,7 @@ export const ENTITIES: EntityConfig[] = [
       { name: 'escenario_id', label: 'Escenario (vacío = reporte base/auditado)', type: 'select', optionsFrom: 'escenarios' },
       { name: 'anio', label: 'Año', type: 'number', required: true },
       { name: 'categoria', label: 'Categoría', type: 'select', staticOptions: [{ value: 'P1', label: 'P1 — Probadas' }, { value: 'P2', label: 'P2 — Probables' }, { value: 'P3', label: 'P3 — Posibles' }] },
-      { name: 'reservas_bbl', label: 'Reservas (bbl)', type: 'number', step: '0.01' },
+      { name: 'reservas_bbl', label: 'Reservas (bbl) — informativo, el motor usa la columna BOE', type: 'number', step: '0.01' },
       { name: 'reservas_boe', label: 'Reservas (BOE)', type: 'number', step: '0.01' },
       { name: 'fecha_corte', label: 'Fecha de corte del reserve report', type: 'date', required: true },
       { name: 'factor_certeza_override', label: 'Factor de certeza puntual (vacío = usa el default de la categoría)', type: 'number', step: '0.0001', min: 0, max: 1 },
@@ -411,7 +411,8 @@ export const ENTITIES: EntityConfig[] = [
   },
   {
     tabla: 'supuestos_generales',
-    title: '16. Supuestos generales (precio, WI, premium/descuento)',
+    title: '16. Supuestos generales — ⚠ el motor NO usa esta tabla',
+    helpText: '⚠ ATENCIÓN: ninguno de estos campos entra hoy en el cálculo. En particular, el "working interest" de acá NO afecta nada: la participación que usa el motor es la de la sección "Participación en la concesión", que además admite tramos con fechas. Se deja la tabla para no perder lo que ya esté cargado, pero cargarla acá no cambia ningún número.',
     fields: [
       { name: 'escenario_id', label: 'Escenario', type: 'select', optionsFrom: 'escenarios', required: true },
       { name: 'yacimiento_id', label: 'Yacimiento', type: 'select', optionsFrom: 'yacimientos', required: true },
@@ -461,6 +462,7 @@ export const ENTITIES: EntityConfig[] = [
   },
   {
     tabla: 'comparables_mercado',
+    helpText: '⚠ Tabla de referencia: se guarda pero el motor no la usa en ningún cálculo.',
     title: '18. Comparables de mercado',
     fields: [
       { name: 'empresa', label: 'Empresa', type: 'text', required: true },
