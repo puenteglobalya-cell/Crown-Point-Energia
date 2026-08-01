@@ -61,11 +61,47 @@ Al aplicar un cronograma, para las intervenciones de tipo perforación también
 se mueve `pozos.fecha_alta`: el pozo nuevo nace con la campaña. Un workover no
 la toca, porque ese pozo ya venía produciendo.
 
-**Resultado no obvio que conviene tener presente.** En una prueba con
-participación que sube de 20% a 80%, el óptimo **no** cae en el mes del cambio
-sino uno o dos meses antes: el CAPEX también se reparte según la participación
-vigente, así que conviene perforar mientras se paga el 20% de la inversión y
-producir después cobrando el 80%. Nadie lo pone a mano; sale del barrido.
+### El caso real de CPE: la participación CAE (95% → ~80%)
+
+Confirmado por el cliente: hoy la participación es del 95% y más adelante baja
+a ~80%. Eso invierte la economía respecto del caso contrario, y cambia cuál es
+la pregunta importante.
+
+Verificado numéricamente (6 pozos, 1 equipo, caída en 2028-01):
+
+| Arranque | VAN | Pozos produciendo antes de la caída |
+|---|---|---|
+| 2026-09 (ya) | **18,78 MM** | 6/6 |
+| 2027-03 | 17,16 MM | 6/6 |
+| 2027-09 | 15,51 MM | 6/6 |
+| 2028-01 | 16,25 MM | 0/6 |
+| 2028-09 | 15,24 MM | 0/6 |
+
+Tres conclusiones:
+
+1. **El óptimo es arrancar cuanto antes.** Con la participación cayendo, cada
+   mes de demora saca producción de la ventana del 95%.
+
+2. **La curva no es monótona.** Hay un repunte local justo después de la caída
+   (15,51 → 16,25 MM): una vez adentro del 80% se paga el 80% del CAPEX en vez
+   del 95%. No cambia la decisión, pero es la clase de forma que un tanteo a
+   ojo se pierde.
+
+3. **La pregunta relevante deja de ser "cuándo" y pasa a ser "con cuántos
+   equipos".** Si la respuesta es "arrancar ya", lo único que queda por decidir
+   es cuántos pozos entran en la ventana de participación alta, y eso lo decide
+   la cantidad de equipos.
+
+Por eso el barrido compara también cantidades de equipo. Con 20 pozos y la
+caída de participación, el segundo equipo agrega **3,05 MM** de VAN; sin cambio
+de participación agregaría sólo 1,88 MM. Es decir: **más de un millón de la
+value del segundo equipo viene de la caída de participación**, no del descuento.
+Esa diferencia es exactamente el argumento para contratarlo, y hay que
+compararla contra la tarifa del equipo — que el simulador no conoce.
+
+**Caso inverso, por si aparece en otra concesión.** Con participación que
+*sube* (20% → 80%), el óptimo no cae en el mes del cambio sino uno o dos meses
+antes: conviene perforar pagando el 20% del CAPEX y producir cobrando el 80%.
 
 **Simplificación a revisar**: el motor multiplica el flujo neto de cada mes por
 la participación **de ese mes**, incluida la amortización de un CAPEX que quizá

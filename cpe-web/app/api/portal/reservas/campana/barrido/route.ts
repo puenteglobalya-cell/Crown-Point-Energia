@@ -21,7 +21,7 @@ import { programarCampana, type PozoAProgramar } from '@/lib/reservas/cronograma
 
 export const maxDuration = 300
 
-const MAX_CANDIDATOS = 72
+const MAX_CORRIDAS = 120
 
 function mesMas(iso: string, n: number): string {
   const d = new Date(iso.slice(0, 7) + '-01T00:00:00Z')
@@ -48,10 +48,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'tasa_anual inválida' }, { status: 400 })
   }
 
+  // Comparar cantidades de equipo: con la participación cayendo, la pregunta
+  // deja de ser "cuándo arranco" (la respuesta es: ya) y pasa a ser "cuántos
+  // pozos entran en la ventana de participación alta", que la decide el equipo.
+  const equiposAComparar: number[] = Array.isArray(body.equipos_a_comparar)
+    ? [...new Set((body.equipos_a_comparar as unknown[]).map(n => Math.round(Number(n))))]
+        .filter(n => Number.isFinite(n) && n >= 1 && n <= 20)
+        .sort((a, b) => a - b)
+    : []
+
   const candidatosPedidos = Math.floor(meses / paso) + 1
-  if (candidatosPedidos > MAX_CANDIDATOS) {
+  const corridas = candidatosPedidos * Math.max(1, equiposAComparar.length || 1)
+  if (corridas > MAX_CORRIDAS) {
     return NextResponse.json({
-      error: `El barrido pediría ${candidatosPedidos} corridas y el tope es ${MAX_CANDIDATOS}. Achicá el rango de meses o agrandá el paso.`,
+      error: `El barrido pediría ${corridas} corridas y el tope es ${MAX_CORRIDAS}. Achicá el rango de meses, agrandá el paso, o compará menos cantidades de equipo.`,
     }, { status: 400 })
   }
 
@@ -89,18 +99,33 @@ export async function POST(req: NextRequest) {
     // Fecha base común de descuento: el arranque más temprano del barrido.
     const fechaBase = mesMas(String(campana.fecha_inicio), desdeOffset)
 
-    const puntos: {
+    type Punto = {
       offset_meses: number; fecha_inicio: string; primera_produccion: string
       ultima_produccion: string; npv_usd: number; capex_total_usd: number
       participacion_primera_produccion: number | null
-    }[] = []
+      pozos_antes_del_cambio: number | null
+    }
 
-    for (let k = desdeOffset; k <= desdeOffset + meses; k += paso) {
+    const concesionId = intervCampana[0]?.concesion_id
+    const partEn = (fecha: string) => contexto.participaciones
+      .filter(p => p.concesion_id === concesionId && p.fecha_desde <= fecha && (p.fecha_hasta === null || fecha < p.fecha_hasta))
+      .sort((a, b) => String(b.fecha_desde).localeCompare(String(a.fecha_desde)))[0]?.porcentaje ?? null
+
+    // Próximo cambio de participación después del arranque original: sirve para
+    // contar cuántos pozos alcanzan a entrar en producción antes de ese quiebre.
+    const cambiosParticipacion = contexto.participaciones
+      .filter(p => p.concesion_id === concesionId)
+      .map(p => ({ fecha: String(p.fecha_desde), porcentaje: p.porcentaje }))
+      .sort((a, b) => a.fecha.localeCompare(b.fecha))
+    const partInicial = partEn(String(campana.fecha_inicio))
+    const quiebre = cambiosParticipacion.find(c => c.fecha > String(campana.fecha_inicio) && c.porcentaje !== partInicial)?.fecha ?? null
+
+    async function evaluar(equipos: number, k: number): Promise<Punto> {
       const fechaInicio = mesMas(String(campana.fecha_inicio), k)
 
       const cronograma = programarCampana({
         fechaInicio,
-        equiposPerforacion: campana.equipos_perforacion,
+        equiposPerforacion: equipos,
         equiposTerminacion: campana.equipos_terminacion,
         diasPerforacion: campana.dias_perforacion,
         diasTerminacion: campana.dias_terminacion,
@@ -135,44 +160,52 @@ export async function POST(req: NextRequest) {
       )
 
       const flujos = cashflow as unknown as { fecha: string; cash_flow_neto_usd: number; capex_usd: number }[]
-      const npv = calcularNPV(flujos, tasaAnual, fechaBase)
-      const capexTotal = flujos.reduce((s, f) => s + f.capex_usd, 0)
       const primeraProd = cronograma.reduce((a, p) => (p.primeraProduccion < a ? p.primeraProduccion : a), cronograma[0].primeraProduccion)
       const ultimaProd = cronograma.reduce((a, p) => (p.primeraProduccion > a ? p.primeraProduccion : a), cronograma[0].primeraProduccion)
 
-      // Participación vigente en la concesión de la campaña al momento de la
-      // primera producción — es la variable que hace que la fecha importe.
-      const concesionId = intervCampana[0]?.concesion_id
-      const part = contexto.participaciones
-        .filter(p => p.concesion_id === concesionId && p.fecha_desde <= primeraProd && (p.fecha_hasta === null || primeraProd < p.fecha_hasta))
-        .sort((a, b) => String(b.fecha_desde).localeCompare(String(a.fecha_desde)))[0]
-
-      puntos.push({
+      return {
         offset_meses: k,
         fecha_inicio: fechaInicio,
         primera_produccion: primeraProd,
         ultima_produccion: ultimaProd,
-        npv_usd: npv,
-        capex_total_usd: capexTotal,
-        participacion_primera_produccion: part?.porcentaje ?? null,
-      })
+        npv_usd: calcularNPV(flujos, tasaAnual, fechaBase),
+        capex_total_usd: flujos.reduce((s, f) => s + f.capex_usd, 0),
+        participacion_primera_produccion: partEn(primeraProd),
+        pozos_antes_del_cambio: quiebre ? cronograma.filter(c => c.primeraProduccion < quiebre).length : null,
+      }
+    }
+
+    const puntos: Punto[] = []
+    for (let k = desdeOffset; k <= desdeOffset + meses; k += paso) {
+      puntos.push(await evaluar(campana.equipos_perforacion, k))
+    }
+
+    // Para cada cantidad de equipos, la mejor fecha de arranque.
+    const porEquipos: { equipos: number; mejor: Punto }[] = []
+    for (const eq of equiposAComparar) {
+      let mejorEq: Punto | null = null
+      for (let k = desdeOffset; k <= desdeOffset + meses; k += paso) {
+        const p = eq === campana.equipos_perforacion
+          ? puntos.find(x => x.offset_meses === k)!
+          : await evaluar(eq, k)
+        if (!mejorEq || p.npv_usd > mejorEq.npv_usd) mejorEq = p
+      }
+      if (mejorEq) porEquipos.push({ equipos: eq, mejor: mejorEq })
     }
 
     const mejor = puntos.reduce((a, p) => (p.npv_usd > a.npv_usd ? p : a), puntos[0])
 
-    // Fechas en las que cambia la participación, para marcarlas en el gráfico.
-    const concesionId = intervCampana[0]?.concesion_id
-    const cambiosParticipacion = contexto.participaciones
-      .filter(p => p.concesion_id === concesionId)
-      .map(p => ({ fecha: String(p.fecha_desde), porcentaje: p.porcentaje }))
-      .sort((a, b) => a.fecha.localeCompare(b.fecha))
-
     return NextResponse.json({
-      campana: { id: campana.id, nombre: campana.nombre, fecha_inicio: campana.fecha_inicio },
+      campana: {
+        id: campana.id, nombre: campana.nombre, fecha_inicio: campana.fecha_inicio,
+        equipos_perforacion: campana.equipos_perforacion,
+      },
       fecha_base_descuento: fechaBase,
       tasa_descuento: tasaAnual,
+      quiebre_participacion: quiebre,
       puntos,
       mejor,
+      por_equipos: porEquipos,
       cambios_participacion: cambiosParticipacion,
     })
   } catch (e) {

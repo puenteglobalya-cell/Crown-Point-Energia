@@ -1141,13 +1141,16 @@ type PuntoBarrido = {
   offset_meses: number; fecha_inicio: string; primera_produccion: string
   ultima_produccion: string; npv_usd: number; capex_total_usd: number
   participacion_primera_produccion: number | null
+  pozos_antes_del_cambio: number | null
 }
 type RespuestaBarrido = {
-  campana: { id: number; nombre: string; fecha_inicio: string }
+  campana: { id: number; nombre: string; fecha_inicio: string; equipos_perforacion: number }
   fecha_base_descuento: string
   tasa_descuento: number
+  quiebre_participacion: string | null
   puntos: PuntoBarrido[]
   mejor: PuntoBarrido
+  por_equipos: { equipos: number; mejor: PuntoBarrido }[]
   cambios_participacion: { fecha: string; porcentaje: number }[]
 }
 
@@ -1155,6 +1158,7 @@ function BarridoCampana({ campanaId }: { campanaId: string }) {
   const [meses, setMeses] = useState('36')
   const [paso, setPaso] = useState('1')
   const [tasa, setTasa] = useState('0.10')
+  const [equipos, setEquipos] = useState('1,2,3')
   const [res, setRes] = useState<RespuestaBarrido | null>(null)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
@@ -1168,6 +1172,7 @@ function BarridoCampana({ campanaId }: { campanaId: string }) {
         body: JSON.stringify({
           campana_id: Number(campanaId), meses: Number(meses),
           paso: Number(paso), tasa_anual: Number(tasa),
+          equipos_a_comparar: equipos.split(',').map(x => Number(x.trim())).filter(n => n >= 1),
         }),
       })
       const json = await r.json()
@@ -1208,6 +1213,10 @@ function BarridoCampana({ campanaId }: { campanaId: string }) {
           <label style={label}>Tasa de descuento</label>
           <input value={tasa} onChange={e => setTasa(e.target.value)} type="number" step="0.01" style={input} />
         </div>
+        <div style={{ minWidth: 140 }}>
+          <label style={label}>Equipos a comparar</label>
+          <input value={equipos} onChange={e => setEquipos(e.target.value)} type="text" placeholder="1,2,3" style={input} />
+        </div>
         <button className="btn btn-primary" disabled={loading} onClick={correr} style={{ padding: '9px 20px', fontSize: 12 }}>
           {loading ? 'Barriendo…' : 'Correr barrido'}
         </button>
@@ -1226,6 +1235,55 @@ function BarridoCampana({ campanaId }: { campanaId: string }) {
             <Kv label="Participación en la 1ra producción" val={res.mejor.participacion_primera_produccion != null ? `${(res.mejor.participacion_primera_produccion * 100).toFixed(2)}%` : '—'} />
             <Kv label="Descontado a" val={`${res.fecha_base_descuento} @ ${(res.tasa_descuento * 100).toFixed(1)}%`} />
           </div>
+
+          {res.por_equipos.length > 0 && (
+            <div style={{ marginBottom: 18 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, margin: '0 0 4px', color: 'var(--fg)' }}>
+                ¿Cuánto vale sumar equipos?
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 8px' }}>
+                Cada fila es la mejor fecha de arranque para esa cantidad de equipos.
+                {res.quiebre_participacion && ` La participación cambia el ${res.quiebre_participacion} — la columna de la derecha cuenta cuántos pozos alcanzan a entrar en producción antes de esa fecha.`}
+              </p>
+              <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                    <th style={{ padding: '6px 8px' }}>Equipos</th>
+                    <th style={{ padding: '6px 8px' }}>Mejor arranque</th>
+                    <th style={{ padding: '6px 8px' }}>Última 1ra producción</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right' }}>VAN</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right' }}>Gana vs. equipo anterior</th>
+                    <th style={{ padding: '6px 8px', textAlign: 'right' }}>Pozos antes del cambio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {res.por_equipos.map((e, i) => (
+                    <tr key={e.equipos} style={{
+                      borderBottom: '1px solid var(--rule)',
+                      fontWeight: e.equipos === res.campana.equipos_perforacion ? 700 : 400,
+                    }}>
+                      <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>
+                        {e.equipos}{e.equipos === res.campana.equipos_perforacion ? ' (cargado)' : ''}
+                      </td>
+                      <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{e.mejor.fecha_inicio}</td>
+                      <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{e.mejor.ultima_produccion}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(e.mejor.npv_usd)}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: '#2d7a4a' }}>
+                        {i === 0 ? '—' : mm(e.mejor.npv_usd - res.por_equipos[i - 1].mejor.npv_usd)}
+                      </td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                        {e.mejor.pozos_antes_del_cambio ?? '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6 }}>
+                La ganancia del equipo extra hay que compararla contra lo que cuesta contratarlo — el simulador no
+                conoce esa tarifa.
+              </p>
+            </div>
+          )}
 
           <BarridoChart res={res} />
 
