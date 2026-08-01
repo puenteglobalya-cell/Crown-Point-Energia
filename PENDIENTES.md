@@ -80,6 +80,7 @@ supabase/20260801_proyectos_consolidado.sql
 supabase/20260801_reservas_reconciliacion.sql
 supabase/20260801_costos_corporativos.sql
 supabase/20260801_price_decks.sql
+supabase/20260801_metodo_amortizacion.sql
 ```
 
 - **`reservas_abandono`** agrega `pozos.costo_abandono_usd`. NI 51-101 pide
@@ -119,6 +120,12 @@ supabase/20260801_price_decks.sql
   escenario contra un deck de **pronóstico** y otro **constante**, que es lo que
   pide NI 51-101. Sin la migración, los precios se siguen resolviendo contra
   `precios_referencia` igual que antes.
+
+- **`metodo_amortizacion`** deja elegir entre unidades de producción (default)
+  y lineal. El motor ya amortiza por unidades de producción aunque la migración
+  no haya corrido; la columna sirve para poder forzar lineal en un escenario.
+  **Para que funcione hace falta tener cargadas las reservas del yacimiento**:
+  sin ellas cae a la vida útil lineal e informa un aviso.
 
 El motor lee las columnas nuevas de forma defensiva, así que el simulador
 funciona con o sin estas migraciones aplicadas.

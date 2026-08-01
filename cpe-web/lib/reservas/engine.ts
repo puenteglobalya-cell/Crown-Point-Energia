@@ -127,6 +127,10 @@ export async function cargarContexto(escenarioId: number) {
     traerTodo<any>(() => db.from('parametros_debitos_creditos').select('*').order('id')),
   ])
 
+  // Base de reservas para la amortización por unidades de producción.
+  const reservasAnuales = await traerTodo<any>(() => db.from('reservas_anuales').select('*')
+    .or(`escenario_id.eq.${escenarioId},escenario_id.is.null`).order('id')).catch(() => [] as any[])
+
   // Price deck del escenario. Tablas opcionales: sin la migración
   // 20260801_price_decks.sql el motor sigue resolviendo contra
   // precios_referencia como hasta ahora.
@@ -141,8 +145,45 @@ export async function cargarContexto(escenarioId: number) {
     pozos, curvas, intervencionesRaw, participaciones, regalias,
     opexFijo, opexVar, opexFijoPozo, formulas, preciosRef, preciosMens,
     provincias, yacimientos, concesiones, ganancias, debitosCreditos,
-    deck: (deckRows[0] ?? null) as any, deckPuntos,
+    deck: (deckRows[0] ?? null) as any, deckPuntos, reservasAnuales,
+    metodoAmortizacion: String((escenarioRow as any)?.metodo_amortizacion ?? 'unidades_produccion'),
   }
+}
+
+// ─── Amortización por unidades de producción ─────────────────────────────
+// Método estándar del sector para petróleo y gas: la inversión se consume al
+// ritmo al que se produce, no por el paso del tiempo.
+//
+//   tasa      = producción del mes / reservas remanentes al inicio del mes
+//   cuota     = valor residual x tasa
+//   residual -= cuota   ·   reservas -= producción
+//
+// Se expone aparte para poder verificarla: es la pieza que decide cuánto
+// impuesto a las ganancias paga el proyecto en cada mes.
+export type MesUoP = { fecha: string; capex: number; produccionBoe: number }
+export type CuotaUoP = { fecha: string; capexDelMes: number; residualInicial: number; produccionBoe: number; reservasInicio: number; tasa: number; cuota: number; residualFinal: number; reservasFinal: number }
+
+export function amortizacionUnidadesProduccion(reservasIniciales: number, meses: MesUoP[]): CuotaUoP[] {
+  let residual = 0
+  let reservas = Math.max(reservasIniciales, 0)
+  const out: CuotaUoP[] = []
+
+  for (const m of [...meses].sort((a, b) => a.fecha.localeCompare(b.fecha))) {
+    const residualInicial = residual + m.capex
+    const reservasInicio = reservas
+    const prod = Math.max(m.produccionBoe, 0)
+    // La tasa se topea en 1: producir más que las reservas remanentes amortiza
+    // todo lo que queda, no más que eso.
+    const tasa = reservasInicio > 0 ? Math.min(prod / reservasInicio, 1) : 0
+    const cuota = residualInicial * tasa
+    residual = residualInicial - cuota
+    reservas = Math.max(reservasInicio - prod, 0)
+    out.push({
+      fecha: m.fecha, capexDelMes: m.capex, residualInicial, produccionBoe: prod,
+      reservasInicio, tasa, cuota, residualFinal: residual, reservasFinal: reservas,
+    })
+  }
+  return out
 }
 
 // Multiplicadores para análisis de sensibilidad. 1 = sin cambio. Se aplican
@@ -170,7 +211,7 @@ export async function calcularEscenario(
     pozos, curvas, intervencionesRaw, participaciones, regalias,
     opexFijo, opexVar, opexFijoPozo, formulas, preciosRef, preciosMens,
     provincias, yacimientos, concesiones, ganancias, debitosCreditos,
-    deck, deckPuntos,
+    deck, deckPuntos, reservasAnuales, metodoAmortizacion,
   } = opciones.contexto ?? await cargarContexto(escenarioId)
 
   const intervenciones = [...intervencionesRaw].sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))
@@ -301,7 +342,8 @@ export async function calcularEscenario(
   // ─── Pasada 1: producción, CAPEX y amortización por pozo-mes ───────────
   type Registro = {
     pozo: any; concesion: any; yacimiento: any; provincia: any
-    fecha: string; bbl: number; mcf: number; capexUsd: number; depreciacionUsd: number
+    fecha: string; bbl: number; mcf: number; capexUsd: number
+    depreciacionLineal: number; depreciacionUsd: number
   }
   const registrosPorPozo = new Map<number, Registro[]>()
 
@@ -350,8 +392,10 @@ export async function calcularEscenario(
         diag.add('pozo_sin_curva', `Pozo "${pozo.nombre}": no hay curva de producción cargada para su primer mes`)
       }
 
-      // CAPEX del mes y amortización de intervenciones con vida útil vigente
-      let capexUsd = 0, depreciacionUsd = 0
+      // CAPEX del mes. La amortización ya no se calcula acá: con unidades de
+      // producción depende de la producción y de las reservas remanentes del
+      // yacimiento, que recién se conocen cuando terminó toda la pasada 1.
+      let capexUsd = 0, depreciacionLineal = 0
       for (const i of intervDelPozo) {
         // El CAPEX se imputa en el mes en que arranca la perforación, no en el
         // de la primera producción: en una campaña con equipos hay semanas o
@@ -366,7 +410,7 @@ export async function calcularEscenario(
         if (i.vida_util_meses && i.vida_util_meses > 0) {
           const mesesDesde = monthsBetween(fechaCapex, fecha)
           if (mesesDesde >= 0 && mesesDesde < i.vida_util_meses) {
-            depreciacionUsd += capexAjustado / i.vida_util_meses
+            depreciacionLineal += capexAjustado / i.vida_util_meses
           }
         }
       }
@@ -374,11 +418,105 @@ export async function calcularEscenario(
       // Un mes sin producción ni movimiento de CAPEX no genera fila. Antes se
       // salteaba con solo mirar la producción, y eso hacía desaparecer del
       // cashflow el CAPEX de una intervención hecha sobre un pozo parado.
-      if (m > 0 && bbl === 0 && mcf === 0 && capexUsd === 0 && depreciacionUsd === 0) continue
+      if (m > 0 && bbl === 0 && mcf === 0 && capexUsd === 0 && depreciacionLineal === 0) continue
 
-      registros.push({ pozo, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionUsd })
+      registros.push({ pozo, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionLineal, depreciacionUsd: 0 })
     }
     if (registros.length > 0) registrosPorPozo.set(pozo.id, registros)
+  }
+
+  // ─── Amortización por unidades de producción (UoP) ────────────────────
+  // Método estándar del sector, y el que definió el cliente: la cuota del mes
+  // es el valor residual del CAPEX por la proporción de reservas que se produjo
+  // ese mes.
+  //
+  //   tasa       = producción del mes / reservas remanentes al inicio del mes
+  //   cuota      = valor residual x tasa
+  //   residual  -= cuota
+  //   reservas  -= producción
+  //
+  // Antes se amortizaba en línea recta sobre `vida_util_meses`, que ignora que
+  // un pozo consume su inversión al ritmo al que produce: con una curva de
+  // declinación, la línea recta subamortiza los primeros años y sobreamortiza
+  // la cola.
+  //
+  // El centro de costo es el YACIMIENTO: se juntan el CAPEX y la producción de
+  // todos sus pozos contra su base de reservas P1+P2+P3, y después la cuota del
+  // mes se reparte entre los pozos en proporción a lo que produjo cada uno.
+  const usarUoP = metodoAmortizacion !== 'lineal'
+
+  // Base de reservas por yacimiento: P1+P2+P3 del reporte más reciente.
+  const reservasBase = new Map<number, number>()
+  for (const r of (reservasAnuales ?? [])) {
+    const previo = reservasBase.get(r.yacimiento_id)
+    const masReciente = (reservasAnuales ?? [])
+      .filter((x: any) => x.yacimiento_id === r.yacimiento_id && x.categoria === r.categoria)
+      .sort((a: any, b: any) => String(b.fecha_corte).localeCompare(String(a.fecha_corte)))[0]
+    if (masReciente?.id !== r.id) continue // sólo el reporte más reciente de cada categoría
+    reservasBase.set(r.yacimiento_id, (previo ?? 0) + Number(r.reservas_boe ?? 0))
+  }
+
+  const depreciacionPorPozoMes = new Map<string, number>()
+
+  if (usarUoP) {
+    // Producción y CAPEX por yacimiento y mes
+    const prodYacMes = new Map<string, number>()
+    const capexYacMes = new Map<string, number>()
+    const mesesPorYac = new Map<number, Set<string>>()
+    for (const registros of registrosPorPozo.values()) {
+      for (const r of registros) {
+        const key = `${r.yacimiento.id}|${r.fecha}`
+        prodYacMes.set(key, (prodYacMes.get(key) ?? 0) + r.bbl + r.mcf / MCF_POR_BOE)
+        capexYacMes.set(key, (capexYacMes.get(key) ?? 0) + r.capexUsd)
+        const set = mesesPorYac.get(r.yacimiento.id) ?? new Set<string>()
+        set.add(r.fecha)
+        mesesPorYac.set(r.yacimiento.id, set)
+      }
+    }
+
+    const deplYacMes = new Map<string, number>()
+    for (const [yacId, meses] of mesesPorYac) {
+      const base = reservasBase.get(yacId) ?? 0
+      const nombreYac = yacimientoPorId.get(yacId)?.nombre ?? `#${yacId}`
+      if (!(base > 0)) {
+        diag.add('amortizacion_sin_reservas', `${nombreYac}: sin reservas cargadas no se puede amortizar por unidades de producción — se usa la vida útil lineal de cada intervención`)
+        continue
+      }
+      const cuotas = amortizacionUnidadesProduccion(base, [...meses].sort().map(fecha => ({
+        fecha,
+        capex: capexYacMes.get(`${yacId}|${fecha}`) ?? 0,
+        produccionBoe: prodYacMes.get(`${yacId}|${fecha}`) ?? 0,
+      })))
+      for (const c of cuotas) deplYacMes.set(`${yacId}|${c.fecha}`, c.cuota)
+      const residual = cuotas[cuotas.length - 1]?.residualFinal ?? 0
+      if (residual > 1) {
+        diag.add('capex_sin_amortizar', `${nombreYac}: quedan US$ ${Math.round(residual).toLocaleString('es-AR')} de CAPEX sin amortizar al final del horizonte (las reservas duran más que la corrida)`)
+      }
+    }
+
+    // Reparto de la cuota del yacimiento entre sus pozos, en proporción a lo
+    // que produjo cada uno ese mes.
+    for (const registros of registrosPorPozo.values()) {
+      for (const r of registros) {
+        const key = `${r.yacimiento.id}|${r.fecha}`
+        const cuota = deplYacMes.get(key)
+        if (cuota == null || cuota === 0) continue
+        const prodYac = prodYacMes.get(key) ?? 0
+        if (prodYac <= 0) continue
+        const prodPozo = r.bbl + r.mcf / MCF_POR_BOE
+        depreciacionPorPozoMes.set(`${r.pozo.id}|${r.fecha}`, cuota * (prodPozo / prodYac))
+      }
+    }
+  }
+
+  // Se asigna la amortización definitiva a cada registro: UoP si el yacimiento
+  // tiene reservas cargadas, y si no la lineal de siempre.
+  for (const registros of registrosPorPozo.values()) {
+    for (const r of registros) {
+      const uop = depreciacionPorPozoMes.get(`${r.pozo.id}|${r.fecha}`)
+      const tieneBase = usarUoP && (reservasBase.get(r.yacimiento.id) ?? 0) > 0
+      r.depreciacionUsd = tieneBase ? (uop ?? 0) : r.depreciacionLineal
+    }
   }
 
   // Pozos activos por concesión y mes — para prorratear el OPEX fijo de
