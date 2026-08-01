@@ -202,7 +202,10 @@ function EntitySection({ cfg, data, reload }: {
       {msg && <div style={{ fontSize: 13, color: 'var(--cp-positive, #2d7a4a)', padding: '10px 14px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 12 }}>{msg}</div>}
 
       {cfg.tabla === 'curvas_produccion' && (
-        <ImportarCurvaExcel data={data} reload={reload} />
+        <>
+          <ImportarCurvaExcel data={data} reload={reload} />
+          <GenerarCurvaArps data={data} reload={reload} />
+        </>
       )}
 
       {rows.length > MAX_FILAS_LISTA && (
@@ -272,11 +275,15 @@ function EntitySection({ cfg, data, reload }: {
 }
 
 type Diagnostico = { tipo: string; detalle: string; pozos_mes: number }
+type NpvPorTasa = { tasa: number; npv_antes_impuestos_usd: number; npv_despues_impuestos_usd: number }
 type Resultado = {
   pozos?: number; filas?: number; anios?: number; total_cashflow?: number
   npv_usd?: number; tasa_descuento?: number; irr_pct?: number | null
   payback_anios?: number | null; diagnosticos?: Diagnostico[]
+  npv_por_tasa?: NpvPorTasa[]
 }
+
+const mm = (v: number) => `US$ ${(v / 1e6).toFixed(2)} MM`
 
 function CalcularTab({ data }: { data: Data }) {
   const [escenarioId, setEscenarioId] = useState('')
@@ -335,6 +342,39 @@ function CalcularTab({ data }: { data: Data }) {
           <Kv label={`NPV @ ${((resultado.tasa_descuento ?? 0) * 100).toFixed(1)}%`} val={`US$ ${((resultado.npv_usd ?? 0) / 1e6).toFixed(2)} MM`} />
           <Kv label="IRR" val={resultado.irr_pct != null ? `${resultado.irr_pct.toFixed(1)}%` : '— (sin cambio de signo detectable)'} />
           <Kv label="Payback" val={resultado.payback_anios != null ? `${resultado.payback_anios.toFixed(1)} años` : '— (no se recupera en el horizonte)'} />
+        </div>
+      )}
+      {resultado && (resultado.npv_por_tasa?.length ?? 0) > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, margin: '0 0 4px', color: 'var(--fg)' }}>
+            Valor presente del flujo neto futuro — formato NI 51-101
+          </p>
+          <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
+            El Form 51-101F1 pide el valor presente sin descontar y a 5%, 10%, 15% y 20%,
+            antes y después de deducir el impuesto a las ganancias. Base: participación de CPE en cada concesión.
+          </p>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                  <th style={{ padding: '6px 8px' }}>Tasa de descuento</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>Antes de impuestos</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>Después de impuestos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resultado.npv_por_tasa!.map(r => (
+                  <tr key={r.tasa} style={{ borderBottom: '1px solid var(--rule)' }}>
+                    <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>
+                      {r.tasa === 0 ? 'Sin descontar' : `${(r.tasa * 100).toFixed(0)}%`}
+                    </td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(r.npv_antes_impuestos_usd)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{mm(r.npv_despues_impuestos_usd)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
       {resultado && (resultado.diagnosticos?.length ?? 0) > 0 && (
@@ -740,6 +780,134 @@ function ImportarCurvaExcel({ data, reload }: {
       <button className="btn btn-primary" disabled={!file || !destinoId || !filasParseadas || loading} onClick={importar} style={{ padding: '8px 20px', fontSize: 12 }}>
         {loading ? 'Importando…' : 'Importar curva'}
       </button>
+    </div>
+  )
+}
+
+// Generador de curva por declinación de Arps. Alternativa a cargar 240 filas a
+// mano o a depender de un Excel: con caudal inicial, declinación efectiva
+// anual y factor b queda definida la curva completa. Es el método
+// convencional de análisis de declinación, apropiado para los yacimientos
+// convencionales de CPE.
+function GenerarCurvaArps({ data, reload }: { data: Data; reload: () => void }) {
+  const [destino, setDestino] = useState<'pozo' | 'pozo_tipo'>('pozo_tipo')
+  const [destinoId, setDestinoId] = useState('')
+  const [qiOil, setQiOil] = useState('50')
+  const [qiGas, setQiGas] = useState('0')
+  const [decl, setDecl] = useState('0.25')
+  const [b, setB] = useState('0.5')
+  const [meses, setMeses] = useState('240')
+  const [limite, setLimite] = useState('')
+  const [preview, setPreview] = useState<{ meses: number; bbl: number; mcf: number; boe: number } | null>(null)
+  const [filas, setFilas] = useState<unknown[] | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+  const [msg, setMsg] = useState('')
+
+  const opts = destino === 'pozo'
+    ? data.pozos.map(p => ({ value: String(p.id), label: String(p.nombre) }))
+    : data.pozos_tipo.map(p => ({ value: String(p.id), label: String(p.nombre) }))
+
+  async function generar() {
+    setErr(''); setMsg(''); setPreview(null); setFilas(null)
+    try {
+      const { generarCurvaArps, eurDeCurva } = await import('@/lib/reservas/arps')
+      const curva = generarCurvaArps({
+        qiPetroleoBblDia: Number(qiOil),
+        qiGasMcfDia: Number(qiGas),
+        declinacionEfectivaAnual: Number(decl),
+        b: Number(b),
+        meses: Number(meses),
+        limiteAbandonoBblDia: limite ? Number(limite) : undefined,
+      })
+      const eur = eurDeCurva(curva)
+      setPreview({ meses: curva.length, ...eur })
+      setFilas(curva)
+    } catch (e) {
+      setErr((e as Error).message)
+    }
+  }
+
+  async function guardar() {
+    if (!filas || !destinoId) return
+    setLoading(true); setErr(''); setMsg('')
+    try {
+      const res = await fetch('/api/portal/reservas/curva-import', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(destino === 'pozo'
+          ? { pozo_id: Number(destinoId), filas }
+          : { pozo_tipo_id: Number(destinoId), filas }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Error al guardar la curva')
+      setMsg(`Curva generada y guardada: ${json.filas} meses ✓`)
+      setPreview(null); setFilas(null); setDestinoId('')
+      reload()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const num = (titulo: string, value: string, set: (v: string) => void, step: string, extra?: string) => (
+    <div style={{ minWidth: 120 }}>
+      <label style={label}>{titulo}</label>
+      <input value={value} onChange={e => { set(e.target.value); setPreview(null); setFilas(null) }}
+        type="number" step={step} style={input} placeholder={extra} />
+    </div>
+  )
+
+  return (
+    <div style={{ background: 'var(--bg)', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)', padding: 16, marginBottom: 16 }}>
+      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: '0 0 10px' }}>Generar curva por declinación (Arps)</p>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
+        Define la curva completa con tres parámetros en lugar de cargar mes por mes.
+        b = 0 exponencial · 0 &lt; b &lt; 1 hiperbólica · b = 1 armónica.
+        Reemplaza toda la curva existente del pozo/pozo tipo elegido.
+      </p>
+      {err && <div style={{ fontSize: 12, color: 'var(--cp-negative)', padding: '8px 12px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 10 }}>{err}</div>}
+      {msg && <div style={{ fontSize: 12, color: 'var(--cp-positive, #2d7a4a)', padding: '8px 12px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 10 }}>{msg}</div>}
+
+      <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div>
+          <label style={label}>Destino</label>
+          <select value={destino} onChange={e => { setDestino(e.target.value as 'pozo' | 'pozo_tipo'); setDestinoId('') }} style={{ ...input, width: 130 }}>
+            <option value="pozo_tipo">Pozo tipo</option>
+            <option value="pozo">Pozo</option>
+          </select>
+        </div>
+        <div style={{ flex: 1, minWidth: 170 }}>
+          <label style={label}>{destino === 'pozo' ? 'Pozo' : 'Pozo tipo'}</label>
+          <Select opts={opts} value={destinoId} onChange={e => setDestinoId(e.target.value)} />
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        {num('qi petróleo (bbl/d)', qiOil, setQiOil, '0.1')}
+        {num('qi gas (Mcf/d)', qiGas, setQiGas, '0.1')}
+        {num('Declinación efect. anual', decl, setDecl, '0.01', '0.25 = 25%/año')}
+        {num('Factor b', b, setB, '0.05')}
+        {num('Meses', meses, setMeses, '1')}
+        {num('Límite abandono (bbl/d)', limite, setLimite, '0.1', 'opcional')}
+      </div>
+
+      {preview && (
+        <div style={{ fontSize: 12, color: 'var(--fg-soft)', marginBottom: 10 }}>
+          {preview.meses} meses generados — EUR {Math.round(preview.bbl).toLocaleString('es-AR')} bbl
+          {preview.mcf > 0 && ` + ${Math.round(preview.mcf).toLocaleString('es-AR')} Mcf`}
+          {' '}({Math.round(preview.boe).toLocaleString('es-AR')} BOE).
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button className="btn" type="button" onClick={generar} style={{ padding: '8px 20px', fontSize: 12 }}>
+          Previsualizar
+        </button>
+        <button className="btn btn-primary" type="button" disabled={!filas || !destinoId || loading} onClick={guardar} style={{ padding: '8px 20px', fontSize: 12 }}>
+          {loading ? 'Guardando…' : 'Guardar curva'}
+        </button>
+      </div>
     </div>
   )
 }

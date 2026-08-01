@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireReservasAccess } from '@/lib/reservas/access'
-import { calcularEscenario, calcularAgregadosAnuales, calcularMetricasEscenario, calcularDepletionReservas } from '@/lib/reservas/engine'
+import { calcularEscenario, calcularAgregadosAnuales, calcularMetricasEscenario, calcularDepletionReservas, calcularNpvPorTasa } from '@/lib/reservas/engine'
 import { isSameOrigin } from '@/lib/csrf'
 
 export async function POST(req: NextRequest) {
@@ -29,8 +29,11 @@ export async function POST(req: NextRequest) {
     const agregados = await calcularAgregadosAnuales(escenarioId)
     const metricas = await calcularMetricasEscenario(escenarioId, tasaAnual, horizonteAnios)
     const depletion = await calcularDepletionReservas(escenarioId)
+    // Tabla de VAN a 0/5/10/15/20%, antes y después de impuestos — el formato
+    // que pide el Form 51-101F1 de NI 51-101.
+    const npvPorTasa = await calcularNpvPorTasa(escenarioId)
 
-    return NextResponse.json({ ...resumen, ...agregados, ...metricas, ...depletion })
+    return NextResponse.json({ ...resumen, ...agregados, ...metricas, ...depletion, npv_por_tasa: npvPorTasa })
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 })
   }

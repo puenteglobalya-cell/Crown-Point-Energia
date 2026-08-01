@@ -300,6 +300,7 @@ export async function calcularEscenario(escenarioId: number, horizonteMeses = HO
 
   for (const registros of registrosPorPozo.values()) {
     let mesesNegativosSeguidos = 0
+    const primeraFilaDelPozo = filas.length
 
     for (const r of registros) {
       const { pozo, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionUsd } = r
@@ -377,6 +378,27 @@ export async function calcularEscenario(escenarioId: number, horizonteMeses = HO
         break
       }
     }
+
+    // Costo de abandono y remediación (ARO) al cierre de la vida económica.
+    // NI 51-101 pide informar el valor de las reservas neto de estos costos;
+    // antes el pozo simplemente dejaba de generar filas y el cierre salía
+    // gratis, lo que sobrestimaba el VAN. Se lee de forma defensiva para que
+    // el motor funcione con o sin la migración 20260801_reservas_abandono.sql.
+    const ultima = filas[filas.length - 1]
+    if (ultima && filas.length > primeraFilaDelPozo) {
+      const costoAbandono = Number(registros[0].pozo.costo_abandono_usd ?? 0)
+      if (costoAbandono > 0) {
+        const part = ultima.participacion_pct as number
+        // Se suma dentro de capex_usd en lugar de una columna propia: todas
+        // las filas de un insert de PostgREST tienen que tener las mismas
+        // claves, así que una columna que sólo aparece en la última fila de
+        // cada pozo rompería la carga. Queda como desembolso de capital del
+        // mes de cierre (afecta también el CAPEX total del Pareto).
+        ultima.capex_usd = (ultima.capex_usd as number) + costoAbandono
+        ultima.cash_flow_neto_usd = (ultima.cash_flow_neto_usd as number) - costoAbandono * part
+        diag.add('abandono_imputado', `Pozo "${registros[0].pozo.nombre}": costo de abandono de US$ ${costoAbandono.toLocaleString('es-AR')} imputado en ${String(ultima.fecha).slice(0, 7)}`)
+      }
+    }
   }
 
   await db.from('cashflow_mensual').delete().eq('escenario_id', escenarioId)
@@ -395,6 +417,41 @@ function monthsBetween(desdeIso: string, fechaIso: string): number {
   const a = new Date(desdeIso + 'T00:00:00Z')
   const b = new Date(fechaIso + 'T00:00:00Z')
   return (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + (b.getUTCMonth() - a.getUTCMonth())
+}
+
+// ─── VAN a las tasas que exige NI 51-101 ─────────────────────────────────
+// Crown Point Energy Inc. reporta reservas bajo NI 51-101 (CSA) — así lo
+// declara el sitio y así certifica Sproule ERCE. El Form 51-101F1 pide el
+// valor presente del future net revenue sin descontar y a 5%, 10%, 15% y 20%,
+// antes y después de deducir el impuesto a las ganancias. El simulador
+// calculaba una sola tasa y sólo después de impuestos.
+export const TASAS_NI_51_101 = [0, 0.05, 0.10, 0.15, 0.20] as const
+
+export type NpvPorTasa = { tasa: number; npv_antes_impuestos_usd: number; npv_despues_impuestos_usd: number }
+
+export async function calcularNpvPorTasa(escenarioId: number): Promise<NpvPorTasa[]> {
+  const db = createSupabaseServerAdminClient()
+  const filas = await traerTodo<any>(() => db
+    .from('cashflow_mensual')
+    .select('fecha, cash_flow_neto_usd, resultado_antes_ganancias_usd, depreciacion_usd, capex_usd, participacion_pct')
+    .eq('escenario_id', escenarioId)
+    .order('fecha'))
+
+  if (filas.length === 0) return []
+  const fechaBase = filas[0].fecha
+
+  // Flujo antes de impuestos: se reconstruye de las columnas ya guardadas
+  // (base imponible + amortización no-cash − CAPEX) × participación.
+  const antes = filas.map(f => ({
+    fecha: f.fecha,
+    cash_flow_neto_usd: (f.resultado_antes_ganancias_usd + f.depreciacion_usd - f.capex_usd) * f.participacion_pct,
+  }))
+
+  return TASAS_NI_51_101.map(tasa => ({
+    tasa,
+    npv_antes_impuestos_usd: calcularNPV(antes, tasa, fechaBase),
+    npv_despues_impuestos_usd: calcularNPV(filas, tasa, fechaBase),
+  }))
 }
 
 export function calcularNPV(cashflows: { fecha: string; cash_flow_neto_usd: number }[], tasaAnual: number, fechaBase: string): number {

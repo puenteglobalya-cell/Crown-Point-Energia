@@ -95,6 +95,7 @@ export const ENTITIES: EntityConfig[] = [
         { value: 'inyector_agua', label: 'Inyector agua' },
       ] },
       { name: 'fecha_alta', label: 'Fecha de alta', type: 'date', required: true },
+      { name: 'costo_abandono_usd', label: 'Costo de abandono y remediación (USD) — se imputa al cerrar el pozo', type: 'number', step: '0.01', min: 0 },
     ],
     displayCols: (r, d) => [{ label: 'Nombre', value: String(r.nombre) }, { label: 'Concesión', value: nombreDe(d, 'concesiones', r.concesion_id) }, { label: 'Alta', value: String(r.fecha_alta) }],
   },
