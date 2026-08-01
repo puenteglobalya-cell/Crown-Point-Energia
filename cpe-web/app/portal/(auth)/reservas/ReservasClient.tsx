@@ -292,6 +292,7 @@ function CalcularTab({ data }: { data: Data }) {
   const [tasa, setTasa] = useState('0.10')
   const [horizonte, setHorizonte] = useState('20')
   const [loading, setLoading] = useState(false)
+  const [panel, setPanel] = useState<'validar' | 'tornado' | null>(null)
   const [resultado, setResultado] = useState<Resultado | null>(null)
   const [err, setErr] = useState('')
 
@@ -331,9 +332,19 @@ function CalcularTab({ data }: { data: Data }) {
       <Field><label style={label}>Horizonte en años (máximo 20)</label>
         <input value={horizonte} onChange={e => setHorizonte(e.target.value)} type="number" step="1" min="1" max="20" style={input} />
       </Field>
-      <button className="btn btn-primary" disabled={!escenarioId || loading} onClick={calcular}>
-        {loading ? 'Calculando…' : 'Calcular'}
-      </button>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <button className="btn btn-primary" disabled={!escenarioId || loading} onClick={calcular}>
+          {loading ? 'Calculando…' : 'Calcular'}
+        </button>
+        <button className="btn" disabled={!escenarioId} onClick={() => setPanel(panel === 'validar' ? null : 'validar')}>
+          Validar antes de calcular
+        </button>
+        <button className="btn" disabled={!escenarioId} onClick={() => setPanel(panel === 'tornado' ? null : 'tornado')}>
+          Sensibilidad (tornado)
+        </button>
+      </div>
+      {panel === 'validar' && escenarioId && <PanelValidacion escenarioId={escenarioId} />}
+      {panel === 'tornado' && escenarioId && <PanelTornado escenarioId={escenarioId} tasa={tasa} horizonte={horizonte} />}
       {err && <p style={{ color: 'var(--cp-negative)', fontSize: 13, marginTop: 12 }}>{err}</p>}
       {resultado && (
         <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px' }}>
@@ -1603,5 +1614,176 @@ function ConsolidadoTab() {
         </>
       )}
     </Seccion>
+  )
+}
+
+// ─── Validación previa ───────────────────────────────────────────────────
+// Los huecos de datos se ven acá, antes de correr, en lugar de aparecer como
+// un VAN plausible calculado sobre precios en cero.
+type Chequeo = { dimension: string; estado: 'ok' | 'aviso' | 'error'; detalle: string; seccion?: string }
+type Validacion = {
+  semaforo: 'ok' | 'aviso' | 'error'; errores: number; avisos: number
+  chequeos: Chequeo[]; diagnosticos_motor: Diagnostico[]
+}
+
+const COLOR_ESTADO = { ok: '#2d7a4a', aviso: '#d69e2e', error: 'var(--cp-negative)' } as const
+const ICONO_ESTADO = { ok: '✓', aviso: '!', error: '✕' } as const
+
+function PanelValidacion({ escenarioId }: { escenarioId: string }) {
+  const [v, setV] = useState<Validacion | null>(null)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    setV(null); setErr('')
+    fetch(`/api/portal/reservas/validar?escenario_id=${escenarioId}`, { cache: 'no-store' })
+      .then(async r => { const j = await r.json(); if (!r.ok) throw new Error(j.error); setV(j) })
+      .catch(e => setErr((e as Error).message))
+  }, [escenarioId])
+
+  if (err) return <p style={{ color: 'var(--cp-negative)', fontSize: 13, marginTop: 14 }}>{err}</p>
+  if (!v) return <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 14 }}>Revisando los datos del escenario…</p>
+
+  const titulo = v.semaforo === 'ok' ? 'Todo en orden para calcular'
+    : v.semaforo === 'aviso' ? `${v.avisos} avisos — se puede calcular, pero conviene mirarlos`
+    : `${v.errores} problemas que van a distorsionar el resultado`
+
+  return (
+    <div style={{ marginTop: 18, border: `1px solid ${COLOR_ESTADO[v.semaforo]}`, borderRadius: 'var(--r-md)', padding: '14px 16px' }}>
+      <p style={{ fontSize: 13, fontWeight: 700, margin: '0 0 10px', color: COLOR_ESTADO[v.semaforo] }}>
+        {ICONO_ESTADO[v.semaforo]} {titulo}
+      </p>
+      <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+        {v.chequeos.map((c, i) => (
+          <li key={i} style={{ display: 'flex', gap: 8, fontSize: 12, padding: '4px 0', borderBottom: '1px solid var(--rule)' }}>
+            <span style={{ color: COLOR_ESTADO[c.estado], fontWeight: 700, width: 12 }}>{ICONO_ESTADO[c.estado]}</span>
+            <span style={{ fontWeight: 600, minWidth: 150 }}>{c.dimension}</span>
+            <span style={{ color: 'var(--fg-soft)', flex: 1 }}>{c.detalle}</span>
+          </li>
+        ))}
+      </ul>
+      {v.diagnosticos_motor.length > 0 && (
+        <>
+          <p style={{ fontSize: 12, fontWeight: 700, margin: '14px 0 4px' }}>Huecos mes a mes detectados en la corrida en seco</p>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--fg-soft)' }}>
+            {v.diagnosticos_motor.slice(0, 8).map((d, i) => (
+              <li key={i}>{d.detalle}{d.pozos_mes > 1 && <span style={{ color: 'var(--fg-muted)' }}> · {d.pozos_mes} pozos-mes</span>}</li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Tornado de sensibilidad ─────────────────────────────────────────────
+type Barra = { variable: string; npv_abajo: number; npv_arriba: number; amplitud: number; nota?: string }
+type Tornado = { npv_base_usd: number; variacion: number; tasa_descuento: number; barras: Barra[] }
+
+function PanelTornado({ escenarioId, tasa, horizonte }: { escenarioId: string; tasa: string; horizonte: string }) {
+  const [variacion, setVariacion] = useState('0.20')
+  const [t, setT] = useState<Tornado | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function correr() {
+    setLoading(true); setErr(''); setT(null)
+    try {
+      const r = await fetch('/api/portal/reservas/sensibilidad', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          escenario_id: Number(escenarioId), tasa_anual: Number(tasa),
+          horizonte_anios: Number(horizonte), variacion: Number(variacion),
+        }),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      setT(j)
+    } catch (e) { setErr((e as Error).message) } finally { setLoading(false) }
+  }
+
+  return (
+    <div style={{ marginTop: 18, border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', padding: '14px 16px' }}>
+      <p style={{ fontSize: 13, fontWeight: 700, margin: '0 0 4px' }}>Sensibilidad del VAN</p>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 12px' }}>
+        Mueve una variable por vez hacia arriba y hacia abajo y mide el impacto en el VAN. Ordenado por magnitud
+        muestra qué supuesto conviene afinar y cuál da lo mismo. No escribe nada.
+      </p>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 12 }}>
+        <div style={{ minWidth: 130 }}>
+          <label style={label}>Variación (0.20 = ±20%)</label>
+          <input value={variacion} onChange={e => setVariacion(e.target.value)} type="number" step="0.05" min="0.01" max="0.99" style={input} />
+        </div>
+        <button className="btn btn-primary" disabled={loading} onClick={correr} style={{ padding: '9px 20px', fontSize: 12 }}>
+          {loading ? 'Corriendo…' : 'Correr sensibilidad'}
+        </button>
+      </div>
+      {err && <p style={{ color: 'var(--cp-negative)', fontSize: 13 }}>{err}</p>}
+      {loading && <p style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Corriendo el motor una vez por cada extremo de cada variable…</p>}
+      {t && <TornadoChart t={t} />}
+    </div>
+  )
+}
+
+function TornadoChart({ t }: { t: Tornado }) {
+  const W = 620, FILA = 30, PAD_L = 138, PAD_T = 24
+  const H = PAD_T + t.barras.length * FILA + 26
+  const todos = t.barras.flatMap(b => [b.npv_abajo, b.npv_arriba]).concat(t.npv_base_usd)
+  const min = Math.min(...todos), max = Math.max(...todos)
+  const rango = max - min || 1
+  const x = (v: number) => PAD_L + ((v - min) / rango) * (W - PAD_L - 68)
+
+  return (
+    <>
+      <p style={{ fontSize: 12, marginBottom: 6 }}>
+        VAN base: <strong style={{ fontFamily: 'var(--font-mono)' }}>{mm(t.npv_base_usd)}</strong>
+        <span style={{ color: 'var(--fg-muted)' }}> · variando ±{(t.variacion * 100).toFixed(0)}% @ {(t.tasa_descuento * 100).toFixed(1)}%</span>
+      </p>
+      <div style={{ overflowX: 'auto' }}>
+        <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ minWidth: 520, background: 'var(--bg)', borderRadius: 8 }}>
+          <line x1={x(t.npv_base_usd)} y1={PAD_T - 10} x2={x(t.npv_base_usd)} y2={H - 22} stroke="var(--fg-muted)" strokeDasharray="4 3" />
+          <text x={x(t.npv_base_usd)} y={PAD_T - 14} fontSize="9" fill="var(--fg-muted)" textAnchor="middle">base</text>
+          {t.barras.map((b, i) => {
+            const y = PAD_T + i * FILA
+            const x1 = x(Math.min(b.npv_abajo, b.npv_arriba))
+            const x2 = x(Math.max(b.npv_abajo, b.npv_arriba))
+            const xb = x(t.npv_base_usd)
+            return (
+              <g key={b.variable}>
+                <text x={PAD_L - 8} y={y + 14} fontSize="11" fill="var(--fg-soft)" textAnchor="end">{b.variable}</text>
+                <rect x={x1} y={y + 4} width={Math.max(xb - x1, 0)} height={16} fill="#d99b91" />
+                <rect x={xb} y={y + 4} width={Math.max(x2 - xb, 0)} height={16} fill="#8f97c9" />
+                <text x={W - 62} y={y + 16} fontSize="10" fill="var(--fg-muted)">±{(b.amplitud / 2e6).toFixed(1)}MM</text>
+              </g>
+            )
+          })}
+          <g transform={`translate(${PAD_L}, ${H - 6})`}>
+            <rect x={0} y={-9} width={10} height={9} fill="#d99b91" />
+            <text x={14} y={-1} fontSize="9" fill="var(--fg-muted)">Variable a la baja</text>
+            <rect x={110} y={-9} width={10} height={9} fill="#8f97c9" />
+            <text x={124} y={-1} fontSize="9" fill="var(--fg-muted)">Variable al alza</text>
+          </g>
+        </svg>
+      </div>
+      <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', marginTop: 10 }}>
+        <thead>
+          <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+            <th style={{ padding: '5px 8px' }}>Variable</th>
+            <th style={{ padding: '5px 8px', textAlign: 'right' }}>VAN a la baja</th>
+            <th style={{ padding: '5px 8px', textAlign: 'right' }}>VAN al alza</th>
+            <th style={{ padding: '5px 8px', textAlign: 'right' }}>Amplitud</th>
+          </tr>
+        </thead>
+        <tbody>
+          {t.barras.map(b => (
+            <tr key={b.variable} style={{ borderBottom: '1px solid var(--rule)' }}>
+              <td style={{ padding: '5px 8px' }}>{b.variable}{b.nota && <span style={{ color: 'var(--fg-muted)', fontSize: 11 }}> · {b.nota}</span>}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(b.npv_abajo)}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(b.npv_arriba)}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{mm(b.amplitud)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
   )
 }

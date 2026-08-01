@@ -133,11 +133,23 @@ export async function cargarContexto(escenarioId: number) {
   }
 }
 
+// Multiplicadores para análisis de sensibilidad. 1 = sin cambio. Se aplican
+// en el punto de uso y no sobre los datos cargados, así el barrido no depende
+// de reconstruir el contexto ni de cómo esté armada cada fórmula de precio.
+export type Multiplicadores = {
+  precioPetroleo?: number; precioGas?: number
+  opex?: number; capex?: number; produccion?: number
+}
+
 export async function calcularEscenario(
   escenarioId: number,
   horizonteMeses = HORIZONTE_MESES_MAX,
-  opciones: { contexto?: ContextoEscenario; persistir?: boolean } = {},
+  opciones: { contexto?: ContextoEscenario; persistir?: boolean; multiplicadores?: Multiplicadores } = {},
 ) {
+  const mult = {
+    precioPetroleo: 1, precioGas: 1, opex: 1, capex: 1, produccion: 1,
+    ...(opciones.multiplicadores ?? {}),
+  }
   const db = createSupabaseServerAdminClient()
   const horizonte = Math.max(1, Math.min(horizonteMeses, HORIZONTE_MESES_MAX))
   const diag = new Diagnosticos()
@@ -282,6 +294,8 @@ export async function calcularEscenario(
         bbl = c?.bbl_petroleo ?? 0
         mcf = c?.mcf_gas ?? 0
       }
+      bbl *= mult.produccion
+      mcf *= mult.produccion
       if (m === 0 && bbl === 0 && mcf === 0 && !interv) {
         diag.add('pozo_sin_curva', `Pozo "${pozo.nombre}": no hay curva de producción cargada para su primer mes`)
       }
@@ -297,11 +311,12 @@ export async function calcularEscenario(
         // mes hacía que una intervención cargada un día 15 nunca matcheara y
         // su CAPEX desapareciera del flujo.
         const fechaCapex = i.fecha_inicio_perforacion ?? i.fecha
-        if (mesDe(fechaCapex) === mesDe(fecha)) capexUsd += i.capex_usd
+        const capexAjustado = i.capex_usd * mult.capex
+        if (mesDe(fechaCapex) === mesDe(fecha)) capexUsd += capexAjustado
         if (i.vida_util_meses && i.vida_util_meses > 0) {
           const mesesDesde = monthsBetween(fechaCapex, fecha)
           if (mesesDesde >= 0 && mesesDesde < i.vida_util_meses) {
-            depreciacionUsd += i.capex_usd / i.vida_util_meses
+            depreciacionUsd += capexAjustado / i.vida_util_meses
           }
         }
       }
@@ -337,8 +352,8 @@ export async function calcularEscenario(
     for (const r of registros) {
       const { pozo, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionUsd } = r
 
-      const precioOil = precioEn(yacimiento, 'petroleo', fecha)
-      const precioGas = precioEn(yacimiento, 'gas', fecha)
+      const precioOil = precioEn(yacimiento, 'petroleo', fecha) * mult.precioPetroleo
+      const precioGas = precioEn(yacimiento, 'gas', fecha) * mult.precioGas
       const ingresoBruto = bbl * precioOil + mcf * precioGas
 
       const regalia = vigente(regaliasPorConc.get(concesion.id) ?? [], fecha)
@@ -350,14 +365,14 @@ export async function calcularEscenario(
 
       const fijo = vigente(opexFijoPorConc.get(concesion.id) ?? [], fecha)
       const activos = activosPorConcesionMes.get(`${concesion.id}|${fecha}`) || 1
-      const opexFijoUsd = (fijo?.monto_usd_mes ?? 0) / activos
+      const opexFijoUsd = ((fijo?.monto_usd_mes ?? 0) / activos) * mult.opex
       const variable = vigente(opexVarPorYac.get(yacimiento.id) ?? [], fecha)
       const boe = bbl + mcf / MCF_POR_BOE
-      const opexVarUsd = boe * (variable?.usd_por_boe ?? 0)
+      const opexVarUsd = boe * (variable?.usd_por_boe ?? 0) * mult.opex
       // Fijo por pozo: se carga completo a cada pozo activo (a diferencia del
       // opex_fijo de concesión, que sí se prorratea entre los pozos activos)
       const fijoPozo = vigente(opexFijoPozoPorConc.get(concesion.id) ?? [], fecha)
-      const opexFijoPozoUsd = fijoPozo?.usd_mes_pozo ?? 0
+      const opexFijoPozoUsd = (fijoPozo?.usd_mes_pozo ?? 0) * mult.opex
 
       const baseImponible = ingresoBruto - regaliaUsd - iibbUsd - dycUsd - opexFijoUsd - opexVarUsd - opexFijoPozoUsd - depreciacionUsd
       const impuestoGanancias = baseImponible > 0 ? baseImponible * alicuotaGanancias : 0
