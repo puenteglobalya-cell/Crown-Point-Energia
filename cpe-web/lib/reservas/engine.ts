@@ -654,18 +654,83 @@ export async function calcularMetricasEscenario(escenarioId: number, tasaAnual: 
 }
 
 // ─── Roll-forward de depleción de reservas ───────────────────────────────
-// Opening (reserve report, ponderado por el factor de certeza de la categoría)
-// → Depletion (producción del año, del motor) → Closing, por
-// yacimiento/categoría/año. Requiere haber corrido calcularAgregadosAnuales()
-// antes para tener resultados_escenario_anual.
+// Opening (reserve report) → Depletion (producción del año, del motor) →
+// Closing, por yacimiento/categoría/año. Requiere haber corrido
+// calcularAgregadosAnuales() antes para tener resultados_escenario_anual.
+//
+// P1/P2/P3 son categorías INCREMENTALES (Probadas / Probables / Posibles),
+// definición confirmada por el cliente. Por eso la producción de cada año
+// cascadea: agota primero las probadas y sólo el excedente pasa a probables y
+// después a posibles. El factor de certeza pondera el saldo de cierre; no se
+// aplica antes de depletar, porque la producción es física.
+export type AperturaCategoria = { categoria: string; boe: number; anioBase: number; factor: number }
+export type MovimientoReservas = {
+  categoria: string; anio: number; apertura: number; depletion: number
+  cierre: number; cierreRiesgo: number; factor: number; excedente: number
+}
+
+// Roll-forward con cascada entre categorías incrementales. `aperturas` viene
+// ordenado de más cierta a menos cierta (P1, P2, P3): la producción de cada
+// año agota la primera y sólo el excedente pasa a la siguiente. `excedente`
+// queda cargado en el último movimiento del año e indica cuánta producción no
+// tuvo reservas contra las que imputarse.
+export function rollForwardIncremental(
+  aperturas: AperturaCategoria[],
+  produccionPorAnio: { anio: number; boe: number }[],
+): MovimientoReservas[] {
+  if (aperturas.length === 0) return []
+  const saldo = new Map(aperturas.map(a => [a.categoria, a.boe]))
+  const anioInicio = Math.min(...aperturas.map(a => a.anioBase))
+  const out: MovimientoReservas[] = []
+
+  for (const { anio, boe: produccion } of [...produccionPorAnio].sort((a, b) => a.anio - b.anio)) {
+    if (anio < anioInicio) continue
+    let restante = Math.max(produccion, 0)
+    const delAnio: MovimientoReservas[] = []
+
+    for (const a of aperturas) {
+      if (anio < a.anioBase) continue
+      const apertura = saldo.get(a.categoria) ?? 0
+      const depletion = Math.min(restante, Math.max(apertura, 0))
+      const cierre = Math.max(apertura - depletion, 0)
+      restante -= depletion
+      saldo.set(a.categoria, cierre)
+      delAnio.push({
+        categoria: a.categoria, anio, apertura, depletion, cierre,
+        cierreRiesgo: cierre * a.factor, factor: a.factor, excedente: 0,
+      })
+    }
+
+    if (delAnio.length > 0 && restante > 0) delAnio[delAnio.length - 1].excedente = restante
+    out.push(...delAnio)
+  }
+
+  return out
+}
+
 export async function calcularDepletionReservas(escenarioId: number) {
   const db = createSupabaseServerAdminClient()
+  const diag = new Diagnosticos()
 
-  const [reservas, resultadosRaw, certezas] = await Promise.all([
+  const [reservas, resultadosRaw, certezas, yacimientos] = await Promise.all([
     traerTodo<any>(() => db.from('reservas_anuales').select('*').or(`escenario_id.eq.${escenarioId},escenario_id.is.null`).order('id')),
     traerTodo<any>(() => db.from('resultados_escenario_anual').select('*').eq('escenario_id', escenarioId).not('yacimiento_id', 'is', null).order('id')),
     traerTodo<any>(() => db.from('parametros_certeza_reservas').select('*').order('id')),
+    traerTodo<any>(() => db.from('yacimientos').select('id, nombre').order('id')),
   ])
+
+  // Las columnas cierre_riesgo_boe / factor_certeza vienen de la migración
+  // 20260801_reservas_certeza_incremental.sql. Se comprueba una vez si están
+  // presentes: si la migración no corrió todavía, se omiten en el insert en
+  // lugar de hacer fallar todo el cálculo.
+  const { error: sinColumnas } = await db.from('reservas_depletion_anual').select('cierre_riesgo_boe').limit(1)
+  const guardarRiesgo = !sinColumnas
+  if (!guardarRiesgo) {
+    diag.add('migracion_pendiente', 'Falta correr 20260801_reservas_certeza_incremental.sql — el saldo ponderado por certeza no se guarda todavía')
+  }
+
+  const nombreYac = new Map<number, string>(yacimientos.map(y => [y.id, y.nombre]))
+  const yacimientoNombre = (id: number) => nombreYac.get(id) ?? `Yacimiento #${id}`
 
   const resultados = [...resultadosRaw].sort((a, b) => a.anio - b.anio)
   const yacimientoIds = Array.from(new Set(reservas.map(r => r.yacimiento_id)))
@@ -677,6 +742,14 @@ export async function calcularDepletionReservas(escenarioId: number) {
     const produccionPorAnio = resultados
       .filter(r => r.yacimiento_id === yacId)
       .map(r => ({ anio: r.anio, boe: r.produccion_petroleo_bbl + r.produccion_gas_mcf / MCF_POR_BOE }))
+      .sort((a, b) => a.anio - b.anio)
+
+    // Saldo vivo de cada categoría. Volúmenes FÍSICOS, sin ponderar por
+    // certeza: la producción es física y no sabe de factores de riesgo. El
+    // factor se aplica al final, sobre el saldo, para el número ponderado.
+    const saldo = new Map<string, number>()
+    const anioBaseDe = new Map<string, number>()
+    const factorDe = new Map<string, number>()
 
     for (const categoria of categorias) {
       // Apertura base: el reserve report más reciente para este yacimiento/categoría
@@ -684,33 +757,45 @@ export async function calcularDepletionReservas(escenarioId: number) {
         .filter(r => r.yacimiento_id === yacId && r.categoria === categoria)
         .sort((a, b) => String(b.fecha_corte).localeCompare(String(a.fecha_corte)))[0]
       if (!reporte) continue
-
+      saldo.set(categoria, reporte.reservas_boe)
+      anioBaseDe.set(categoria, reporte.anio)
       // Factor de certeza: override del registro, o el parámetro vigente de la
       // categoría a la fecha de corte del reporte (P1=100%, P2=50%, P3=20% por
-      // defecto). Antes esta tabla existía pero el motor no la usaba.
-      const factor = reporte.factor_certeza_override
+      // defecto).
+      factorDe.set(categoria, reporte.factor_certeza_override
         ?? vigente(certezas.filter(c => c.categoria === categoria), String(reporte.fecha_corte))?.factor
-        ?? 1
+        ?? 1)
+    }
+    if (saldo.size === 0) continue
 
-      let cierrePrevio = reporte.reservas_boe * factor
-      const anioBase = reporte.anio
+    const movimientos = rollForwardIncremental(
+      categorias.filter(c => saldo.has(c)).map(c => ({
+        categoria: c,
+        boe: saldo.get(c) ?? 0,
+        anioBase: anioBaseDe.get(c) ?? 0,
+        factor: factorDe.get(c) ?? 1,
+      })),
+      produccionPorAnio,
+    )
 
-      for (const { anio, boe: produccionBoe } of produccionPorAnio) {
-        if (anio < anioBase) continue
-        const apertura = cierrePrevio
-        const depletion = Math.min(produccionBoe, Math.max(apertura, 0))
-        const cierre = Math.max(apertura - depletion, 0)
-        filas.push({
-          escenario_id: escenarioId,
-          yacimiento_id: yacId,
-          categoria,
-          anio,
-          apertura_boe: apertura,
-          depletion_boe: depletion,
-          cierre_boe: cierre,
-        })
-        cierrePrevio = cierre
-      }
+    for (const m of movimientos) {
+      filas.push({
+        escenario_id: escenarioId,
+        yacimiento_id: yacId,
+        categoria: m.categoria,
+        anio: m.anio,
+        apertura_boe: m.apertura,
+        depletion_boe: m.depletion,
+        cierre_boe: m.cierre,
+        // Saldo ponderado por el grado de certeza de la categoría. Se deriva
+        // del cierre físico en lugar de arrastrarse año a año: ponderar la
+        // apertura y después depletar hacía que la relación con el volumen
+        // físico se fuera desviando en cada período.
+        ...(guardarRiesgo ? { cierre_riesgo_boe: m.cierreRiesgo, factor_certeza: m.factor } : {}),
+      })
+    }
+    for (const e of movimientos.filter(m => m.excedente > 0)) {
+      diag.add('produccion_excede_reservas', `${yacimientoNombre(yacId)}: la producción de ${e.anio} supera en ${Math.round(e.excedente).toLocaleString('es-AR')} BOE las reservas P1+P2+P3 disponibles`)
     }
   }
 
@@ -723,5 +808,5 @@ export async function calcularDepletionReservas(escenarioId: number) {
     }
   }
 
-  return { depletion_filas: filas.length }
+  return { depletion_filas: filas.length, diagnosticos_reservas: diag.lista() }
 }

@@ -487,6 +487,13 @@ function ResultadosTab({ data }: { data: Data }) {
       {!loading && escenarioId && vista === 'depletion' && rowsDepletion.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — necesita reservas cargadas (sección 15) y haber corrido el cálculo.</p>}
 
       {vista === 'depletion' && rowsDepletion.length > 0 && (
+        <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 12, marginBottom: 0 }}>
+          P1/P2/P3 son Probadas / Probables / Posibles <strong>incrementales</strong>: la producción de cada año
+          agota primero las probadas y sólo el excedente pasa a probables y después a posibles.
+          El cierre en BOE es volumen físico; la última columna lo pondera por el grado de certeza de la categoría.
+        </p>
+      )}
+      {vista === 'depletion' && rowsDepletion.length > 0 && (
         <div style={{ overflowX: 'auto', marginTop: 12 }}>
           <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead>
@@ -497,6 +504,7 @@ function ResultadosTab({ data }: { data: Data }) {
                 <th style={{ padding: '6px 8px', textAlign: 'right' }}>Apertura (BOE)</th>
                 <th style={{ padding: '6px 8px', textAlign: 'right' }}>Depleción (BOE)</th>
                 <th style={{ padding: '6px 8px', textAlign: 'right' }}>Cierre (BOE)</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Cierre ponderado por certeza</th>
               </tr>
             </thead>
             <tbody>
@@ -508,6 +516,11 @@ function ResultadosTab({ data }: { data: Data }) {
                   <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Number(r.apertura_boe).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
                   <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Number(r.depletion_boe).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
                   <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{Number(r.cierre_boe).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)' }}>
+                    {r.cierre_riesgo_boe != null
+                      ? `${Number(r.cierre_riesgo_boe).toLocaleString('es-AR', { maximumFractionDigits: 0 })}${r.factor_certeza != null ? ` (${(Number(r.factor_certeza) * 100).toFixed(0)}%)` : ''}`
+                      : '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>

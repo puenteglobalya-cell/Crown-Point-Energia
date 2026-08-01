@@ -186,15 +186,22 @@ clase de error más difícil de detectar.
 
 ---
 
-## Dos definiciones que hacen falta del lado del negocio
+## Definiciones del negocio — estado
 
-1. **Base del resumen anual**: al corregir la inconsistencia dejé todas las
+1. ✅ **`GSJ_WO` resuelto.** Las cuatro curvas del Golfo San Jorge quedaron
+   definidas: `GSJ_CH` → El Tordillo (resto de proyectos de ET), `GSJ_PQO` →
+   Puesto Quiroga, `GSJ_BLG` → Bloque G, `GSJ_WO` → El Tordillo, categoría
+   workover. ET = El Tordillo; la concesión es El Tordillo, La Tapera y Puesto
+   Quiroga (LTPQ), Chubut. Seed en
+   `supabase/20260801_pozos_tipo_gsj.sql`.
+
+2. ✅ **P1/P2/P3 resuelto**: son Probadas / Probables / Posibles incrementales.
+   Ver `ANALISIS-MERCADO-RESERVAS.md` §5 — la depleción se corrigió para
+   cascadear entre categorías.
+
+3. ⏳ **Base del resumen anual**: al corregir la inconsistencia dejé todas las
    líneas al 100% del proyecto (working interest bruto), coherente con EBITDA y
    EBIT. El flujo neto a CPE (ya multiplicado por participación) sigue siendo el
    que alimenta NPV/IRR/payback. **Si el resumen anual se quiere neto a CPE en
    todas sus líneas, hay que decirlo** — es un cambio de una línea, pero cambia
    todos los números reportados.
-
-2. **`GSJ_WO`**: sigue pendiente a qué yacimiento se asigna la curva de
-   workover (Puesto Quiroga, Bloque G, proyectos de ET, o una curva genérica de
-   cuenca). Las otras tres ya están definidas.

@@ -4,7 +4,7 @@ Checklist de tareas que quedan del lado del equipo (SQL, deploy y configuración
 en Supabase / Vercel). El código ya está mergeado en `main`; esto es lo que
 falta para que todo quede operativo en producción.
 
-Última actualización: 2026-07-03
+Última actualización: 2026-08-01
 
 ---
 
@@ -64,6 +64,33 @@ dashboard, export CSV).
 ### 3. Guardar en el CMS
 Entrar a `/admin/cms` y tocar **"Guardar"** una vez. Dispara
 `revalidateTag('cms')` y refresca el cache (incluye los mapas de operaciones).
+
+---
+
+## 🔴 Simulador de reservas — SQL a correr en Supabase
+
+En el **SQL Editor**, en este orden. Los tres son idempotentes.
+
+```
+supabase/20260801_reservas_abandono.sql
+supabase/20260801_reservas_certeza_incremental.sql
+supabase/20260801_pozos_tipo_gsj.sql
+```
+
+- **`reservas_abandono`** agrega `pozos.costo_abandono_usd`. NI 51-101 pide
+  informar las reservas netas de costos de abandono y remediación; sin esta
+  columna el motor no los cobra y **el VAN queda sobrestimado**. Después de
+  correrla hay que cargar el costo por pozo en la sección "Pozo".
+- **`reservas_certeza_incremental`** agrega el saldo de reservas ponderado por
+  el grado de certeza al roll-forward. Sin ella el cálculo corre igual, sólo
+  faltan esos valores en la tabla de depleción.
+- **`pozos_tipo_gsj`** crea las 4 curvas tipo del Golfo San Jorge (GSJ_CH,
+  GSJ_PQO, GSJ_BLG, GSJ_WO). Avisa por `raise warning` si falta crear algún
+  yacimiento antes. Las curvas mensuales se cargan después desde la pantalla,
+  con el importador de Excel o el generador de declinación de Arps.
+
+El motor lee las columnas nuevas de forma defensiva, así que el simulador
+funciona con o sin estas migraciones aplicadas.
 
 ---
 

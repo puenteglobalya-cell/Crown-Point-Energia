@@ -130,28 +130,42 @@ apertura + Σ movimientos = cierre, con un chequeo de que cierre el cuadre.
 
 **Esfuerzo**: medio.
 
-### 5. 🔴 Semántica de P1/P2/P3 y el factor de certeza — decisión pendiente
+### 5. ✅ Semántica de P1/P2/P3 — resuelta, y la depleción corregida
 
-Hay una ambigüedad real en el esquema. `reservas_anuales.categoria` es
-`P1|P2|P3`, y el motor las trata como **tres bolsas independientes**, cada una
-con su apertura y cada una depletada por la producción total del yacimiento.
+**Definición confirmada por el cliente: P1/P2/P3 son Probadas / Probables /
+Posibles INCREMENTALES**, no los totales acumulados 1P/2P/3P.
 
-Eso es consistente si P1/P2/P3 significan **1P / 2P / 3P acumulados** (que es
-como reporta CPE: "2P Sproule ERCE"). Pero entonces el factor de certeza que
-dejé conectado (`parametros_certeza_reservas`: P1=100%, P2=50%, P3=20%) **no
-tiene sentido aplicado a un total acumulado** — NI 51-101 no pondera así las
-categorías acumuladas, y multiplicar un 2P por 0,5 da un número sin
-significado estándar.
+Eso convalida el factor de certeza (P1=100%, P2=50%, P3=20%) como ponderación
+interna, y confirma que **la depleción estaba mal**. Corregido:
 
-Si en cambio significan **Probadas / Probables / Posibles incrementales**, el
-factor de certeza sí es una práctica interna razonable, pero entonces la
-depleción está mal: no se puede restar la producción total de cada bolsa por
-separado.
+1. **La producción ahora cascadea P1 → P2 → P3.** Antes se restaba la
+   producción total del yacimiento de cada categoría por separado, así que un
+   año de 600 BOE imputaba 1.800 BOE de depleción y las tres bolsas se
+   agotaban en paralelo. Ahora la producción agota primero las probadas y sólo
+   el excedente pasa a probables y después a posibles.
 
-**Las dos lecturas no pueden ser ciertas a la vez y hoy el código mezcla
-ambas.** Necesito la definición para corregirlo. Lo dejé como estaba y lo
-marco acá en lugar de elegir yo, porque cambia los números de reservas
-reportados.
+2. **El factor de certeza dejó de aplicarse a la apertura.** La producción es
+   física y no conoce factores de riesgo. Ponderar la apertura y después
+   depletar hacía que la relación entre el saldo ponderado y el volumen físico
+   se desviara en cada período: con P2 raw 800 al 50%, produciendo 200 el saldo
+   ponderado daba 200 en lugar de los 300 que corresponden al remanente físico
+   de 600. Ahora el factor se aplica al **cierre**, donde la relación se
+   mantiene exacta.
+
+3. **Aviso cuando la producción excede las reservas.** Si un año produce más
+   que P1+P2+P3 disponibles, el excedente se informa como diagnóstico en lugar
+   de perderse.
+
+La lógica quedó extraída como función pura `rollForwardIncremental()` en
+`lib/reservas/engine.ts` y verificada con siete casos: cascada parcial, agote
+de P1 con derrame a P2, cascada progresiva en tres años con tope físico en la
+suma de depleciones, producción que excede todo, la no-triplicación del barril
+(600 producidos → 600 imputados, antes 1.800), la conservación del ratio de
+riesgo, y años base distintos por categoría.
+
+⚠️ Requiere correr `supabase/20260801_reservas_certeza_incremental.sql` para
+guardar el saldo ponderado. El motor comprueba si las columnas existen antes de
+escribirlas, así que el cálculo funciona con o sin la migración.
 
 ### 6. 🟠 Categorías de estado de desarrollo (PDP / PDNP / PUD)
 
@@ -236,12 +250,12 @@ el número termina en un informe regulado.
 
 ## Orden sugerido
 
-1. Definir la semántica de P1/P2/P3 (#5) — bloquea cualquier trabajo de reservas.
-2. Correr `20260801_reservas_abandono.sql` y cargar costos de abandono.
-3. FDC por año (#7) — datos ya cargados, sólo falta la vista.
-4. Reconciliación de 7 categorías (#4) — el gap grande contra el estándar.
-5. Price decks pronóstico/constante (#8) — habilita también sensibilidad.
-6. PDP/PDNP/PUD (#6).
+1. Correr las tres migraciones pendientes (ver `PENDIENTES.md`) y cargar los
+   costos de abandono por pozo.
+2. FDC por año (#7) — datos ya cargados, sólo falta la vista.
+3. Reconciliación de 7 categorías (#4) — el gap grande contra el estándar.
+4. Price decks pronóstico/constante (#8) — habilita también sensibilidad.
+5. PDP/PDNP/PUD (#6).
 
 ---
 
