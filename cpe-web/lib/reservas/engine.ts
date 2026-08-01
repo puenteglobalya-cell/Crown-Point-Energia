@@ -265,9 +265,17 @@ export async function calcularEscenario(escenarioId: number, horizonteMeses = HO
       // CAPEX del mes y amortización de intervenciones con vida útil vigente
       let capexUsd = 0, depreciacionUsd = 0
       for (const i of intervDelPozo) {
-        if (i.fecha === fecha) capexUsd += i.capex_usd
+        // El CAPEX se imputa en el mes en que arranca la perforación, no en el
+        // de la primera producción: en una campaña con equipos hay semanas o
+        // meses entre una cosa y la otra, y el desembolso es al perforar.
+        // La comparación es por mes (no por fecha exacta) porque el cashflow
+        // vive en una grilla mensual: comparar con `===` contra el día 1 del
+        // mes hacía que una intervención cargada un día 15 nunca matcheara y
+        // su CAPEX desapareciera del flujo.
+        const fechaCapex = i.fecha_inicio_perforacion ?? i.fecha
+        if (mesDe(fechaCapex) === mesDe(fecha)) capexUsd += i.capex_usd
         if (i.vida_util_meses && i.vida_util_meses > 0) {
-          const mesesDesde = monthsBetween(i.fecha, fecha)
+          const mesesDesde = monthsBetween(fechaCapex, fecha)
           if (mesesDesde >= 0 && mesesDesde < i.vida_util_meses) {
             depreciacionUsd += i.capex_usd / i.vida_util_meses
           }

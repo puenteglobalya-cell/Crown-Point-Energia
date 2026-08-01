@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 // carga de la pantalla sin que la UI las usara.
 const TABLES = [
   'provincias', 'yacimientos', 'concesiones', 'concesion_participacion',
-  'pozos', 'pozos_tipo', 'curvas_produccion', 'intervenciones',
+  'pozos', 'pozos_tipo', 'curvas_produccion', 'campanas', 'intervenciones',
   'formulas_precio', 'precios_referencia', 'precios_mensuales',
   'opex_fijo', 'opex_variable', 'opex_fijo_pozo', 'regalias', 'escenarios',
   'reservas_anuales', 'parametros_certeza_reservas', 'supuestos_generales', 'deuda_notas', 'comparables_mercado',

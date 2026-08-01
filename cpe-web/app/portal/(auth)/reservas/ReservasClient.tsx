@@ -25,7 +25,7 @@ const MAX_FILAS_LISTA = 100
 
 const GRUPOS_CARGA: { titulo: string; tablas: string[] }[] = [
   { titulo: 'Estructura', tablas: ['provincias', 'yacimientos', 'concesiones', 'concesion_participacion'] },
-  { titulo: 'Pozos y producción', tablas: ['pozos', 'pozos_tipo', 'curvas_produccion', 'intervenciones'] },
+  { titulo: 'Pozos y producción', tablas: ['pozos', 'pozos_tipo', 'curvas_produccion', 'campanas', 'intervenciones'] },
   { titulo: 'Precios', tablas: ['formulas_precio', 'precios_referencia', 'precios_mensuales'] },
   { titulo: 'Costos e impuestos', tablas: ['opex_fijo', 'opex_variable', 'opex_fijo_pozo', 'regalias'] },
   { titulo: 'Escenarios', tablas: ['escenarios'] },
@@ -34,7 +34,7 @@ const GRUPOS_CARGA: { titulo: string; tablas: string[] }[] = [
 ]
 
 export default function ReservasClient() {
-  const [tab, setTab] = useState<'cargar' | 'calcular' | 'resultados' | 'pareto'>('cargar')
+  const [tab, setTab] = useState<'cargar' | 'cronograma' | 'calcular' | 'resultados' | 'pareto'>('cargar')
   const [seccionActiva, setSeccionActiva] = useState(ENTITIES[0].tabla)
   const [data, setData] = useState<Data | null>(null)
 
@@ -57,14 +57,14 @@ export default function ReservasClient() {
         </h1>
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--rule)' }}>
-          {(['cargar', 'calcular', 'resultados', 'pareto'] as const).map(t => (
+          {(['cargar', 'cronograma', 'calcular', 'resultados', 'pareto'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
               background: 'none', border: 'none', padding: '10px 4px', marginRight: 16,
               fontSize: 13, fontWeight: 600, cursor: 'pointer',
               color: tab === t ? 'var(--accent)' : 'var(--fg-muted)',
               borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
             }}>
-              {t === 'cargar' ? 'Cargar datos' : t === 'calcular' ? 'Calcular escenario' : t === 'resultados' ? 'Resultados' : 'Pareto de escenarios'}
+              {t === 'cargar' ? 'Cargar datos' : t === 'cronograma' ? 'Cronograma' : t === 'calcular' ? 'Calcular escenario' : t === 'resultados' ? 'Resultados' : 'Pareto de escenarios'}
             </button>
           ))}
         </div>
@@ -108,6 +108,7 @@ export default function ReservasClient() {
             </div>
           </div>
         )}
+        {tab === 'cronograma' && <CronogramaTab data={data} reload={reload} />}
         {tab === 'calcular' && <CalcularTab data={data} />}
         {tab === 'resultados' && <ResultadosTab data={data} />}
         {tab === 'pareto' && <ParetoTab />}
@@ -921,6 +922,212 @@ function GenerarCurvaArps({ data, reload }: { data: Data; reload: () => void }) 
           {loading ? 'Guardando…' : 'Guardar curva'}
         </button>
       </div>
+    </div>
+  )
+}
+
+// ─── Cronograma de campaña ───────────────────────────────────────────────
+// El sentido de esta pantalla: la participación de CPE en la concesión cambia
+// de porcentaje en el tiempo, así que adelantar o atrasar la campaña cambia el
+// cash flow. Acá se mueve el cronograma (equipos y días) y se ve el efecto en
+// las fechas de primera producción; después se corre el cálculo y se compara.
+type PozoProgramado = {
+  intervencionId: number; etiqueta: string; orden: number
+  equipoPerforacion: number; equipoTerminacion: number | null
+  inicioPerforacion: string; finPerforacion: string; inicioTerminacion: string
+  primeraProduccion: string; diasPerforacion: number; diasTerminacion: number
+}
+type RespuestaCronograma = {
+  campana?: Row
+  cronograma: PozoProgramado[]
+  resumen: { pozos: number; inicio: string; fin: string; diasTotales: number; mesesTotales: number } | null
+  aviso: string | null
+  aplicado?: number
+}
+
+function CronogramaTab({ data, reload }: { data: Data; reload: () => void }) {
+  const [campanaId, setCampanaId] = useState('')
+  const [resp, setResp] = useState<RespuestaCronograma | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+  const [msg, setMsg] = useState('')
+
+  const campanas = data.campanas ?? []
+
+  async function ver(id: string) {
+    setCampanaId(id); setResp(null); setErr(''); setMsg('')
+    if (!id) return
+    setLoading(true)
+    try {
+      const r = await fetch(`/api/portal/reservas/campana?campana_id=${id}`, { cache: 'no-store' })
+      const json = await r.json()
+      if (!r.ok) throw new Error(json.error ?? 'Error')
+      setResp(json)
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function aplicar() {
+    if (!campanaId) return
+    setLoading(true); setErr(''); setMsg('')
+    try {
+      const r = await fetch('/api/portal/reservas/campana', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ campana_id: Number(campanaId), aplicar: true }),
+      })
+      const json = await r.json()
+      if (!r.ok) throw new Error(json.error ?? 'Error')
+      setResp(json)
+      setMsg(`Cronograma aplicado a ${json.aplicado} intervenciones ✓ Ya podés correr el cálculo para ver el cash flow.`)
+      reload()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Seccion title="Cronograma de campaña — cuándo se perfora cada pozo">
+      <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 14 }}>
+        La participación de CPE en cada concesión cambia de porcentaje en el tiempo, así que <strong>cuándo</strong> se
+        perfora cambia el cash flow. Acá el cronograma se deriva de la cantidad de equipos y los días por etapa:
+        cada pozo se asigna al primer equipo que se libera. Cambiá los equipos o los días en la campaña, volvé a
+        previsualizar, aplicá y corré el cálculo para comparar el VAN.
+      </p>
+
+      {campanas.length === 0 && (
+        <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>
+          Todavía no hay campañas. Creá una en <strong>Cargar datos → Campaña de perforación</strong> y asigná
+          intervenciones a ella con un orden.
+        </p>
+      )}
+
+      {campanas.length > 0 && (
+        <Field><label style={label}>Campaña</label>
+          <Select value={campanaId} onChange={e => ver(e.target.value)}
+            opts={campanas.map(c => ({ value: String(c.id), label: String(c.nombre) }))} />
+        </Field>
+      )}
+
+      {err && <p style={{ color: 'var(--cp-negative)', fontSize: 13 }}>{err}</p>}
+      {msg && <div style={{ fontSize: 13, color: 'var(--cp-positive, #2d7a4a)', padding: '10px 14px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 12 }}>{msg}</div>}
+      {loading && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Calculando…</p>}
+      {resp?.aviso && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{resp.aviso}</p>}
+
+      {resp && resp.cronograma.length > 0 && (
+        <>
+          {resp.resumen && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px', marginBottom: 18 }}>
+              <Kv label="Pozos en la campaña" val={String(resp.resumen.pozos)} />
+              <Kv label="Equipos" val={`${resp.campana?.equipos_perforacion} perf.${resp.campana?.equipos_terminacion ? ` + ${resp.campana.equipos_terminacion} term.` : ' (perfora y termina)'}`} />
+              <Kv label="Primera perforación" val={resp.resumen.inicio} />
+              <Kv label="Última primera producción" val={resp.resumen.fin} />
+              <Kv label="Duración de la campaña" val={`${resp.resumen.diasTotales} días · ${resp.resumen.mesesTotales} meses`} />
+            </div>
+          )}
+
+          <GanttCampana prog={resp.cronograma} />
+
+          <div style={{ overflowX: 'auto', marginTop: 18 }}>
+            <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                  <th style={{ padding: '6px 8px' }}>#</th>
+                  <th style={{ padding: '6px 8px' }}>Pozo</th>
+                  <th style={{ padding: '6px 8px' }}>Equipo</th>
+                  <th style={{ padding: '6px 8px' }}>Inicio perforación</th>
+                  <th style={{ padding: '6px 8px' }}>Fin perforación</th>
+                  <th style={{ padding: '6px 8px' }}>Primera producción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resp.cronograma.map(p => (
+                  <tr key={p.intervencionId} style={{ borderBottom: '1px solid var(--rule)' }}>
+                    <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{p.orden}</td>
+                    <td style={{ padding: '6px 8px' }}>{p.etiqueta}</td>
+                    <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>
+                      P{p.equipoPerforacion}{p.equipoTerminacion ? ` · T${p.equipoTerminacion}` : ''}
+                    </td>
+                    <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{p.inicioPerforacion}</td>
+                    <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{p.finPerforacion}</td>
+                    <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{p.primeraProduccion}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '12px 0' }}>
+            Aplicar escribe estas fechas en las intervenciones de la campaña: la primera producción como fecha de
+            arranque de la curva, y el inicio de perforación como mes de imputación del CAPEX.
+          </p>
+          <button className="btn btn-primary" disabled={loading} onClick={aplicar}>
+            {loading ? 'Aplicando…' : 'Aplicar cronograma a las intervenciones'}
+          </button>
+        </>
+      )}
+    </Seccion>
+  )
+}
+
+// Gantt simple en SVG: una fila por pozo, perforación y terminación en colores
+// distintos, con el hito de primera producción.
+function GanttCampana({ prog }: { prog: PozoProgramado[] }) {
+  const dia = (iso: string) => Math.floor(new Date(iso + 'T00:00:00Z').getTime() / 86400000)
+  const min = Math.min(...prog.map(p => dia(p.inicioPerforacion)))
+  const max = Math.max(...prog.map(p => dia(p.primeraProduccion)))
+  const span = Math.max(max - min, 1)
+
+  const FILA = 22, PAD_L = 130, PAD_T = 24, W = 720
+  const H = PAD_T + prog.length * FILA + 26
+  const x = (d: number) => PAD_L + ((d - min) / span) * (W - PAD_L - 20)
+
+  // Marcas de año
+  const anios: { anio: number; d: number }[] = []
+  for (let a = new Date(min * 86400000).getUTCFullYear(); a <= new Date(max * 86400000).getUTCFullYear() + 1; a++) {
+    anios.push({ anio: a, d: dia(`${a}-01-01`) })
+  }
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ minWidth: 560, background: 'var(--bg)', borderRadius: 8 }}>
+        {anios.filter(a => a.d >= min && a.d <= max).map(a => (
+          <g key={a.anio}>
+            <line x1={x(a.d)} y1={PAD_T - 8} x2={x(a.d)} y2={H - 22} stroke="var(--rule)" strokeDasharray="3 3" />
+            <text x={x(a.d)} y={PAD_T - 12} fontSize="9" fill="var(--fg-muted)" textAnchor="middle">{a.anio}</text>
+          </g>
+        ))}
+        {prog.map((p, i) => {
+          const y = PAD_T + i * FILA
+          const xPerf = x(dia(p.inicioPerforacion))
+          const xFinPerf = x(dia(p.finPerforacion))
+          const xTerm = x(dia(p.inicioTerminacion))
+          const xProd = x(dia(p.primeraProduccion))
+          return (
+            <g key={p.intervencionId}>
+              <text x={PAD_L - 8} y={y + 11} fontSize="10" fill="var(--fg-soft)" textAnchor="end">{p.etiqueta}</text>
+              <rect x={xPerf} y={y + 2} width={Math.max(xFinPerf - xPerf, 1.5)} height={12} rx={2} fill="var(--accent)" opacity={0.85} />
+              {xProd > xTerm && (
+                <rect x={xTerm} y={y + 2} width={Math.max(xProd - xTerm, 1.5)} height={12} rx={2} fill="#d69e2e" opacity={0.8} />
+              )}
+              <circle cx={xProd} cy={y + 8} r={3} fill="#2d7a4a" />
+            </g>
+          )
+        })}
+        <g transform={`translate(${PAD_L}, ${H - 8})`}>
+          <rect x={0} y={-8} width={10} height={8} rx={2} fill="var(--accent)" opacity={0.85} />
+          <text x={14} y={-1} fontSize="9" fill="var(--fg-muted)">Perforación</text>
+          <rect x={78} y={-8} width={10} height={8} rx={2} fill="#d69e2e" opacity={0.8} />
+          <text x={92} y={-1} fontSize="9" fill="var(--fg-muted)">Terminación</text>
+          <circle cx={168} cy={-4} r={3} fill="#2d7a4a" />
+          <text x={176} y={-1} fontSize="9" fill="var(--fg-muted)">Primera producción</text>
+        </g>
+      </svg>
     </div>
   )
 }

@@ -210,6 +210,29 @@ export const ENTITIES: EntityConfig[] = [
     displayCols: r => [{ label: 'Nombre', value: String(r.nombre) }, { label: 'Base', value: r.es_base ? 'Sí' : 'No' }],
   },
   {
+    tabla: 'campanas',
+    title: '13b. Campaña de perforación (equipos y días por etapa)',
+    helpText: 'El cronograma no se carga fecha por fecha: se deriva de la cantidad de equipos y los días de cada etapa. Con 1 equipo de perforación las perforaciones quedan escalonadas; con 2 avanzan dos pozos en paralelo. Si además cargás equipos de terminación aparte, el equipo de perforación pasa al pozo siguiente mientras otro termina el anterior (solapamiento parcial). Después asigná las intervenciones a esta campaña con un orden, y programala desde la pestaña "Cronograma".',
+    fields: [
+      { name: 'nombre', label: 'Nombre', type: 'text', required: true },
+      { name: 'escenario_id', label: 'Escenario (vacío = plan base)', type: 'select', optionsFrom: 'escenarios' },
+      { name: 'fecha_inicio', label: 'Fecha de inicio de la campaña', type: 'date', required: true },
+      { name: 'equipos_perforacion', label: 'Equipos de perforación', type: 'number', min: 1, max: 20, defaultValue: 1, required: true },
+      { name: 'equipos_terminacion', label: 'Equipos de terminación (vacío = el mismo equipo perfora y termina)', type: 'number', min: 1, max: 20 },
+      { name: 'dias_perforacion', label: 'Días de perforación por pozo', type: 'number', min: 1, defaultValue: 30, required: true },
+      { name: 'dias_terminacion', label: 'Días de terminación por pozo', type: 'number', min: 0, defaultValue: 10, required: true },
+      { name: 'dias_movilizacion', label: 'Días de mudanza del equipo entre pozos', type: 'number', min: 0, defaultValue: 0, required: true },
+      { name: 'notas', label: 'Notas', type: 'text' },
+    ],
+    displayCols: (r, d) => [
+      { label: 'Nombre', value: String(r.nombre) },
+      { label: 'Inicio', value: String(r.fecha_inicio) },
+      { label: 'Equipos', value: `${r.equipos_perforacion} perf.${r.equipos_terminacion ? ` + ${r.equipos_terminacion} term.` : ' (perfora y termina)'}` },
+      { label: 'Días', value: `${r.dias_perforacion}p + ${r.dias_terminacion}t + ${r.dias_movilizacion}m` },
+      { label: 'Escenario', value: r.escenario_id != null ? nombreDe(d, 'escenarios', r.escenario_id) : 'base' },
+    ],
+  },
+  {
     tabla: 'intervenciones',
     title: '14. Intervención (drilling / workover / pulling / facilities)',
     fields: [
@@ -222,7 +245,11 @@ export const ENTITIES: EntityConfig[] = [
       { name: 'subtipo', label: 'Subtipo (opcional)', type: 'select', staticOptions: [
         { value: 'inyeccion', label: 'Inyección' }, { value: 'produccion', label: 'Producción' }, { value: 'conversion', label: 'Conversión' },
       ] },
-      { name: 'fecha', label: 'Fecha', type: 'date', required: true },
+      { name: 'campana_id', label: 'Campaña (opcional — si la elegís, la fecha la calcula el cronograma)', type: 'select', optionsFrom: 'campanas' },
+      { name: 'orden', label: 'Orden dentro de la campaña', type: 'number', min: 1 },
+      { name: 'fecha', label: 'Fecha de primera producción (la calcula el cronograma si hay campaña)', type: 'date', required: true },
+      { name: 'dias_perforacion', label: 'Días de perforación (vacío = usa el de la campaña)', type: 'number', min: 1 },
+      { name: 'dias_terminacion', label: 'Días de terminación (vacío = usa el de la campaña)', type: 'number', min: 0 },
       { name: 'capex_usd', label: 'CAPEX USD', type: 'number', step: '0.01', required: true },
       { name: 'vida_util_meses', label: 'Vida útil (meses)', type: 'number' },
       { name: 'pozo_tipo_id', label: 'Curva que activa (pozo tipo)', type: 'select', optionsFrom: 'pozos_tipo' },
