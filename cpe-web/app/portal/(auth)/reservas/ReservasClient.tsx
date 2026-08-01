@@ -450,7 +450,7 @@ function Kv({ label: l, val }: { label: string; val: string }) {
 
 function ResultadosTab({ data }: { data: Data }) {
   const [escenarioId, setEscenarioId] = useState('')
-  const [vista, setVista] = useState<'mensual' | 'anual' | 'depletion' | 'fdc'>('mensual')
+  const [vista, setVista] = useState<'mensual' | 'anual' | 'oneline' | 'depletion' | 'fdc'>('mensual')
   const [rows, setRows] = useState<Row[]>([])
   const [rowsAnual, setRowsAnual] = useState<Row[]>([])
   const [rowsDepletion, setRowsDepletion] = useState<Row[]>([])
@@ -521,13 +521,13 @@ function ResultadosTab({ data }: { data: Data }) {
       )}
       {escenarioId && (
         <div style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
-          {(['mensual', 'anual', 'depletion', 'fdc'] as const).map(v => (
+          {(['mensual', 'anual', 'oneline', 'depletion', 'fdc'] as const).map(v => (
             <button key={v} onClick={() => setVista(v)} style={{
               background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: 0,
               color: vista === v ? 'var(--accent)' : 'var(--fg-muted)',
               textDecoration: vista === v ? 'underline' : 'none',
             }}>
-              {v === 'mensual' ? 'Cash flow mensual (por pozo)' : v === 'anual' ? 'Resumen anual (por yacimiento + consolidado)' : v === 'depletion' ? 'Depleción de reservas P1/P2/P3' : 'Capital de desarrollo futuro (FDC)'}
+              {v === 'mensual' ? 'Cash flow mensual (por pozo)' : v === 'anual' ? 'Resumen anual (por yacimiento + consolidado)' : v === 'oneline' ? 'One-line por pozo' : v === 'depletion' ? 'Depleción de reservas P1/P2/P3' : 'Capital de desarrollo futuro (FDC)'}
             </button>
           ))}
         </div>
@@ -538,6 +538,7 @@ function ResultadosTab({ data }: { data: Data }) {
       {!loading && escenarioId && vista === 'depletion' && rowsDepletion.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — necesita reservas cargadas (sección 15) y haber corrido el cálculo.</p>}
 
       {vista === 'fdc' && escenarioId && <PanelFdc escenarioId={escenarioId} />}
+      {vista === 'oneline' && escenarioId && <PanelOneLine escenarioId={escenarioId} />}
 
       {vista === 'depletion' && rowsDepletion.length > 0 && (
         <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 12, marginBottom: 0 }}>
@@ -1980,6 +1981,134 @@ function PanelFdc({ escenarioId }: { escenarioId: string }) {
               </tr>
             </tbody>
           </table>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── One-line por pozo ───────────────────────────────────────────────────
+// El nivel al que se decide: una fila por pozo con lo que importa. Antes sólo
+// había cash flow mes a mes (decenas de miles de filas) o el agregado anual.
+type LineaPozo = {
+  pozo_id: number; pozo: string; concesion: string; yacimiento: string
+  categoria: 'existente' | 'a_perforar'
+  npv_usd: number; irr_pct: number | null; payback_anios: number | null
+  capex_usd: number; eur_bbl: number; eur_mcf: number; eur_boe: number
+  ebitda_usd: number; netback_usd_boe: number | null
+  primera_produccion: string | null; ultima_produccion: string | null
+  cortado_por_limite: boolean
+}
+type Resumen = { pozos: number; npv_usd: number; capex_usd: number; eur_boe: number; ebitda_usd: number }
+type OneLine = {
+  fecha_base_descuento: string; tasa_descuento: number
+  lineas: LineaPozo[]; total: Resumen
+  por_categoria: { existente: Resumen; a_perforar: Resumen }
+}
+
+function PanelOneLine({ escenarioId }: { escenarioId: string }) {
+  const [tasa, setTasa] = useState('0.10')
+  const [d, setD] = useState<OneLine | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+  const [orden, setOrden] = useState<keyof LineaPozo>('npv_usd')
+
+  async function cargar(t: string) {
+    setLoading(true); setErr(''); setD(null)
+    try {
+      const r = await fetch(`/api/portal/reservas/one-line?escenario_id=${escenarioId}&tasa=${t}`, { cache: 'no-store' })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      setD(j)
+    } catch (e) { setErr((e as Error).message) } finally { setLoading(false) }
+  }
+  useEffect(() => { cargar(tasa) }, [escenarioId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const ordenadas = d ? [...d.lineas].sort((a, b) => {
+    const va = a[orden], vb = b[orden]
+    if (typeof va === 'number' && typeof vb === 'number') return vb - va
+    return String(va ?? '').localeCompare(String(vb ?? ''))
+  }) : []
+
+  const th = (k: keyof LineaPozo, txt: string, der = false) => (
+    <th onClick={() => setOrden(k)} style={{
+      padding: '6px 8px', textAlign: der ? 'right' : 'left', cursor: 'pointer',
+      textDecoration: orden === k ? 'underline' : 'none',
+    }}>{txt}</th>
+  )
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10 }}>
+        Una fila por pozo, todo neto a CPE y descontado a la <strong>misma fecha base</strong> — si cada pozo se
+        descontara a su propio primer mes, los tardíos parecerían mejores. Clic en un encabezado para ordenar.
+      </p>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 12 }}>
+        <div style={{ minWidth: 130 }}>
+          <label style={label}>Tasa de descuento</label>
+          <input value={tasa} onChange={e => setTasa(e.target.value)} type="number" step="0.01" style={input} />
+        </div>
+        <button className="btn" disabled={loading} onClick={() => cargar(tasa)} style={{ padding: '9px 18px', fontSize: 12 }}>
+          {loading ? 'Calculando…' : 'Recalcular'}
+        </button>
+      </div>
+
+      {err && <p style={{ color: 'var(--cp-negative)', fontSize: 13 }}>{err}</p>}
+
+      {d && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px 20px', marginBottom: 16, fontSize: 12 }}>
+            {([['Pozos existentes', d.por_categoria.existente], ['Pozos a perforar', d.por_categoria.a_perforar], ['Total', d.total]] as [string, Resumen][]).map(([t, r]) => (
+              <div key={t} style={{ border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', padding: '10px 12px' }}>
+                <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--fg-muted)' }}>{t}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 15, color: 'var(--accent)' }}>{mm(r.npv_usd)}</div>
+                <div style={{ color: 'var(--fg-muted)', fontSize: 11 }}>
+                  {r.pozos} pozos · CAPEX {mm(r.capex_usd)} · {Math.round(r.eur_boe).toLocaleString('es-AR')} BOE
+                </div>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 10 }}>
+            El corte entre existentes y a perforar es la separación que pide NI 51-101 entre reservas desarrolladas
+            y no desarrolladas, vista desde la economía: cuánto del valor ya está en línea y cuánto depende de
+            invertir.
+          </p>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                  {th('pozo', 'Pozo')}{th('yacimiento', 'Yacimiento')}{th('categoria', 'Categoría')}
+                  {th('npv_usd', 'VAN', true)}{th('irr_pct', 'TIR', true)}{th('payback_anios', 'Payback', true)}
+                  {th('capex_usd', 'CAPEX', true)}{th('eur_boe', 'EUR (BOE)', true)}{th('netback_usd_boe', 'Netback', true)}
+                  {th('primera_produccion', '1ra prod.')}
+                </tr>
+              </thead>
+              <tbody>
+                {ordenadas.map(l => (
+                  <tr key={l.pozo_id} style={{ borderBottom: '1px solid var(--rule)' }}>
+                    <td style={{ padding: '6px 8px' }}>
+                      {l.pozo}{l.cortado_por_limite && <span title="cortado por límite económico" style={{ color: 'var(--cp-negative)' }}> ✕</span>}
+                    </td>
+                    <td style={{ padding: '6px 8px', color: 'var(--fg-muted)' }}>{l.yacimiento}</td>
+                    <td style={{ padding: '6px 8px', fontSize: 11, color: l.categoria === 'a_perforar' ? '#d69e2e' : 'var(--fg-muted)' }}>
+                      {l.categoria === 'a_perforar' ? 'a perforar' : 'existente'}
+                    </td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600, color: l.npv_usd < 0 ? 'var(--cp-negative)' : undefined }}>{mm(l.npv_usd)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{l.irr_pct != null ? `${l.irr_pct.toFixed(1)}%` : '—'}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{l.payback_anios != null ? `${l.payback_anios.toFixed(1)} a.` : '—'}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{l.capex_usd > 0 ? mm(l.capex_usd) : '—'}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Math.round(l.eur_boe).toLocaleString('es-AR')}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{l.netback_usd_boe != null ? l.netback_usd_boe.toFixed(2) : '—'}</td>
+                    <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{l.primera_produccion?.slice(0, 7) ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 8 }}>
+            ✕ marca los pozos cortados por límite económico. Descontado a {d.fecha_base_descuento} @ {(d.tasa_descuento * 100).toFixed(1)}%.
+          </p>
         </>
       )}
     </div>

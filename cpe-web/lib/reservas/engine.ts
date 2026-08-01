@@ -919,7 +919,7 @@ export async function calcularAgregadosAnuales(escenarioId: number) {
 }
 
 // ─── Métricas del escenario: NPV, IRR, payback ───────────────────────────
-function irrAnual(cashflowsAnuales: number[]): number | null {
+export function irrAnual(cashflowsAnuales: number[]): number | null {
   // Bisección entre -99% y 1000% — robusto para series con un único cambio
   // de signo (CAPEX inicial negativo, luego flujo positivo), que es el caso
   // típico de un pozo/yacimiento.
