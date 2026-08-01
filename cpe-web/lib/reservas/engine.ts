@@ -96,11 +96,14 @@ class Diagnosticos {
   }
 }
 
-export async function calcularEscenario(escenarioId: number, horizonteMeses = HORIZONTE_MESES_MAX) {
-  const db = createSupabaseServerAdminClient()
-  const horizonte = Math.max(1, Math.min(horizonteMeses, HORIZONTE_MESES_MAX))
-  const diag = new Diagnosticos()
+// Datos crudos del escenario. Se separa de la simulación para poder correr el
+// motor muchas veces sobre la misma carga — es lo que hace viable el barrido de
+// fechas de inicio de campaña (probar 36 arranques sin volver a leer 16 tablas
+// por cada uno).
+export type ContextoEscenario = Awaited<ReturnType<typeof cargarContexto>>
 
+export async function cargarContexto(escenarioId: number) {
+  const db = createSupabaseServerAdminClient()
   const [
     pozos, curvas, intervencionesRaw, participaciones, regalias,
     opexFijo, opexVar, opexFijoPozo, formulas, preciosRef, preciosMens,
@@ -123,6 +126,27 @@ export async function calcularEscenario(escenarioId: number, horizonteMeses = HO
     traerTodo<any>(() => db.from('parametros_impuesto_ganancias').select('*').eq('nivel', 'consolidado').order('id')),
     traerTodo<any>(() => db.from('parametros_debitos_creditos').select('*').order('id')),
   ])
+  return {
+    pozos, curvas, intervencionesRaw, participaciones, regalias,
+    opexFijo, opexVar, opexFijoPozo, formulas, preciosRef, preciosMens,
+    provincias, yacimientos, concesiones, ganancias, debitosCreditos,
+  }
+}
+
+export async function calcularEscenario(
+  escenarioId: number,
+  horizonteMeses = HORIZONTE_MESES_MAX,
+  opciones: { contexto?: ContextoEscenario; persistir?: boolean } = {},
+) {
+  const db = createSupabaseServerAdminClient()
+  const horizonte = Math.max(1, Math.min(horizonteMeses, HORIZONTE_MESES_MAX))
+  const diag = new Diagnosticos()
+
+  const {
+    pozos, curvas, intervencionesRaw, participaciones, regalias,
+    opexFijo, opexVar, opexFijoPozo, formulas, preciosRef, preciosMens,
+    provincias, yacimientos, concesiones, ganancias, debitosCreditos,
+  } = opciones.contexto ?? await cargarContexto(escenarioId)
 
   const intervenciones = [...intervencionesRaw].sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))
 
@@ -409,16 +433,20 @@ export async function calcularEscenario(escenarioId: number, horizonteMeses = HO
     }
   }
 
-  await db.from('cashflow_mensual').delete().eq('escenario_id', escenarioId)
-  if (filas.length > 0) {
-    const CHUNK = 500
-    for (let i = 0; i < filas.length; i += CHUNK) {
-      const { error } = await db.from('cashflow_mensual').insert(filas.slice(i, i + CHUNK))
-      if (error) throw new Error(error.message)
+  // El barrido de fechas corre el motor decenas de veces y no necesita
+  // escribir nada: sólo el VAN de cada alternativa.
+  if (opciones.persistir !== false) {
+    await db.from('cashflow_mensual').delete().eq('escenario_id', escenarioId)
+    if (filas.length > 0) {
+      const CHUNK = 500
+      for (let i = 0; i < filas.length; i += CHUNK) {
+        const { error } = await db.from('cashflow_mensual').insert(filas.slice(i, i + CHUNK))
+        if (error) throw new Error(error.message)
+      }
     }
   }
 
-  return { filas: filas.length, pozos: registrosPorPozo.size, diagnosticos: diag.lista() }
+  return { filas: filas.length, pozos: registrosPorPozo.size, diagnosticos: diag.lista(), cashflow: filas }
 }
 
 function monthsBetween(desdeIso: string, fechaIso: string): number {

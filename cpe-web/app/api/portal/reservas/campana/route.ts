@@ -90,15 +90,33 @@ export async function POST(req: NextRequest) {
     // `fecha` es la primera producción (desde ahí arranca la curva del pozo
     // tipo) y `fecha_inicio_perforacion` es donde se imputa el CAPEX.
     const db = createSupabaseServerAdminClient()
+    const intervPorId = new Map<number, any>(
+      (await traerTodo<any>(() => db.from('intervenciones').select('*').eq('campana_id', campanaId).order('id')))
+        .map(i => [i.id, i]),
+    )
+
+    let altasMovidas = 0
     for (const p of resultado.cronograma) {
       const { error } = await db.from('intervenciones').update({
         fecha: p.primeraProduccion,
         fecha_inicio_perforacion: p.inicioPerforacion,
       }).eq('id', p.intervencionId)
       if (error) throw new Error(error.message)
+
+      // Para una perforación el pozo nace con la campaña, así que su alta
+      // también se mueve: si quedara fija, el motor arrancaría a recorrer el
+      // pozo en una fecha que ya no tiene nada que ver con el cronograma.
+      // Un workover no la toca — ese pozo ya venía produciendo.
+      const interv = intervPorId.get(p.intervencionId)
+      if (interv?.pozo_id != null && interv.tipo === 'perforacion') {
+        const { error: errPozo } = await db.from('pozos')
+          .update({ fecha_alta: p.primeraProduccion }).eq('id', interv.pozo_id)
+        if (errPozo) throw new Error(errPozo.message)
+        altasMovidas++
+      }
     }
 
-    return NextResponse.json({ ...resultado, aplicado: resultado.cronograma.length })
+    return NextResponse.json({ ...resultado, aplicado: resultado.cronograma.length, altas_movidas: altasMovidas })
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 400 })
   }

@@ -1069,6 +1069,8 @@ function CronogramaTab({ data, reload }: { data: Data; reload: () => void }) {
           <button className="btn btn-primary" disabled={loading} onClick={aplicar}>
             {loading ? 'Aplicando…' : 'Aplicar cronograma a las intervenciones'}
           </button>
+
+          <BarridoCampana campanaId={campanaId} />
         </>
       )}
     </Seccion>
@@ -1128,6 +1130,215 @@ function GanttCampana({ prog }: { prog: PozoProgramado[] }) {
           <text x={176} y={-1} fontSize="9" fill="var(--fg-muted)">Primera producción</text>
         </g>
       </svg>
+    </div>
+  )
+}
+
+// ─── Barrido de fechas de inicio ─────────────────────────────────────────
+// La pregunta de fondo del simulador: ¿cuándo conviene arrancar la campaña,
+// dado que el % de participación en la concesión cambia con el tiempo?
+type PuntoBarrido = {
+  offset_meses: number; fecha_inicio: string; primera_produccion: string
+  ultima_produccion: string; npv_usd: number; capex_total_usd: number
+  participacion_primera_produccion: number | null
+}
+type RespuestaBarrido = {
+  campana: { id: number; nombre: string; fecha_inicio: string }
+  fecha_base_descuento: string
+  tasa_descuento: number
+  puntos: PuntoBarrido[]
+  mejor: PuntoBarrido
+  cambios_participacion: { fecha: string; porcentaje: number }[]
+}
+
+function BarridoCampana({ campanaId }: { campanaId: string }) {
+  const [meses, setMeses] = useState('36')
+  const [paso, setPaso] = useState('1')
+  const [tasa, setTasa] = useState('0.10')
+  const [res, setRes] = useState<RespuestaBarrido | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function correr() {
+    setLoading(true); setErr(''); setRes(null)
+    try {
+      const r = await fetch('/api/portal/reservas/campana/barrido', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          campana_id: Number(campanaId), meses: Number(meses),
+          paso: Number(paso), tasa_anual: Number(tasa),
+        }),
+      })
+      const json = await r.json()
+      if (!r.ok) throw new Error(json.error ?? 'Error')
+      setRes(json)
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const base = res?.puntos.find(p => p.offset_meses === 0)
+  const delta = res && base ? res.mejor.npv_usd - base.npv_usd : 0
+
+  return (
+    <div style={{ borderTop: '1px solid var(--rule)', marginTop: 28, paddingTop: 20 }}>
+      <p style={{ fontSize: 13, fontWeight: 700, margin: '0 0 4px', color: 'var(--fg)' }}>
+        ¿Cuándo conviene arrancar? — barrido de fechas de inicio
+      </p>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 14px' }}>
+        Reprograma la campaña completa mes a mes, corre el motor con cada arranque y compara el VAN.
+        No escribe nada: es sólo para decidir. Todos los candidatos se descuentan a la <strong>misma fecha base</strong>,
+        que es lo que hace que sean comparables — si cada uno se descontara a su propio primer mes,
+        postergar siempre parecería mejor.
+      </p>
+
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 12 }}>
+        <div style={{ minWidth: 120 }}>
+          <label style={label}>Meses a barrer</label>
+          <input value={meses} onChange={e => setMeses(e.target.value)} type="number" min="1" max="72" style={input} />
+        </div>
+        <div style={{ minWidth: 100 }}>
+          <label style={label}>Paso (meses)</label>
+          <input value={paso} onChange={e => setPaso(e.target.value)} type="number" min="1" style={input} />
+        </div>
+        <div style={{ minWidth: 120 }}>
+          <label style={label}>Tasa de descuento</label>
+          <input value={tasa} onChange={e => setTasa(e.target.value)} type="number" step="0.01" style={input} />
+        </div>
+        <button className="btn btn-primary" disabled={loading} onClick={correr} style={{ padding: '9px 20px', fontSize: 12 }}>
+          {loading ? 'Barriendo…' : 'Correr barrido'}
+        </button>
+      </div>
+
+      {err && <p style={{ color: 'var(--cp-negative)', fontSize: 13 }}>{err}</p>}
+      {loading && <p style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Corriendo el motor una vez por cada fecha candidata…</p>}
+
+      {res && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px', margin: '16px 0' }}>
+            <Kv label="Mejor fecha de inicio" val={res.mejor.fecha_inicio} />
+            <Kv label="VAN en el óptimo" val={mm(res.mejor.npv_usd)} />
+            <Kv label="Corrimiento vs. la fecha cargada" val={res.mejor.offset_meses === 0 ? 'ninguno — ya está en el óptimo' : `${res.mejor.offset_meses > 0 ? '+' : ''}${res.mejor.offset_meses} meses`} />
+            <Kv label="Ganancia vs. la fecha cargada" val={delta === 0 ? '—' : mm(delta)} />
+            <Kv label="Participación en la 1ra producción" val={res.mejor.participacion_primera_produccion != null ? `${(res.mejor.participacion_primera_produccion * 100).toFixed(2)}%` : '—'} />
+            <Kv label="Descontado a" val={`${res.fecha_base_descuento} @ ${(res.tasa_descuento * 100).toFixed(1)}%`} />
+          </div>
+
+          <BarridoChart res={res} />
+
+          <div style={{ overflowX: 'auto', marginTop: 18 }}>
+            <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                  <th style={{ padding: '6px 8px' }}>Inicio</th>
+                  <th style={{ padding: '6px 8px' }}>Corrim.</th>
+                  <th style={{ padding: '6px 8px' }}>1ra producción</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>Participación</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>VAN</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>vs. base</th>
+                </tr>
+              </thead>
+              <tbody>
+                {res.puntos.map(p => {
+                  const esMejor = p.offset_meses === res.mejor.offset_meses
+                  return (
+                    <tr key={p.offset_meses} style={{
+                      borderBottom: '1px solid var(--rule)',
+                      background: esMejor ? 'rgba(45,122,74,0.08)' : undefined,
+                      fontWeight: esMejor ? 700 : 400,
+                    }}>
+                      <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{p.fecha_inicio}</td>
+                      <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{p.offset_meses > 0 ? `+${p.offset_meses}` : p.offset_meses}</td>
+                      <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{p.primera_produccion}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                        {p.participacion_primera_produccion != null ? `${(p.participacion_primera_produccion * 100).toFixed(2)}%` : '—'}
+                      </td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(p.npv_usd)}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: base && p.npv_usd > base.npv_usd ? '#2d7a4a' : 'var(--fg-muted)' }}>
+                        {base ? mm(p.npv_usd - base.npv_usd) : '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 10 }}>
+            Para dejar fija la fecha elegida: cambiá la fecha de inicio de la campaña en "Cargar datos",
+            volvé acá y aplicá el cronograma.
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
+function BarridoChart({ res }: { res: RespuestaBarrido }) {
+  const p = res.puntos
+  if (p.length < 2) return null
+  const W = 720, H = 260, PAD_L = 64, PAD_B = 42, PAD_T = 16
+
+  const xs = p.map(d => d.offset_meses)
+  const minX = Math.min(...xs), maxX = Math.max(...xs)
+  const ys = p.map(d => d.npv_usd)
+  const minY = Math.min(...ys), maxY = Math.max(...ys)
+  const rangoY = maxY - minY || Math.abs(maxY) || 1
+
+  const x = (v: number) => PAD_L + ((v - minX) / (maxX - minX || 1)) * (W - PAD_L - 16)
+  const y = (v: number) => H - PAD_B - ((v - minY) / rangoY) * (H - PAD_B - PAD_T)
+
+  const linea = p.map((d, i) => `${i === 0 ? 'M' : 'L'}${x(d.offset_meses).toFixed(1)},${y(d.npv_usd).toFixed(1)}`).join(' ')
+
+  // Dónde cae cada cambio de participación dentro del barrido, expresado en
+  // meses de corrimiento — es la explicación de los escalones del gráfico.
+  const mesesEntre = (a: string, b: string) => {
+    const da = new Date(a.slice(0, 7) + '-01T00:00:00Z'), dbb = new Date(b.slice(0, 7) + '-01T00:00:00Z')
+    return (dbb.getUTCFullYear() - da.getUTCFullYear()) * 12 + (dbb.getUTCMonth() - da.getUTCMonth())
+  }
+  const marcas = res.cambios_participacion
+    .map(c => ({ ...c, off: mesesEntre(res.campana.fecha_inicio, c.fecha) }))
+    .filter(c => c.off > minX && c.off < maxX)
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ minWidth: 560, background: 'var(--bg)', borderRadius: 8 }}>
+        <line x1={PAD_L} y1={H - PAD_B} x2={W - 16} y2={H - PAD_B} stroke="var(--rule)" />
+        <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={H - PAD_B} stroke="var(--rule)" />
+
+        {marcas.map(m => (
+          <g key={m.fecha}>
+            <line x1={x(m.off)} y1={PAD_T} x2={x(m.off)} y2={H - PAD_B} stroke="#b33b2e" strokeDasharray="4 3" opacity={0.7} />
+            <text x={x(m.off) + 4} y={PAD_T + 10} fontSize="9" fill="#b33b2e">
+              {(m.porcentaje * 100).toFixed(1)}% · {m.fecha.slice(0, 7)}
+            </text>
+          </g>
+        ))}
+
+        <path d={linea} fill="none" stroke="var(--accent)" strokeWidth={2} />
+        <circle cx={x(res.mejor.offset_meses)} cy={y(res.mejor.npv_usd)} r={5} fill="#2d7a4a" stroke="var(--bg)" strokeWidth={2} />
+        <text x={x(res.mejor.offset_meses)} y={y(res.mejor.npv_usd) - 10} fontSize="10" fill="#2d7a4a" textAnchor="middle" fontWeight="700">
+          óptimo {res.mejor.fecha_inicio.slice(0, 7)}
+        </text>
+
+        {[minY, (minY + maxY) / 2, maxY].map((v, i) => (
+          <text key={i} x={PAD_L - 6} y={y(v) + 3} fontSize="9" fill="var(--fg-muted)" textAnchor="end">
+            {(v / 1e6).toFixed(1)}MM
+          </text>
+        ))}
+        {p.filter((_, i) => i % Math.ceil(p.length / 8) === 0).map(d => (
+          <text key={d.offset_meses} x={x(d.offset_meses)} y={H - PAD_B + 14} fontSize="9" fill="var(--fg-muted)" textAnchor="middle">
+            {d.fecha_inicio.slice(0, 7)}
+          </text>
+        ))}
+        <text x={(W + PAD_L) / 2} y={H - 6} fontSize="10" fill="var(--fg-muted)" textAnchor="middle">Fecha de inicio de la campaña</text>
+        <text x={14} y={H / 2} fontSize="10" fill="var(--fg-muted)" textAnchor="middle" transform={`rotate(-90 14 ${H / 2})`}>VAN (USD)</text>
+      </svg>
+      <p style={{ fontSize: 10, color: 'var(--fg-muted)', marginTop: 4 }}>
+        Las líneas rojas punteadas son los cambios de participación en la concesión — normalmente ahí están los escalones de la curva.
+      </p>
     </div>
   )
 }

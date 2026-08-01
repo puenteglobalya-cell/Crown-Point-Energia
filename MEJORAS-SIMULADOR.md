@@ -39,14 +39,40 @@ El cronograma se previsualiza con un Gantt y recién se aplica cuando se
 confirma; al aplicar escribe la primera producción como fecha de arranque de la
 curva y el inicio de perforación como mes de imputación del CAPEX.
 
-**Lo que falta para cerrar el objetivo**: hoy se mueve la campaña a mano, se
-aplica y se corre el cálculo para comparar. El paso que falta es el **barrido
-automático**: probar N fechas de inicio (mes a mes durante, digamos, 3 años),
-correr el motor para cada una y graficar VAN contra fecha de inicio, marcando
-los saltos donde cambia el % de participación. Ahí el óptimo se lee de un
-gráfico en lugar de tantear. Es la mejora de mayor valor que queda, y ahora es
-barata porque el cronograma ya está parametrizado — es un `for` sobre
-`fecha_inicio`.
+### Barrido automático de fechas de inicio ✅
+
+`POST /api/portal/reservas/campana/barrido`, dentro de la pestaña "Cronograma".
+Reprograma la campaña completa mes a mes sobre un rango, corre el motor con
+cada arranque y grafica VAN contra fecha de inicio, marcando en rojo los
+cambios de participación. No escribe nada: es una herramienta de decisión.
+
+Dos detalles que hacen que el resultado sea válido:
+
+1. **Todos los candidatos se descuentan a la misma fecha base.** Si cada uno se
+   descontara a su propio primer mes de flujo, postergar tendría menos meses de
+   descuento y el barrido recomendaría siempre esperar.
+
+2. **Se carga el contexto una sola vez.** El motor se separó en `cargarContexto()`
+   y la simulación, así que 36 candidatos son 16 queries en total y no 576.
+   Correr con `persistir: false` evita además reescribir `cashflow_mensual` en
+   cada iteración.
+
+Al aplicar un cronograma, para las intervenciones de tipo perforación también
+se mueve `pozos.fecha_alta`: el pozo nuevo nace con la campaña. Un workover no
+la toca, porque ese pozo ya venía produciendo.
+
+**Resultado no obvio que conviene tener presente.** En una prueba con
+participación que sube de 20% a 80%, el óptimo **no** cae en el mes del cambio
+sino uno o dos meses antes: el CAPEX también se reparte según la participación
+vigente, así que conviene perforar mientras se paga el 20% de la inversión y
+producir después cobrando el 80%. Nadie lo pone a mano; sale del barrido.
+
+**Simplificación a revisar**: el motor multiplica el flujo neto de cada mes por
+la participación **de ese mes**, incluida la amortización de un CAPEX que quizá
+se incurrió bajo otro porcentaje. En un análisis que gira justamente alrededor
+de un cambio de participación, ese detalle puede mover el óptimo uno o dos
+meses. Si importa a ese nivel de precisión, hay que trackear la participación
+a la que se incurrió cada CAPEX y amortizarlo a esa.
 
 ---
 
