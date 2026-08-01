@@ -186,6 +186,38 @@ export function amortizacionUnidadesProduccion(reservasIniciales: number, meses:
   return out
 }
 
+// ─── Huella de los datos de entrada ──────────────────────────────────────
+// Sirve para saber si una corrida quedó vieja. Se calcula sobre todo lo que
+// el motor lee, así que editar un precio, una curva, una intervención o un
+// tramo de participación cambia la huella y delata que hay que recalcular.
+//
+// Es un hash no criptográfico (FNV-1a): no protege contra manipulación, sólo
+// detecta cambios accidentales, que es exactamente el problema.
+export function hashContexto(ctx: ContextoEscenario): string {
+  // Se ordena por id antes de serializar para que el hash no dependa del orden
+  // en que responda Postgres.
+  const partes = [
+    ctx.pozos, ctx.curvas, ctx.intervencionesRaw, ctx.participaciones, ctx.regalias,
+    ctx.opexFijo, ctx.opexVar, ctx.opexFijoPozo, ctx.formulas, ctx.preciosRef,
+    ctx.preciosMens, ctx.provincias, ctx.yacimientos, ctx.concesiones,
+    ctx.ganancias, ctx.debitosCreditos, ctx.deckPuntos, ctx.reservasAnuales,
+    ctx.deck ? [ctx.deck] : [],
+  ]
+
+  let h = 0x811c9dc5
+  for (const arr of partes) {
+    const ordenado = [...(arr ?? [])].sort((a: any, b: any) => (a?.id ?? 0) - (b?.id ?? 0))
+    const txt = JSON.stringify(ordenado)
+    for (let i = 0; i < txt.length; i++) {
+      h ^= txt.charCodeAt(i)
+      h = Math.imul(h, 0x01000193) >>> 0
+    }
+    h ^= 0x5bf03635 // separador entre tablas, para que mover filas de una a otra cambie el hash
+    h = Math.imul(h, 0x01000193) >>> 0
+  }
+  return h.toString(16).padStart(8, '0')
+}
+
 // Multiplicadores para análisis de sensibilidad. 1 = sin cambio. Se aplican
 // en el punto de uso y no sobre los datos cargados, así el barrido no depende
 // de reconstruir el contexto ni de cómo esté armada cada fórmula de precio.
@@ -905,7 +937,12 @@ function irrAnual(cashflowsAnuales: number[]): number | null {
   return (lo + hi) / 2
 }
 
-export async function calcularMetricasEscenario(escenarioId: number, tasaAnual: number, horizonteAnios: number) {
+export async function calcularMetricasEscenario(
+  escenarioId: number,
+  tasaAnual: number,
+  horizonteAnios: number,
+  traza: { hashInputs?: string; calculadoPor?: string } = {},
+) {
   const db = createSupabaseServerAdminClient()
   const cashflows = await traerTodo<{ fecha: string; cash_flow_neto_usd: number }>(() => db
     .from('cashflow_mensual')
@@ -943,13 +980,22 @@ export async function calcularMetricasEscenario(escenarioId: number, tasaAnual: 
     }
   }
 
-  const row = {
+  const row: Record<string, unknown> = {
     escenario_id: escenarioId,
     tasa_descuento: tasaAnual,
     horizonte_anios: horizonteAnios,
     npv_usd: npv,
     irr_pct: irr !== null ? irr * 100 : null,
     payback_anios: paybackAnios,
+  }
+
+  // Columnas de trazabilidad: se escriben sólo si la migración ya corrió, para
+  // que el cálculo no falle en una base que todavía no las tiene.
+  const { error: sinTraza } = await db.from('escenario_metricas').select('hash_inputs').limit(1)
+  if (!sinTraza) {
+    row.calculado_en = new Date().toISOString()
+    row.calculado_por = traza.calculadoPor ?? null
+    row.hash_inputs = traza.hashInputs ?? null
   }
 
   // Delete + insert en lugar de upsert: no depende de que exista un unique

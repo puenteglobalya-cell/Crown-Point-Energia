@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireReservasAccess } from '@/lib/reservas/access'
-import { calcularEscenario, calcularAgregadosAnuales, calcularMetricasEscenario, calcularDepletionReservas, calcularNpvPorTasa } from '@/lib/reservas/engine'
+import { calcularEscenario, calcularAgregadosAnuales, calcularMetricasEscenario, calcularDepletionReservas, calcularNpvPorTasa, cargarContexto, hashContexto } from '@/lib/reservas/engine'
 import { isSameOrigin } from '@/lib/csrf'
 
 export async function POST(req: NextRequest) {
@@ -25,9 +25,16 @@ export async function POST(req: NextRequest) {
   try {
     // El horizonte elegido ahora recorta de verdad la corrida del motor; antes
     // se guardaba en las métricas pero el motor siempre iba a 240 meses.
-    const resumen = await calcularEscenario(escenarioId, Math.round(horizonteAnios * 12))
+    // Se carga el contexto una vez: sirve para el cálculo y para sellar la
+    // corrida con la huella de los datos con los que se corrió.
+    const contexto = await cargarContexto(escenarioId)
+    const hashInputs = hashContexto(contexto)
+
+    const resumen = await calcularEscenario(escenarioId, Math.round(horizonteAnios * 12), { contexto })
     const agregados = await calcularAgregadosAnuales(escenarioId)
-    const metricas = await calcularMetricasEscenario(escenarioId, tasaAnual, horizonteAnios)
+    const metricas = await calcularMetricasEscenario(escenarioId, tasaAnual, horizonteAnios, {
+      hashInputs, calculadoPor: auth.user?.email ?? undefined,
+    })
     const depletion = await calcularDepletionReservas(escenarioId)
     // Tabla de VAN a 0/5/10/15/20%, antes y después de impuestos — el formato
     // que pide el Form 51-101F1 de NI 51-101.

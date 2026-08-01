@@ -136,6 +136,7 @@ supabase/20260801_reservas_reconciliacion.sql
 supabase/20260801_costos_corporativos.sql
 supabase/20260801_price_decks.sql
 supabase/20260801_metodo_amortizacion.sql
+supabase/20260801_trazabilidad_corridas.sql
 ```
 
 - **`reservas_abandono`** agrega `pozos.costo_abandono_usd`. NI 51-101 pide
@@ -181,6 +182,13 @@ supabase/20260801_metodo_amortizacion.sql
   no haya corrido; la columna sirve para poder forzar lineal en un escenario.
   **Para que funcione hace falta tener cargadas las reservas del yacimiento**:
   sin ellas cae a la vida útil lineal e informa un aviso.
+
+- **`trazabilidad_corridas`** sella cada corrida con quién, cuándo y una
+  **huella de los datos** con los que se corrió. Al abrir los resultados se
+  recalcula la huella y se compara: si alguien editó un precio o una curva
+  después de calcular, aparece **"Desactualizado"** en lugar de mostrar un VAN
+  viejo como si fuera bueno. Sin la migración el cálculo funciona igual, pero
+  no se puede verificar si los resultados quedaron viejos.
 
 El motor lee las columnas nuevas de forma defensiva, así que el simulador
 funciona con o sin estas migraciones aplicadas.

@@ -38,6 +38,43 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(rows)
     }
 
+    if (vista === 'fdc') {
+      // Capital de desarrollo futuro: NI 51-101 pide informar los costos de
+      // desarrollo futuro por año. Sale del CAPEX que el motor ya imputó, así
+      // que respeta el cronograma de la campaña; no hay que cargar nada nuevo.
+      // "Futuro" es desde la fecha efectiva (por defecto hoy): lo ya gastado
+      // no es capital futuro.
+      const desde = req.nextUrl.searchParams.get('desde') ?? new Date().toISOString().slice(0, 10)
+      const filas = await traerTodo<any>(() => db
+        .from('cashflow_mensual').select('fecha, capex_usd, participacion_pct')
+        .eq('escenario_id', escenarioId).gt('capex_usd', 0).order('id'))
+
+      const porAnio = new Map<number, { bruto: number; neto: number }>()
+      for (const f of filas) {
+        if (String(f.fecha) < desde) continue
+        const anio = Number(String(f.fecha).slice(0, 4))
+        const acc = porAnio.get(anio) ?? { bruto: 0, neto: 0 }
+        acc.bruto += Number(f.capex_usd)
+        acc.neto += Number(f.capex_usd) * Number(f.participacion_pct ?? 1)
+        porAnio.set(anio, acc)
+      }
+
+      const anios = [...porAnio.entries()].sort((a, b) => a[0] - b[0])
+        .map(([anio, v]) => ({ anio, capex_bruto_usd: v.bruto, capex_neto_usd: v.neto }))
+
+      return NextResponse.json({
+        desde,
+        anios,
+        total_bruto_usd: anios.reduce((s, a) => s + a.capex_bruto_usd, 0),
+        total_neto_usd: anios.reduce((s, a) => s + a.capex_neto_usd, 0),
+        // Lo ya incurrido antes de la fecha efectiva, para poder distinguirlo
+        // del capital que todavía falta comprometer.
+        ya_incurrido_neto_usd: filas
+          .filter(f => String(f.fecha) < desde)
+          .reduce((s, f) => s + Number(f.capex_usd) * Number(f.participacion_pct ?? 1), 0),
+      })
+    }
+
     const pagina = Math.max(0, Number(req.nextUrl.searchParams.get('pagina') ?? 0) || 0)
     const desde = pagina * PAGINA_MENSUAL
     const { data, error, count } = await db

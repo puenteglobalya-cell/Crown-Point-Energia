@@ -450,7 +450,7 @@ function Kv({ label: l, val }: { label: string; val: string }) {
 
 function ResultadosTab({ data }: { data: Data }) {
   const [escenarioId, setEscenarioId] = useState('')
-  const [vista, setVista] = useState<'mensual' | 'anual' | 'depletion'>('mensual')
+  const [vista, setVista] = useState<'mensual' | 'anual' | 'depletion' | 'fdc'>('mensual')
   const [rows, setRows] = useState<Row[]>([])
   const [rowsAnual, setRowsAnual] = useState<Row[]>([])
   const [rowsDepletion, setRowsDepletion] = useState<Row[]>([])
@@ -502,6 +502,7 @@ function ResultadosTab({ data }: { data: Data }) {
       <Field><label style={label}>Escenario</label>
         <Select name="escenario_id" value={escenarioId} onChange={e => cargar(e.target.value)} opts={data.escenarios.map(e => ({ value: String(e.id), label: String(e.nombre) }))} />
       </Field>
+      {escenarioId && <BadgeEstado escenarioId={escenarioId} />}
       {escenarioId && (
         <div style={{ marginBottom: 14 }}>
           <a className="btn" href={`/api/portal/reservas/export?escenario_id=${escenarioId}`}
@@ -520,13 +521,13 @@ function ResultadosTab({ data }: { data: Data }) {
       )}
       {escenarioId && (
         <div style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
-          {(['mensual', 'anual', 'depletion'] as const).map(v => (
+          {(['mensual', 'anual', 'depletion', 'fdc'] as const).map(v => (
             <button key={v} onClick={() => setVista(v)} style={{
               background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: 0,
               color: vista === v ? 'var(--accent)' : 'var(--fg-muted)',
               textDecoration: vista === v ? 'underline' : 'none',
             }}>
-              {v === 'mensual' ? 'Cash flow mensual (por pozo)' : v === 'anual' ? 'Resumen anual (por yacimiento + consolidado)' : 'Depleción de reservas P1/P2/P3'}
+              {v === 'mensual' ? 'Cash flow mensual (por pozo)' : v === 'anual' ? 'Resumen anual (por yacimiento + consolidado)' : v === 'depletion' ? 'Depleción de reservas P1/P2/P3' : 'Capital de desarrollo futuro (FDC)'}
             </button>
           ))}
         </div>
@@ -535,6 +536,8 @@ function ResultadosTab({ data }: { data: Data }) {
       {!loading && escenarioId && vista === 'mensual' && rows.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — corré el cálculo primero en la pestaña anterior.</p>}
       {!loading && escenarioId && vista === 'anual' && rowsAnual.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — corré el cálculo primero en la pestaña anterior.</p>}
       {!loading && escenarioId && vista === 'depletion' && rowsDepletion.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — necesita reservas cargadas (sección 15) y haber corrido el cálculo.</p>}
+
+      {vista === 'fdc' && escenarioId && <PanelFdc escenarioId={escenarioId} />}
 
       {vista === 'depletion' && rowsDepletion.length > 0 && (
         <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 12, marginBottom: 0 }}>
@@ -1848,5 +1851,137 @@ function TornadoChart({ t }: { t: Tornado }) {
         </tbody>
       </table>
     </>
+  )
+}
+
+// ─── ¿Los resultados siguen siendo válidos? ──────────────────────────────
+// Sin esto, editar un precio después de calcular deja en pantalla un VAN viejo
+// sin ninguna señal — y ese número es el que termina en una presentación.
+type Estado = {
+  estado: 'al_dia' | 'desactualizado' | 'sin_correr' | 'sin_huella'
+  mensaje: string; calculado_en?: string | null; calculado_por?: string | null
+  tasa_descuento?: number; horizonte_anios?: number
+}
+
+const COLOR_CORRIDA: Record<Estado['estado'], string> = {
+  al_dia: '#2d7a4a', desactualizado: 'var(--cp-negative)',
+  sin_correr: 'var(--fg-muted)', sin_huella: '#d69e2e',
+}
+
+function BadgeEstado({ escenarioId }: { escenarioId: string }) {
+  const [e, setE] = useState<Estado | null>(null)
+  useEffect(() => {
+    setE(null)
+    fetch(`/api/portal/reservas/estado?escenario_id=${escenarioId}`, { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null).then(setE).catch(() => setE(null))
+  }, [escenarioId])
+  if (!e) return null
+
+  const cuando = e.calculado_en
+    ? new Date(e.calculado_en).toLocaleString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : null
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap',
+      fontSize: 12, padding: '8px 12px', marginBottom: 12, borderRadius: 'var(--r-md)',
+      border: `1px solid ${COLOR_CORRIDA[e.estado]}`,
+      background: e.estado === 'desactualizado' ? 'rgba(179,59,46,0.06)' : 'transparent',
+    }}>
+      <strong style={{ color: COLOR_CORRIDA[e.estado] }}>
+        {e.estado === 'al_dia' ? '✓ Al día' : e.estado === 'desactualizado' ? '✕ Desactualizado' : e.estado === 'sin_correr' ? 'Sin calcular' : '! Sin verificar'}
+      </strong>
+      <span style={{ color: 'var(--fg-soft)' }}>{e.mensaje}</span>
+      {cuando && (
+        <span style={{ color: 'var(--fg-muted)' }}>
+          · corrido el {cuando}{e.calculado_por ? ` por ${e.calculado_por}` : ''}
+          {e.tasa_descuento != null && ` · @ ${(e.tasa_descuento * 100).toFixed(1)}%`}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// ─── Capital de desarrollo futuro (FDC) ──────────────────────────────────
+type Fdc = {
+  desde: string
+  anios: { anio: number; capex_bruto_usd: number; capex_neto_usd: number }[]
+  total_bruto_usd: number; total_neto_usd: number; ya_incurrido_neto_usd: number
+}
+
+function PanelFdc({ escenarioId }: { escenarioId: string }) {
+  const [desde, setDesde] = useState(new Date().toISOString().slice(0, 10))
+  const [d, setD] = useState<Fdc | null>(null)
+  const [err, setErr] = useState('')
+
+  async function cargar(f: string) {
+    setErr(''); setD(null)
+    try {
+      const r = await fetch(`/api/portal/reservas/resultados?escenario_id=${escenarioId}&vista=fdc&desde=${f}`, { cache: 'no-store' })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      setD(j)
+    } catch (e) { setErr((e as Error).message) }
+  }
+  useEffect(() => { cargar(desde) }, [escenarioId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const max = d ? Math.max(...d.anios.map(a => a.capex_neto_usd), 1) : 1
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 10 }}>
+        NI 51-101 pide informar los costos de desarrollo futuro por año. Salen del CAPEX que el motor ya imputó,
+        así que respetan el cronograma de la campaña. <strong>Futuro</strong> es desde la fecha efectiva:
+        lo gastado antes no es capital por comprometer.
+      </p>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 12 }}>
+        <div style={{ minWidth: 160 }}>
+          <label style={label}>Fecha efectiva</label>
+          <input type="date" value={desde} onChange={e => { setDesde(e.target.value); cargar(e.target.value) }} style={input} />
+        </div>
+      </div>
+
+      {err && <p style={{ color: 'var(--cp-negative)', fontSize: 13 }}>{err}</p>}
+      {d && d.anios.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>No hay CAPEX pendiente después de esa fecha.</p>}
+
+      {d && d.anios.length > 0 && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px', marginBottom: 14 }}>
+            <Kv label="FDC total (neto a CPE)" val={mm(d.total_neto_usd)} />
+            <Kv label="FDC total (100% proyecto)" val={mm(d.total_bruto_usd)} />
+            <Kv label="Ya incurrido antes de la fecha" val={d.ya_incurrido_neto_usd > 0 ? mm(d.ya_incurrido_neto_usd) : '—'} />
+            <Kv label="Años con desembolso" val={String(d.anios.length)} />
+          </div>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                <th style={{ padding: '6px 8px' }}>Año</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Neto a CPE</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>100% proyecto</th>
+                <th style={{ padding: '6px 8px' }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {d.anios.map(a => (
+                <tr key={a.anio} style={{ borderBottom: '1px solid var(--rule)' }}>
+                  <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{a.anio}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{mm(a.capex_neto_usd)}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)' }}>{mm(a.capex_bruto_usd)}</td>
+                  <td style={{ padding: '6px 8px', width: '40%' }}>
+                    <div style={{ height: 10, borderRadius: 3, background: 'var(--accent)', opacity: 0.75, width: `${(a.capex_neto_usd / max) * 100}%` }} />
+                  </td>
+                </tr>
+              ))}
+              <tr style={{ borderTop: '2px solid var(--rule)', fontWeight: 700 }}>
+                <td style={{ padding: '8px' }}>TOTAL</td>
+                <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(d.total_neto_usd)}</td>
+                <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(d.total_bruto_usd)}</td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </>
+      )}
+    </div>
   )
 }
