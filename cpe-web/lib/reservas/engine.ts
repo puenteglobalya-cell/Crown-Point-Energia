@@ -504,9 +504,15 @@ export function calcularNPV(cashflows: { fecha: string; cash_flow_neto_usd: numb
 // (EBITDA, D&A, EBIT, neto, netback) por yacimiento y a nivel consolidado
 // (yacimiento_id = null).
 //
-// Base: 100% del proyecto (working interest bruto), igual que EBITDA y EBIT.
-// El flujo neto a CPE (ya multiplicado por la participación) es el que se usa
-// en NPV/IRR/payback — ver calcularMetricasEscenario.
+// Base: NETO A CPE. Todos los inputs del simulador (curvas, CAPEX, OPEX,
+// precios) se cargan al 100% del proyecto, y el motor los afecta por la
+// participación vigente en cada mes — incluidos los volúmenes. Como la
+// participación cambia en el tiempo, cada mes se pondera con la suya y recién
+// después se suma el año; no sirve aplicar un porcentaje promedio al total.
+//
+// cashflow_mensual sigue guardando las líneas al 100% y la participación del
+// mes en una columna aparte: es la pista de auditoría del proyecto completo, y
+// de ahí sale esta agregación.
 export async function calcularAgregadosAnuales(escenarioId: number) {
   const db = createSupabaseServerAdminClient()
 
@@ -533,18 +539,19 @@ export async function calcularAgregadosAnuales(escenarioId: number) {
   })
 
   function acumular(acc: Acc, cf: any) {
-    acc.produccion_petroleo_bbl += cf.bbl_petroleo
-    acc.produccion_gas_mcf += cf.mcf_gas
-    acc.ingresos_usd += cf.ingreso_bruto_usd
-    acc.regalias_usd += cf.regalias_usd
-    acc.opex_usd += cf.opex_fijo_usd + cf.opex_variable_usd + cf.opex_fijo_pozo_usd
-    acc.depreciacion_usd += cf.depreciacion_usd
-    acc.resultado_antes_ganancias_usd += cf.resultado_antes_ganancias_usd
-    acc.impuesto_ganancias_usd += cf.impuesto_ganancias_usd
-    // Antes acá se sumaba cash_flow_neto_usd (flujo de caja neto a CPE), y
-    // quedaba una tabla que mezclaba EBITDA al 100% con un "resultado neto"
-    // ya multiplicado por la participación. Ahora todas las líneas son 100%.
-    acc.resultado_neto_usd += cf.resultado_neto_usd
+    // Participación del mes: todas las líneas se netean con la misma, así que
+    // la tabla queda internamente consistente (antes mezclaba EBITDA al 100%
+    // con un resultado neto ya ponderado).
+    const w = cf.participacion_pct ?? 1
+    acc.produccion_petroleo_bbl += cf.bbl_petroleo * w
+    acc.produccion_gas_mcf += cf.mcf_gas * w
+    acc.ingresos_usd += cf.ingreso_bruto_usd * w
+    acc.regalias_usd += cf.regalias_usd * w
+    acc.opex_usd += (cf.opex_fijo_usd + cf.opex_variable_usd + cf.opex_fijo_pozo_usd) * w
+    acc.depreciacion_usd += cf.depreciacion_usd * w
+    acc.resultado_antes_ganancias_usd += cf.resultado_antes_ganancias_usd * w
+    acc.impuesto_ganancias_usd += cf.impuesto_ganancias_usd * w
+    acc.resultado_neto_usd += cf.resultado_neto_usd * w
   }
 
   const porYacimiento = new Map<string, Acc>() // key = `${yacimientoId}_${anio}`
@@ -748,12 +755,31 @@ export async function calcularDepletionReservas(escenarioId: number) {
   const db = createSupabaseServerAdminClient()
   const diag = new Diagnosticos()
 
-  const [reservas, resultadosRaw, certezas, yacimientos] = await Promise.all([
+  // La producción se toma de cashflow_mensual, que está al 100%. Las reservas
+  // son un volumen físico en el subsuelo, así que el roll-forward va contra el
+  // volumen del proyecto completo y no contra la producción neta a CPE (que es
+  // lo que informa resultados_escenario_anual).
+  const [reservas, cashflows, certezas, yacimientos, pozosRef, concesionesRef] = await Promise.all([
     traerTodo<any>(() => db.from('reservas_anuales').select('*').or(`escenario_id.eq.${escenarioId},escenario_id.is.null`).order('id')),
-    traerTodo<any>(() => db.from('resultados_escenario_anual').select('*').eq('escenario_id', escenarioId).not('yacimiento_id', 'is', null).order('id')),
+    traerTodo<any>(() => db.from('cashflow_mensual').select('pozo_id, fecha, bbl_petroleo, mcf_gas').eq('escenario_id', escenarioId).order('id')),
     traerTodo<any>(() => db.from('parametros_certeza_reservas').select('*').order('id')),
     traerTodo<any>(() => db.from('yacimientos').select('id, nombre').order('id')),
+    traerTodo<any>(() => db.from('pozos').select('id, concesion_id').order('id')),
+    traerTodo<any>(() => db.from('concesiones').select('id, yacimiento_id').order('id')),
   ])
+
+  const concPorId = new Map<number, any>(concesionesRef.map(c => [c.id, c]))
+  const yacDePozo = new Map<number, number | null>(
+    pozosRef.map(p => [p.id, concPorId.get(p.concesion_id)?.yacimiento_id ?? null]),
+  )
+  // Producción física por yacimiento y año, en BOE
+  const produccionYacAnio = new Map<string, number>()
+  for (const cf of cashflows) {
+    const yac = yacDePozo.get(cf.pozo_id)
+    if (yac == null) continue
+    const key = `${yac}|${String(cf.fecha).slice(0, 4)}`
+    produccionYacAnio.set(key, (produccionYacAnio.get(key) ?? 0) + cf.bbl_petroleo + cf.mcf_gas / MCF_POR_BOE)
+  }
 
   // Las columnas cierre_riesgo_boe / factor_certeza vienen de la migración
   // 20260801_reservas_certeza_incremental.sql. Se comprueba una vez si están
@@ -768,16 +794,15 @@ export async function calcularDepletionReservas(escenarioId: number) {
   const nombreYac = new Map<number, string>(yacimientos.map(y => [y.id, y.nombre]))
   const yacimientoNombre = (id: number) => nombreYac.get(id) ?? `Yacimiento #${id}`
 
-  const resultados = [...resultadosRaw].sort((a, b) => a.anio - b.anio)
   const yacimientoIds = Array.from(new Set(reservas.map(r => r.yacimiento_id)))
   const categorias = ['P1', 'P2', 'P3'] as const
 
   const filas: Record<string, unknown>[] = []
 
   for (const yacId of yacimientoIds) {
-    const produccionPorAnio = resultados
-      .filter(r => r.yacimiento_id === yacId)
-      .map(r => ({ anio: r.anio, boe: r.produccion_petroleo_bbl + r.produccion_gas_mcf / MCF_POR_BOE }))
+    const produccionPorAnio = [...produccionYacAnio.entries()]
+      .filter(([k]) => Number(k.split('|')[0]) === yacId)
+      .map(([k, boe]) => ({ anio: Number(k.split('|')[1]), boe }))
       .sort((a, b) => a.anio - b.anio)
 
     // Saldo vivo de cada categoría. Volúmenes FÍSICOS, sin ponderar por

@@ -470,6 +470,18 @@ function ResultadosTab({ data }: { data: Data }) {
         <Select name="escenario_id" value={escenarioId} onChange={e => cargar(e.target.value)} opts={data.escenarios.map(e => ({ value: String(e.id), label: String(e.nombre) }))} />
       </Field>
       {escenarioId && (
+        <div style={{ marginBottom: 14 }}>
+          <a className="btn" href={`/api/portal/reservas/export?escenario_id=${escenarioId}`}
+            style={{ padding: '7px 16px', fontSize: 12, textDecoration: 'none', display: 'inline-block' }}>
+            ↓ Descargar Excel (con fórmulas)
+          </a>
+          <span style={{ fontSize: 11, color: 'var(--fg-muted)', marginLeft: 10 }}>
+            Las columnas derivadas van como fórmulas de Excel, no como valores — para poder auditar el cálculo
+            y cruzarlo contra el Excel de referencia.
+          </span>
+        </div>
+      )}
+      {escenarioId && (
         <div style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
           {(['mensual', 'anual', 'depletion'] as const).map(v => (
             <button key={v} onClick={() => setVista(v)} style={{
@@ -532,6 +544,10 @@ function ResultadosTab({ data }: { data: Data }) {
       {vista === 'anual' && rowsAnual.length > 0 && (
         <div style={{ overflowX: 'auto', marginTop: 12 }}>
           <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+            <caption style={{ captionSide: 'top', textAlign: 'left', fontSize: 11, color: 'var(--fg-muted)', paddingBottom: 6 }}>
+              Todas las líneas <strong>netas a CPE</strong>: los inputs se cargan al 100% del proyecto y el motor
+              las afecta por la participación vigente en cada mes, incluidos los volúmenes.
+            </caption>
             <thead>
               <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
                 <th style={{ padding: '6px 8px' }}>Yacimiento</th>
@@ -565,6 +581,10 @@ function ResultadosTab({ data }: { data: Data }) {
       {vista === 'mensual' && rows.length > 0 && (
         <div style={{ overflowX: 'auto', marginTop: 12 }}>
           <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+            <caption style={{ captionSide: 'top', textAlign: 'left', fontSize: 11, color: 'var(--fg-muted)', paddingBottom: 6 }}>
+              Las líneas están <strong>al 100% del proyecto</strong> (es la pista de auditoría); sólo el cash flow
+              neto está afectado por la participación del mes.
+            </caption>
             <thead>
               <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
                 <th style={{ padding: '6px 8px' }}>Pozo</th>

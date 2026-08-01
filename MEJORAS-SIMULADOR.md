@@ -264,17 +264,26 @@ presentar un número desactualizado en un directorio.
 
 ---
 
-## 10. 🟢 Export a Excel/CSV de todos los resultados
+## 10. ✅ Export a Excel con fórmulas vivas
 
-**Hoy**: no hay export. Los resultados se miran en pantalla y nada más.
+`GET /api/portal/reservas/export?escenario_id=N`, botón en la pestaña
+"Resultados". Cinco hojas: Portada (con la convención de bases explicada),
+Cash flow mensual, Resumen anual, VAN NI 51-101 y Depleción de reservas.
 
-**Propuesta**: botón de export en cada vista (mensual, anual, depleción,
-one-line). Además de la utilidad obvia, es el puente de confianza: el equipo
-va a querer cruzar el resultado contra el Excel de referencia
-(`2024 estimación de flujos PC-KK.xlsx`) para validar el motor. Sin export,
-esa validación se hace a ojo.
+Lo importante es que **las columnas derivadas van como fórmulas de Excel, no
+como valores**. El cash flow neto sale como `=((RAG−Gcias)+Amort−CAPEX)×Part`,
+que es literalmente lo que hace el motor: se abre la celda y se ve de dónde
+viene el número. Lo mismo con EBITDA, EBIT, BOE, netback, el cierre de
+depleción y los totales. Cambiar un supuesto en el detalle recalcula el resto
+de la planilla.
 
-**Esfuerzo**: bajo. `exceljs` ya es dependencia del proyecto.
+Con formato: encabezados con color, panel congelado, autofiltro, anchos y
+formatos numéricos (miles, USD, porcentaje), y la fila de consolidado
+resaltada.
+
+**Falta el PDF.** La vía barata es una ruta `/portal/reservas/informe` con CSS
+`@media print` y "imprimir a PDF" del navegador, sin sumar dependencias. Para
+un PDF con paginación y numeración controladas haría falta Puppeteer o similar.
 
 ---
 
@@ -301,9 +310,12 @@ clase de error más difícil de detectar.
    Ver `ANALISIS-MERCADO-RESERVAS.md` §5 — la depleción se corrigió para
    cascadear entre categorías.
 
-3. ⏳ **Base del resumen anual**: al corregir la inconsistencia dejé todas las
-   líneas al 100% del proyecto (working interest bruto), coherente con EBITDA y
-   EBIT. El flujo neto a CPE (ya multiplicado por participación) sigue siendo el
-   que alimenta NPV/IRR/payback. **Si el resumen anual se quiere neto a CPE en
-   todas sus líneas, hay que decirlo** — es un cambio de una línea, pero cambia
-   todos los números reportados.
+3. ✅ **Base del resumen anual resuelta**: los inputs se cargan al **100% del
+   proyecto** y el motor los afecta por la participación. El resumen anual pasó
+   a ser **neto a CPE en todas sus líneas, incluidos los volúmenes**, ponderando
+   cada mes con su propia participación antes de sumar el año (no sirve aplicar
+   un promedio al total, porque la participación cambia en el tiempo).
+   `cashflow_mensual` sigue guardando las líneas al 100% con la participación
+   del mes en una columna aparte: es la pista de auditoría del proyecto
+   completo. Reservas y depleción quedan en volumen físico al 100% — son
+   barriles en el subsuelo.
