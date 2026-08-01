@@ -378,7 +378,7 @@ clase de error más difícil de detectar.
 
 ---
 
-## Estado al cierre de esta ronda
+## Estado al cierre
 
 Implementado, además de las 14 correcciones del motor:
 
@@ -399,19 +399,29 @@ Implementado, además de las 14 correcciones del motor:
 | Escudo fiscal del costo de entrada | ✅ |
 | Capa corporativa: G&A + intereses → valor de empresa | ✅ |
 | Price decks (pronóstico y constante) | ✅ |
+| Amortización por unidades de producción + cuadre con el CAPEX | ✅ |
+| Trazabilidad de corridas (huella de inputs) | ✅ |
+| Capital de desarrollo futuro (FDC) por año | ✅ |
+| One-line por pozo, con corte desarrolladas / no desarrolladas | ✅ |
+| Economía incremental (base / wedge / total) | ✅ |
+| Duplicar escenario | ✅ |
 
-Pendiente, sin bloquear nada:
+### Lo que queda
 
-- **PDP / PDNP / PUD** (mejora 6 del análisis de mercado): NI 51-101 distingue,
-  dentro de las probadas, entre desarrolladas en producción, desarrolladas no
-  en producción y no desarrolladas. El esquema no tiene esa dimensión, así que
-  hoy no se puede decir qué porción del 2P es PUD.
-- **Capital de desarrollo futuro (FDC) por año**: los datos ya están en
-  `intervenciones`; falta la vista que los agregue.
-- **Clonar escenario + diff**, **vista one-line por pozo**, **carga masiva
-  pegando desde Excel**, **gráficos en la pantalla de resultados**,
-  **economía incremental (wedge)**, **trazabilidad de corridas**.
-- **Amortización del CAPEX a la participación con la que se incurrió**: hoy se
+- **Gráficos en la pantalla de resultados.** El informe PDF ya los tiene
+  (perfil de producción, flujo acumulado con el payback); falta llevarlos a la
+  pantalla, donde hoy todo es tabla.
+- **Carga masiva pegando desde Excel** en las secciones de carga. Hoy están el
+  importador de curvas y el generador de Arps, pero el resto sigue siendo un
+  registro por vez.
+- **PDP / PDNP / PUD como clasificación del evaluador.** El one-line ya da el
+  corte económico entre pozos existentes y por perforar, que responde la
+  pregunta de fondo; falta la clasificación formal de tres niveles, que la
+  asigna el evaluador y hay que definir cómo se carga.
+- **Amortizar el CAPEX a la participación con la que se incurrió.** Hoy se
   amortiza a la participación del mes corriente. En un análisis que gira
   alrededor de un cambio de participación puede correr el óptimo uno o dos
   meses.
+- **Sacar `supuestos_generales` y `comparables_mercado`**, que se cargan pero
+  el motor no usa. Quedaron marcadas con ⚠ en pantalla; falta confirmar que no
+  haya nada cargado que importe antes de eliminarlas.

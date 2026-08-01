@@ -296,7 +296,7 @@ function CalcularTab({ data }: { data: Data }) {
   const [tasa, setTasa] = useState('0.10')
   const [horizonte, setHorizonte] = useState('20')
   const [loading, setLoading] = useState(false)
-  const [panel, setPanel] = useState<'validar' | 'tornado' | null>(null)
+  const [panel, setPanel] = useState<'validar' | 'tornado' | 'incremental' | 'clonar' | null>(null)
   const [resultado, setResultado] = useState<Resultado | null>(null)
   const [err, setErr] = useState('')
 
@@ -346,9 +346,17 @@ function CalcularTab({ data }: { data: Data }) {
         <button className="btn" disabled={!escenarioId} onClick={() => setPanel(panel === 'tornado' ? null : 'tornado')}>
           Sensibilidad (tornado)
         </button>
+        <button className="btn" disabled={!escenarioId} onClick={() => setPanel(panel === 'incremental' ? null : 'incremental')}>
+          Economía incremental
+        </button>
+        <button className="btn" disabled={!escenarioId} onClick={() => setPanel(panel === 'clonar' ? null : 'clonar')}>
+          Duplicar escenario
+        </button>
       </div>
       {panel === 'validar' && escenarioId && <PanelValidacion escenarioId={escenarioId} />}
       {panel === 'tornado' && escenarioId && <PanelTornado escenarioId={escenarioId} tasa={tasa} horizonte={horizonte} />}
+      {panel === 'incremental' && escenarioId && <PanelIncremental escenarioId={escenarioId} tasa={tasa} data={data} />}
+      {panel === 'clonar' && escenarioId && <PanelClonar escenarioId={escenarioId} data={data} />}
       {err && <p style={{ color: 'var(--cp-negative)', fontSize: 13, marginTop: 12 }}>{err}</p>}
       {resultado && (
         <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px' }}>
@@ -2110,6 +2118,167 @@ function PanelOneLine({ escenarioId }: { escenarioId: string }) {
             ✕ marca los pozos cortados por límite económico. Descontado a {d.fecha_base_descuento} @ {(d.tasa_descuento * 100).toFixed(1)}%.
           </p>
         </>
+      )}
+    </div>
+  )
+}
+
+// ─── Economía incremental (base / wedge / total) ─────────────────────────
+// El valor de una intervención no es el VAN del escenario que la incluye: es
+// la diferencia contra no hacerla. Es la pregunta del workover.
+type Agregado = { id?: number; nombre?: string; npv_usd: number; capex_usd: number; ingresos_usd: number; eur_boe: number }
+type Incremental = {
+  base: Agregado; total: Agregado
+  wedge: Agregado & {
+    irr_pct: number | null; payback_anios: number | null
+    npv_por_tasa: { tasa: number; npv_usd: number }[]
+  }
+  fecha_base_descuento: string; tasa_descuento: number
+  flujo_anual: { anio: number; neto_usd: number }[]
+}
+
+function PanelIncremental({ escenarioId, tasa, data }: { escenarioId: string; tasa: string; data: Data }) {
+  const [baseId, setBaseId] = useState('')
+  const [d, setD] = useState<Incremental | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function correr() {
+    setLoading(true); setErr(''); setD(null)
+    try {
+      const r = await fetch(`/api/portal/reservas/incremental?escenario_id=${escenarioId}&base_id=${baseId}&tasa=${tasa}`, { cache: 'no-store' })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      setD(j)
+    } catch (e) { setErr((e as Error).message) } finally { setLoading(false) }
+  }
+
+  const otros = (data.escenarios ?? []).filter(e => String(e.id) !== escenarioId)
+
+  return (
+    <div style={{ marginTop: 18, border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', padding: '14px 16px' }}>
+      <p style={{ fontSize: 13, fontWeight: 700, margin: '0 0 4px' }}>Economía incremental — ¿la intervención paga por sí sola?</p>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 12px' }}>
+        Resta el escenario base del elegido y valúa la diferencia. El valor de un workover no es el VAN del
+        escenario que lo incluye, es lo que agrega contra no hacerlo. En la jerga de las herramientas del sector:
+        <strong> base / wedge / total</strong>. Los dos escenarios tienen que estar calculados.
+      </p>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 12, flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 240, flex: 1 }}>
+          <label style={label}>Escenario base (el caso SIN la intervención)</label>
+          <Select value={baseId} onChange={e => setBaseId(e.target.value)}
+            opts={otros.map(e => ({ value: String(e.id), label: String(e.nombre) }))} />
+        </div>
+        <button className="btn btn-primary" disabled={!baseId || loading} onClick={correr} style={{ padding: '9px 20px', fontSize: 12 }}>
+          {loading ? 'Comparando…' : 'Comparar'}
+        </button>
+      </div>
+      {err && <p style={{ color: 'var(--cp-negative)', fontSize: 13 }}>{err}</p>}
+
+      {d && (
+        <>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', marginBottom: 12 }}>
+            <thead>
+              <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+                <th style={{ padding: '6px 8px' }}>Caso</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>VAN</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>CAPEX</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Ingresos</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>EUR (BOE)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {([['Base — sin la intervención', d.base], ['Total — con la intervención', d.total]] as [string, Agregado][]).map(([t, a]) => (
+                <tr key={t} style={{ borderBottom: '1px solid var(--rule)' }}>
+                  <td style={{ padding: '6px 8px' }}>{t}<span style={{ color: 'var(--fg-muted)' }}> · {a.nombre}</span></td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(a.npv_usd)}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(a.capex_usd)}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(a.ingresos_usd)}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Math.round(a.eur_boe).toLocaleString('es-AR')}</td>
+                </tr>
+              ))}
+              <tr style={{ borderTop: '2px solid var(--rule)', fontWeight: 700, background: d.wedge.npv_usd >= 0 ? 'rgba(45,122,74,0.06)' : 'rgba(179,59,46,0.06)' }}>
+                <td style={{ padding: '8px' }}>WEDGE — lo que agrega</td>
+                <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: d.wedge.npv_usd >= 0 ? '#2d7a4a' : 'var(--cp-negative)' }}>{mm(d.wedge.npv_usd)}</td>
+                <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(d.wedge.capex_usd)}</td>
+                <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{mm(d.wedge.ingresos_usd)}</td>
+                <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Math.round(d.wedge.eur_boe).toLocaleString('es-AR')}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px', marginBottom: 12 }}>
+            <Kv label="TIR del incremento" val={d.wedge.irr_pct != null ? `${d.wedge.irr_pct.toFixed(1)}%` : '— (sin cambio de signo)'} />
+            <Kv label="Payback del incremento" val={d.wedge.payback_anios != null ? `${d.wedge.payback_anios.toFixed(1)} años` : 'no se recupera'} />
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 8px' }}>
+            La TIR y el payback son <strong>del flujo diferencial</strong>, no del escenario completo: es lo que
+            responde si la intervención se paga sola.
+          </p>
+
+          <p style={{ fontSize: 12, fontWeight: 700, margin: '10px 0 4px' }}>VAN del incremento a las cinco tasas</p>
+          <table style={{ fontSize: 12, borderCollapse: 'collapse' }}>
+            <tbody>
+              {d.wedge.npv_por_tasa.map(t => (
+                <tr key={t.tasa} style={{ borderBottom: '1px solid var(--rule)' }}>
+                  <td style={{ padding: '4px 24px 4px 8px', fontFamily: 'var(--font-mono)' }}>{t.tasa === 0 ? 'Sin descontar' : `${(t.tasa * 100).toFixed(0)}%`}</td>
+                  <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{mm(t.npv_usd)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Duplicar escenario ──────────────────────────────────────────────────
+function PanelClonar({ escenarioId, data }: { escenarioId: string; data: Data }) {
+  const original = (data.escenarios ?? []).find(e => String(e.id) === escenarioId)
+  const [nombre, setNombre] = useState(original ? `${original.nombre} — copia` : '')
+  const [res, setRes] = useState<{ escenario: { id: number; nombre: string }; copiado: Record<string, number>; aviso: string } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function clonar() {
+    setLoading(true); setErr(''); setRes(null)
+    try {
+      const r = await fetch('/api/portal/reservas/escenario/clonar', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ escenario_id: Number(escenarioId), nombre }),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      setRes(j)
+    } catch (e) { setErr((e as Error).message) } finally { setLoading(false) }
+  }
+
+  return (
+    <div style={{ marginTop: 18, border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', padding: '14px 16px' }}>
+      <p style={{ fontSize: 13, fontWeight: 700, margin: '0 0 4px' }}>Duplicar escenario</p>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 12px' }}>
+        Copia intervenciones, campañas y costos de proyecto. Es la primera mitad del flujo de economía
+        incremental: duplicás el caso base, le agregás la intervención a la copia, y después comparás.
+        La copia no arrastra resultados — hay que calcularla.
+      </p>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 260, flex: 1 }}>
+          <label style={label}>Nombre del escenario nuevo</label>
+          <input value={nombre} onChange={e => setNombre(e.target.value)} style={input} />
+        </div>
+        <button className="btn btn-primary" disabled={loading || nombre.trim().length < 2} onClick={clonar} style={{ padding: '9px 20px', fontSize: 12 }}>
+          {loading ? 'Duplicando…' : 'Duplicar'}
+        </button>
+      </div>
+      {err && <p style={{ color: 'var(--cp-negative)', fontSize: 13, marginTop: 10 }}>{err}</p>}
+      {res && (
+        <div style={{ marginTop: 12, fontSize: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(45,122,74,0.08)' }}>
+          <strong style={{ color: '#2d7a4a' }}>Creado "{res.escenario.nombre}"</strong>
+          <div style={{ color: 'var(--fg-soft)', marginTop: 4 }}>
+            {Object.entries(res.copiado).map(([k, v]) => `${v} ${k.replace(/_/g, ' ')}`).join(' · ')}. {res.aviso}
+          </div>
+        </div>
       )}
     </div>
   )
