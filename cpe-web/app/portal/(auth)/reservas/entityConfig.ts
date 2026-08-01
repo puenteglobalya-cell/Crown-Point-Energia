@@ -212,16 +212,16 @@ export const ENTITIES: EntityConfig[] = [
   {
     tabla: 'campanas',
     title: '13b. Campaña de perforación (equipos y días por etapa)',
-    helpText: 'El cronograma no se carga fecha por fecha: se deriva de la cantidad de equipos y los días de cada etapa. Con 1 equipo de perforación las perforaciones quedan escalonadas; con 2 avanzan dos pozos en paralelo. Si además cargás equipos de terminación aparte, el equipo de perforación pasa al pozo siguiente mientras otro termina el anterior (solapamiento parcial). Después asigná las intervenciones a esta campaña con un orden, y programala desde la pestaña "Cronograma".',
+    helpText: 'Perforación vertical convencional, un pozo por locación: el equipo se muda entre pozo y pozo. El cronograma no se carga fecha por fecha: se deriva de la cantidad de equipos y los días de cada etapa. Los días que vienen por defecto son sólo un orden de magnitud — reemplazalos por los de la campaña real. Con 1 equipo de perforación las perforaciones quedan escalonadas; con 2 avanzan dos pozos en paralelo. Si además cargás equipos de terminación aparte, el equipo de perforación pasa al pozo siguiente mientras otro termina el anterior (solapamiento parcial). Después asigná las intervenciones a esta campaña con un orden, y programala desde la pestaña "Cronograma".',
     fields: [
       { name: 'nombre', label: 'Nombre', type: 'text', required: true },
       { name: 'escenario_id', label: 'Escenario (vacío = plan base)', type: 'select', optionsFrom: 'escenarios' },
       { name: 'fecha_inicio', label: 'Fecha de inicio de la campaña', type: 'date', required: true },
       { name: 'equipos_perforacion', label: 'Equipos de perforación', type: 'number', min: 1, max: 20, defaultValue: 1, required: true },
       { name: 'equipos_terminacion', label: 'Equipos de terminación (vacío = el mismo equipo perfora y termina)', type: 'number', min: 1, max: 20 },
-      { name: 'dias_perforacion', label: 'Días de perforación por pozo', type: 'number', min: 1, defaultValue: 30, required: true },
-      { name: 'dias_terminacion', label: 'Días de terminación por pozo', type: 'number', min: 0, defaultValue: 10, required: true },
-      { name: 'dias_movilizacion', label: 'Días de mudanza del equipo entre pozos', type: 'number', min: 0, defaultValue: 0, required: true },
+      { name: 'dias_perforacion', label: 'Días de perforación por pozo', type: 'number', min: 1, defaultValue: 12, required: true },
+      { name: 'dias_terminacion', label: 'Días de terminación por pozo', type: 'number', min: 0, defaultValue: 5, required: true },
+      { name: 'dias_movilizacion', label: 'Días de mudanza del equipo entre pozos (locaciones distintas)', type: 'number', min: 0, defaultValue: 3, required: true },
       { name: 'notas', label: 'Notas', type: 'text' },
     ],
     displayCols: (r, d) => [

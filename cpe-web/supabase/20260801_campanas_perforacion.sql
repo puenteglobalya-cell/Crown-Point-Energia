@@ -14,6 +14,12 @@
 --   1 equipo   → perforaciones escalonadas, una atrás de la otra
 --   2 equipos  → dos pozos avanzan en paralelo, se solapan
 --
+-- Los defaults (12 días de perforación, 5 de terminación, 3 de mudanza) son
+-- órdenes de magnitud de perforación VERTICAL CONVENCIONAL, que es el caso de
+-- CPE: pozos en locaciones distintas, con mudanza del equipo entre pozo y
+-- pozo. Son un punto de partida para que el cronograma no arranque con números
+-- absurdos — hay que reemplazarlos por los de la campaña real.
+--
 -- Si además hay equipos de terminación separados de los de perforación, el
 -- equipo de perforación se libera al terminar de perforar y pasa al pozo
 -- siguiente mientras otro equipo termina el anterior (el solapamiento parcial
@@ -27,9 +33,9 @@ create table if not exists campanas (
     fecha_inicio         date not null,
     equipos_perforacion  int  not null default 1 check (equipos_perforacion between 1 and 20),
     equipos_terminacion  int  check (equipos_terminacion is null or equipos_terminacion between 1 and 20),
-    dias_perforacion     int  not null default 30 check (dias_perforacion > 0),
-    dias_terminacion     int  not null default 10 check (dias_terminacion >= 0),
-    dias_movilizacion    int  not null default 0  check (dias_movilizacion >= 0),
+    dias_perforacion     int  not null default 12 check (dias_perforacion > 0),
+    dias_terminacion     int  not null default 5  check (dias_terminacion >= 0),
+    dias_movilizacion    int  not null default 3  check (dias_movilizacion >= 0),
     notas                text,
     unique (escenario_id, nombre)
 );
