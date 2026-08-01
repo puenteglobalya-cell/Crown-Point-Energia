@@ -29,7 +29,7 @@ const GRUPOS_CARGA: { titulo: string; tablas: string[] }[] = [
   { titulo: 'Precios', tablas: ['formulas_precio', 'precios_referencia', 'precios_mensuales'] },
   { titulo: 'Costos e impuestos', tablas: ['opex_fijo', 'opex_variable', 'opex_fijo_pozo', 'regalias'] },
   { titulo: 'Proyectos y escenarios', tablas: ['proyectos', 'costos_proyecto', 'escenarios'] },
-  { titulo: 'Reservas', tablas: ['reservas_anuales', 'parametros_certeza_reservas'] },
+  { titulo: 'Reservas', tablas: ['reservas_anuales', 'reservas_movimientos', 'parametros_certeza_reservas'] },
   { titulo: 'Financiero', tablas: ['supuestos_generales', 'deuda_notas', 'comparables_mercado'] },
 ]
 
@@ -520,6 +520,8 @@ function ResultadosTab({ data }: { data: Data }) {
           P1/P2/P3 son Probadas / Probables / Posibles <strong>incrementales</strong>: la producción de cada año
           agota primero las probadas y sólo el excedente pasa a probables y después a posibles.
           El cierre en BOE es volumen físico; la última columna lo pondera por el grado de certeza de la categoría.
+          Las columnas intermedias son las seis categorías de movimiento que exige NI 51-101 y se cargan del informe
+          del evaluador: <strong>apertura + movimientos − producción = cierre</strong>.
         </p>
       )}
       {vista === 'depletion' && rowsDepletion.length > 0 && (
@@ -531,7 +533,13 @@ function ResultadosTab({ data }: { data: Data }) {
                 <th style={{ padding: '6px 8px' }}>Categoría</th>
                 <th style={{ padding: '6px 8px' }}>Año</th>
                 <th style={{ padding: '6px 8px', textAlign: 'right' }}>Apertura (BOE)</th>
-                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Depleción (BOE)</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Revisiones</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Extensiones</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Descub.</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Adquis.</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Cesiones</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Fact. econ.</th>
+                <th style={{ padding: '6px 8px', textAlign: 'right' }}>Producción</th>
                 <th style={{ padding: '6px 8px', textAlign: 'right' }}>Cierre (BOE)</th>
                 <th style={{ padding: '6px 8px', textAlign: 'right' }}>Cierre ponderado por certeza</th>
               </tr>
@@ -543,6 +551,11 @@ function ResultadosTab({ data }: { data: Data }) {
                   <td style={{ padding: '6px 8px' }}>{String(r.categoria)}</td>
                   <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{String(r.anio)}</td>
                   <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Number(r.apertura_boe).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
+                  {(['revision_tecnica_boe', 'extension_boe', 'descubrimiento_boe', 'adquisicion_boe', 'cesion_boe', 'factores_economicos_boe'] as const).map(k => (
+                    <td key={k} style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: Number(r[k] ?? 0) < 0 ? 'var(--cp-negative)' : 'var(--fg-muted)' }}>
+                      {r[k] == null || Number(r[k]) === 0 ? '—' : Number(r[k]).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                    </td>
+                  ))}
                   <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Number(r.depletion_boe).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
                   <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{Number(r.cierre_boe).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>
                   <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--fg-muted)' }}>

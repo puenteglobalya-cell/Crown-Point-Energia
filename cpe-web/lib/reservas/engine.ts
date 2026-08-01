@@ -535,6 +535,12 @@ export async function calcularAgregadosAnuales(escenarioId: number) {
     traerTodo<any>(() => db.from('cashflow_mensual').select('*').eq('escenario_id', escenarioId).order('id')),
     traerTodo<any>(() => db.from('pozos').select('id, concesion_id').order('id')),
     traerTodo<any>(() => db.from('concesiones').select('id, yacimiento_id').order('id')),
+    // Los 6 movimientos de NI 51-101 que no calcula el motor. Si la migración
+    // 20260801_reservas_reconciliacion.sql no corrió todavía, la tabla no
+    // existe y la reconciliación se reduce a apertura → producción → cierre.
+    traerTodo<any>(() => db.from('reservas_movimientos').select('*')
+      .or(`escenario_id.eq.${escenarioId},escenario_id.is.null`).order('id'))
+      .catch(() => [] as any[]),
   ])
 
   const concesionPorId = new Map<number, any>(concesiones.map(c => [c.id, c]))
@@ -722,10 +728,23 @@ export async function calcularMetricasEscenario(escenarioId: number, tasaAnual: 
 // después a posibles. El factor de certeza pondera el saldo de cierre; no se
 // aplica antes de depletar, porque la producción es física.
 export type AperturaCategoria = { categoria: string; boe: number; anioBase: number; factor: number }
+
+// Las 6 categorías de NI 51-101 que no calcula el motor: vienen del informe
+// del evaluador y se cargan a mano. La producción la aporta el cashflow.
+export const TIPOS_MOVIMIENTO = [
+  'revision_tecnica', 'extension_recuperacion_mejorada', 'descubrimiento',
+  'adquisicion', 'cesion', 'factores_economicos',
+] as const
+export type TipoMovimiento = typeof TIPOS_MOVIMIENTO[number]
+
 export type MovimientoReservas = {
   categoria: string; anio: number; apertura: number; depletion: number
   cierre: number; cierreRiesgo: number; factor: number; excedente: number
+  ajustes: Record<TipoMovimiento, number>
 }
+
+const ajustesVacios = (): Record<TipoMovimiento, number> =>
+  Object.fromEntries(TIPOS_MOVIMIENTO.map(t => [t, 0])) as Record<TipoMovimiento, number>
 
 // Roll-forward con cascada entre categorías incrementales. `aperturas` viene
 // ordenado de más cierta a menos cierta (P1, P2, P3): la producción de cada
@@ -735,27 +754,49 @@ export type MovimientoReservas = {
 export function rollForwardIncremental(
   aperturas: AperturaCategoria[],
   produccionPorAnio: { anio: number; boe: number }[],
+  // Ajustes manuales por categoría, año y tipo. Clave: `${categoria}|${anio}`.
+  ajustesPorCatAnio: Map<string, Partial<Record<TipoMovimiento, number>>> = new Map(),
 ): MovimientoReservas[] {
   if (aperturas.length === 0) return []
   const saldo = new Map(aperturas.map(a => [a.categoria, a.boe]))
   const anioInicio = Math.min(...aperturas.map(a => a.anioBase))
+
+  // Los años a recorrer son los de producción MÁS los que sólo tienen ajustes:
+  // una revisión técnica sin producción también mueve las reservas y tiene que
+  // aparecer en la reconciliación.
+  const anios = [...new Set([
+    ...produccionPorAnio.map(p => p.anio),
+    ...[...ajustesPorCatAnio.keys()].map(k => Number(k.split('|')[1])),
+  ])].filter(a => a >= anioInicio).sort((a, b) => a - b)
+
+  const produccionDe = new Map(produccionPorAnio.map(p => [p.anio, p.boe]))
   const out: MovimientoReservas[] = []
 
-  for (const { anio, boe: produccion } of [...produccionPorAnio].sort((a, b) => a.anio - b.anio)) {
-    if (anio < anioInicio) continue
-    let restante = Math.max(produccion, 0)
+  for (const anio of anios) {
+    let restante = Math.max(produccionDe.get(anio) ?? 0, 0)
     const delAnio: MovimientoReservas[] = []
 
     for (const a of aperturas) {
       if (anio < a.anioBase) continue
+
       const apertura = saldo.get(a.categoria) ?? 0
-      const depletion = Math.min(restante, Math.max(apertura, 0))
-      const cierre = Math.max(apertura - depletion, 0)
+
+      // Primero los ajustes del evaluador (revisiones, extensiones,
+      // adquisiciones…), después la producción. Ése es el orden de la
+      // reconciliación: la producción del año se descuenta del saldo ya
+      // revisado, no del de apertura.
+      const ajustes = { ...ajustesVacios(), ...(ajustesPorCatAnio.get(`${a.categoria}|${anio}`) ?? {}) }
+      const sumaAjustes = TIPOS_MOVIMIENTO.reduce((s, t) => s + (ajustes[t] ?? 0), 0)
+      const trasAjustes = Math.max(apertura + sumaAjustes, 0)
+
+      const depletion = Math.min(restante, trasAjustes)
+      const cierre = Math.max(trasAjustes - depletion, 0)
       restante -= depletion
       saldo.set(a.categoria, cierre)
+
       delAnio.push({
         categoria: a.categoria, anio, apertura, depletion, cierre,
-        cierreRiesgo: cierre * a.factor, factor: a.factor, excedente: 0,
+        cierreRiesgo: cierre * a.factor, factor: a.factor, excedente: 0, ajustes,
       })
     }
 
@@ -774,13 +815,19 @@ export async function calcularDepletionReservas(escenarioId: number) {
   // son un volumen físico en el subsuelo, así que el roll-forward va contra el
   // volumen del proyecto completo y no contra la producción neta a CPE (que es
   // lo que informa resultados_escenario_anual).
-  const [reservas, cashflows, certezas, yacimientos, pozosRef, concesionesRef] = await Promise.all([
+  const [reservas, cashflows, certezas, yacimientos, pozosRef, concesionesRef, movimientos] = await Promise.all([
     traerTodo<any>(() => db.from('reservas_anuales').select('*').or(`escenario_id.eq.${escenarioId},escenario_id.is.null`).order('id')),
     traerTodo<any>(() => db.from('cashflow_mensual').select('pozo_id, fecha, bbl_petroleo, mcf_gas').eq('escenario_id', escenarioId).order('id')),
     traerTodo<any>(() => db.from('parametros_certeza_reservas').select('*').order('id')),
     traerTodo<any>(() => db.from('yacimientos').select('id, nombre').order('id')),
     traerTodo<any>(() => db.from('pozos').select('id, concesion_id').order('id')),
     traerTodo<any>(() => db.from('concesiones').select('id, yacimiento_id').order('id')),
+    // Los 6 movimientos de NI 51-101 que no calcula el motor. Si la migración
+    // 20260801_reservas_reconciliacion.sql no corrió todavía, la tabla no
+    // existe y la reconciliación se reduce a apertura → producción → cierre.
+    traerTodo<any>(() => db.from('reservas_movimientos').select('*')
+      .or(`escenario_id.eq.${escenarioId},escenario_id.is.null`).order('id'))
+      .catch(() => [] as any[]),
   ])
 
   const concPorId = new Map<number, any>(concesionesRef.map(c => [c.id, c]))
@@ -802,6 +849,11 @@ export async function calcularDepletionReservas(escenarioId: number) {
   // lugar de hacer fallar todo el cálculo.
   const { error: sinColumnas } = await db.from('reservas_depletion_anual').select('cierre_riesgo_boe').limit(1)
   const guardarRiesgo = !sinColumnas
+  const { error: sinRecon } = await db.from('reservas_depletion_anual').select('revision_tecnica_boe').limit(1)
+  const guardarRecon = !sinRecon
+  if (!guardarRecon && movimientos.length > 0) {
+    diag.add('migracion_pendiente', 'Falta correr 20260801_reservas_reconciliacion.sql — hay movimientos de reservas cargados pero el roll-forward no puede guardarlos por categoría')
+  }
   if (!guardarRiesgo) {
     diag.add('migracion_pendiente', 'Falta correr 20260801_reservas_certeza_incremental.sql — el saldo ponderado por certeza no se guarda todavía')
   }
@@ -809,7 +861,21 @@ export async function calcularDepletionReservas(escenarioId: number) {
   const nombreYac = new Map<number, string>(yacimientos.map(y => [y.id, y.nombre]))
   const yacimientoNombre = (id: number) => nombreYac.get(id) ?? `Yacimiento #${id}`
 
-  const yacimientoIds = Array.from(new Set(reservas.map(r => r.yacimiento_id)))
+  // Ajustes indexados por yacimiento → `categoria|anio` → tipo
+  const ajustesPorYac = new Map<number, Map<string, Partial<Record<TipoMovimiento, number>>>>()
+  for (const m of movimientos) {
+    const porCat = ajustesPorYac.get(m.yacimiento_id) ?? new Map()
+    const key = `${m.categoria}|${m.anio}`
+    const actual = porCat.get(key) ?? {}
+    actual[m.tipo as TipoMovimiento] = (actual[m.tipo as TipoMovimiento] ?? 0) + Number(m.boe)
+    porCat.set(key, actual)
+    ajustesPorYac.set(m.yacimiento_id, porCat)
+  }
+
+  const yacimientoIds = Array.from(new Set([
+    ...reservas.map(r => r.yacimiento_id),
+    ...movimientos.map(m => m.yacimiento_id),
+  ]))
   const categorias = ['P1', 'P2', 'P3'] as const
 
   const filas: Record<string, unknown>[] = []
@@ -852,6 +918,7 @@ export async function calcularDepletionReservas(escenarioId: number) {
         factor: factorDe.get(c) ?? 1,
       })),
       produccionPorAnio,
+      ajustesPorYac.get(yacId) ?? new Map(),
     )
 
     for (const m of movimientos) {
@@ -868,6 +935,14 @@ export async function calcularDepletionReservas(escenarioId: number) {
         // apertura y después depletar hacía que la relación con el volumen
         // físico se fuera desviando en cada período.
         ...(guardarRiesgo ? { cierre_riesgo_boe: m.cierreRiesgo, factor_certeza: m.factor } : {}),
+        ...(guardarRecon ? {
+          revision_tecnica_boe: m.ajustes.revision_tecnica,
+          extension_boe: m.ajustes.extension_recuperacion_mejorada,
+          descubrimiento_boe: m.ajustes.descubrimiento,
+          adquisicion_boe: m.ajustes.adquisicion,
+          cesion_boe: m.ajustes.cesion,
+          factores_economicos_boe: m.ajustes.factores_economicos,
+        } : {}),
       })
     }
     for (const e of movimientos.filter(m => m.excedente > 0)) {

@@ -332,6 +332,36 @@ export const ENTITIES: EntityConfig[] = [
     ],
   },
   {
+    tabla: 'reservas_movimientos',
+    title: '15b. Movimiento de reservas (reconciliación NI 51-101)',
+    helpText: 'NI 51-101 exige explicar el cambio de reservas año contra año en siete categorías. La producción la calcula el motor sola; estas seis se cargan del informe del evaluador. Van CON SIGNO: negativo para una revisión a la baja, una cesión o un factor económico desfavorable.',
+    fields: [
+      { name: 'yacimiento_id', label: 'Yacimiento', type: 'select', optionsFrom: 'yacimientos', required: true },
+      { name: 'escenario_id', label: 'Escenario (vacío = reporte base)', type: 'select', optionsFrom: 'escenarios' },
+      { name: 'categoria', label: 'Categoría', type: 'select', staticOptions: [
+        { value: 'P1', label: 'P1 — Probadas' }, { value: 'P2', label: 'P2 — Probables' }, { value: 'P3', label: 'P3 — Posibles' },
+      ], required: true },
+      { name: 'anio', label: 'Año', type: 'number', required: true },
+      { name: 'tipo', label: 'Categoría del movimiento', type: 'select', staticOptions: [
+        { value: 'revision_tecnica', label: 'Revisiones técnicas' },
+        { value: 'extension_recuperacion_mejorada', label: 'Extensiones y recuperación mejorada' },
+        { value: 'descubrimiento', label: 'Descubrimientos' },
+        { value: 'adquisicion', label: 'Adquisiciones' },
+        { value: 'cesion', label: 'Cesiones' },
+        { value: 'factores_economicos', label: 'Factores económicos' },
+      ], required: true },
+      { name: 'boe', label: 'BOE (con signo: negativo si resta reservas)', type: 'number', step: '0.01', required: true },
+      { name: 'nota', label: 'Nota', type: 'text' },
+    ],
+    displayCols: (r, d) => [
+      { label: 'Yacimiento', value: nombreDe(d, 'yacimientos', r.yacimiento_id) },
+      { label: 'Cat.', value: String(r.categoria) },
+      { label: 'Año', value: String(r.anio) },
+      { label: 'Movimiento', value: String(r.tipo).replace(/_/g, ' ') },
+      { label: 'BOE', value: Number(r.boe).toLocaleString('es-AR') },
+    ],
+  },
+  {
     tabla: 'parametros_certeza_reservas',
     title: '15b. Factor de certeza por categoría (P1/P2/P3)',
     helpText: 'Pondera las reservas de cada categoría según el grado de certeza que defina la empresa. Se aplica por defecto a todas las filas de reservas_anuales de esa categoría, salvo que el registro tenga un override puntual.',
