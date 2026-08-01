@@ -19,6 +19,10 @@ function Field({ children }: { children: React.ReactNode }) {
   return <div style={field}>{children}</div>
 }
 
+// Una curva de pozo tipo son 240 filas y hay varias por escenario: renderizar
+// una <tr> por registro dejaba la pantalla de carga pesadísima.
+const MAX_FILAS_LISTA = 100
+
 const GRUPOS_CARGA: { titulo: string; tablas: string[] }[] = [
   { titulo: 'Estructura', tablas: ['provincias', 'yacimientos', 'concesiones', 'concesion_participacion'] },
   { titulo: 'Pozos y producción', tablas: ['pozos', 'pozos_tipo', 'curvas_produccion', 'intervenciones'] },
@@ -201,11 +205,17 @@ function EntitySection({ cfg, data, reload }: {
         <ImportarCurvaExcel data={data} reload={reload} />
       )}
 
+      {rows.length > MAX_FILAS_LISTA && (
+        <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 8 }}>
+          {rows.length.toLocaleString('es-AR')} registros cargados — se muestran los últimos {MAX_FILAS_LISTA}.
+          {cfg.tabla === 'curvas_produccion' && ' Para reemplazar una curva completa, usá el importador de Excel de arriba.'}
+        </p>
+      )}
       {rows.length > 0 && (
         <div style={{ marginBottom: 16, overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <tbody>
-              {rows.map(r => (
+              {rows.slice(-MAX_FILAS_LISTA).map(r => (
                 <tr key={String(r.id)} style={{ borderBottom: '1px solid var(--rule)' }}>
                   {cfg.displayCols(r, data).map((c, i) => (
                     <td key={i} style={{ padding: '6px 8px', color: 'var(--fg-soft)' }}>
@@ -261,11 +271,19 @@ function EntitySection({ cfg, data, reload }: {
   )
 }
 
+type Diagnostico = { tipo: string; detalle: string; pozos_mes: number }
+type Resultado = {
+  pozos?: number; filas?: number; anios?: number; total_cashflow?: number
+  npv_usd?: number; tasa_descuento?: number; irr_pct?: number | null
+  payback_anios?: number | null; diagnosticos?: Diagnostico[]
+}
+
 function CalcularTab({ data }: { data: Data }) {
   const [escenarioId, setEscenarioId] = useState('')
   const [tasa, setTasa] = useState('0.10')
+  const [horizonte, setHorizonte] = useState('20')
   const [loading, setLoading] = useState(false)
-  const [resultado, setResultado] = useState<Record<string, number | null> | null>(null)
+  const [resultado, setResultado] = useState<Resultado | null>(null)
   const [err, setErr] = useState('')
 
   async function calcular() {
@@ -274,7 +292,11 @@ function CalcularTab({ data }: { data: Data }) {
       const res = await fetch('/api/portal/reservas/calcular', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ escenario_id: Number(escenarioId), tasa_anual: Number(tasa) }),
+        body: JSON.stringify({
+          escenario_id: Number(escenarioId),
+          tasa_anual: Number(tasa),
+          horizonte_anios: Number(horizonte),
+        }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Error')
@@ -297,6 +319,9 @@ function CalcularTab({ data }: { data: Data }) {
       <Field><label style={label}>Tasa de descuento anual (ej. 0.10 = 10%)</label>
         <input value={tasa} onChange={e => setTasa(e.target.value)} type="number" step="0.001" style={input} />
       </Field>
+      <Field><label style={label}>Horizonte en años (máximo 20)</label>
+        <input value={horizonte} onChange={e => setHorizonte(e.target.value)} type="number" step="1" min="1" max="20" style={input} />
+      </Field>
       <button className="btn btn-primary" disabled={!escenarioId || loading} onClick={calcular}>
         {loading ? 'Calculando…' : 'Calcular'}
       </button>
@@ -310,6 +335,30 @@ function CalcularTab({ data }: { data: Data }) {
           <Kv label={`NPV @ ${((resultado.tasa_descuento ?? 0) * 100).toFixed(1)}%`} val={`US$ ${((resultado.npv_usd ?? 0) / 1e6).toFixed(2)} MM`} />
           <Kv label="IRR" val={resultado.irr_pct != null ? `${resultado.irr_pct.toFixed(1)}%` : '— (sin cambio de signo detectable)'} />
           <Kv label="Payback" val={resultado.payback_anios != null ? `${resultado.payback_anios.toFixed(1)} años` : '— (no se recupera en el horizonte)'} />
+        </div>
+      )}
+      {resultado && (resultado.diagnosticos?.length ?? 0) > 0 && (
+        <div style={{ marginTop: 20, border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', padding: '14px 16px', background: 'rgba(214,158,46,0.06)' }}>
+          <p style={{ fontSize: 12, fontWeight: 700, margin: '0 0 4px', color: 'var(--fg)' }}>
+            Revisar — {resultado.diagnosticos!.length} {resultado.diagnosticos!.length === 1 ? 'aviso' : 'avisos'} sobre los datos
+          </p>
+          <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
+            El cálculo corrió igual, pero donde falta un dato el motor asume cero (o 100% de participación).
+            Estos huecos son la causa más común de un NPV que no cierra.
+          </p>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--fg-soft)' }}>
+            {resultado.diagnosticos!.slice(0, 12).map((d, i) => (
+              <li key={i} style={{ marginBottom: 3 }}>
+                {d.detalle}
+                {d.pozos_mes > 1 && <span style={{ color: 'var(--fg-muted)' }}> · {d.pozos_mes.toLocaleString('es-AR')} pozos-mes</span>}
+              </li>
+            ))}
+          </ul>
+          {resultado.diagnosticos!.length > 12 && (
+            <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '8px 0 0' }}>
+              …y {resultado.diagnosticos!.length - 12} avisos más.
+            </p>
+          )}
         </div>
       )}
     </Seccion>
@@ -332,19 +381,42 @@ function ResultadosTab({ data }: { data: Data }) {
   const [rowsAnual, setRowsAnual] = useState<Row[]>([])
   const [rowsDepletion, setRowsDepletion] = useState<Row[]>([])
   const [loading, setLoading] = useState(false)
+  const [pagina, setPagina] = useState(0)
+  const [paginas, setPaginas] = useState(1)
+  const [totalMensual, setTotalMensual] = useState(0)
+
+  // La vista mensual se pagina en el servidor (500 filas por página): un
+  // escenario real son decenas de miles de filas y traerlas todas de una
+  // colgaba el navegador.
+  async function cargarMensual(id: string, p: number) {
+    const r = await fetch(`/api/portal/reservas/resultados?escenario_id=${id}&pagina=${p}`)
+    if (!r.ok) { setRows([]); setTotalMensual(0); setPaginas(1); return }
+    const json = await r.json()
+    setRows(json.filas ?? [])
+    setTotalMensual(json.total ?? 0)
+    setPaginas(json.paginas ?? 1)
+    setPagina(json.pagina ?? 0)
+  }
 
   async function cargar(id: string) {
     setEscenarioId(id)
-    if (!id) { setRows([]); setRowsAnual([]); setRowsDepletion([]); return }
+    setPagina(0)
+    if (!id) { setRows([]); setRowsAnual([]); setRowsDepletion([]); setTotalMensual(0); return }
     setLoading(true)
-    const [rMensual, rAnual, rDepletion] = await Promise.all([
-      fetch(`/api/portal/reservas/resultados?escenario_id=${id}`),
+    const [, rAnual, rDepletion] = await Promise.all([
+      cargarMensual(id, 0),
       fetch(`/api/portal/reservas/resultados?escenario_id=${id}&vista=anual`),
       fetch(`/api/portal/reservas/resultados?escenario_id=${id}&vista=depletion`),
     ])
-    setRows(rMensual.ok ? await rMensual.json() : [])
     setRowsAnual(rAnual.ok ? await rAnual.json() : [])
     setRowsDepletion(rDepletion.ok ? await rDepletion.json() : [])
+    setLoading(false)
+  }
+
+  async function irAPagina(p: number) {
+    if (!escenarioId || p < 0 || p >= paginas) return
+    setLoading(true)
+    await cargarMensual(escenarioId, p)
     setLoading(false)
   }
 
@@ -466,6 +538,15 @@ function ResultadosTab({ data }: { data: Data }) {
               ))}
             </tbody>
           </table>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, fontSize: 12, color: 'var(--fg-muted)' }}>
+            <button onClick={() => irAPagina(pagina - 1)} disabled={pagina === 0 || loading}
+              className="btn" style={{ padding: '4px 12px', fontSize: 12 }}>← Anterior</button>
+            <span>
+              Página {pagina + 1} de {paginas} · {totalMensual.toLocaleString('es-AR')} filas mensuales
+            </span>
+            <button onClick={() => irAPagina(pagina + 1)} disabled={pagina + 1 >= paginas || loading}
+              className="btn" style={{ padding: '4px 12px', fontSize: 12 }}>Siguiente →</button>
+          </div>
         </div>
       )}
     </Seccion>
@@ -573,6 +654,10 @@ function ImportarCurvaExcel({ data, reload }: {
   const [destino, setDestino] = useState<'pozo' | 'pozo_tipo'>('pozo')
   const [destinoId, setDestinoId] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  // Las filas parseadas viven en el estado. Antes se colgaban del objeto File
+  // como propiedad (`__filas`), y si el usuario volvía a elegir un archivo se
+  // podía importar la curva del anterior.
+  const [filasParseadas, setFilasParseadas] = useState<unknown[] | null>(null)
   const [preview, setPreview] = useState<{ meses: number; primerMes: string; ultimoMes: string; totalBblAnio1: number } | null>(null)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
@@ -583,24 +668,25 @@ function ImportarCurvaExcel({ data, reload }: {
     : data.pozos_tipo.map(p => ({ value: String(p.id), label: String(p.nombre) }))
 
   async function handleFile(f: File) {
-    setFile(f); setErr(''); setMsg(''); setPreview(null)
+    setFile(f); setErr(''); setMsg(''); setPreview(null); setFilasParseadas(null)
     try {
       const { parseCurvaExcel } = await import('@/lib/reservas/parseCurvaExcel')
       const filas = await parseCurvaExcel(f)
       const anio1 = filas.slice(0, 12).reduce((s, x) => s + x.bbl_petroleo, 0)
       setPreview({ meses: filas.length, primerMes: filas[0].fecha, ultimoMes: filas[filas.length - 1].fecha, totalBblAnio1: anio1 })
-      ;(f as unknown as { __filas?: unknown }).__filas = filas
+      setFilasParseadas(filas)
     } catch (e) {
       setErr((e as Error).message)
       setFile(null)
+      setFilasParseadas(null)
     }
   }
 
   async function importar() {
-    if (!file || !destinoId) return
+    if (!file || !destinoId || !filasParseadas) return
     setLoading(true); setErr(''); setMsg('')
     try {
-      const filas = (file as unknown as { __filas: unknown }).__filas
+      const filas = filasParseadas
       const res = await fetch('/api/portal/reservas/curva-import', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -611,7 +697,7 @@ function ImportarCurvaExcel({ data, reload }: {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Error al importar')
       setMsg(`Curva importada: ${json.filas} meses cargados ✓`)
-      setFile(null); setPreview(null); setDestinoId('')
+      setFile(null); setPreview(null); setDestinoId(''); setFilasParseadas(null)
       reload()
     } catch (e) {
       setErr((e as Error).message)
@@ -651,7 +737,7 @@ function ImportarCurvaExcel({ data, reload }: {
           {preview.meses} meses detectados ({preview.primerMes} a {preview.ultimoMes}) — año 1: {Math.round(preview.totalBblAnio1).toLocaleString('es-AR')} bbl de petróleo.
         </div>
       )}
-      <button className="btn btn-primary" disabled={!file || !destinoId || loading} onClick={importar} style={{ padding: '8px 20px', fontSize: 12 }}>
+      <button className="btn btn-primary" disabled={!file || !destinoId || !filasParseadas || loading} onClick={importar} style={{ padding: '8px 20px', fontSize: 12 }}>
         {loading ? 'Importando…' : 'Importar curva'}
       </button>
     </div>

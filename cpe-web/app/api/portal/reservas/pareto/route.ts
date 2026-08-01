@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireReservasAccess } from '@/lib/reservas/access'
+import { traerTodo } from '@/lib/reservas/engine'
 
 // Compara todos los escenarios ya calculados: NPV (de escenario_metricas)
 // vs. CAPEX total (sumado de cashflow_mensual). Ambos ejes se leen de lo
@@ -11,17 +12,19 @@ export async function GET() {
 
   const db = createSupabaseServerAdminClient()
 
-  const [escenariosRes, metricasRes, cashflowRes] = await Promise.all([
-    db.from('escenarios').select('id, nombre, es_base'),
-    db.from('escenario_metricas').select('*'),
-    db.from('cashflow_mensual').select('escenario_id, capex_usd'),
-  ])
-  const err = [escenariosRes, metricasRes, cashflowRes].find(r => r.error)
-  if (err?.error) return NextResponse.json({ error: err.error.message }, { status: 500 })
-
-  const escenarios = escenariosRes.data ?? []
-  const metricas = metricasRes.data ?? []
-  const cashflows = cashflowRes.data ?? []
+  // Lecturas paginadas: cashflow_mensual son decenas de miles de filas y un
+  // select pelado devolvía solo las primeras 1000, así que el CAPEX total de
+  // cada escenario salía subestimado (y con él, el eje X del Pareto).
+  let escenarios: any[], metricas: any[], cashflows: any[]
+  try {
+    [escenarios, metricas, cashflows] = await Promise.all([
+      traerTodo<any>(() => db.from('escenarios').select('id, nombre, es_base').order('id')),
+      traerTodo<any>(() => db.from('escenario_metricas').select('*').order('id')),
+      traerTodo<any>(() => db.from('cashflow_mensual').select('escenario_id, capex_usd').order('id')),
+    ])
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 })
+  }
 
   const capexPorEscenario = new Map<number, number>()
   for (const cf of cashflows) {

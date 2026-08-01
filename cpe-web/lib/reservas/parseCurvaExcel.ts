@@ -49,8 +49,12 @@ function detectarColumnas(ws: ExcelJS.Worksheet): { filaFecha: number; colFecha:
   throw new Error('No se encontró una fila con columnas "Fecha", "Pet" y "Gas" en las primeras 20 filas del archivo. Revisá el formato o pasame el archivo para ajustar el parser.')
 }
 
+// Días del mes leídos en UTC. ExcelJS devuelve las fechas a medianoche UTC, y
+// este parser corre en el navegador: con getFullYear/getMonth (hora local), en
+// Argentina (UTC-3) el 2026-03-01T00:00Z se lee como 28-feb y devolvía 28 días
+// en lugar de 31 — un 10% de error en el volumen mensual de ese mes.
 function daysInMonth(d: Date): number {
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()
 }
 
 export async function parseCurvaExcel(file: File): Promise<CurvaMes[]> {
@@ -64,9 +68,19 @@ export async function parseCurvaExcel(file: File): Promise<CurvaMes[]> {
 
   const filas: CurvaMes[] = []
   let mesOffset = 0
-  for (let r = filaFecha + 1; r < filaFecha + 1 + 600; r++) {
+  // Se toleran huecos: antes la primera celda de fecha vacía cortaba la lectura,
+  // así que una fila separadora en medio de la tabla truncaba la curva en
+  // silencio (se importaban, por ejemplo, 60 de 240 meses). Ahora hacen falta
+  // varias filas seguidas sin fecha para dar la tabla por terminada.
+  const HUECOS_TOLERADOS = 5
+  let huecos = 0
+  for (let r = filaFecha + 1; r < filaFecha + 1 + 800; r++) {
     const fechaRaw = get(ws, r, colFecha)
-    if (!(fechaRaw instanceof Date)) break
+    if (!(fechaRaw instanceof Date)) {
+      if (filas.length > 0 && ++huecos > HUECOS_TOLERADOS) break
+      continue
+    }
+    huecos = 0
 
     const dias = colDias !== null ? Number(get(ws, r, colDias)) || daysInMonth(fechaRaw) : daysInMonth(fechaRaw)
     const petM3d = Number(get(ws, r, colPet)) || 0

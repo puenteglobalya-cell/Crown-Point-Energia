@@ -15,9 +15,17 @@ export async function POST(req: NextRequest) {
   if (!Number.isFinite(escenarioId)) {
     return NextResponse.json({ error: 'escenario_id inválido' }, { status: 400 })
   }
+  if (!Number.isFinite(tasaAnual) || tasaAnual <= -1 || tasaAnual > 10) {
+    return NextResponse.json({ error: 'tasa_anual inválida (esperado un decimal, ej. 0.10 = 10%)' }, { status: 400 })
+  }
+  if (!Number.isFinite(horizonteAnios) || horizonteAnios <= 0) {
+    return NextResponse.json({ error: 'horizonte_anios inválido' }, { status: 400 })
+  }
 
   try {
-    const resumen = await calcularEscenario(escenarioId)
+    // El horizonte elegido ahora recorta de verdad la corrida del motor; antes
+    // se guardaba en las métricas pero el motor siempre iba a 240 meses.
+    const resumen = await calcularEscenario(escenarioId, Math.round(horizonteAnios * 12))
     const agregados = await calcularAgregadosAnuales(escenarioId)
     const metricas = await calcularMetricasEscenario(escenarioId, tasaAnual, horizonteAnios)
     const depletion = await calcularDepletionReservas(escenarioId)

@@ -2,16 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireReservasAccess } from '@/lib/reservas/access'
 import { isSameOrigin } from '@/lib/csrf'
+import { traerTodo } from '@/lib/reservas/engine'
 
 export const dynamic = 'force-dynamic'
 
+// Tablas de carga de datos: las únicas que este endpoint lee y escribe.
+// Las tablas de resultados (resultados_escenario_anual, escenario_metricas,
+// reservas_depletion_anual) salieron de acá: las escribe el motor y se leen
+// desde /api/portal/reservas/resultados. Antes se traían enteras en cada
+// carga de la pantalla sin que la UI las usara.
 const TABLES = [
   'provincias', 'yacimientos', 'concesiones', 'concesion_participacion',
   'pozos', 'pozos_tipo', 'curvas_produccion', 'intervenciones',
   'formulas_precio', 'precios_referencia', 'precios_mensuales',
   'opex_fijo', 'opex_variable', 'opex_fijo_pozo', 'regalias', 'escenarios',
   'reservas_anuales', 'parametros_certeza_reservas', 'supuestos_generales', 'deuda_notas', 'comparables_mercado',
-  'resultados_escenario_anual', 'escenario_metricas', 'reservas_depletion_anual',
 ] as const
 type Tabla = typeof TABLES[number]
 
@@ -20,13 +25,19 @@ export async function GET() {
   if (!auth) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const db = createSupabaseServerAdminClient()
-  const results = await Promise.all(TABLES.map(t => db.from(t).select('*').order('id')))
-  const err = results.find(r => r.error)
-  if (err?.error) return NextResponse.json({ error: err.error.message }, { status: 500 })
-
-  const data: Record<string, unknown> = {}
-  TABLES.forEach((t, i) => { data[t] = results[i].data })
-  return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } })
+  // Paginado: curvas_produccion pasa fácil las 1000 filas (una curva de pozo
+  // tipo son 240 meses) y PostgREST truncaba la respuesta en silencio, así que
+  // la pantalla mostraba una curva incompleta.
+  try {
+    const results = await Promise.all(
+      TABLES.map(t => traerTodo<any>(() => db.from(t).select('*').order('id'))),
+    )
+    const data: Record<string, unknown> = {}
+    TABLES.forEach((t, i) => { data[t] = results[i] })
+    return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } })
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 })
+  }
 }
 
 export async function POST(req: NextRequest) {
