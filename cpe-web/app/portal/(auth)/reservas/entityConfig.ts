@@ -385,6 +385,30 @@ export const ENTITIES: EntityConfig[] = [
     displayCols: (r, d) => [{ label: 'Escenario', value: nombreDe(d, 'escenarios', r.escenario_id) }, { label: 'Yacimiento', value: nombreDe(d, 'yacimientos', r.yacimiento_id) }, { label: 'WI%', value: String(r.working_interest_pct) }],
   },
   {
+    tabla: 'costos_corporativos',
+    title: '16b. Costo corporativo (G&A, estructura)',
+    helpText: 'Costos que no pertenecen a ningún proyecto. El consolidado los resta para pasar de "suma de proyectos" a valor de empresa. El monto es MENSUAL: un G&A de 3,6 MM al año se carga como 300.000. Los intereses de deuda NO van acá — se derivan solos de la tabla de deuda corporativa.',
+    fields: [
+      { name: 'concepto', label: 'Concepto', type: 'text', required: true },
+      { name: 'tipo', label: 'Tipo', type: 'select', staticOptions: [
+        { value: 'g_and_a', label: 'G&A' }, { value: 'estructura', label: 'Estructura' },
+        { value: 'honorarios', label: 'Honorarios' }, { value: 'seguros', label: 'Seguros' },
+        { value: 'otro', label: 'Otro' },
+      ] },
+      { name: 'fecha_desde', label: 'Desde', type: 'date', required: true },
+      { name: 'fecha_hasta', label: 'Hasta (vacío = todo el horizonte)', type: 'date' },
+      { name: 'monto_usd_mes', label: 'Monto USD por MES', type: 'number', step: '0.01', required: true },
+      { name: 'deducible', label: 'Deducible de ganancias (genera escudo fiscal)', type: 'checkbox', defaultValue: true },
+      { name: 'notas', label: 'Notas', type: 'text' },
+    ],
+    displayCols: r => [
+      { label: 'Concepto', value: String(r.concepto) },
+      { label: 'USD/mes', value: Number(r.monto_usd_mes).toLocaleString('es-AR') },
+      { label: 'Desde', value: String(r.fecha_desde) },
+      { label: 'Deducible', value: r.deducible ? 'sí' : 'no' },
+    ],
+  },
+  {
     tabla: 'deuda_notas',
     title: '17. Deuda corporativa (obligaciones negociables)',
     fields: [

@@ -77,6 +77,8 @@ supabase/20260801_reservas_certeza_incremental.sql
 supabase/20260801_pozos_tipo_gsj.sql
 supabase/20260801_campanas_perforacion.sql
 supabase/20260801_proyectos_consolidado.sql
+supabase/20260801_reservas_reconciliacion.sql
+supabase/20260801_costos_corporativos.sql
 ```
 
 - **`reservas_abandono`** agrega `pozos.costo_abandono_usd`. NI 51-101 pide
@@ -102,6 +104,14 @@ supabase/20260801_proyectos_consolidado.sql
   los escenarios de un proyecto. Habilita la pestaña **"Consolidado"** (la
   empresa como suma de proyectos) y, sobre todo, el lugar donde va el **precio
   de compra de un área** — el número que define si una adquisición cierra.
+
+- **`reservas_reconciliacion`** crea `reservas_movimientos` y agrega al
+  roll-forward una columna por categoría. Es lo que convierte la depleción en
+  una **reconciliación de reservas de NI 51-101** — hasta ahora teníamos 1 de
+  las 7 categorías obligatorias.
+- **`costos_corporativos`** crea la tabla de G&A y estructura. Junto con la
+  deuda ya cargada, permite que el consolidado pase de "suma de proyectos" a
+  **valor de empresa**.
 
 El motor lee las columnas nuevas de forma defensiva, así que el simulador
 funciona con o sin estas migraciones aplicadas.

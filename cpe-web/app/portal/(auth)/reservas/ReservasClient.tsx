@@ -30,7 +30,7 @@ const GRUPOS_CARGA: { titulo: string; tablas: string[] }[] = [
   { titulo: 'Costos e impuestos', tablas: ['opex_fijo', 'opex_variable', 'opex_fijo_pozo', 'regalias'] },
   { titulo: 'Proyectos y escenarios', tablas: ['proyectos', 'costos_proyecto', 'escenarios'] },
   { titulo: 'Reservas', tablas: ['reservas_anuales', 'reservas_movimientos', 'parametros_certeza_reservas'] },
-  { titulo: 'Financiero', tablas: ['supuestos_generales', 'deuda_notas', 'comparables_mercado'] },
+  { titulo: 'Financiero', tablas: ['supuestos_generales', 'costos_corporativos', 'deuda_notas', 'comparables_mercado'] },
 ]
 
 export default function ReservasClient() {
@@ -1458,7 +1458,7 @@ type ProyectoConsolidado = {
   proyecto_id: number; nombre: string; tipo: string
   escenario: { id: number; nombre: string } | null
   sin_resultados: boolean; meses: number
-  npv_operativo_usd: number; npv_costos_entrada_usd: number; npv_total_usd: number
+  npv_operativo_usd: number; npv_costos_entrada_usd: number; npv_escudo_fiscal_usd: number; npv_total_usd: number
   capex_desarrollo_usd: number; costo_entrada_usd: number; ingresos_totales_usd: number
   costos: { concepto: string; tipo: string; fecha: string; monto_usd: number; aplicar_participacion: boolean }[]
 }
@@ -1468,10 +1468,16 @@ type RespuestaConsolidado = {
   proyectos: ProyectoConsolidado[]
   excluidos: string[]
   aviso: string | null
+  alicuota_ganancias?: number
+  capa_corporativa?: {
+    conceptos: { concepto: string; tipo: string; monto_usd_mes: number; deducible: boolean }[]
+    series_deuda: { serie: string; saldo_usd: number; tasa_pct: number }[]
+  }
   total: {
     proyectos: number; con_resultados: number; fecha_base_descuento: string
-    npv_operativo_usd: number; npv_costos_entrada_usd: number; npv_total_usd: number
-    capex_desarrollo_usd: number; costo_entrada_usd: number
+    npv_operativo_usd: number; npv_costos_entrada_usd: number; npv_escudo_fiscal_usd: number
+    npv_proyectos_usd: number; npv_g_and_a_usd: number; npv_intereses_deuda_usd: number
+    npv_total_usd: number; capex_desarrollo_usd: number; costo_entrada_usd: number
     npv_por_tasa: { tasa: number; npv_usd: number }[]
   } | null
 }
@@ -1523,10 +1529,14 @@ function ConsolidadoTab() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px', marginBottom: 20 }}>
             <Kv label="Proyectos en el consolidado" val={`${res.total.con_resultados} de ${res.total.proyectos} con resultados`} />
             <Kv label="Descontado a" val={`${res.total.fecha_base_descuento} @ ${(res.tasa_descuento * 100).toFixed(1)}%`} />
-            <Kv label="VAN operativo" val={mm(res.total.npv_operativo_usd)} />
+            <Kv label="VAN operativo de los proyectos" val={mm(res.total.npv_operativo_usd)} />
             <Kv label="Costo de entrada (VAN)" val={mm(res.total.npv_costos_entrada_usd)} />
+            <Kv label="Escudo fiscal del costo de entrada" val={res.total.npv_escudo_fiscal_usd === 0 ? '—' : mm(res.total.npv_escudo_fiscal_usd)} />
             <Kv label="CAPEX de desarrollo" val={mm(res.total.capex_desarrollo_usd)} />
-            <Kv label="VAN TOTAL de la empresa" val={mm(res.total.npv_total_usd)} />
+            <Kv label="Suma de proyectos" val={mm(res.total.npv_proyectos_usd)} />
+            <Kv label="G&A corporativo (VAN)" val={res.total.npv_g_and_a_usd === 0 ? '—' : mm(res.total.npv_g_and_a_usd)} />
+            <Kv label="Intereses de deuda (VAN)" val={res.total.npv_intereses_deuda_usd === 0 ? '—' : mm(res.total.npv_intereses_deuda_usd)} />
+            <Kv label="VALOR DE EMPRESA" val={mm(res.total.npv_total_usd)} />
           </div>
 
           <div style={{ overflowX: 'auto', marginBottom: 20 }}>
@@ -1620,10 +1630,29 @@ function ConsolidadoTab() {
               Excluidos del consolidado: {res.excluidos.join(', ')}.
             </p>
           )}
-          <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 12 }}>
-            El consolidado todavía no baja G&amp;A corporativo ni intereses de deuda: es la suma de los proyectos,
-            no un valor de empresa completo.
-          </p>
+          {res.capa_corporativa && (res.capa_corporativa.conceptos.length > 0 || res.capa_corporativa.series_deuda.length > 0) ? (
+            <div style={{ marginTop: 16 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, margin: '0 0 4px' }}>Capa corporativa descontada</p>
+              <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 8px' }}>
+                Los conceptos deducibles se computan netos de impuesto a las ganancias
+                ({((res.alicuota_ganancias ?? 0.35) * 100).toFixed(0)}%). Los intereses se derivan de la tabla de deuda
+                corporativa (saldo × tasa ÷ 12), no se cargan a mano.
+              </p>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--fg-soft)' }}>
+                {res.capa_corporativa.conceptos.map((c, i) => (
+                  <li key={i}>{c.concepto} — US$ {c.monto_usd_mes.toLocaleString('es-AR')}/mes{c.deducible ? ' (deducible)' : ''}</li>
+                ))}
+                {res.capa_corporativa.series_deuda.map((d, i) => (
+                  <li key={`d${i}`}>{d.serie} — US$ {(d.saldo_usd / 1e6).toFixed(1)} MM al {d.tasa_pct}%</li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 12 }}>
+              Sin costos corporativos ni deuda cargados, el total es la suma de los proyectos.
+              Cargalos en "Costo corporativo" y "Deuda corporativa" para llegar a un valor de empresa.
+            </p>
+          )}
         </>
       )}
     </Seccion>
