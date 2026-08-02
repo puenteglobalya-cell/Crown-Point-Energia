@@ -325,8 +325,9 @@ export const ENTITIES: EntityConfig[] = [
   {
     tabla: 'intervenciones',
     title: '14. Intervención (drilling / workover / pulling / facilities)',
+    helpText: 'Facilities es CAPEX que sostiene el yacimiento activo (líneas, baterías, tratamiento) pero NO agrega producción propia — dejá "Pozo" vacío y "Curva que activa" vacío. El motor lo amortiza contra la producción total del yacimiento igual que el CAPEX de cualquier pozo, repartiendo la cuota entre los pozos que producen ese mes; el desembolso de caja queda en el mes en que se hizo.',
     fields: [
-      { name: 'pozo_id', label: 'Pozo (vacío si es drilling nuevo)', type: 'select', optionsFrom: 'pozos' },
+      { name: 'pozo_id', label: 'Pozo (vacío si es drilling nuevo o facilities)', type: 'select', optionsFrom: 'pozos' },
       { name: 'concesion_id', label: 'Concesión', type: 'select', optionsFrom: 'concesiones', required: true },
       { name: 'tipo', label: 'Tipo', type: 'select', staticOptions: [
         { value: 'perforacion', label: 'Perforación' }, { value: 'workover', label: 'Workover' },

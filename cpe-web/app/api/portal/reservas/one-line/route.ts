@@ -98,12 +98,18 @@ export async function GET(req: NextRequest) {
       const ebitda = ingresos - regalias - opex
       const conProduccion = rows.filter(r => Number(r.bbl_petroleo) > 0 || Number(r.mcf_gas) > 0)
 
+      // pozo_id null son las filas de CAPEX de facilities (instalaciones que
+      // sostienen el yacimiento pero no cuelgan de un pozo). Se agrupan todas
+      // juntas acá porque cashflow_mensual no guarda la concesión de origen;
+      // si en algún momento hay facilities en más de una concesión al mismo
+      // tiempo, esta línea las mezcla — separarlas requeriría esa columna.
+      const esFacilities = pozoId == null || pozoId < 0
       return {
-        pozo_id: pozoId,
-        pozo: pozo?.nombre ?? `#${pozoId}`,
-        concesion: conc?.nombre ?? '—',
+        pozo_id: esFacilities ? null : pozoId,
+        pozo: esFacilities ? 'Facilities' : (pozo?.nombre ?? `#${pozoId}`),
+        concesion: conc?.nombre ?? (esFacilities ? '(todas)' : '—'),
         yacimiento: conc ? (yacPorId.get(conc.yacimiento_id) ?? '—') : '—',
-        categoria: aPerforar.has(pozoId) ? 'a_perforar' : 'existente',
+        categoria: esFacilities ? 'facilities' : (aPerforar.has(pozoId) ? 'a_perforar' : 'existente'),
         npv_usd: calcularNPV(flujos, tasa, fechaBase),
         irr_pct: (() => { const r = irrAnual(serie); return r === null ? null : r * 100 })(),
         payback_anios: payback,
@@ -136,6 +142,7 @@ export async function GET(req: NextRequest) {
       por_categoria: {
         existente: suma(lineas.filter(l => l.categoria === 'existente')),
         a_perforar: suma(lineas.filter(l => l.categoria === 'a_perforar')),
+        facilities: suma(lineas.filter(l => l.categoria === 'facilities')),
       },
     })
   } catch (e) {

@@ -376,6 +376,11 @@ export async function calcularEscenario(
     pozo: any; concesion: any; yacimiento: any; provincia: any
     fecha: string; bbl: number; mcf: number; capexUsd: number
     depreciacionLineal: number; depreciacionUsd: number
+    // CAPEX de facilities: sostiene el yacimiento activo pero no genera
+    // producción propia. Se excluye del prorrateo de OPEX fijo por pozo (no es
+    // un pozo real) y del corte por límite económico (produce=false ya lo
+    // hace inofensivo, pero queda explícito acá).
+    esFacilities?: boolean
   }
   const registrosPorPozo = new Map<number, Registro[]>()
 
@@ -455,6 +460,74 @@ export async function calcularEscenario(
       registros.push({ pozo, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionLineal, depreciacionUsd: 0 })
     }
     if (registros.length > 0) registrosPorPozo.set(pozo.id, registros)
+  }
+
+  // ─── CAPEX de facilities (sin pozo, no agrega producción) ──────────────
+  // Instalaciones que sostienen el yacimiento activo pero no disparan una
+  // curva propia: líneas, baterías, tratamiento. Se cargan con pozo_id vacío
+  // y concesion_id (ver entityConfig "Pozo (vacío si es drilling nuevo o
+  // facilities)"). Antes quedaban agrupadas bajo una clave que ningún otro
+  // paso del cálculo leía — el CAPEX desaparecía sin dejar rastro: no entraba
+  // al pool de amortización del yacimiento, no salía en el cash flow, no se
+  // deducía de ganancias.
+  //
+  // Se modelan como un pozo virtual (id negativo, nunca choca con un id real)
+  // con producción cero. Al entrar al mismo pool de CAPEX-por-yacimiento que
+  // los pozos reales, su cuota de amortización se reparte entre los pozos que
+  // sí producen ese mes — que es exactamente cómo tiene que funcionar: el
+  // costo de sostener el yacimiento se recupera contra la producción del
+  // yacimiento, no contra una producción propia que no existe. El desembolso
+  // de CAPEX sí queda en su propia fila del mes en que se hizo.
+  const intervFacilitiesPorConcesion = new Map<number, any[]>()
+  for (const i of intervenciones) {
+    if (i.pozo_id != null || i.tipo !== 'facilities') continue
+    const arr = intervFacilitiesPorConcesion.get(i.concesion_id) ?? []
+    arr.push(i)
+    intervFacilitiesPorConcesion.set(i.concesion_id, arr)
+  }
+
+  let facilitiesIdSeq = -1
+  for (const [concesionId, intervFac] of intervFacilitiesPorConcesion) {
+    const concesion = concesionPorId.get(concesionId)
+    if (!concesion) {
+      diag.add('facilities_sin_concesion', `Una intervención de facilities apunta a una concesión que no existe — se excluye del cálculo`)
+      continue
+    }
+    const yacimiento = yacimientoPorId.get(concesion.yacimiento_id)
+    if (!yacimiento) {
+      diag.add('facilities_concesion_sin_yacimiento', `La concesión "${concesion.nombre}" no tiene yacimiento — su CAPEX de facilities se excluye`)
+      continue
+    }
+    const provincia = provinciaPorId.get(yacimiento.provincia_id) ?? null
+
+    const anclaje = [...intervFac].sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))[0]
+    const pozoVirtual = { id: facilitiesIdSeq--, nombre: `Facilities — ${concesion.nombre}`, costo_abandono_usd: 0 }
+
+    const registros: Registro[] = []
+    for (let m = 0; m < horizonte; m++) {
+      const fecha = mesDesde(anclaje.fecha_inicio_perforacion ?? anclaje.fecha, m)
+      if (concesion.fecha_vencimiento && fecha >= concesion.fecha_vencimiento) break
+
+      let capexUsd = 0, depreciacionLineal = 0
+      for (const i of intervFac) {
+        const fechaCapex = i.fecha_inicio_perforacion ?? i.fecha
+        const capexAjustado = i.capex_usd * mult.capex
+        if (mesDe(fechaCapex) === mesDe(fecha)) capexUsd += capexAjustado
+        if (i.vida_util_meses && i.vida_util_meses > 0) {
+          const mesesDesde = monthsBetween(fechaCapex, fecha)
+          if (mesesDesde >= 0 && mesesDesde < i.vida_util_meses) {
+            depreciacionLineal += capexAjustado / i.vida_util_meses
+          }
+        }
+      }
+      if (capexUsd === 0 && depreciacionLineal === 0) continue
+
+      registros.push({
+        pozo: pozoVirtual, concesion, yacimiento, provincia, fecha,
+        bbl: 0, mcf: 0, capexUsd, depreciacionLineal, depreciacionUsd: 0, esFacilities: true,
+      })
+    }
+    if (registros.length > 0) registrosPorPozo.set(pozoVirtual.id, registros)
   }
 
   // ─── Amortización por unidades de producción (UoP) ────────────────────
@@ -567,9 +640,12 @@ export async function calcularEscenario(
   // Pozos activos por concesión y mes — para prorratear el OPEX fijo de
   // concesión. Antes se le cobraba el monto completo a cada pozo, así que una
   // concesión con 30 pozos contabilizaba 30 veces su costo fijo mensual.
+  // Facilities no cuenta: no es un pozo activo, y contarlo diluiría el OPEX
+  // fijo de concesión entre un pozo de menos de los que realmente lo generan.
   const activosPorConcesionMes = new Map<string, number>()
   for (const registros of registrosPorPozo.values()) {
     for (const r of registros) {
+      if (r.esFacilities) continue
       const key = `${r.concesion.id}|${r.fecha}`
       activosPorConcesionMes.set(key, (activosPorConcesionMes.get(key) ?? 0) + 1)
     }
@@ -586,7 +662,7 @@ export async function calcularEscenario(
     const primeraFilaDelPozo = filas.length
 
     for (const r of registros) {
-      const { pozo, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionUsd } = r
+      const { pozo, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionUsd, esFacilities } = r
 
       const precioOil = precioEn(yacimiento, 'petroleo', fecha) * mult.precioPetroleo
       const precioGas = precioEn(yacimiento, 'gas', fecha) * mult.precioGas
@@ -606,9 +682,10 @@ export async function calcularEscenario(
       const boe = bbl + mcf / MCF_POR_BOE
       const opexVarUsd = boe * (variable?.usd_por_boe ?? 0) * mult.opex
       // Fijo por pozo: se carga completo a cada pozo activo (a diferencia del
-      // opex_fijo de concesión, que sí se prorratea entre los pozos activos)
+      // opex_fijo de concesión, que sí se prorratea entre los pozos activos).
+      // Facilities no es un pozo activo, no le corresponde este cargo.
       const fijoPozo = vigente(opexFijoPozoPorConc.get(concesion.id) ?? [], fecha)
-      const opexFijoPozoUsd = (fijoPozo?.usd_mes_pozo ?? 0) * mult.opex
+      const opexFijoPozoUsd = esFacilities ? 0 : (fijoPozo?.usd_mes_pozo ?? 0) * mult.opex
 
       const baseImponible = ingresoBruto - regaliaUsd - iibbUsd - dycUsd - opexFijoUsd - opexVarUsd - opexFijoPozoUsd - depreciacionUsd
       const impuestoGanancias = baseImponible > 0 ? baseImponible * alicuotaGanancias : 0
@@ -633,7 +710,11 @@ export async function calcularEscenario(
 
       filas.push({
         escenario_id: escenarioId,
-        pozo_id: pozo.id,
+        // El pozo virtual de facilities tiene un id negativo que sólo existe
+        // en esta corrida, no en la tabla `pozos` — persistirlo rompería la
+        // FK. Sin pozo_id, esta fila se ve en el consolidado del yacimiento
+        // (resultados_escenario_anual) pero no en el detalle por pozo.
+        pozo_id: esFacilities ? null : pozo.id,
         fecha,
         bbl_petroleo: bbl,
         mcf_gas: mcf,
