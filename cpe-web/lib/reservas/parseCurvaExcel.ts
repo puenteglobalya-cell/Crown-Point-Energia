@@ -24,8 +24,16 @@ function norm(v: unknown): string {
 }
 
 // Busca, en las primeras 20 filas, una fila con una celda "Fecha" y, cerca
-// de ella, columnas etiquetadas "Pet" y "Gas" (en la fila inmediatamente
-// superior, patrón típico de estos reportes con headers de 2 niveles).
+// de ella, columnas etiquetadas "Pet" y "Gas". Se acepta que la etiqueta esté
+// en la misma fila que "Fecha" o una fila arriba — este segundo caso es el
+// típico de reportes con header de dos niveles: una fila de grupo ("Curva
+// Base", "Perforación"...), la fila siguiente con "Pet"/"Gas"/"Agua" bajo
+// cada grupo, y recién debajo la fila con "Fecha" y las unidades (m3/d).
+//
+// Cuando hay varios grupos Pet/Gas en la hoja (Curva Base, Perforación,
+// Workover, Total...), se toma el PRIMERO de izquierda a derecha — que por
+// convención de estos reportes es la curva básica, sin los incrementales de
+// perforación y workover mezclados adentro.
 function detectarColumnas(ws: ExcelJS.Worksheet): { filaFecha: number; colFecha: number; colDias: number | null; colPet: number; colGas: number } {
   for (let r = 1; r <= 20; r++) {
     for (let c = 1; c <= 20; c++) {
@@ -34,12 +42,12 @@ function detectarColumnas(ws: ExcelJS.Worksheet): { filaFecha: number; colFecha:
         const colFecha = c
         let colPet = -1, colGas = -1, colDias: number | null = null
         for (let cc = 1; cc <= 15; cc++) {
-          const abajo = norm(get(ws, r, cc))
-          const arriba = norm(get(ws, r - 1, cc))
-          if (abajo === 'pet' || abajo === 'petroleo' || abajo === 'petróleo') colPet = cc
-          if (abajo === 'gas') colGas = cc
-          if (abajo.includes('m3/d') && arriba === '' ) continue
-          if (arriba === 'días' || arriba === 'dias' || abajo === 'días' || abajo === 'dias') colDias = cc
+          const mismaFila = norm(get(ws, r, cc))
+          const filaArriba = norm(get(ws, r - 1, cc))
+          const esPet = (v: string) => v === 'pet' || v === 'petroleo' || v === 'petróleo'
+          if (colPet === -1 && (esPet(mismaFila) || esPet(filaArriba))) colPet = cc
+          if (colGas === -1 && (mismaFila === 'gas' || filaArriba === 'gas')) colGas = cc
+          if (colDias === null && (filaArriba === 'días' || filaArriba === 'dias' || mismaFila === 'días' || mismaFila === 'dias')) colDias = cc
         }
         if (colPet === -1 || colGas === -1) continue
         return { filaFecha, colFecha, colDias, colPet, colGas }
