@@ -866,7 +866,7 @@ function PlantillaMasiva({ reload }: { reload: () => void }) {
   )
 }
 
-type RepartoUI = { destino: 'pozo' | 'pozo_tipo'; destinoId: string; pctPetroleo: string; pctGas: string }
+type RepartoUI = { destinoId: string; pct: string; pctGas: string }
 
 function ImportarCurvaExcel({ data, reload }: {
   data: Data; reload: () => void
@@ -885,23 +885,23 @@ function ImportarCurvaExcel({ data, reload }: {
 
   // Modo reparto: el archivo trae una curva agregada (toda la concesión, sin
   // apertura por yacimiento todavía) y hay que repartirla por porcentaje
-  // entre varios pozos/pozos tipo — cada uno recibe su % de petróleo y su %
-  // de gas de la misma curva base, sin volver a leer el archivo.
+  // entre varios pozos tipo — siempre a pozo tipo, porque son destinos
+  // virtuales, no pozos reales. Un solo % por fila (aplica a petróleo y gas
+  // salvo que se active "separar gas"), sin volver a leer el archivo.
   const [repartoActivo, setRepartoActivo] = useState(false)
+  const [separarGas, setSepararGas] = useState(false)
   const [repartos, setRepartos] = useState<RepartoUI[]>([
-    { destino: 'pozo', destinoId: '', pctPetroleo: '100', pctGas: '100' },
+    { destinoId: '', pct: '100', pctGas: '100' },
   ])
 
   const opts = destino === 'pozo'
     ? data.pozos.map(p => ({ value: String(p.id), label: String(p.nombre) }))
     : data.pozos_tipo.map(p => ({ value: String(p.id), label: String(p.nombre) }))
 
-  const optsPara = (d: 'pozo' | 'pozo_tipo') => d === 'pozo'
-    ? data.pozos.map(p => ({ value: String(p.id), label: String(p.nombre) }))
-    : data.pozos_tipo.map(p => ({ value: String(p.id), label: String(p.nombre) }))
+  const optsReparto = data.pozos_tipo.map(p => ({ value: String(p.id), label: String(p.nombre) }))
 
-  const sumaPetroleo = repartos.reduce((s, r) => s + (Number(r.pctPetroleo) || 0), 0)
-  const sumaGas = repartos.reduce((s, r) => s + (Number(r.pctGas) || 0), 0)
+  const sumaPetroleo = repartos.reduce((s, r) => s + (Number(r.pct) || 0), 0)
+  const sumaGas = repartos.reduce((s, r) => s + (Number(separarGas ? r.pctGas : r.pct) || 0), 0)
 
   function actualizarReparto(i: number, cambio: Partial<RepartoUI>) {
     setRepartos(rs => rs.map((r, idx) => idx === i ? { ...r, ...cambio } : r))
@@ -934,9 +934,9 @@ function ImportarCurvaExcel({ data, reload }: {
         ? {
             filas,
             repartos: repartos.map(r => ({
-              [r.destino === 'pozo' ? 'pozo_id' : 'pozo_tipo_id']: Number(r.destinoId),
-              pct_petroleo: Number(r.pctPetroleo) || 0,
-              pct_gas: Number(r.pctGas) || 0,
+              pozo_tipo_id: Number(r.destinoId),
+              pct_petroleo: Number(r.pct) || 0,
+              pct_gas: Number(separarGas ? r.pctGas : r.pct) || 0,
             })),
           }
         : (destino === 'pozo' ? { pozo_id: Number(destinoId), filas } : { pozo_tipo_id: Number(destinoId), filas })
@@ -1007,42 +1007,41 @@ function ImportarCurvaExcel({ data, reload }: {
 
       {repartoActivo && (
         <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--fg-muted)', marginBottom: 8, cursor: 'pointer' }}>
+            <input type="checkbox" checked={separarGas} onChange={e => setSepararGas(e.target.checked)} />
+            El % de gas es distinto al de petróleo (si no, usa el mismo % para los dos)
+          </label>
           {repartos.map((r, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-              <div>
-                <label style={label}>Tipo</label>
-                <select value={r.destino} onChange={e => actualizarReparto(i, { destino: e.target.value as 'pozo' | 'pozo_tipo', destinoId: '' })} style={{ ...input, width: 110 }}>
-                  <option value="pozo">Pozo</option>
-                  <option value="pozo_tipo">Pozo tipo</option>
-                </select>
-              </div>
-              <div style={{ flex: 1, minWidth: 160 }}>
-                <label style={label}>Destino</label>
-                <Select opts={optsPara(r.destino)} value={r.destinoId} onChange={e => actualizarReparto(i, { destinoId: e.target.value })} />
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <label style={label}>Pozo tipo destino</label>
+                <Select opts={optsReparto} value={r.destinoId} onChange={e => actualizarReparto(i, { destinoId: e.target.value })} />
               </div>
               <div>
-                <label style={label}>% petróleo</label>
-                <input type="number" min={0} max={100} step="0.1" value={r.pctPetroleo}
-                  onChange={e => actualizarReparto(i, { pctPetroleo: e.target.value })} style={{ ...input, width: 90 }} />
+                <label style={label}>{separarGas ? '% petróleo' : '%'}</label>
+                <input type="number" min={0} max={100} step="0.1" value={r.pct}
+                  onChange={e => actualizarReparto(i, { pct: e.target.value })} style={{ ...input, width: 90 }} />
               </div>
-              <div>
-                <label style={label}>% gas</label>
-                <input type="number" min={0} max={100} step="0.1" value={r.pctGas}
-                  onChange={e => actualizarReparto(i, { pctGas: e.target.value })} style={{ ...input, width: 90 }} />
-              </div>
+              {separarGas && (
+                <div>
+                  <label style={label}>% gas</label>
+                  <input type="number" min={0} max={100} step="0.1" value={r.pctGas}
+                    onChange={e => actualizarReparto(i, { pctGas: e.target.value })} style={{ ...input, width: 90 }} />
+                </div>
+              )}
               {repartos.length > 1 && (
                 <button type="button" onClick={() => setRepartos(rs => rs.filter((_, idx) => idx !== i))}
                   style={{ background: 'none', border: 'none', color: 'var(--cp-negative)', cursor: 'pointer', fontSize: 16, padding: '0 6px' }}>×</button>
               )}
             </div>
           ))}
-          <button type="button" onClick={() => setRepartos(rs => [...rs, { destino: 'pozo', destinoId: '', pctPetroleo: '0', pctGas: '0' }])}
+          <button type="button" onClick={() => setRepartos(rs => [...rs, { destinoId: '', pct: '0', pctGas: '0' }])}
             style={{ background: 'none', border: '1px dashed var(--rule)', borderRadius: 6, padding: '4px 10px', fontSize: 11, color: 'var(--fg-soft)', cursor: 'pointer' }}>
             + agregar destino
           </button>
           <p style={{ fontSize: 11, margin: '8px 0 0', color: (sumaPetroleo !== 100 || sumaGas !== 100) ? 'var(--cp-negative)' : 'var(--fg-muted)' }}>
-            Suma: {sumaPetroleo}% petróleo · {sumaGas}% gas
-            {(sumaPetroleo !== 100 || sumaGas !== 100) && ' — normalmente tendría que dar 100% en cada columna, revisá si es intencional'}
+            Suma: {sumaPetroleo}% petróleo{separarGas && ` · ${sumaGas}% gas`}
+            {(sumaPetroleo !== 100 || sumaGas !== 100) && ' — normalmente tendría que dar 100%, revisá si es intencional'}
           </p>
         </div>
       )}
