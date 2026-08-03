@@ -227,7 +227,8 @@ export const ENTITIES: EntityConfig[] = [
   },
   {
     tabla: 'precios_referencia',
-    title: '12. Precio de referencia (ej. Brent mensual)',
+    title: '12. Precio de referencia (legado — usar Price deck)',
+    helpText: 'Camino viejo, cotización a mano mes por mes. Un escenario con price deck asignado (11a) ignora esta tabla por completo. Se mantiene solo por compatibilidad con escenarios existentes que todavía no migraron a un deck.',
     fields: [
       { name: 'referencia', label: 'Referencia', type: 'text', defaultValue: 'brent', required: true },
       { name: 'fecha', label: 'Mes', type: 'date', required: true },
@@ -413,12 +414,10 @@ export const ENTITIES: EntityConfig[] = [
   {
     tabla: 'supuestos_generales',
     title: '16. Supuestos generales (valuación de empresa)',
-    helpText: 'Supuestos para la valuación de la empresa en marcha, no para el cash flow de reservas: el motor no los lee. Ojo con el "working interest" de acá — NO es el que usa el motor. La participación que afecta el cálculo es la de "Participación en la concesión", que además admite tramos con fechas.',
+    helpText: 'Ojo con el "working interest" de acá — NO es el que usa el motor. La participación que afecta el cálculo es la de "Participación en la concesión", que además admite tramos con fechas.',
     fields: [
       { name: 'escenario_id', label: 'Escenario', type: 'select', optionsFrom: 'escenarios', required: true },
       { name: 'yacimiento_id', label: 'Yacimiento', type: 'select', optionsFrom: 'yacimientos', required: true },
-      { name: 'tipo_curva_precio', label: 'Curva de precio', type: 'text', defaultValue: 'brent_futuros' },
-      { name: 'premium_descuento_usd', label: 'Premium/descuento USD', type: 'number', step: '0.0001' },
       { name: 'working_interest_pct', label: 'Working interest (0 a 1)', type: 'number', step: '0.0001', min: 0, max: 1, defaultValue: 1 },
     ],
     displayCols: (r, d) => [{ label: 'Escenario', value: nombreDe(d, 'escenarios', r.escenario_id) }, { label: 'Yacimiento', value: nombreDe(d, 'yacimientos', r.yacimiento_id) }, { label: 'WI%', value: String(r.working_interest_pct) }],
