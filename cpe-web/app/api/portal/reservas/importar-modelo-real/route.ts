@@ -88,22 +88,31 @@ async function procesarProvincias(db: ReturnType<typeof createSupabaseServerAdmi
       continue
     }
 
+    // Subir el mismo archivo dos veces es normal mientras se va ajustando —
+    // si ya existe una participación/regalía para esa concesión+fecha, se
+    // saltea en silencio en vez de tirar el error de constraint único.
     if (partDesde && partPct) {
       const pct = celdaANumero(partPct)
       if (pct == null) { reporte.push({ hoja: 'provincias', fila: r, error: 'Participación: % inválido' }); continue }
-      const { error } = await db.from('concesion_participacion').insert({
-        concesion_id: conc.id, fecha_desde: partDesde, fecha_hasta: partHasta || null, porcentaje: pct, motivo: partMotivo || null,
-      })
-      if (error) { reporte.push({ hoja: 'provincias', fila: r, error: `Participación: ${error.message}` }); continue }
-      participaciones++
+      const { data: existente } = await db.from('concesion_participacion').select('id').eq('concesion_id', conc.id).eq('fecha_desde', partDesde).maybeSingle()
+      if (!existente) {
+        const { error } = await db.from('concesion_participacion').insert({
+          concesion_id: conc.id, fecha_desde: partDesde, fecha_hasta: partHasta || null, porcentaje: pct, motivo: partMotivo || null,
+        })
+        if (error) { reporte.push({ hoja: 'provincias', fila: r, error: `Participación: ${error.message}` }); continue }
+        participaciones++
+      }
     }
 
     if (regDesde && regPct) {
       const pct = celdaANumero(regPct)
       if (pct == null) { reporte.push({ hoja: 'provincias', fila: r, error: 'Regalía: % inválido' }); continue }
-      const { error } = await db.from('regalias').insert({ concesion_id: conc.id, fecha_desde: regDesde, porcentaje: pct })
-      if (error) { reporte.push({ hoja: 'provincias', fila: r, error: `Regalía: ${error.message}` }); continue }
-      regalias++
+      const { data: existente } = await db.from('regalias').select('id').eq('concesion_id', conc.id).eq('fecha_desde', regDesde).maybeSingle()
+      if (!existente) {
+        const { error } = await db.from('regalias').insert({ concesion_id: conc.id, fecha_desde: regDesde, porcentaje: pct })
+        if (error) { reporte.push({ hoja: 'provincias', fila: r, error: `Regalía: ${error.message}` }); continue }
+        regalias++
+      }
     }
   }
   return { provincias, yacimientos: yacimientosN, participaciones, regalias }
@@ -151,16 +160,22 @@ async function procesarFormulasPrecio(db: ReturnType<typeof createSupabaseServer
   if (Object.keys(bloques).length === 0) return { deck: null as string | null, puntos: 0, formulas: 0, avisos: [] as string[] }
 
   const avisos: string[] = []
-  const nombreDeck = `Importado ${new Date().toISOString().slice(0, 10)}`
-  const { data: deck, error: errDeck } = await db.from('price_decks')
-    .insert({ nombre: nombreDeck, tipo: 'pronostico', descripcion: 'Cargado desde el Excel real del equipo técnico' })
-    .select('id').single()
-  if (errDeck) { reporte.push({ hoja: 'formulas_precio', fila: 0, error: `Price deck: ${errDeck.message}` }); return { deck: null, puntos: 0, formulas: 0, avisos } }
+  // Nombre fijo (no con fecha) para que resubir el mismo archivo actualice
+  // el mismo deck en vez de acumular uno nuevo por cada intento.
+  const nombreDeck = 'Modelo real del equipo técnico'
+  let { data: deck } = await db.from('price_decks').select('id').eq('nombre', nombreDeck).maybeSingle()
+  if (!deck) {
+    const { data: nuevo, error: errDeck } = await db.from('price_decks')
+      .insert({ nombre: nombreDeck, tipo: 'pronostico', descripcion: 'Cargado desde el Excel real del equipo técnico' })
+      .select('id').single()
+    if (errDeck) { reporte.push({ hoja: 'formulas_precio', fila: 0, error: `Price deck: ${errDeck.message}` }); return { deck: null, puntos: 0, formulas: 0, avisos } }
+    deck = nuevo
+  }
 
   let puntos = 0
   for (const b of Object.values(bloques)) {
     const filas = b.puntos.map(p => ({ price_deck_id: deck!.id, referencia: b.referencia, anio: p.anio, precio_usd: p.precio }))
-    const { error } = await db.from('price_deck_puntos').insert(filas)
+    const { error } = await db.from('price_deck_puntos').upsert(filas, { onConflict: 'price_deck_id,referencia,anio' })
     if (error) { reporte.push({ hoja: 'formulas_precio', fila: 0, error: `Puntos de ${b.referencia}: ${error.message}` }); continue }
     puntos += filas.length
   }
@@ -168,15 +183,20 @@ async function procesarFormulasPrecio(db: ReturnType<typeof createSupabaseServer
   const { data: yacimientos } = await db.from('yacimientos').select('id, nombre')
   let formulas = 0
   for (const b of Object.values(bloques)) {
+    // Si no se encontraron los parámetros en el Excel (ej. el bloque de gas,
+    // que suele venir a precio plano sin descuento), se carga sin castigo —
+    // precio neto = referencia — en vez de bloquear la fórmula entera.
     if (b.divisor == null) {
-      avisos.push(`No encontré los parámetros de fórmula (descuento/divisor/extra) para "${b.referencia}" — revisá esa fila a mano en "Fórmula de precio"`)
-      continue
+      avisos.push(`No encontré los parámetros de fórmula (descuento/divisor/extra) para "${b.referencia}" — se cargó sin descuento (precio neto = referencia). Revisá esa fila a mano en "Fórmula de precio" si no es así.`)
     }
-    if (!b.dde) avisos.push(`No pude leer el tramo de DDE% por Brent para "${b.referencia}" desde la fórmula de Excel — completalo a mano en "Fórmula de precio"`)
+    if (!b.dde) avisos.push(`No pude leer el tramo de DDE% por Brent para "${b.referencia}" desde la fórmula de Excel — completalo a mano en "Fórmula de precio" si corresponde.`)
     for (const yac of yacimientos ?? []) {
+      const { data: existente } = await db.from('formulas_precio').select('id')
+        .eq('yacimiento_id', yac.id).eq('producto', b.producto).eq('fecha_desde', '2000-01-01').maybeSingle()
+      if (existente) continue
       const { error } = await db.from('formulas_precio').insert({
         yacimiento_id: yac.id, producto: b.producto, fecha_desde: '2000-01-01', referencia: b.referencia,
-        descuento_fijo_usd: b.descuentoFijo ?? 0, divisor: b.divisor, descuento_adicional_usd: b.extra ?? 0,
+        descuento_fijo_usd: b.descuentoFijo ?? 0, divisor: b.divisor ?? 1, descuento_adicional_usd: b.extra ?? 0,
         factor_m3_a_bbl: b.factor ?? undefined,
         dde_brent_min: b.dde?.min, dde_pct_min: b.dde?.pctMin, dde_brent_max: b.dde?.max, dde_pct_max: b.dde?.pctMax,
       })
