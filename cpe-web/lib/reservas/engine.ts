@@ -369,7 +369,13 @@ export async function calcularEscenario(
         : (formula.dde_pct_min ?? 0) + ((formula.dde_pct_max ?? 0) - (formula.dde_pct_min ?? 0))
           * (precioRef - formula.dde_brent_min) / (formula.dde_brent_max - formula.dde_brent_min))
       : (formula.dde_pct ?? 0)
-    const precioNetoCuenca = (precioRef * (1 - ddePct / 100)) / (formula.divisor || 1) - formula.descuento_adicional_usd
+    // Orden real del Excel del equipo técnico (Sproule/ERCE): el descuento
+    // fijo se suma ANTES del recorte por DDE% (suele venir negativo, ej. -3),
+    // y el extra se suma DESPUÉS de dividir — no se resta al final como en
+    // una primera lectura de la fórmula.
+    const descuentoFijo = formula.descuento_fijo_usd ?? 0
+    const extra = formula.descuento_adicional_usd ?? 0
+    const precioNetoCuenca = ((precioRef + descuentoFijo) * (1 - ddePct / 100)) / (formula.divisor || 1) + extra
     // Tarifa de almacenamiento: USD/m3/día × días, convertido a USD/bbl con
     // el factor de conversión configurado (primera aproximación — validar
     // contra el Excel de referencia y ajustar factor_m3_a_bbl si no calza).
