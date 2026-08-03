@@ -6,7 +6,7 @@ import { isSameOrigin } from '@/lib/csrf'
 import type { UserRole } from '@/lib/roles'
 import { dbError } from '@/lib/api-error'
 
-const ROLES: UserRole[] = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas']
+const ROLES: UserRole[] = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas', 'compliance']
 
 // GET — returns full permissions matrix
 export async function GET() {

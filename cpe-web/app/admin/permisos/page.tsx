@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { AdminPageHeader } from '@/components/AdminPageHeader'
+import { PERMISSIONS, ADMIN_LOCKED as ADMIN_LOCKED_LIST } from '@/lib/permissions-config'
 
 const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas', 'compliance'] as const
 type Role = typeof ROLES[number]
@@ -9,19 +10,13 @@ const ROLE_LABELS: Record<Role, string> = {
   viewer: 'Consulta', uploader: 'Carga', admin: 'Admin', rrhh: 'RRHH', accionista: 'Accionista', finanzas: 'Finanzas', compliance: 'Compliance',
 }
 
-const PERMISSION_LABELS: Record<string, string> = {
-  view_reports:    'Ver reportes',
-  view_dashboard:  'Ver dashboard',
-  view_comercial:  'Ver sección comercial',
-  view_drafts:     'Ver reportes borrador',
-  upload_reports:  'Subir reportes',
-  publish_reports: 'Publicar / despublicar reportes',
-  delete_reports:  'Eliminar reportes',
-  manage_users:    'Gestionar usuarios',
-  manage_cms:      'Panel CMS / Admin',
-}
+// Única fuente de verdad: lib/permissions-config.ts — antes esta pantalla
+// tenía su propia lista pegada a mano, que se desactualizaba cada vez que se
+// agregaba un permiso nuevo al código (view_investor, view_reservas quedaron
+// invisibles acá aunque ya existían y el motor los usaba).
+const PERMISSION_LABELS: Record<string, string> = PERMISSIONS as Record<string, string>
 
-const ADMIN_LOCKED = new Set(['manage_users', 'manage_cms'])
+const ADMIN_LOCKED: Set<string> = new Set(ADMIN_LOCKED_LIST)
 
 type Matrix = Record<string, Record<string, boolean>>
 
