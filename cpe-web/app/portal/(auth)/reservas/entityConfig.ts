@@ -216,11 +216,12 @@ export const ENTITIES: EntityConfig[] = [
   {
     tabla: 'price_deck_puntos',
     title: '11b. Punto del price deck',
-    helpText: 'Un punto por referencia y por año. Entre años cargados se interpola linealmente; después del último se aplica la escalación del deck. Con cargar 2027, 2030 y 2035 ya queda definida toda la curva. La referencia tiene que coincidir con la que usa la fórmula de precio (ej. "brent").',
+    helpText: 'Un punto por referencia y por año (o por mes, si completás "Mes" — útil para una corrida real de futuros con un contrato por mes en el corto plazo, ej. ICE Brent). Entre puntos cargados se interpola linealmente; después del último se aplica la escalación del deck. La referencia tiene que coincidir con la que usa la fórmula de precio (ej. "brent").',
     fields: [
       { name: 'price_deck_id', label: 'Price deck', type: 'select', optionsFrom: 'price_decks', required: true },
       { name: 'referencia', label: 'Referencia (ej. brent)', type: 'text', required: true },
       { name: 'anio', label: 'Año', type: 'number', required: true },
+      { name: 'mes', label: 'Mes (1-12, vacío = punto anual)', type: 'number', min: 1, max: 12 },
       { name: 'precio_usd', label: 'Precio USD', type: 'number', step: '0.0001', required: true },
     ],
     displayCols: (r, d) => [

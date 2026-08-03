@@ -305,29 +305,33 @@ export async function calcularEscenario(
   // El deck da unos pocos puntos anuales; entre ellos se interpola linealmente
   // y después del último se aplica la escalación configurada. Un deck
   // constante es simplemente uno con escalación 0.
-  const puntosPorRef = new Map<string, { anio: number; precio: number }[]>()
+  // "t" es el año con fracción (2026.75 = octubre 2026) — si el punto trae
+  // mes (ej. una corrida de futuros con un contrato por mes), se usa
+  // exacto; si no, es un punto anual de siempre (equivale a enero).
+  const puntosPorRef = new Map<string, { t: number; precio: number }[]>()
   for (const p of deckPuntos ?? []) {
     const arr = puntosPorRef.get(p.referencia) ?? []
-    arr.push({ anio: Number(p.anio), precio: Number(p.precio_usd) })
+    const mes = (p as any).mes != null ? Number((p as any).mes) : 1
+    arr.push({ t: Number(p.anio) + (mes - 1) / 12, precio: Number(p.precio_usd) })
     puntosPorRef.set(p.referencia, arr)
   }
-  for (const arr of puntosPorRef.values()) arr.sort((a, b) => a.anio - b.anio)
+  for (const arr of puntosPorRef.values()) arr.sort((a, b) => a.t - b.t)
 
   function precioDeck(referencia: string, fecha: string): number | null {
     const pts = puntosPorRef.get(referencia)
     if (!pts || pts.length === 0) return null
     const t = Number(fecha.slice(0, 4)) + (Number(fecha.slice(5, 7)) - 1) / 12
 
-    if (t <= pts[0].anio) return pts[0].precio
+    if (t <= pts[0].t) return pts[0].precio
     const ultimo = pts[pts.length - 1]
-    if (t >= ultimo.anio) {
+    if (t >= ultimo.t) {
       const escal = Number((deck as any)?.escalacion_anual ?? 0)
-      return ultimo.precio * Math.pow(1 + escal, t - ultimo.anio)
+      return ultimo.precio * Math.pow(1 + escal, t - ultimo.t)
     }
     for (let i = 1; i < pts.length; i++) {
-      if (t <= pts[i].anio) {
+      if (t <= pts[i].t) {
         const a = pts[i - 1], b = pts[i]
-        const w = (t - a.anio) / (b.anio - a.anio || 1)
+        const w = (t - a.t) / (b.t - a.t || 1)
         return a.precio + (b.precio - a.precio) * w
       }
     }

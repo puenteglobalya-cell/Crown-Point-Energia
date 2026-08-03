@@ -261,7 +261,7 @@ function EntitySection({ cfg, data, reload }: {
       {err && <div style={{ fontSize: 13, color: 'var(--cp-negative)', padding: '10px 14px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 12 }}>{err}</div>}
       {msg && <div style={{ fontSize: 13, color: 'var(--cp-positive, #2d7a4a)', padding: '10px 14px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 12 }}>{msg}</div>}
 
-      {cfg.tabla !== 'curvas_produccion' && <PegarDesdeExcel cfg={cfg} data={data} reload={reload} />}
+      {cfg.tabla !== 'curvas_produccion' && cfg.tabla !== 'price_deck_puntos' && <PegarDesdeExcel cfg={cfg} data={data} reload={reload} />}
 
       {cfg.tabla === 'curvas_produccion' && (
         <>
@@ -269,6 +269,8 @@ function EntitySection({ cfg, data, reload }: {
           <GenerarCurvaArps data={data} reload={reload} />
         </>
       )}
+
+      {cfg.tabla === 'price_deck_puntos' && <PegarCorridaFuturos data={data} reload={reload} />}
 
       {rows.length > MAX_FILAS_LISTA && (
         <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 8 }}>
@@ -985,6 +987,96 @@ function ImportarModeloReal({ reload }: { reload: () => void }) {
 
 type RepartoUI = { destinoId: string; pct: string; pctGas: string }
 
+// Pegado directo de una corrida de futuros (ej. ICE Brent) copiada de una
+// pantalla de mercado. Los meses ilíquidos sin cotización se rellenan con el
+// último precio conocido — se muestran marcados antes de confirmar, así se
+// pueden editar a mano después desde la tabla de puntos si corresponde.
+function PegarCorridaFuturos({ data, reload }: { data: Data; reload: () => void }) {
+  const [deckId, setDeckId] = useState('')
+  const [referencia, setReferencia] = useState('brent')
+  const [texto, setTexto] = useState('')
+  const [puntos, setPuntos] = useState<import('@/lib/reservas/parsePreciosFuturos').PuntoFuturo[] | null>(null)
+  const [cargando, setCargando] = useState(false)
+  const [err, setErr] = useState('')
+  const [msg, setMsg] = useState('')
+
+  async function previsualizar() {
+    setErr(''); setMsg('')
+    const { parsePreciosFuturos } = await import('@/lib/reservas/parsePreciosFuturos')
+    const p = parsePreciosFuturos(texto)
+    if (p.length === 0) { setErr('No encontré ningún contrato (ej. "Oct26") en el texto pegado.'); setPuntos(null); return }
+    setPuntos(p)
+  }
+
+  async function cargar() {
+    if (!deckId || !puntos) return
+    setCargando(true); setErr(''); setMsg('')
+    try {
+      const filas = puntos.map(p => ({ price_deck_id: Number(deckId), referencia, anio: p.anio, mes: p.mes, precio_usd: p.precio }))
+      const res = await fetch('/api/portal/reservas/data', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ tabla: 'price_deck_puntos', filas }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Error al cargar')
+      setMsg(`${json.insertadas} puntos cargados (${puntos.filter(p => p.relleno).length} rellenados por mes ilíquido).`)
+      setPuntos(null); setTexto('')
+      reload()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  return (
+    <div style={{ background: 'var(--bg)', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)', padding: 16, marginBottom: 16 }}>
+      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: '0 0 10px' }}>Pegar corrida de futuros (ej. ICE Brent)</p>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
+        Pegá tal cual la tabla de la pantalla de mercado (Contract / Last / Time / % Change / Volume). Los contratos sin cotización se
+        rellenan con el último precio disponible — revisá el preview antes de cargar.
+      </p>
+      {err && <div style={{ fontSize: 12, color: 'var(--cp-negative)', padding: '8px 12px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 10 }}>{err}</div>}
+      {msg && <div style={{ fontSize: 12, color: 'var(--cp-positive, #2d7a4a)', padding: '8px 12px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 10 }}>{msg}</div>}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <label style={label}>Price deck</label>
+          <Select opts={data.price_decks.map(d => ({ value: String(d.id), label: String(d.nombre) }))} value={deckId} onChange={e => setDeckId(e.target.value)} />
+        </div>
+        <div>
+          <label style={label}>Referencia</label>
+          <input value={referencia} onChange={e => setReferencia(e.target.value)} style={{ ...input, width: 120 }} />
+        </div>
+      </div>
+      <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={6} placeholder="Pegá acá la tabla de futuros…"
+        style={{ ...input, fontFamily: 'var(--font-mono)', fontSize: 11, marginBottom: 10 }} />
+      <button className="btn" onClick={previsualizar} disabled={!texto.trim()} style={{ marginRight: 10 }}>Previsualizar</button>
+      {puntos && (
+        <>
+          <div style={{ maxHeight: 220, overflowY: 'auto', margin: '10px 0', border: '1px solid var(--rule)', borderRadius: 8 }}>
+            <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+              <tbody>
+                {puntos.map((p, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid var(--rule)', background: p.relleno ? 'rgba(214,158,46,0.08)' : undefined }}>
+                    <td style={{ padding: '4px 8px' }}>{p.contrato}</td>
+                    <td style={{ padding: '4px 8px' }}>{p.anio}-{String(p.mes).padStart(2, '0')}</td>
+                    <td style={{ padding: '4px 8px', textAlign: 'right' }}>{p.precio.toFixed(3)}</td>
+                    <td style={{ padding: '4px 8px', color: 'var(--fg-muted)' }}>{p.relleno ? '⚠ rellenado' : ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button className="btn btn-primary" onClick={cargar} disabled={!deckId || cargando}>
+            {cargando ? 'Cargando…' : `Cargar ${puntos.length} puntos`}
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
 function ImportarCurvaExcel({ data, reload }: {
   data: Data; reload: () => void
 }) {
@@ -997,6 +1089,10 @@ function ImportarCurvaExcel({ data, reload }: {
   const [filasParseadas, setFilasParseadas] = useState<{ mes_offset: number; fecha: string; bbl_petroleo: number; mcf_gas: number }[] | null>(null)
   const [preview, setPreview] = useState<{ meses: number; primerMes: string; ultimoMes: string; totalBblAnio1: number } | null>(null)
   const [loading, setLoading] = useState(false)
+  // Cuando el archivo trae la curva abierta por yacimiento (ET, LT_PQO...)
+  // en vez de un solo grupo, el parser no adivina: pide elegir cuál cargar.
+  const [gruposDisponibles, setGruposDisponibles] = useState<string[] | null>(null)
+  const [grupoElegido, setGrupoElegido] = useState('')
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState('')
 
@@ -1024,15 +1120,17 @@ function ImportarCurvaExcel({ data, reload }: {
     setRepartos(rs => rs.map((r, idx) => idx === i ? { ...r, ...cambio } : r))
   }
 
-  async function handleFile(f: File) {
-    setFile(f); setErr(''); setMsg(''); setPreview(null); setFilasParseadas(null)
+  async function handleFile(f: File, grupo?: string) {
+    setFile(f); setErr(''); setMsg(''); setPreview(null); setFilasParseadas(null); setGruposDisponibles(null)
+    const { parseCurvaExcel, MultiGrupoError } = await import('@/lib/reservas/parseCurvaExcel')
     try {
-      const { parseCurvaExcel } = await import('@/lib/reservas/parseCurvaExcel')
-      const filas = await parseCurvaExcel(f)
+      const filas = await parseCurvaExcel(f, grupo)
       const anio1 = filas.slice(0, 12).reduce((s, x) => s + x.bbl_petroleo, 0)
       setPreview({ meses: filas.length, primerMes: filas[0].fecha, ultimoMes: filas[filas.length - 1].fecha, totalBblAnio1: anio1 })
       setFilasParseadas(filas)
+      setGrupoElegido(grupo ?? '')
     } catch (e) {
+      if (e instanceof MultiGrupoError) { setGruposDisponibles(e.grupos); return }
       setErr((e as Error).message)
       setFile(null)
       setFilasParseadas(null)
@@ -1115,6 +1213,21 @@ function ImportarCurvaExcel({ data, reload }: {
           <input type="file" accept=".xlsx,.xls" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} style={{ fontSize: 12 }} />
         </div>
       </div>
+
+      {gruposDisponibles && (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 10 }}>
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <label style={label}>Este archivo tiene la curva abierta por yacimiento — elegí cuál</label>
+            <select value={grupoElegido} onChange={e => setGrupoElegido(e.target.value)} style={{ ...input, width: 220 }}>
+              <option value="">— elegir —</option>
+              {gruposDisponibles.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+          </div>
+          <button className="btn" disabled={!grupoElegido || !file} onClick={() => file && handleFile(file, grupoElegido)}>
+            Usar este yacimiento
+          </button>
+        </div>
+      )}
 
       {preview && (
         <div style={{ fontSize: 12, color: 'var(--fg-soft)', marginBottom: 10 }}>
