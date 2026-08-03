@@ -360,7 +360,16 @@ export async function calcularEscenario(
       diag.add('precio_sin_referencia', `${yacimiento.nombre}: falta la cotización "${formula.referencia}" de ${producto} en ${fecha.slice(0, 7)} — se toma 0`)
       return 0
     }
-    const precioNetoCuenca = (precioRef * (1 - formula.dde_pct / 100)) / (formula.divisor || 1) - formula.descuento_adicional_usd
+    // DDE% puede ser fijo (dde_pct) o una escala lineal por nivel de Brent
+    // (dde_brent_min/max, dde_pct_min/max) — así carga el equipo técnico su
+    // Excel real, donde el descuento sube con el precio de referencia.
+    const ddePct = (formula.dde_brent_min != null && formula.dde_brent_max != null)
+      ? (precioRef <= formula.dde_brent_min ? (formula.dde_pct_min ?? 0)
+        : precioRef >= formula.dde_brent_max ? (formula.dde_pct_max ?? 0)
+        : (formula.dde_pct_min ?? 0) + ((formula.dde_pct_max ?? 0) - (formula.dde_pct_min ?? 0))
+          * (precioRef - formula.dde_brent_min) / (formula.dde_brent_max - formula.dde_brent_min))
+      : (formula.dde_pct ?? 0)
+    const precioNetoCuenca = (precioRef * (1 - ddePct / 100)) / (formula.divisor || 1) - formula.descuento_adicional_usd
     // Tarifa de almacenamiento: USD/m3/día × días, convertido a USD/bbl con
     // el factor de conversión configurado (primera aproximación — validar
     // contra el Excel de referencia y ajustar factor_m3_a_bbl si no calza).
