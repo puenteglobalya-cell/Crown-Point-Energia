@@ -2385,14 +2385,34 @@ function PegarDesdeExcel({ cfg, data, reload }: { cfg: EntityConfig; data: Data;
 
   const columnasEsperadas = cfg.fields.map(f => f.label.split(/[(—-]/)[0].trim()).join(' · ')
 
+  async function descargarPlantilla() {
+    const r = await fetch(`/api/portal/reservas/plantilla?tabla=${cfg.tabla}`)
+    if (!r.ok) { setErr((await r.json().catch(() => ({})))?.error ?? 'No se pudo generar la plantilla'); return }
+    const blob = await r.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `plantilla_${cfg.tabla}.xlsx`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   if (!abierto) {
     return (
-      <button type="button" onClick={() => setAbierto(true)} style={{
-        background: 'none', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)',
-        padding: '7px 14px', marginBottom: 14, fontSize: 12, color: 'var(--fg-soft)', cursor: 'pointer',
-      }}>
-        ⇈ Pegar varias filas desde Excel
-      </button>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <button type="button" onClick={() => setAbierto(true)} style={{
+          background: 'none', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)',
+          padding: '7px 14px', fontSize: 12, color: 'var(--fg-soft)', cursor: 'pointer',
+        }}>
+          ⇈ Pegar varias filas desde Excel
+        </button>
+        <button type="button" onClick={descargarPlantilla} style={{
+          background: 'none', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)',
+          padding: '7px 14px', fontSize: 12, color: 'var(--fg-soft)', cursor: 'pointer',
+        }}>
+          ⇓ Descargar plantilla
+        </button>
+      </div>
     )
   }
 
@@ -2400,8 +2420,14 @@ function PegarDesdeExcel({ cfg, data, reload }: { cfg: EntityConfig; data: Data;
     <div style={{ background: 'var(--bg)', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)', padding: 16, marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
         <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: 0 }}>Pegar varias filas desde Excel</p>
-        <button type="button" onClick={() => { setAbierto(false); setTexto(''); setRes(null) }}
-          style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', fontSize: 12 }}>cerrar</button>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'baseline' }}>
+          <button type="button" onClick={descargarPlantilla}
+            style={{ background: 'none', border: 'none', color: 'var(--fg-soft)', cursor: 'pointer', fontSize: 12, textDecoration: 'underline' }}>
+            ⇓ Descargar plantilla
+          </button>
+          <button type="button" onClick={() => { setAbierto(false); setTexto(''); setRes(null) }}
+            style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', fontSize: 12 }}>cerrar</button>
+        </div>
       </div>
       <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
         Copiá el rango de la planilla y pegalo acá. Si la primera fila son los títulos de las columnas, se usa
