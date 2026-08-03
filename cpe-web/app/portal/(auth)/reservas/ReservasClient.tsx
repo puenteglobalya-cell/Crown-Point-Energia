@@ -349,6 +349,7 @@ function EntitySection({ cfg, data, reload }: {
       )}
 
       {cfg.tabla === 'price_deck_puntos' && <PegarCorridaFuturos data={data} reload={reload} />}
+      {cfg.tabla === 'formulas_precio' && <VistaPrecioMensual data={data} />}
 
       {rows.length > MAX_FILAS_LISTA && (
         <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 8 }}>
@@ -1069,6 +1070,86 @@ type RepartoUI = { destinoId: string; pct: string; pctGas: string }
 // pantalla de mercado. Los meses ilíquidos sin cotización se rellenan con el
 // último precio conocido — se muestran marcados antes de confirmar, así se
 // pueden editar a mano después desde la tabla de puntos si corresponde.
+// Vista de sólo lectura, mes a mes, de cómo se llega del Brent/Henry Hub al
+// precio neto — para poder mirar y decir "esto está bien" en vez de confiar
+// en campos sueltos. Dos tablas, Oil y Gas, con la misma fórmula que corre
+// el motor.
+function VistaPrecioMensual({ data }: { data: Data }) {
+  const [deckId, setDeckId] = useState('')
+  const [vista, setVista] = useState<{ deck: string | null; petroleo: any[]; gas: any[] } | null>(null)
+  const [cargando, setCargando] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function ver() {
+    if (!deckId) return
+    setCargando(true); setErr(''); setVista(null)
+    try {
+      const r = await fetch(`/api/portal/reservas/vista-precios?price_deck_id=${deckId}`, { cache: 'no-store' })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error ?? 'Error al calcular')
+      setVista(j)
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  const tabla = (filas: any[], titulo: string) => (
+    <div style={{ marginBottom: 16 }}>
+      <p style={{ fontSize: 12, fontWeight: 700, margin: '0 0 6px' }}>{titulo}</p>
+      {filas.length === 0 ? (
+        <p style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Sin fórmula o sin puntos de precio para este producto todavía.</p>
+      ) : (
+        <div style={{ overflowX: 'auto', border: '1px solid var(--rule)', borderRadius: 8 }}>
+          <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: 'var(--bg-alt, var(--bg))' }}>
+                {['Mes', 'Referencia', 'Descuento fijo', 'DDE%', 'Divisor (IIBB)', 'Extra', 'Precio neto'].map(h => (
+                  <th key={h} style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700, color: 'var(--fg-muted)' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filas.map((f, i) => (
+                <tr key={i} style={{ borderTop: '1px solid var(--rule)' }}>
+                  <td style={{ padding: '4px 8px' }}>{f.mes}</td>
+                  <td style={{ padding: '4px 8px', textAlign: 'right' }}>{f.referencia.toFixed(2)}</td>
+                  <td style={{ padding: '4px 8px', textAlign: 'right' }}>{f.descuentoFijo.toFixed(2)}</td>
+                  <td style={{ padding: '4px 8px', textAlign: 'right' }}>{f.ddePct.toFixed(2)}%</td>
+                  <td style={{ padding: '4px 8px', textAlign: 'right' }}>{f.divisor.toFixed(4)}</td>
+                  <td style={{ padding: '4px 8px', textAlign: 'right' }}>{f.extra.toFixed(2)}</td>
+                  <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700 }}>{f.precioNeto.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+
+  return (
+    <div style={{ background: 'var(--bg)', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)', padding: 16, marginBottom: 16 }}>
+      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: '0 0 10px' }}>Vista mensual de precio (Oil y Gas)</p>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 10, alignItems: 'flex-end' }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <label style={label}>Price deck</label>
+          <Select opts={data.price_decks.map(d => ({ value: String(d.id), label: String(d.nombre) }))} value={deckId} onChange={e => setDeckId(e.target.value)} />
+        </div>
+        <button className="btn" onClick={ver} disabled={!deckId || cargando}>{cargando ? 'Calculando…' : 'Ver'}</button>
+      </div>
+      {err && <div style={{ fontSize: 12, color: 'var(--cp-negative)', padding: '8px 12px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 10 }}>{err}</div>}
+      {vista && (
+        <>
+          {tabla(vista.petroleo, 'Oil')}
+          {tabla(vista.gas, 'Gas')}
+        </>
+      )}
+    </div>
+  )
+}
+
 function PegarCorridaFuturos({ data, reload }: { data: Data; reload: () => void }) {
   const [deckId, setDeckId] = useState('')
   const [referencia, setReferencia] = useState('brent')
