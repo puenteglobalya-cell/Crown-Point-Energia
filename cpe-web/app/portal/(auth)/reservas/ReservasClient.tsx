@@ -789,6 +789,8 @@ function ParetoScatter({ puntos }: { puntos: ParetoPunto[] }) {
   )
 }
 
+type RepartoUI = { destino: 'pozo' | 'pozo_tipo'; destinoId: string; pctPetroleo: string; pctGas: string }
+
 function ImportarCurvaExcel({ data, reload }: {
   data: Data; reload: () => void
 }) {
@@ -798,15 +800,35 @@ function ImportarCurvaExcel({ data, reload }: {
   // Las filas parseadas viven en el estado. Antes se colgaban del objeto File
   // como propiedad (`__filas`), y si el usuario volvía a elegir un archivo se
   // podía importar la curva del anterior.
-  const [filasParseadas, setFilasParseadas] = useState<unknown[] | null>(null)
+  const [filasParseadas, setFilasParseadas] = useState<{ mes_offset: number; fecha: string; bbl_petroleo: number; mcf_gas: number }[] | null>(null)
   const [preview, setPreview] = useState<{ meses: number; primerMes: string; ultimoMes: string; totalBblAnio1: number } | null>(null)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState('')
 
+  // Modo reparto: el archivo trae una curva agregada (toda la concesión, sin
+  // apertura por yacimiento todavía) y hay que repartirla por porcentaje
+  // entre varios pozos/pozos tipo — cada uno recibe su % de petróleo y su %
+  // de gas de la misma curva base, sin volver a leer el archivo.
+  const [repartoActivo, setRepartoActivo] = useState(false)
+  const [repartos, setRepartos] = useState<RepartoUI[]>([
+    { destino: 'pozo', destinoId: '', pctPetroleo: '100', pctGas: '100' },
+  ])
+
   const opts = destino === 'pozo'
     ? data.pozos.map(p => ({ value: String(p.id), label: String(p.nombre) }))
     : data.pozos_tipo.map(p => ({ value: String(p.id), label: String(p.nombre) }))
+
+  const optsPara = (d: 'pozo' | 'pozo_tipo') => d === 'pozo'
+    ? data.pozos.map(p => ({ value: String(p.id), label: String(p.nombre) }))
+    : data.pozos_tipo.map(p => ({ value: String(p.id), label: String(p.nombre) }))
+
+  const sumaPetroleo = repartos.reduce((s, r) => s + (Number(r.pctPetroleo) || 0), 0)
+  const sumaGas = repartos.reduce((s, r) => s + (Number(r.pctGas) || 0), 0)
+
+  function actualizarReparto(i: number, cambio: Partial<RepartoUI>) {
+    setRepartos(rs => rs.map((r, idx) => idx === i ? { ...r, ...cambio } : r))
+  }
 
   async function handleFile(f: File) {
     setFile(f); setErr(''); setMsg(''); setPreview(null); setFilasParseadas(null)
@@ -824,20 +846,34 @@ function ImportarCurvaExcel({ data, reload }: {
   }
 
   async function importar() {
-    if (!file || !destinoId || !filasParseadas) return
+    if (!file || !filasParseadas) return
+    if (repartoActivo && repartos.some(r => !r.destinoId)) { setErr('Faltan destinos sin elegir en el reparto'); return }
+    if (!repartoActivo && !destinoId) return
+
     setLoading(true); setErr(''); setMsg('')
     try {
       const filas = filasParseadas
+      const body = repartoActivo
+        ? {
+            filas,
+            repartos: repartos.map(r => ({
+              [r.destino === 'pozo' ? 'pozo_id' : 'pozo_tipo_id']: Number(r.destinoId),
+              pct_petroleo: Number(r.pctPetroleo) || 0,
+              pct_gas: Number(r.pctGas) || 0,
+            })),
+          }
+        : (destino === 'pozo' ? { pozo_id: Number(destinoId), filas } : { pozo_tipo_id: Number(destinoId), filas })
+
       const res = await fetch('/api/portal/reservas/curva-import', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(destino === 'pozo'
-          ? { pozo_id: Number(destinoId), filas }
-          : { pozo_tipo_id: Number(destinoId), filas }),
+        body: JSON.stringify(body),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Error al importar')
-      setMsg(`Curva importada: ${json.filas} meses cargados ✓`)
+      setMsg(repartoActivo
+        ? `Curva repartida entre ${json.destinos} destinos: ${json.filas} filas cargadas en total ✓`
+        : `Curva importada: ${json.filas} meses cargados ✓`)
       setFile(null); setPreview(null); setDestinoId(''); setFilasParseadas(null)
       reload()
     } catch (e) {
@@ -852,34 +888,90 @@ function ImportarCurvaExcel({ data, reload }: {
       <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: '0 0 10px' }}>Importar curva desde Excel</p>
       <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
         Busca automáticamente una fila con columnas "Fecha", "Pet" y "Gas" (m3/d y Mm3/d) y convierte a bbl/mes y Mcf/mes.
-        Reemplaza toda la curva existente del pozo/pozo tipo elegido.
+        Si el archivo tiene varios grupos de columnas (Curva Base, Perforación, Workover, Total…) toma el primero de
+        izquierda a derecha — por convención, la curva básica sin los incrementales mezclados.
+        El agua no se carga: el motor no la usa en ningún cálculo.
       </p>
       {err && <div style={{ fontSize: 12, color: 'var(--cp-negative)', padding: '8px 12px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 10 }}>{err}</div>}
       {msg && <div style={{ fontSize: 12, color: 'var(--cp-positive, #2d7a4a)', padding: '8px 12px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 10 }}>{msg}</div>}
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--fg-soft)', marginBottom: 10, cursor: 'pointer' }}>
+        <input type="checkbox" checked={repartoActivo} onChange={e => setRepartoActivo(e.target.checked)} />
+        Repartir por % entre varios pozos/yacimientos (archivo agregado sin apertura todavía)
+      </label>
+
       <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div>
-          <label style={label}>Destino</label>
-          <select value={destino} onChange={e => { setDestino(e.target.value as 'pozo' | 'pozo_tipo'); setDestinoId('') }} style={{ ...input, width: 140 }}>
-            <option value="pozo">Pozo</option>
-            <option value="pozo_tipo">Pozo tipo</option>
-          </select>
-        </div>
-        <div style={{ flex: 1, minWidth: 180 }}>
-          <label style={label}>{destino === 'pozo' ? 'Pozo' : 'Pozo tipo'}</label>
-          <Select opts={opts} value={destinoId} onChange={e => setDestinoId(e.target.value)} />
-        </div>
+        {!repartoActivo && (
+          <>
+            <div>
+              <label style={label}>Destino</label>
+              <select value={destino} onChange={e => { setDestino(e.target.value as 'pozo' | 'pozo_tipo'); setDestinoId('') }} style={{ ...input, width: 140 }}>
+                <option value="pozo">Pozo</option>
+                <option value="pozo_tipo">Pozo tipo</option>
+              </select>
+            </div>
+            <div style={{ flex: 1, minWidth: 180 }}>
+              <label style={label}>{destino === 'pozo' ? 'Pozo' : 'Pozo tipo'}</label>
+              <Select opts={opts} value={destinoId} onChange={e => setDestinoId(e.target.value)} />
+            </div>
+          </>
+        )}
         <div>
           <label style={label}>Archivo .xlsx</label>
           <input type="file" accept=".xlsx,.xls" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} style={{ fontSize: 12 }} />
         </div>
       </div>
+
       {preview && (
         <div style={{ fontSize: 12, color: 'var(--fg-soft)', marginBottom: 10 }}>
-          {preview.meses} meses detectados ({preview.primerMes} a {preview.ultimoMes}) — año 1: {Math.round(preview.totalBblAnio1).toLocaleString('es-AR')} bbl de petróleo.
+          {preview.meses} meses detectados ({preview.primerMes} a {preview.ultimoMes}) — año 1 al 100%: {Math.round(preview.totalBblAnio1).toLocaleString('es-AR')} bbl de petróleo.
         </div>
       )}
-      <button className="btn btn-primary" disabled={!file || !destinoId || !filasParseadas || loading} onClick={importar} style={{ padding: '8px 20px', fontSize: 12 }}>
-        {loading ? 'Importando…' : 'Importar curva'}
+
+      {repartoActivo && (
+        <div style={{ marginBottom: 12 }}>
+          {repartos.map((r, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div>
+                <label style={label}>Tipo</label>
+                <select value={r.destino} onChange={e => actualizarReparto(i, { destino: e.target.value as 'pozo' | 'pozo_tipo', destinoId: '' })} style={{ ...input, width: 110 }}>
+                  <option value="pozo">Pozo</option>
+                  <option value="pozo_tipo">Pozo tipo</option>
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 160 }}>
+                <label style={label}>Destino</label>
+                <Select opts={optsPara(r.destino)} value={r.destinoId} onChange={e => actualizarReparto(i, { destinoId: e.target.value })} />
+              </div>
+              <div>
+                <label style={label}>% petróleo</label>
+                <input type="number" min={0} max={100} step="0.1" value={r.pctPetroleo}
+                  onChange={e => actualizarReparto(i, { pctPetroleo: e.target.value })} style={{ ...input, width: 90 }} />
+              </div>
+              <div>
+                <label style={label}>% gas</label>
+                <input type="number" min={0} max={100} step="0.1" value={r.pctGas}
+                  onChange={e => actualizarReparto(i, { pctGas: e.target.value })} style={{ ...input, width: 90 }} />
+              </div>
+              {repartos.length > 1 && (
+                <button type="button" onClick={() => setRepartos(rs => rs.filter((_, idx) => idx !== i))}
+                  style={{ background: 'none', border: 'none', color: 'var(--cp-negative)', cursor: 'pointer', fontSize: 16, padding: '0 6px' }}>×</button>
+              )}
+            </div>
+          ))}
+          <button type="button" onClick={() => setRepartos(rs => [...rs, { destino: 'pozo', destinoId: '', pctPetroleo: '0', pctGas: '0' }])}
+            style={{ background: 'none', border: '1px dashed var(--rule)', borderRadius: 6, padding: '4px 10px', fontSize: 11, color: 'var(--fg-soft)', cursor: 'pointer' }}>
+            + agregar destino
+          </button>
+          <p style={{ fontSize: 11, margin: '8px 0 0', color: (sumaPetroleo !== 100 || sumaGas !== 100) ? 'var(--cp-negative)' : 'var(--fg-muted)' }}>
+            Suma: {sumaPetroleo}% petróleo · {sumaGas}% gas
+            {(sumaPetroleo !== 100 || sumaGas !== 100) && ' — normalmente tendría que dar 100% en cada columna, revisá si es intencional'}
+          </p>
+        </div>
+      )}
+
+      <button className="btn btn-primary" disabled={!file || !filasParseadas || (repartoActivo ? repartos.some(r => !r.destinoId) : !destinoId) || loading} onClick={importar} style={{ padding: '8px 20px', fontSize: 12 }}>
+        {loading ? 'Importando…' : repartoActivo ? 'Repartir e importar' : 'Importar curva'}
       </button>
     </div>
   )
