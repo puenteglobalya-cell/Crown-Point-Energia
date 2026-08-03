@@ -78,7 +78,7 @@ export default function ReservasClient() {
               padding: '12px 8px', maxHeight: 'calc(100vh - 48px)', overflowY: 'auto',
             }}>
               <PlantillaMasiva reload={reload} />
-              <ImportarResumenYacimiento reload={reload} />
+              <ImportarModeloReal reload={reload} />
               {GRUPOS_CARGA.map(grupo => (
                 <div key={grupo.titulo} style={{ marginBottom: 10 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg-muted)', padding: '6px 10px 4px' }}>
@@ -867,28 +867,34 @@ function PlantillaMasiva({ reload }: { reload: () => void }) {
   )
 }
 
-// Fila ancha por yacimiento (provincia + tipo de recuperación + IIBB +
-// participación en la concesión + regalía todo junto), como lo tiene armado
-// el equipo técnico en su Excel de gestión, en vez de las 4 hojas
-// normalizadas separadas. Requiere que la concesión (mismo nombre que el
-// yacimiento) ya exista, con sus fechas — esta fila no las trae.
-function ImportarResumenYacimiento({ reload }: { reload: () => void }) {
-  const [hoja, setHoja] = useState('provincias')
+// Un solo upload del Excel real del equipo técnico, tal como lo tienen
+// armado — no la plantilla normalizada. Busca en el mismo archivo la hoja
+// "provincias" (fila ancha por yacimiento: provincia + tipo de recuperación
+// + IIBB + participación + regalía) y la hoja "formulas_precio" (pronóstico
+// de Brent/Henry Hub por año + parámetros de la fórmula repetidos en cada
+// fila) y reparte cada una a las tablas normalizadas correspondientes.
+// Requiere que las concesiones (mismo nombre que el yacimiento) y los
+// yacimientos referenciados en "formulas_precio" ya existan.
+function ImportarModeloReal({ reload }: { reload: () => void }) {
   const [subiendo, setSubiendo] = useState(false)
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState('')
-  const [reporte, setReporte] = useState<{ fila: number; error: string }[] | null>(null)
+  const [avisos, setAvisos] = useState<string[]>([])
+  const [reporte, setReporte] = useState<{ hoja: string; fila: number; error: string }[] | null>(null)
 
   async function subir(file: File) {
-    setSubiendo(true); setErr(''); setMsg(''); setReporte(null)
+    setSubiendo(true); setErr(''); setMsg(''); setAvisos([]); setReporte(null)
     try {
       const fd = new FormData()
       fd.append('file', file)
-      fd.append('hoja', hoja)
-      const r = await fetch('/api/portal/reservas/importar-resumen-yacimiento', { method: 'POST', body: fd })
+      const r = await fetch('/api/portal/reservas/importar-modelo-real', { method: 'POST', body: fd })
       const j = await r.json()
       if (!r.ok) throw new Error(j.error ?? 'Error al importar')
-      setMsg(`Provincias +${j.provincias} · Yacimientos +${j.yacimientos} · Participaciones +${j.participaciones} · Regalías +${j.regalias}`)
+      const partes: string[] = []
+      if (j.resumen) partes.push(`Provincias +${j.resumen.provincias} · Yacimientos +${j.resumen.yacimientos} · Participaciones +${j.resumen.participaciones} · Regalías +${j.resumen.regalias}`)
+      if (j.precios) partes.push(`Deck "${j.precios.deck}" · Puntos +${j.precios.puntos} · Fórmulas +${j.precios.formulas}`)
+      setMsg(partes.join(' — ') || 'No había hojas "provincias" ni "formulas_precio" para procesar')
+      setAvisos(j.precios?.avisos ?? [])
       if (j.reporte?.length > 0) setReporte(j.reporte)
       reload()
     } catch (e) {
@@ -901,23 +907,22 @@ function ImportarResumenYacimiento({ reload }: { reload: () => void }) {
   return (
     <div style={{ padding: '4px 10px 12px', marginBottom: 8, borderBottom: '1px solid var(--rule)' }}>
       <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '2px 0 8px' }}>
-        Resumen por yacimiento
+        Modelo real del equipo técnico
       </p>
-      <input value={hoja} onChange={e => setHoja(e.target.value)} placeholder="Nombre de la hoja"
-        style={{ ...input, width: '100%', marginBottom: 6, fontSize: 11 }} />
       <label style={{
         display: 'block', width: '100%', textAlign: 'left', padding: '6px 10px', fontSize: 12,
         color: 'var(--fg-soft)', cursor: subiendo ? 'default' : 'pointer',
       }}>
-        {subiendo ? 'Importando…' : '⇈ Subir hoja (provincia+yacimiento+participación+regalía)'}
+        {subiendo ? 'Importando…' : '⇈ Subir Excel (hojas "provincias" + "formulas_precio")'}
         <input type="file" accept=".xlsx" disabled={subiendo} style={{ display: 'none' }}
           onChange={e => e.target.files?.[0] && subir(e.target.files[0])} />
       </label>
       {msg && <p style={{ fontSize: 11, color: 'var(--cp-positive, #2d7a4a)', padding: '0 10px' }}>{msg}</p>}
       {err && <p style={{ fontSize: 11, color: 'var(--cp-negative)', padding: '0 10px' }}>{err}</p>}
+      {avisos.map((a, i) => <p key={i} style={{ fontSize: 11, color: '#b36b00', padding: '0 10px' }}>⚠ {a}</p>)}
       {reporte && (
         <div style={{ fontSize: 11, color: 'var(--fg-soft)', padding: '4px 10px', maxHeight: 160, overflowY: 'auto' }}>
-          {reporte.map((r, i) => <div key={i} style={{ marginBottom: 4 }}>Fila {r.fila}: {r.error}</div>)}
+          {reporte.map((r, i) => <div key={i} style={{ marginBottom: 4 }}><b>{r.hoja}</b> fila {r.fila}: {r.error}</div>)}
         </div>
       )}
     </div>
