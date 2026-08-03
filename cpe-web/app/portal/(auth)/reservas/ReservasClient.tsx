@@ -40,10 +40,31 @@ const GRUPOS_CARGA: { titulo: string; tablas: string[] }[] = [
   { titulo: 'Financiero', tablas: ['supuestos_generales', 'costos_corporativos', 'deuda_notas', 'comparables_mercado'] },
 ]
 
+// Pasos omitidos a criterio del usuario (ej. este proyecto no tiene gas, o
+// no aplica reservas todavía) — vive en localStorage: es una preferencia de
+// "qué me falta a MÍ", no un dato del negocio que tenga que ir a la base.
+const OMITIDOS_KEY = 'cpe_reservas_pasos_omitidos'
+function leerOmitidos(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try { return new Set(JSON.parse(window.localStorage.getItem(OMITIDOS_KEY) ?? '[]')) } catch { return new Set() }
+}
+
 export default function ReservasClient() {
   const [tab, setTab] = useState<'cargar' | 'cronograma' | 'calcular' | 'resultados' | 'consolidado' | 'comparables' | 'pareto'>('cargar')
   const [seccionActiva, setSeccionActiva] = useState(ENTITIES[0].tabla)
   const [data, setData] = useState<Data | null>(null)
+  const [omitidos, setOmitidos] = useState<Set<string>>(new Set())
+
+  useEffect(() => { setOmitidos(leerOmitidos()) }, [])
+
+  function alternarOmitido(paso: string) {
+    setOmitidos(prev => {
+      const next = new Set(prev)
+      next.has(paso) ? next.delete(paso) : next.add(paso)
+      window.localStorage.setItem(OMITIDOS_KEY, JSON.stringify([...next]))
+      return next
+    })
+  }
 
   async function reload() {
     const r = await fetch('/api/portal/reservas/data', { cache: 'no-store' })
@@ -54,6 +75,7 @@ export default function ReservasClient() {
   if (!data) return <div style={{ padding: 40 }}>Cargando…</div>
 
   const activa = ENTITIES.find(e => e.tabla === seccionActiva) ?? ENTITIES[0]
+  const pasosCarga = calcularPasosCarga(data)
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
@@ -76,8 +98,10 @@ export default function ReservasClient() {
           ))}
         </div>
 
+        <BarraProgreso pasos={pasosCarga} omitidos={omitidos} onIrACargar={() => setTab('cargar')} mostrarBotonIr={tab !== 'cargar'} />
+
         {tab === 'cargar' && (
-          <GuiaCarga data={data} onIr={t => setSeccionActiva(t)} onCalcular={() => setTab('calcular')} />
+          <GuiaCarga pasos={pasosCarga} omitidos={omitidos} onIr={t => setSeccionActiva(t)} onCalcular={() => setTab('calcular')} onOmitir={alternarOmitido} />
         )}
         {tab === 'cargar' && (
           <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
@@ -135,41 +159,95 @@ export default function ReservasClient() {
 // guía resume todo a 6 pasos, en el orden en que se piensa el negocio, con
 // un check en vivo según lo que ya hay cargado — para no tener que adivinar
 // qué falta ni acordarse el nombre técnico de cada tabla.
-function GuiaCarga({ data, onIr, onCalcular }: { data: Data; onIr: (tabla: string) => void; onCalcular: () => void }) {
+type PasoCarga = { id: string; titulo: string; detalle: string; ok: boolean; ir: string }
+
+function calcularPasosCarga(data: Data): PasoCarga[] {
   const n = (t: string) => (data[t] ?? []).length
-  const pasos = [
-    { titulo: '1. Estructura', detalle: 'Provincia, yacimiento, concesión, % participación', ok: n('yacimientos') > 0 && n('concesion_participacion') > 0, ir: 'yacimientos' },
-    { titulo: '2. Precios', detalle: 'Cotización Oil/Gas (price deck) + fórmula asociada', ok: n('formulas_precio') > 0 && (n('price_deck_puntos') > 0 || n('precios_mensuales') > 0), ir: 'formulas_precio' },
-    { titulo: '3. Impuestos y costos', detalle: 'Regalías, IIBB (va en Provincia), OPEX fijo/variable/por pozo', ok: n('regalias') > 0 && (n('opex_fijo') > 0 || n('opex_variable') > 0 || n('opex_fijo_pozo') > 0), ir: 'regalias' },
-    { titulo: '4. Pozos y cronograma', detalle: 'Pozos tipo + su curva de producción + cuándo entra cada uno', ok: n('pozos_tipo') > 0 && n('curvas_produccion') > 0, ir: 'pozos_tipo' },
-    { titulo: '5. Proyecto y escenario', detalle: 'Agrupa todo lo anterior para poder calcularlo', ok: n('proyectos') > 0 && n('escenarios') > 0, ir: 'proyectos' },
+  return [
+    { id: 'estructura', titulo: '1. Estructura', detalle: 'Provincia, yacimiento, concesión, % participación', ok: n('yacimientos') > 0 && n('concesion_participacion') > 0, ir: 'yacimientos' },
+    { id: 'precios', titulo: '2. Precios', detalle: 'Cotización Oil/Gas (price deck) + fórmula asociada', ok: n('formulas_precio') > 0 && (n('price_deck_puntos') > 0 || n('precios_mensuales') > 0), ir: 'formulas_precio' },
+    { id: 'impuestos', titulo: '3. Impuestos y costos', detalle: 'Regalías, IIBB (va en Provincia), OPEX fijo/variable/por pozo', ok: n('regalias') > 0 && (n('opex_fijo') > 0 || n('opex_variable') > 0 || n('opex_fijo_pozo') > 0), ir: 'regalias' },
+    { id: 'pozos', titulo: '4. Pozos y cronograma', detalle: 'Pozos tipo + su curva de producción + cuándo entra cada uno', ok: n('pozos_tipo') > 0 && n('curvas_produccion') > 0, ir: 'pozos_tipo' },
+    { id: 'escenario', titulo: '5. Proyecto y escenario', detalle: 'Agrupa todo lo anterior para poder calcularlo', ok: n('proyectos') > 0 && n('escenarios') > 0, ir: 'proyectos' },
   ]
-  const listo = pasos.every(p => p.ok)
+}
+
+// Barra compacta, visible en cualquier pestaña — no sólo en "Cargar datos" —
+// para no tener que volver ahí a acordarse qué faltaba. Un paso "omitido" (a
+// criterio del usuario: este proyecto no tiene gas, no aplica reservas, etc.)
+// cuenta como resuelto en el % pero se marca distinto de uno realmente cargado.
+function BarraProgreso({ pasos, omitidos, onIrACargar, mostrarBotonIr }: {
+  pasos: PasoCarga[]; omitidos: Set<string>; onIrACargar: () => void; mostrarBotonIr: boolean
+}) {
+  const resueltos = pasos.filter(p => p.ok || omitidos.has(p.id)).length
+  const pct = Math.round((resueltos / pasos.length) * 100)
+  const faltantes = pasos.filter(p => !p.ok && !omitidos.has(p.id))
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+      <div style={{ flex: 1, height: 8, borderRadius: 4, background: 'var(--rule)', overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? '#2d7a4a' : 'var(--accent)', transition: 'width .3s' }} />
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 700, color: pct === 100 ? '#2d7a4a' : 'var(--fg-soft)', whiteSpace: 'nowrap' }}>
+        {pct}% cargado
+      </span>
+      {faltantes.length > 0 && (
+        <span style={{ fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
+          Falta: {faltantes.map(p => p.titulo.replace(/^\d+\.\s*/, '')).join(', ')}
+        </span>
+      )}
+      {mostrarBotonIr && faltantes.length > 0 && (
+        <button className="btn" onClick={onIrACargar} style={{ fontSize: 11, padding: '4px 10px', whiteSpace: 'nowrap' }}>Ir a cargar</button>
+      )}
+    </div>
+  )
+}
+
+function GuiaCarga({ pasos, omitidos, onIr, onCalcular, onOmitir }: {
+  pasos: PasoCarga[]; omitidos: Set<string>; onIr: (tabla: string) => void; onCalcular: () => void; onOmitir: (id: string) => void
+}) {
+  const listo = pasos.every(p => p.ok || omitidos.has(p.id))
 
   return (
     <div style={{ ...box, marginBottom: 20 }}>
       <h3 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 4px' }}>Guía de carga</h3>
-      <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '0 0 14px' }}>Hacé click en el paso que falta — te lleva directo a esa sección.</p>
+      <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '0 0 14px' }}>
+        Hacé click en el paso que falta — te lleva directo a esa sección. Si algo no aplica a este proyecto, marcalo "omitir".
+      </p>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        {pasos.map(p => (
-          <button key={p.titulo} onClick={() => onIr(p.ir)} style={{
-            flex: '1 1 180px', textAlign: 'left', cursor: 'pointer',
-            border: `1px solid ${p.ok ? '#2d7a4a' : 'var(--rule)'}`, borderRadius: 'var(--r-md)',
-            background: p.ok ? 'rgba(45,122,74,0.06)' : 'var(--bg)', padding: '10px 12px',
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: p.ok ? '#2d7a4a' : 'var(--fg)' }}>
-              {p.ok ? '✓ ' : '○ '}{p.titulo}
+        {pasos.map(p => {
+          const omitido = omitidos.has(p.id)
+          const resuelto = p.ok || omitido
+          return (
+            <div key={p.id} style={{
+              flex: '1 1 180px', textAlign: 'left', position: 'relative',
+              border: `1px solid ${resuelto ? (omitido ? '#d69e2e' : '#2d7a4a') : 'var(--rule)'}`, borderRadius: 'var(--r-md)',
+              background: omitido ? 'rgba(214,158,46,0.06)' : p.ok ? 'rgba(45,122,74,0.06)' : 'var(--bg)', padding: '10px 12px',
+            }}>
+              <button onClick={() => onIr(p.ir)} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', width: '100%' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: omitido ? '#d69e2e' : p.ok ? '#2d7a4a' : 'var(--fg)' }}>
+                  {omitido ? '— (omitido) ' : p.ok ? '✓ ' : '○ '}{p.titulo}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>{p.detalle}</div>
+              </button>
+              {!p.ok && (
+                <button onClick={() => onOmitir(p.id)} style={{
+                  fontSize: 10, color: 'var(--fg-muted)', background: 'none', border: 'none', cursor: 'pointer',
+                  padding: '4px 0 0', textDecoration: 'underline',
+                }}>
+                  {omitido ? 'no omitir' : 'no aplica a este proyecto — omitir'}
+                </button>
+              )}
             </div>
-            <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>{p.detalle}</div>
-          </button>
-        ))}
+          )
+        })}
         <button onClick={onCalcular} disabled={!listo} style={{
           flex: '1 1 180px', textAlign: 'left', cursor: listo ? 'pointer' : 'not-allowed',
           border: `1px solid ${listo ? 'var(--accent)' : 'var(--rule)'}`, borderRadius: 'var(--r-md)',
           background: listo ? 'var(--accent-pale, rgba(31,37,102,0.08))' : 'var(--bg)', padding: '10px 12px', opacity: listo ? 1 : 0.5,
         }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>→ 6. Validar y calcular</div>
-          <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>{listo ? 'Ya podés correr el escenario' : 'Completá los pasos anteriores primero'}</div>
+          <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>{listo ? 'Ya podés correr el escenario' : 'Completá o omití los pasos anteriores primero'}</div>
         </button>
       </div>
     </div>
