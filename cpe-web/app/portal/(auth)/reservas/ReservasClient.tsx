@@ -77,6 +77,7 @@ export default function ReservasClient() {
               background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)',
               padding: '12px 8px', maxHeight: 'calc(100vh - 48px)', overflowY: 'auto',
             }}>
+              <PlantillaMasiva reload={reload} />
               {GRUPOS_CARGA.map(grupo => (
                 <div key={grupo.titulo} style={{ marginBottom: 10 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg-muted)', padding: '6px 10px 4px' }}>
@@ -786,6 +787,82 @@ function ParetoScatter({ puntos }: { puntos: ParetoPunto[] }) {
         </g>
       ))}
     </svg>
+  )
+}
+
+// Carga inicial completa: una plantilla con las 28 hojas, en vez de recorrer
+// tabla por tabla. El botón vive en la barra lateral porque no es un caso más
+// de EntitySection — toca todas las tablas a la vez.
+function PlantillaMasiva({ reload }: { reload: () => void }) {
+  const [subiendo, setSubiendo] = useState(false)
+  const [err, setErr] = useState('')
+  const [reporte, setReporte] = useState<{ hoja: string; fila: number; error: string }[] | null>(null)
+  const [msg, setMsg] = useState('')
+
+  async function descargar() {
+    setErr('')
+    const r = await fetch('/api/portal/reservas/plantilla-masiva')
+    if (!r.ok) { setErr((await r.json().catch(() => ({})))?.error ?? 'No se pudo generar la plantilla'); return }
+    const blob = await r.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'plantilla_completa_cpe.xlsx'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  async function subir(file: File) {
+    setSubiendo(true); setErr(''); setMsg(''); setReporte(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const r = await fetch('/api/portal/reservas/import-masivo', { method: 'POST', body: fd })
+      const j = await r.json()
+      if (!r.ok) {
+        if (j.reporte) setReporte(j.reporte)
+        throw new Error(j.error ?? 'Error al importar')
+      }
+      setMsg(`${j.total} filas cargadas en ${Object.keys(j.insertadasPorTabla).length} tablas ✓`)
+      reload()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setSubiendo(false)
+    }
+  }
+
+  return (
+    <div style={{ padding: '4px 10px 12px', marginBottom: 8, borderBottom: '1px solid var(--rule)' }}>
+      <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '2px 0 8px' }}>
+        Carga inicial completa
+      </p>
+      <button type="button" onClick={descargar} style={{
+        display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none',
+        borderRadius: 'var(--r-md)', padding: '6px 10px', fontSize: 12, color: 'var(--fg-soft)', cursor: 'pointer',
+      }}>
+        ⇓ Descargar plantilla completa
+      </button>
+      <label style={{
+        display: 'block', width: '100%', textAlign: 'left', padding: '6px 10px', fontSize: 12,
+        color: 'var(--fg-soft)', cursor: subiendo ? 'default' : 'pointer',
+      }}>
+        {subiendo ? 'Importando…' : '⇈ Subir plantilla completa'}
+        <input type="file" accept=".xlsx" disabled={subiendo} style={{ display: 'none' }}
+          onChange={e => e.target.files?.[0] && subir(e.target.files[0])} />
+      </label>
+      {msg && <p style={{ fontSize: 11, color: 'var(--cp-positive, #2d7a4a)', padding: '0 10px' }}>{msg}</p>}
+      {err && <p style={{ fontSize: 11, color: 'var(--cp-negative)', padding: '0 10px' }}>{err}</p>}
+      {reporte && (
+        <div style={{ fontSize: 11, color: 'var(--fg-soft)', padding: '4px 10px', maxHeight: 200, overflowY: 'auto' }}>
+          {reporte.map((r, i) => (
+            <div key={i} style={{ marginBottom: 4 }}>
+              <b>{r.hoja}</b>, fila {r.fila}: {r.error}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
