@@ -205,7 +205,7 @@ function EntitySection({ cfg, data, reload }: {
       {err && <div style={{ fontSize: 13, color: 'var(--cp-negative)', padding: '10px 14px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 12 }}>{err}</div>}
       {msg && <div style={{ fontSize: 13, color: 'var(--cp-positive, #2d7a4a)', padding: '10px 14px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 12 }}>{msg}</div>}
 
-      <PegarDesdeExcel cfg={cfg} data={data} reload={reload} />
+      {cfg.tabla !== 'curvas_produccion' && <PegarDesdeExcel cfg={cfg} data={data} reload={reload} />}
 
       {cfg.tabla === 'curvas_produccion' && (
         <>
