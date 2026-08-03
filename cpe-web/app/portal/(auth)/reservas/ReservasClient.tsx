@@ -24,11 +24,17 @@ function Field({ children }: { children: React.ReactNode }) {
 // una <tr> por registro dejaba la pantalla de carga pesadísima.
 const MAX_FILAS_LISTA = 100
 
+// Orden pensado como se piensa el negocio, no como quedaron las tablas
+// históricamente: primero la estructura del activo (quién es dueño de qué),
+// después el precio (cuánto vale lo que produce), después impuestos y costos
+// (cuánto se lleva el estado y cuánto cuesta operar), y sólo al final los
+// pozos tipo y el cronograma — que es donde se decide DÓNDE y CUÁNDO entra
+// cada curva para optimizar el cash flow.
 const GRUPOS_CARGA: { titulo: string; tablas: string[] }[] = [
   { titulo: 'Estructura', tablas: ['provincias', 'yacimientos', 'concesiones', 'concesion_participacion'] },
-  { titulo: 'Pozos y producción', tablas: ['pozos', 'pozos_tipo', 'curvas_produccion', 'campanas', 'intervenciones'] },
   { titulo: 'Precios', tablas: ['formulas_precio', 'price_decks', 'price_deck_puntos', 'precios_referencia', 'precios_mensuales'] },
-  { titulo: 'Costos e impuestos', tablas: ['opex_fijo', 'opex_variable', 'opex_fijo_pozo', 'regalias'] },
+  { titulo: 'Impuestos y costos', tablas: ['regalias', 'opex_fijo', 'opex_variable', 'opex_fijo_pozo'] },
+  { titulo: 'Pozos y cronograma', tablas: ['pozos', 'pozos_tipo', 'curvas_produccion', 'campanas', 'intervenciones'] },
   { titulo: 'Proyectos y escenarios', tablas: ['proyectos', 'costos_proyecto', 'escenarios'] },
   { titulo: 'Reservas', tablas: ['reservas_anuales', 'reservas_movimientos', 'parametros_certeza_reservas'] },
   { titulo: 'Financiero', tablas: ['supuestos_generales', 'costos_corporativos', 'deuda_notas', 'comparables_mercado'] },
@@ -70,6 +76,9 @@ export default function ReservasClient() {
           ))}
         </div>
 
+        {tab === 'cargar' && (
+          <GuiaCarga data={data} onIr={t => setSeccionActiva(t)} onCalcular={() => setTab('calcular')} />
+        )}
         {tab === 'cargar' && (
           <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
             <nav style={{
@@ -117,6 +126,51 @@ export default function ReservasClient() {
         {tab === 'consolidado' && <ConsolidadoTab />}
         {tab === 'comparables' && <ComparablesTab data={data} />}
         {tab === 'pareto' && <ParetoTab />}
+      </div>
+    </div>
+  )
+}
+
+// 24 tablas sueltas en la barra lateral no dicen "por dónde empiezo". Esta
+// guía resume todo a 6 pasos, en el orden en que se piensa el negocio, con
+// un check en vivo según lo que ya hay cargado — para no tener que adivinar
+// qué falta ni acordarse el nombre técnico de cada tabla.
+function GuiaCarga({ data, onIr, onCalcular }: { data: Data; onIr: (tabla: string) => void; onCalcular: () => void }) {
+  const n = (t: string) => (data[t] ?? []).length
+  const pasos = [
+    { titulo: '1. Estructura', detalle: 'Provincia, yacimiento, concesión, % participación', ok: n('yacimientos') > 0 && n('concesion_participacion') > 0, ir: 'yacimientos' },
+    { titulo: '2. Precios', detalle: 'Cotización Oil/Gas (price deck) + fórmula asociada', ok: n('formulas_precio') > 0 && (n('price_deck_puntos') > 0 || n('precios_mensuales') > 0), ir: 'formulas_precio' },
+    { titulo: '3. Impuestos y costos', detalle: 'Regalías, IIBB (va en Provincia), OPEX fijo/variable/por pozo', ok: n('regalias') > 0 && (n('opex_fijo') > 0 || n('opex_variable') > 0 || n('opex_fijo_pozo') > 0), ir: 'regalias' },
+    { titulo: '4. Pozos y cronograma', detalle: 'Pozos tipo + su curva de producción + cuándo entra cada uno', ok: n('pozos_tipo') > 0 && n('curvas_produccion') > 0, ir: 'pozos_tipo' },
+    { titulo: '5. Proyecto y escenario', detalle: 'Agrupa todo lo anterior para poder calcularlo', ok: n('proyectos') > 0 && n('escenarios') > 0, ir: 'proyectos' },
+  ]
+  const listo = pasos.every(p => p.ok)
+
+  return (
+    <div style={{ ...box, marginBottom: 20 }}>
+      <h3 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 4px' }}>Guía de carga</h3>
+      <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '0 0 14px' }}>Hacé click en el paso que falta — te lleva directo a esa sección.</p>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        {pasos.map(p => (
+          <button key={p.titulo} onClick={() => onIr(p.ir)} style={{
+            flex: '1 1 180px', textAlign: 'left', cursor: 'pointer',
+            border: `1px solid ${p.ok ? '#2d7a4a' : 'var(--rule)'}`, borderRadius: 'var(--r-md)',
+            background: p.ok ? 'rgba(45,122,74,0.06)' : 'var(--bg)', padding: '10px 12px',
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: p.ok ? '#2d7a4a' : 'var(--fg)' }}>
+              {p.ok ? '✓ ' : '○ '}{p.titulo}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>{p.detalle}</div>
+          </button>
+        ))}
+        <button onClick={onCalcular} disabled={!listo} style={{
+          flex: '1 1 180px', textAlign: 'left', cursor: listo ? 'pointer' : 'not-allowed',
+          border: `1px solid ${listo ? 'var(--accent)' : 'var(--rule)'}`, borderRadius: 'var(--r-md)',
+          background: listo ? 'var(--accent-pale, rgba(31,37,102,0.08))' : 'var(--bg)', padding: '10px 12px', opacity: listo ? 1 : 0.5,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>→ 6. Validar y calcular</div>
+          <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>{listo ? 'Ya podés correr el escenario' : 'Completá los pasos anteriores primero'}</div>
+        </button>
       </div>
     </div>
   )
