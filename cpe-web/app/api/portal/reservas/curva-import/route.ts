@@ -46,6 +46,20 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(filas) || filas.length === 0) {
     return NextResponse.json({ error: 'Sin filas para importar' }, { status: 400 })
   }
+  // Sin este chequeo, una fila mal parseada en el navegador (ej. una celda
+  // que dio 0/0 al convertir unidades) insertaba NaN en curvas_produccion —
+  // según la columna, Postgres lo rechaza con un 500 opaco o lo guarda como
+  // null en silencio, y la curva de ese pozo queda incompleta sin ningún
+  // aviso claro.
+  for (let i = 0; i < filas.length; i++) {
+    const f = filas[i]
+    if (!Number.isFinite(f.mes_offset) || f.mes_offset < 0) {
+      return NextResponse.json({ error: `Fila ${i + 1}: mes_offset inválido (${f.mes_offset})` }, { status: 400 })
+    }
+    if (!Number.isFinite(f.bbl_petroleo) || !Number.isFinite(f.mcf_gas)) {
+      return NextResponse.json({ error: `Fila ${i + 1} (mes_offset ${f.mes_offset}): bbl_petroleo o mcf_gas inválido` }, { status: 400 })
+    }
+  }
 
   const db = createSupabaseServerAdminClient()
 
