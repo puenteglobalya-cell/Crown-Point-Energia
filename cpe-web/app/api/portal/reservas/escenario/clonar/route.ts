@@ -81,6 +81,35 @@ export async function POST(req: NextRequest) {
     }
     copiado.costos_proyecto = costos.length
 
+    // reservas_anuales y reservas_movimientos: sólo las filas PROPIAS del
+    // escenario (escenario_id = origenId) — las de escenario_id null son del
+    // reporte base y ya aplican a todos, copiarlas las duplicaría. Antes no
+    // se copiaba ninguna de las dos: un override de reservas específico del
+    // escenario origen (ej. una revisión técnica cargada sólo para probar un
+    // caso) se perdía en la copia sin ningún aviso.
+    const reservasAnuales = await traerTodo<any>(() => db.from('reservas_anuales').select('*').eq('escenario_id', origenId).order('id'))
+      .catch(() => [] as any[])
+    if (reservasAnuales.length > 0) {
+      await db.from('reservas_anuales').insert(reservasAnuales.map(({ id, ...r }) => ({ ...r, escenario_id: nuevoId })))
+    }
+    copiado.reservas_anuales = reservasAnuales.length
+
+    const reservasMovimientos = await traerTodo<any>(() => db.from('reservas_movimientos').select('*').eq('escenario_id', origenId).order('id'))
+      .catch(() => [] as any[])
+    if (reservasMovimientos.length > 0) {
+      await db.from('reservas_movimientos').insert(reservasMovimientos.map(({ id, ...r }) => ({ ...r, escenario_id: nuevoId })))
+    }
+    copiado.reservas_movimientos = reservasMovimientos.length
+
+    // supuestos_generales: escenario_id es NOT NULL acá (no hay caso "aplica
+    // a todos"), así que se copian todas las filas del origen sin filtrar.
+    const supuestos = await traerTodo<any>(() => db.from('supuestos_generales').select('*').eq('escenario_id', origenId).order('id'))
+      .catch(() => [] as any[])
+    if (supuestos.length > 0) {
+      await db.from('supuestos_generales').insert(supuestos.map(({ id, ...r }) => ({ ...r, escenario_id: nuevoId })))
+    }
+    copiado.supuestos_generales = supuestos.length
+
     return NextResponse.json({
       escenario: { id: nuevoId, nombre: nombreNuevo },
       copiado,

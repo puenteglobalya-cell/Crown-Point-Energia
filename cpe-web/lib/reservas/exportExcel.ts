@@ -135,8 +135,17 @@ export async function construirExcel(d: DatosExport): Promise<ExcelJS.Buffer> {
 
   d.cashflow.forEach((r, i) => {
     const f = i + 2 // fila de Excel
+    // pozo_id es null a propósito para facilities y para Intervenciones sin
+    // pozo real (perforación/workover a probar) — nombrePozo(null) caía al
+    // fallback `Pozo #${id}` con id literalmente "null", una etiqueta sin
+    // sentido en un Excel pensado para auditarse fila por fila. Se usa la
+    // categoría de la fila (que sí distingue facilities de un pozo nuevo a
+    // perforar) en su lugar.
+    const etiquetaPozo = r.pozo_id != null
+      ? d.nombrePozo(r.pozo_id)
+      : r.categoria === 'facilities' ? 'Facilities' : `${r.categoria ?? 'sin categoría'} (sin pozo real)`
     cf.addRow({
-      pozo: d.nombrePozo(r.pozo_id),
+      pozo: etiquetaPozo,
       fecha: String(r.fecha),
       bbl: Number(r.bbl_petroleo), mcf: Number(r.mcf_gas),
       poil: Number(r.precio_petroleo), pgas: Number(r.precio_gas),
