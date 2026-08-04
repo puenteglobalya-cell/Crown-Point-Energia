@@ -551,6 +551,56 @@ export async function calcularEscenario(
     if (registros.length > 0) registrosPorPozo.set(pozoVirtual.id, registros)
   }
 
+  // ─── Pozos nuevos vía Intervención sin pozo real (a perforar) ──────────
+  // El helpText de "14. Intervenciones" dice "vacío si es drilling nuevo o
+  // facilities", pero hasta acá el motor solo sintetizaba un pozo virtual
+  // para facilities — una Perforación/Workover/Pulling sin pozo_id no
+  // generaba nada: ni producción ni CAPEX. Se necesita para poder testear
+  // "¿conviene perforar en El Tordillo o en LT_PQO?" sin tener que crear a
+  // mano el Pozo antes de saber si conviene. Cada Intervención sin pozo_id
+  // (con su curva asignada) se modela como su propio pozo virtual, igual
+  // que un pozo real pero con una sola intervención en su vida.
+  let nuevoPozoIdSeq = -1_000_000
+  for (const i of intervenciones) {
+    if (i.pozo_id != null || i.tipo === 'facilities' || !i.pozo_tipo_id) continue
+    const concesion = concesionPorId.get(i.concesion_id)
+    if (!concesion) {
+      diag.add('interv_sin_pozo_sin_concesion', `Una intervención sin pozo apunta a una concesión que no existe — se excluye del cálculo`)
+      continue
+    }
+    const yacimiento = yacimientoPorId.get(concesion.yacimiento_id)
+    if (!yacimiento) {
+      diag.add('interv_sin_pozo_concesion_sin_yacimiento', `La concesión "${concesion.nombre}" no tiene yacimiento — la intervención sin pozo se excluye`)
+      continue
+    }
+    const provincia = provinciaPorId.get(yacimiento.provincia_id) ?? null
+    const pozoVirtual = { id: nuevoPozoIdSeq--, nombre: `${i.tipo} nuevo — ${concesion.nombre} (#${i.id})`, costo_abandono_usd: 0 }
+    const fechaCorte: string | null = concesion.fecha_vencimiento ?? null
+
+    const registros: Registro[] = []
+    for (let m = 0; m < horizonte; m++) {
+      const fecha = mesDesde(i.fecha_inicio_perforacion ?? i.fecha, m)
+      if (fechaCorte && fecha >= fechaCorte) break
+
+      const c = curvaPorTipo.get(`${i.pozo_tipo_id}|${m}`)
+      const bbl = (c?.bbl_petroleo ?? 0) * mult.produccion
+      const mcf = (c?.mcf_gas ?? 0) * mult.produccion
+
+      const fechaCapex = i.fecha_inicio_perforacion ?? i.fecha
+      const capexAjustado = i.capex_usd * mult.capex
+      let capexUsd = 0, depreciacionLineal = 0
+      if (mesDe(fechaCapex) === mesDe(fecha)) capexUsd += capexAjustado
+      if (i.vida_util_meses && i.vida_util_meses > 0) {
+        const mesesDesde = monthsBetween(fechaCapex, fecha)
+        if (mesesDesde >= 0 && mesesDesde < i.vida_util_meses) depreciacionLineal += capexAjustado / i.vida_util_meses
+      }
+
+      if (m > 0 && bbl === 0 && mcf === 0 && capexUsd === 0 && depreciacionLineal === 0) continue
+      registros.push({ pozo: pozoVirtual, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionLineal, depreciacionUsd: 0 })
+    }
+    if (registros.length > 0) registrosPorPozo.set(pozoVirtual.id, registros)
+  }
+
   // ─── Amortización por unidades de producción (UoP) ────────────────────
   // Método estándar del sector, y el que definió el cliente: la cuota del mes
   // es el valor residual del CAPEX por la proporción de reservas que se produjo
