@@ -2140,9 +2140,90 @@ function CronogramaTab({ data, reload }: { data: Data; reload: () => void }) {
           </button>
 
           <BarridoCampana campanaId={campanaId} />
+          <PropuestaAceleracion campanaId={campanaId} />
         </>
       )}
     </Seccion>
+  )
+}
+
+type Propuesta = {
+  meses_adelanto: number; equipos_usados: number; equipos_tope: number
+  fecha_actual: string; fecha_acelerada: string
+  capex_adicional_pico_usd: number; ingreso_adicional_a_horizonte_usd: number
+  mes_repago: string | null; meses_hasta_repago: number | null
+  npv_base_usd: number; npv_acelerado_usd: number; npv_delta_usd: number
+}
+
+// Traduce el barrido a la pregunta como la hace el cliente: no "qué VAN da
+// cada mes" sino "si adelanto la campaña tanto, ¿cuánto CAPEX extra necesito
+// antes de que entre a producir, y en cuánto tiempo lo recupero en
+// ingresos?". Nunca deja pedir más de 2 equipos: con los días de la campaña
+// no entran más pozos por mes ni en el mejor caso.
+function PropuestaAceleracion({ campanaId }: { campanaId: string }) {
+  const [mesesAdelanto, setMesesAdelanto] = useState('3')
+  const [equipos, setEquipos] = useState('2')
+  const [p, setP] = useState<Propuesta | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function correr() {
+    setLoading(true); setErr(''); setP(null)
+    try {
+      const r = await fetch('/api/portal/reservas/campana/propuesta-aceleracion', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ campana_id: Number(campanaId), meses_adelanto: Number(mesesAdelanto), equipos: Number(equipos) }),
+      })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error)
+      setP(j)
+    } catch (e) { setErr((e as Error).message) } finally { setLoading(false) }
+  }
+
+  return (
+    <div style={{ marginTop: 18, border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', padding: '14px 16px' }}>
+      <p style={{ fontSize: 13, fontWeight: 700, margin: '0 0 4px' }}>Propuesta de aceleración</p>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 12px' }}>
+        Compara mes a mes el cronograma actual contra uno adelantado — no escribe nada. Nunca deja pedir más de 2 equipos
+        de perforación: con los días de esta campaña, no entran más pozos por mes ni en el mejor caso.
+      </p>
+      {err && <div style={{ fontSize: 12, color: 'var(--cp-negative)', padding: '8px 12px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 10 }}>{err}</div>}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 12 }}>
+        <div style={{ minWidth: 130 }}>
+          <label style={label}>Adelantar (meses)</label>
+          <input value={mesesAdelanto} onChange={e => setMesesAdelanto(e.target.value)} type="number" min={1} style={input} />
+        </div>
+        <div style={{ minWidth: 130 }}>
+          <label style={label}>Equipos de perforación (máx. 2)</label>
+          <input value={equipos} onChange={e => setEquipos(e.target.value)} type="number" min={1} max={2} style={input} />
+        </div>
+        <button className="btn btn-primary" disabled={loading} onClick={correr}>{loading ? 'Calculando…' : 'Calcular'}</button>
+      </div>
+      {p && (
+        <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+          <p>
+            Adelantar la campaña <strong>{p.meses_adelanto} meses</strong> (de {p.fecha_actual} a {p.fecha_acelerada}) con{' '}
+            <strong>{p.equipos_usados} equipo{p.equipos_usados > 1 ? 's' : ''}</strong> de perforación implica una necesidad de
+            CAPEX adicional de hasta <strong>{mm(p.capex_adicional_pico_usd)}</strong> antes de que la producción extra empiece
+            a compensarlo.
+          </p>
+          <p>
+            A cambio, se recuperan <strong>{mm(p.ingreso_adicional_a_horizonte_usd)}</strong> de ingresos adicionales a lo
+            largo del horizonte de cálculo, con repago (el punto en que el flujo neto acumulado del plan acelerado supera al
+            actual) en{' '}
+            {p.meses_hasta_repago != null ? <strong>{p.meses_hasta_repago} meses</strong> : <strong>nunca dentro del horizonte</strong>}
+            {p.mes_repago ? ` (${p.mes_repago})` : ''}.
+          </p>
+          <p>
+            VAN actual: <strong style={{ fontFamily: 'var(--font-mono)' }}>{mm(p.npv_base_usd)}</strong> · VAN acelerado:{' '}
+            <strong style={{ fontFamily: 'var(--font-mono)' }}>{mm(p.npv_acelerado_usd)}</strong> · diferencia:{' '}
+            <strong style={{ fontFamily: 'var(--font-mono)', color: p.npv_delta_usd >= 0 ? 'var(--cp-positive, #2d7a4a)' : 'var(--cp-negative)' }}>
+              {p.npv_delta_usd >= 0 ? '+' : ''}{mm(p.npv_delta_usd)}
+            </strong>
+          </p>
+        </div>
+      )}
+    </div>
   )
 }
 
