@@ -1175,6 +1175,8 @@ function GrillaCronograma({ data, reload }: { data: Data; reload: () => void }) 
   const [cargando, setCargando] = useState(false)
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState('')
+  const [vidaEconomica, setVidaEconomica] = useState<Record<number, string>>({})
+  const [calculandoVida, setCalculandoVida] = useState<number | null>(null)
 
   const nMeses = Math.min(120, Math.max(1, Number(meses) || 0))
   const columnas = desde ? Array.from({ length: nMeses }, (_, i) => mesISO(desde, i)) : []
@@ -1183,6 +1185,27 @@ function GrillaCronograma({ data, reload }: { data: Data; reload: () => void }) 
   // elegirlo generaría intervenciones con producción cero en silencio. Se
   // muestran solo los pozo tipo pensados para actividad nueva.
   const tiposConCurva = new Set((data.curvas_produccion ?? []).filter(c => c.pozo_tipo_id != null).map(c => c.pozo_tipo_id))
+
+  async function verVidaEconomica(ptId: number) {
+    setCalculandoVida(ptId); setErr('')
+    try {
+      const pt = data.pozos_tipo.find(p => p.id === ptId)
+      const concesion = (data.concesiones ?? []).find(c => c.yacimiento_id === pt?.yacimiento_id)
+      if (!escenarioId) { setErr('Elegí un escenario primero — la vida económica usa sus precios y OPEX'); return }
+      if (!concesion) { setErr('No hay concesión con el mismo yacimiento que ese pozo tipo'); return }
+      const res = await fetch('/api/portal/reservas/vida-economica', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ escenarioId: Number(escenarioId), pozoTipoId: ptId, concesionId: concesion.id, fecha: desde || '2026-01-01' }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Error al calcular')
+      setVidaEconomica(v => ({ ...v, [ptId]: `${json.meses} meses${json.cortado ? ' (cortado por límite económico)' : ' (agota la curva sin cortarse)'}` }))
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setCalculandoVida(null)
+    }
+  }
   const pozosTipo = (data.pozos_tipo ?? []).filter(pt => pt.categoria !== 'basico' && tiposConCurva.has(pt.id))
 
   function key(ptId: number, fecha: string) { return `${ptId}|${fecha}` }
@@ -1259,6 +1282,7 @@ function GrillaCronograma({ data, reload }: { data: Data; reload: () => void }) 
             <thead>
               <tr>
                 <th style={{ padding: '6px 8px', textAlign: 'left', position: 'sticky', left: 0, background: 'var(--bg)' }}>Pozo tipo</th>
+                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 400 }}>Vida económica</th>
                 {columnas.map(c => <th key={c} style={{ padding: '6px 4px', fontWeight: 400, color: 'var(--fg-muted)' }}>{c.slice(0, 7)}</th>)}
               </tr>
             </thead>
@@ -1266,6 +1290,14 @@ function GrillaCronograma({ data, reload }: { data: Data; reload: () => void }) 
               {pozosTipo.map(pt => (
                 <tr key={String(pt.id)} style={{ borderTop: '1px solid var(--rule)' }}>
                   <td style={{ padding: '4px 8px', whiteSpace: 'nowrap', position: 'sticky', left: 0, background: 'var(--bg)' }}>{String(pt.nombre)}</td>
+                  <td style={{ padding: '4px 8px', whiteSpace: 'nowrap', fontSize: 10, color: 'var(--fg-muted)' }}>
+                    {vidaEconomica[Number(pt.id)] ?? (
+                      <button type="button" onClick={() => verVidaEconomica(Number(pt.id))} disabled={calculandoVida === Number(pt.id)}
+                        style={{ background: 'none', border: 'none', color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', fontSize: 10, padding: 0 }}>
+                        {calculandoVida === Number(pt.id) ? 'calculando…' : 'ver'}
+                      </button>
+                    )}
+                  </td>
                   {columnas.map(fecha => (
                     <td key={fecha} style={{ padding: 2 }}>
                       <input
@@ -1281,6 +1313,22 @@ function GrillaCronograma({ data, reload }: { data: Data; reload: () => void }) 
           </table>
         </div>
       )}
+      {columnas.length > 0 && (() => {
+        const anios = [...new Set(columnas.map(c => c.slice(0, 4)))]
+        const totalAnio = (anio: string) => columnas.filter(c => c.startsWith(anio))
+          .reduce((s, fecha) => s + pozosTipo.reduce((s2, pt) => s2 + (Number(cantidades[key(Number(pt.id), fecha)]) || 0), 0), 0)
+        const total = anios.reduce((s, a) => s + totalAnio(a), 0)
+        return (
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 12, fontSize: 12 }}>
+            {anios.map(a => (
+              <span key={a} style={{ color: 'var(--fg-soft)' }}>
+                <strong>{a}</strong>: {totalAnio(a)}
+              </span>
+            ))}
+            <span style={{ color: 'var(--fg-muted)' }}>Total: <strong>{total}</strong></span>
+          </div>
+        )
+      })()}
       <button className="btn btn-primary" onClick={generar} disabled={cargando || columnas.length === 0}>
         {cargando ? 'Generando…' : 'Generar intervenciones'}
       </button>

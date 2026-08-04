@@ -20,7 +20,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 // saber cuántos pozos están activos por concesión y mes para poder prorratear
 // el OPEX fijo de concesión (que es un costo por concesión, no por pozo).
 
-const HORIZONTE_MESES_MAX = 240
+export const HORIZONTE_MESES_MAX = 240
 
 // Factor de conversión gas → BOE: 6 Mcf = 1 BOE. Coincide con las cifras
 // publicadas por la empresa (4.164 bbl/d + 3.451 Mcf/d = 4.739 boe/d).
