@@ -42,7 +42,7 @@ export default async function PortalLayout({ children }: { children: React.React
       </main>
       <PwaInstallBanner />
       <FirstLoginBanner />
-      <SessionGuard />
+      <SessionGuard role={role.role} />
     </div>
   )
 }

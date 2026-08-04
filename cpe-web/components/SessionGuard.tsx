@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-const IDLE_TIMEOUT_MS = 30 * 60 * 1000
+const IDLE_TIMEOUT_DEFAULT_MS = 30 * 60 * 1000
+// El admin suele quedarse largos ratos cargando datos del simulador de
+// reservas sin tocar el mouse (mirando un Excel en otra pantalla) — 30 min
+// lo desloguea en medio de eso. 4 horas, no 30 min, para ese rol.
+const IDLE_TIMEOUT_ADMIN_MS = 4 * 60 * 60 * 1000
 const WARNING_BEFORE_MS = 2 * 60 * 1000
 const STORAGE_KEY = 'cpe_last_activity'
 
@@ -14,7 +18,8 @@ async function forceLogout() {
   window.location.href = '/portal/login?expirada=1'
 }
 
-export default function SessionGuard() {
+export default function SessionGuard({ role }: { role?: string } = {}) {
+  const IDLE_TIMEOUT_MS = role === 'admin' ? IDLE_TIMEOUT_ADMIN_MS : IDLE_TIMEOUT_DEFAULT_MS
   const logoutTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [showWarning, setShowWarning] = useState(false)
