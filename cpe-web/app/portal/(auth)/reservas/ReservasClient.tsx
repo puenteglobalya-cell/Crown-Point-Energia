@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ENTITIES, type Data, type Row, type EntityConfig, type FieldConfig } from './entityConfig'
 import { GraficoProduccion, GraficoFlujo, GraficoWaterfall, cssImpresion, type PasoWaterfall } from './informe/piezas'
@@ -292,6 +292,15 @@ function EntitySection({ cfg, data, reload }: {
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState('')
   const rows = data[cfg.tabla] ?? []
+  const formRef = useRef<HTMLFormElement>(null)
+
+  // El formulario vive arriba de la tabla, pero con muchas filas cargadas
+  // "Editar" puede estar bien abajo — sin este scroll, tocarlo no parecía
+  // hacer nada porque el cambio quedaba fuera de la pantalla.
+  function editar(r: Row) {
+    setEditing(r)
+    requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -351,35 +360,7 @@ function EntitySection({ cfg, data, reload }: {
       {cfg.tabla === 'price_deck_puntos' && <PegarCorridaFuturos data={data} reload={reload} />}
       {cfg.tabla === 'formulas_precio' && <VistaPrecioMensual data={data} />}
 
-      {rows.length > MAX_FILAS_LISTA && (
-        <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 8 }}>
-          {rows.length.toLocaleString('es-AR')} registros cargados — se muestran los últimos {MAX_FILAS_LISTA}.
-          {cfg.tabla === 'curvas_produccion' && ' Para reemplazar una curva completa, usá el importador de Excel de arriba.'}
-        </p>
-      )}
-      {rows.length > 0 && (
-        <div style={{ marginBottom: 16, overflowX: 'auto' }}>
-          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
-            <tbody>
-              {rows.slice(-MAX_FILAS_LISTA).map(r => (
-                <tr key={String(r.id)} style={{ borderBottom: '1px solid var(--rule)' }}>
-                  {cfg.displayCols(r, data).map((c, i) => (
-                    <td key={i} style={{ padding: '6px 8px', color: 'var(--fg-soft)' }}>
-                      <span style={{ color: 'var(--fg-muted)', marginRight: 4 }}>{c.label}:</span>{c.value}
-                    </td>
-                  ))}
-                  <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', textAlign: 'right' }}>
-                    <button type="button" onClick={() => setEditing(r)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 12, marginRight: 10 }}>Editar</button>
-                    <button type="button" onClick={() => onDelete(r)} style={{ background: 'none', border: 'none', color: 'var(--cp-negative)', cursor: 'pointer', fontSize: 12 }}>Borrar</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <form key={String(editing?.id ?? 'new')} onSubmit={onSubmit}>
+      <form ref={formRef} key={String(editing?.id ?? 'new')} onSubmit={onSubmit} style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--rule)' }}>
         {editing && (
           <div style={{ fontSize: 12, color: 'var(--accent)', marginBottom: 10 }}>
             Editando registro #{String(editing.id)} —{' '}
@@ -413,6 +394,34 @@ function EntitySection({ cfg, data, reload }: {
         ))}
         <button className="btn btn-primary" type="submit">{editing ? 'Guardar cambios' : 'Guardar'}</button>
       </form>
+
+      {rows.length > MAX_FILAS_LISTA && (
+        <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 8 }}>
+          {rows.length.toLocaleString('es-AR')} registros cargados — se muestran los últimos {MAX_FILAS_LISTA}.
+          {cfg.tabla === 'curvas_produccion' && ' Para reemplazar una curva completa, usá el importador de Excel de arriba.'}
+        </p>
+      )}
+      {rows.length > 0 && (
+        <div style={{ marginBottom: 16, overflowX: 'auto' }}>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+            <tbody>
+              {rows.slice(-MAX_FILAS_LISTA).map(r => (
+                <tr key={String(r.id)} style={{ borderBottom: '1px solid var(--rule)' }}>
+                  {cfg.displayCols(r, data).map((c, i) => (
+                    <td key={i} style={{ padding: '6px 8px', color: 'var(--fg-soft)' }}>
+                      <span style={{ color: 'var(--fg-muted)', marginRight: 4 }}>{c.label}:</span>{c.value}
+                    </td>
+                  ))}
+                  <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                    <button type="button" onClick={() => editar(r)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 12, marginRight: 10 }}>Editar</button>
+                    <button type="button" onClick={() => onDelete(r)} style={{ background: 'none', border: 'none', color: 'var(--cp-negative)', cursor: 'pointer', fontSize: 12 }}>Borrar</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Seccion>
   )
 }
