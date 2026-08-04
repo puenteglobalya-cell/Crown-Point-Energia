@@ -1178,7 +1178,12 @@ function GrillaCronograma({ data, reload }: { data: Data; reload: () => void }) 
 
   const nMeses = Math.min(120, Math.max(1, Number(meses) || 0))
   const columnas = desde ? Array.from({ length: nMeses }, (_, i) => mesISO(desde, i)) : []
-  const pozosTipo = data.pozos_tipo ?? []
+  // "Básico" es la curva agregada de la producción YA existente del campo —
+  // no es algo a lo que se le "agreguen pozos" acá. Y sin curva cargada,
+  // elegirlo generaría intervenciones con producción cero en silencio. Se
+  // muestran solo los pozo tipo pensados para actividad nueva.
+  const tiposConCurva = new Set((data.curvas_produccion ?? []).filter(c => c.pozo_tipo_id != null).map(c => c.pozo_tipo_id))
+  const pozosTipo = (data.pozos_tipo ?? []).filter(pt => pt.categoria !== 'basico' && tiposConCurva.has(pt.id))
 
   function key(ptId: number, fecha: string) { return `${ptId}|${fecha}` }
 
