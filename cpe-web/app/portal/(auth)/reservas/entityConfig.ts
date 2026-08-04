@@ -142,7 +142,7 @@ export const ENTITIES: EntityConfig[] = [
     fields: [
       { name: 'concesion_id', label: 'Concesión', type: 'select', optionsFrom: 'concesiones', required: true },
       { name: 'fecha_desde', label: 'Vigente desde', type: 'date', required: true },
-      { name: 'porcentaje', label: '% regalía (ej. 0.12)', type: 'number', step: '0.0001', required: true },
+      { name: 'porcentaje', label: '% regalía (ej. 0.12)', type: 'number', step: '0.0001', min: 0, max: 1, required: true },
     ],
     displayCols: (r, d) => [{ label: 'Concesión', value: nombreDe(d, 'concesiones', r.concesion_id) }, { label: 'Desde', value: String(r.fecha_desde) }, { label: '%', value: String(r.porcentaje) }],
   },
@@ -195,7 +195,7 @@ export const ENTITIES: EntityConfig[] = [
     helpText: 'precio = (referencia + descuento fijo) × (1 − DDE%) / divisor + extra − tarifa de almacenamiento (USD/m3/día × días, convertido a USD/bbl). El DDE% NO se tipea mes a mes: se calcula solo con el tramo por Brent (65→0%, 80→8%, lineal entre medio — ya viene precargado). "Aplicar DDE%" lo desactiva sin borrar el tramo, para un período en que no corresponda. El divisor suele ser 1 − alícuota IIBB (ej. 0.97 si IIBB es 3%).',
     fields: [
       { name: 'yacimiento_id', label: 'Yacimiento', type: 'select', optionsFrom: 'yacimientos', required: true },
-      { name: 'producto', label: 'Producto', type: 'select', staticOptions: [{ value: 'petroleo', label: 'Petróleo' }, { value: 'gas', label: 'Gas' }] },
+      { name: 'producto', label: 'Producto', type: 'select', required: true, staticOptions: [{ value: 'petroleo', label: 'Petróleo' }, { value: 'gas', label: 'Gas' }] },
       { name: 'fecha_desde', label: 'Vigente desde', type: 'date', required: true },
       { name: 'referencia', label: 'Referencia (brent, wti…)', type: 'text', defaultValue: 'brent' },
       { name: 'descuento_fijo_usd', label: 'Descuento fijo USD (se suma ANTES del DDE%, normalmente negativo, ej. -3)', type: 'number', step: '0.01' },

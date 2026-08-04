@@ -321,6 +321,15 @@ function EntitySection({ cfg, data, reload }: {
       valores[field.name] = val
     }
 
+    if (cfg.tabla === 'curvas_produccion') {
+      const tienePozo = valores.pozo_id != null && valores.pozo_id !== ''
+      const tieneTipo = valores.pozo_tipo_id != null && valores.pozo_tipo_id !== ''
+      if (tienePozo === tieneTipo) {
+        setErr(tienePozo ? 'Elegí pozo O pozo tipo, no los dos' : 'Elegí pozo O pozo tipo — no puede quedar vacío')
+        return
+      }
+    }
+
     const isEdit = editing !== null
     const res = await fetch('/api/portal/reservas/data', {
       method: isEdit ? 'PATCH' : 'POST',
