@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireReservasAccess } from '@/lib/reservas/access'
 import {
   calcularEscenario, calcularAgregadosAnuales, calcularMetricasEscenario, calcularDepletionReservas,
-  calcularNpvPorTasa, cargarContexto, hashContexto, adquirirLockEscenario, liberarLockEscenario,
+  calcularNpvPorTasa, cargarContexto, hashContexto, adquirirLockEscenario, liberarLockEscenario, HORIZONTE_MESES_MAX,
 } from '@/lib/reservas/engine'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isSameOrigin } from '@/lib/csrf'
@@ -15,16 +15,24 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const escenarioId = Number(body.escenario_id)
   const tasaAnual = Number(body.tasa_anual ?? 0.10)
-  const horizonteAnios = Number(body.horizonte_anios ?? 999) // 999 = full-life por convención
+  const horizonteAniosCrudo = Number(body.horizonte_anios ?? 999) // 999 = full-life por convención
   if (!Number.isFinite(escenarioId)) {
     return NextResponse.json({ error: 'escenario_id inválido' }, { status: 400 })
   }
   if (!Number.isFinite(tasaAnual) || tasaAnual <= -1 || tasaAnual > 10) {
     return NextResponse.json({ error: 'tasa_anual inválida (esperado un decimal, ej. 0.10 = 10%)' }, { status: 400 })
   }
-  if (!Number.isFinite(horizonteAnios) || horizonteAnios <= 0) {
+  if (!Number.isFinite(horizonteAniosCrudo) || horizonteAniosCrudo <= 0) {
     return NextResponse.json({ error: 'horizonte_anios inválido' }, { status: 400 })
   }
+  // El motor nunca corre más de HORIZONTE_MESES_MAX meses (calcularEscenario
+  // ya lo clampea) — "999 = full-life" es sólo una convención de la UI para
+  // decir "todo lo que dé la curva", no un pedido real de correr 999 años.
+  // Sin este clamp, escenario_metricas.horizonte_anios quedaba con el valor
+  // crudo (ej. 999 o cualquier número que se mande) mientras la corrida real
+  // cubría como mucho 20 — un dato engañoso en un registro pensado para
+  // auditarse contra NI 51-101.
+  const horizonteAnios = Math.min(horizonteAniosCrudo, HORIZONTE_MESES_MAX / 12)
 
   const db = createSupabaseServerAdminClient()
   // El pipeline completo (4 escrituras seguidas, ninguna transaccional) se

@@ -522,13 +522,16 @@ export async function calcularEscenario(
       const enProduccion = mesesDesdeAlta >= 0
       const interv = enProduccion ? intervConCurvaDesc.find(i => i.fecha <= fecha) : undefined
       let bbl = 0, mcf = 0
+      let curvaFaltante = false
       if (enProduccion) {
         if (interv?.pozo_tipo_id) {
           const c = curvaPorTipo.get(`${interv.pozo_tipo_id}|${monthsBetween(interv.fecha, fecha)}`)
+          curvaFaltante = c === undefined
           bbl = c?.bbl_petroleo ?? 0
           mcf = c?.mcf_gas ?? 0
         } else {
           const c = curvaPorPozo.get(`${pozo.id}|${mesesDesdeAlta}`)
+          curvaFaltante = c === undefined
           bbl = c?.bbl_petroleo ?? 0
           mcf = c?.mcf_gas ?? 0
         }
@@ -537,6 +540,14 @@ export async function calcularEscenario(
       mcf *= mult.produccion
       if (mesesDesdeAlta === 0 && bbl === 0 && mcf === 0 && !interv) {
         diag.add('pozo_sin_curva', `Pozo "${pozo.nombre}": no hay curva de producción cargada para su primer mes`)
+      }
+      // `!interv` sólo cubre el caso sin ninguna curva asignada. Si la
+      // intervención SÍ tiene una curva pero se quedó sin filas para este
+      // mes (cargada incompleta, o más corta que la vida del pozo), antes no
+      // se avisaba nada — el pozo pasaba a producir 0 en silencio por el
+      // resto de su vida, justo lo que este archivo dice evitar.
+      if (enProduccion && curvaFaltante && interv?.pozo_tipo_id) {
+        diag.add('curva_agotada', `Pozo "${pozo.nombre}": la curva del pozo tipo activado por su intervención no tiene datos para ${fecha.slice(0, 7)} — produce 0 desde ahí`)
       }
 
       // CAPEX del mes. La amortización ya no se calcula acá: con unidades de
@@ -691,6 +702,9 @@ export async function calcularEscenario(
       const mesesDesdeProduccion = monthsBetween(i.fecha, fecha)
       const enProduccion = mesesDesdeProduccion >= 0
       const c = enProduccion ? curvaPorTipo.get(`${i.pozo_tipo_id}|${mesesDesdeProduccion}`) : undefined
+      if (enProduccion && c === undefined) {
+        diag.add('curva_agotada', `Intervención "${i.tipo} nuevo — ${concesion.nombre} (#${i.id})": la curva de su pozo tipo no tiene datos para ${fecha.slice(0, 7)} — produce 0 desde ahí`)
+      }
       const bbl = (c?.bbl_petroleo ?? 0) * mult.produccion
       const mcf = (c?.mcf_gas ?? 0) * mult.produccion
 
