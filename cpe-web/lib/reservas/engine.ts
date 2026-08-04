@@ -969,13 +969,34 @@ export async function calcularEscenario(
   // El barrido de fechas corre el motor decenas de veces y no necesita
   // escribir nada: sólo el VAN de cada alternativa.
   if (opciones.persistir !== false) {
-    await db.from('cashflow_mensual').delete().eq('escenario_id', escenarioId)
-    if (filas.length > 0) {
-      const CHUNK = 500
-      for (let i = 0; i < filas.length; i += CHUNK) {
-        const { error } = await db.from('cashflow_mensual').insert(filas.slice(i, i + CHUNK))
-        if (error) throw new Error(error.message)
+    // Lock liviano contra dos "Calcular escenario" concurrentes sobre el
+    // MISMO escenario (ej. dos pestañas del navegador): el delete+insert de
+    // abajo no es una transacción, así que dos corridas en paralelo pueden
+    // intercalarse y la que termina último gana en silencio, sin que la
+    // otra pestaña se entere de que su resultado no es el que quedó. El
+    // update sólo toma el lock si nadie lo tiene o si quedó pegado por un
+    // proceso que se cayó a mitad de camino (más de 5 minutos).
+    const staleCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    const { data: bloqueo } = await db.from('escenarios')
+      .update({ calculando_desde: new Date().toISOString() })
+      .eq('id', escenarioId)
+      .or(`calculando_desde.is.null,calculando_desde.lt.${staleCutoff}`)
+      .select('id')
+      .maybeSingle()
+    if (!bloqueo) {
+      throw new Error('Este escenario ya se está calculando en otra pestaña o sesión — esperá a que termine antes de volver a calcularlo.')
+    }
+    try {
+      await db.from('cashflow_mensual').delete().eq('escenario_id', escenarioId)
+      if (filas.length > 0) {
+        const CHUNK = 500
+        for (let i = 0; i < filas.length; i += CHUNK) {
+          const { error } = await db.from('cashflow_mensual').insert(filas.slice(i, i + CHUNK))
+          if (error) throw new Error(error.message)
+        }
       }
+    } finally {
+      await db.from('escenarios').update({ calculando_desde: null }).eq('id', escenarioId)
     }
   }
 
