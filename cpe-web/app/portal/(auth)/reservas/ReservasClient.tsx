@@ -1245,6 +1245,8 @@ function GrillaCronograma({ data, reload }: { data: Data; reload: () => void }) 
   const [msg, setMsg] = useState('')
   const [vidaEconomica, setVidaEconomica] = useState<Record<number, string>>({})
   const [calculandoVida, setCalculandoVida] = useState<number | null>(null)
+  const [resultado, setResultado] = useState<Resultado | null>(null)
+  const [recalculando, setRecalculando] = useState(false)
 
   const nMeses = Math.min(120, Math.max(1, Number(meses) || 0))
   const columnas = desde ? Array.from({ length: nMeses }, (_, i) => mesISO(desde, i)) : []
@@ -1278,46 +1280,109 @@ function GrillaCronograma({ data, reload }: { data: Data; reload: () => void }) 
 
   function key(ptId: number, fecha: string) { return `${ptId}|${fecha}` }
 
+  // Intervenciones sin pozo real ya cargadas para este escenario, agrupadas
+  // por pozo tipo + fecha — para poder mostrar lo que ya hay (no solo agregar
+  // a ciegas) y para poder BORRAR cuando una celda baja de cantidad (sacar un
+  // pozo, o "moverlo" de zona bajando una fila y subiendo otra).
+  const escenarioIdNum = escenarioId ? Number(escenarioId) : null
+  const idsExistentes = new Map<string, number[]>()
+  for (const i of data.intervenciones ?? []) {
+    if (i.pozo_id != null || i.pozo_tipo_id == null) continue
+    if ((i.escenario_id ?? null) !== escenarioIdNum) continue
+    const k = key(Number(i.pozo_tipo_id), String(i.fecha))
+    const arr = idsExistentes.get(k) ?? []
+    arr.push(Number(i.id))
+    idsExistentes.set(k, arr)
+  }
+
+  function cargarExistentes() {
+    const c: Record<string, string> = {}
+    for (const pt of pozosTipo) for (const fecha of columnas) {
+      const n = idsExistentes.get(key(Number(pt.id), fecha))?.length ?? 0
+      if (n > 0) c[key(Number(pt.id), fecha)] = String(n)
+    }
+    setCantidades(c)
+    setMsg('Cantidades ya cargadas para este escenario y rango ✓')
+  }
+
   async function generar() {
-    setErr(''); setMsg('')
+    setErr(''); setMsg(''); setResultado(null)
     if (!desde) { setErr('Elegí desde qué mes arranca la grilla'); return }
     const filas: Record<string, unknown>[] = []
+    const idsABorrar: number[] = []
     const problemas: string[] = []
     for (const pt of pozosTipo) {
       for (const fecha of columnas) {
-        const cant = Number(cantidades[key(Number(pt.id), fecha)]) || 0
-        if (cant <= 0) continue
+        const k = key(Number(pt.id), fecha)
+        const cant = Number(cantidades[k]) || 0
+        const existentes = idsExistentes.get(k) ?? []
+        const delta = cant - existentes.length
+        if (delta === 0) continue
+        if (delta < 0) { idsABorrar.push(...existentes.slice(0, -delta)); continue }
         const concesion = (data.concesiones ?? []).find(c => c.yacimiento_id === pt.yacimiento_id)
         if (!concesion) { problemas.push(`${pt.nombre}: no hay concesión con el mismo yacimiento — se omite`); continue }
-        for (let i = 0; i < cant; i++) {
+        for (let i = 0; i < delta; i++) {
           filas.push({
             concesion_id: concesion.id,
             tipo: CATEGORIA_A_TIPO[String(pt.categoria)] ?? 'perforacion',
             fecha,
             capex_usd: Number(pt.capex_default_usd) || 0,
             pozo_tipo_id: pt.id,
-            escenario_id: escenarioId ? Number(escenarioId) : null,
+            escenario_id: escenarioIdNum,
           })
         }
       }
     }
-    if (filas.length === 0) { setErr(problemas[0] ?? 'No hay ninguna celda con cantidad > 0'); return }
+    if (filas.length === 0 && idsABorrar.length === 0) { setErr(problemas[0] ?? 'No hay ningún cambio respecto de lo ya cargado'); return }
     setCargando(true)
     try {
-      const res = await fetch('/api/portal/reservas/data', {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ tabla: 'intervenciones', filas }),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? 'Error al generar')
-      setMsg(`${json.insertadas} intervenciones generadas ✓${problemas.length ? ` — ${problemas.join('; ')}` : ''}`)
-      setCantidades({})
+      if (idsABorrar.length > 0) {
+        for (const id of idsABorrar) {
+          const r = await fetch('/api/portal/reservas/data', {
+            method: 'DELETE', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ tabla: 'intervenciones', id }),
+          })
+          if (!r.ok) throw new Error((await r.json()).error ?? `Error al borrar intervención #${id}`)
+        }
+      }
+      let insertadas = 0
+      if (filas.length > 0) {
+        const res = await fetch('/api/portal/reservas/data', {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ tabla: 'intervenciones', filas }),
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error ?? 'Error al generar')
+        insertadas = json.insertadas
+      }
+      setMsg(`${insertadas} intervenciones nuevas, ${idsABorrar.length} borradas ✓${problemas.length ? ` — ${problemas.join('; ')}` : ''}`)
       reload()
     } catch (e) {
       setErr((e as Error).message)
     } finally {
       setCargando(false)
+    }
+  }
+
+  async function recalcular() {
+    setErr(''); setResultado(null)
+    const id = escenarioIdNum ?? (data.escenarios ?? []).find(e => e.es_base)?.id
+    if (id == null) { setErr('Elegí un escenario explícito — no hay ninguno marcado como base'); return }
+    setRecalculando(true)
+    try {
+      const res = await fetch('/api/portal/reservas/calcular', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ escenario_id: Number(id), tasa_anual: 0.10, horizonte_anios: 20 }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Error al calcular')
+      setResultado(json)
+      reload()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setRecalculando(false)
     }
   }
 
@@ -1343,6 +1408,7 @@ function GrillaCronograma({ data, reload }: { data: Data; reload: () => void }) 
           <label style={label}>Meses a mostrar</label>
           <input value={meses} onChange={e => setMeses(e.target.value)} type="number" min={1} max={120} style={{ ...input, width: 100 }} />
         </div>
+        <button type="button" className="btn" onClick={cargarExistentes} disabled={columnas.length === 0}>Cargar lo ya cargado</button>
       </div>
       {columnas.length > 0 && (
         <div style={{ overflowX: 'auto', marginBottom: 12, border: '1px solid var(--rule)', borderRadius: 8 }}>
@@ -1397,9 +1463,22 @@ function GrillaCronograma({ data, reload }: { data: Data; reload: () => void }) 
           </div>
         )
       })()}
-      <button className="btn btn-primary" onClick={generar} disabled={cargando || columnas.length === 0}>
-        {cargando ? 'Generando…' : 'Generar intervenciones'}
-      </button>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <button className="btn btn-primary" onClick={generar} disabled={cargando || columnas.length === 0}>
+          {cargando ? 'Guardando…' : 'Guardar cambios (agrega/borra según la grilla)'}
+        </button>
+        <button className="btn" onClick={recalcular} disabled={recalculando}>
+          {recalculando ? 'Calculando…' : 'Recalcular VAN'}
+        </button>
+      </div>
+      {resultado && (
+        <p style={{ fontSize: 13, marginTop: 12 }}>
+          NPV: <strong style={{ fontFamily: 'var(--font-mono)' }}>{resultado.npv_usd != null ? mm(resultado.npv_usd) : '—'}</strong>
+          {' · '}IRR: <strong style={{ fontFamily: 'var(--font-mono)' }}>{resultado.irr_pct != null ? `${resultado.irr_pct.toFixed(1)}%` : '—'}</strong>
+          {' · '}Payback: <strong style={{ fontFamily: 'var(--font-mono)' }}>{resultado.payback_anios != null ? `${resultado.payback_anios.toFixed(1)} años` : '—'}</strong>
+          {' · '}Pozos simulados: <strong>{resultado.pozos ?? 0}</strong>
+        </p>
+      )}
     </div>
   )
 }
