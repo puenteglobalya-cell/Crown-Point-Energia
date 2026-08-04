@@ -2787,6 +2787,7 @@ function PanelTornado({ escenarioId, tasa, horizonte }: { escenarioId: string; t
 }
 
 function TornadoChart({ t }: { t: Tornado }) {
+  const [hover, setHover] = useState<number | null>(null)
   const W = 620, FILA = 30, PAD_L = 138, PAD_T = 24
   const H = PAD_T + t.barras.length * FILA + 26
   const todos = t.barras.flatMap(b => [b.npv_abajo, b.npv_arriba]).concat(t.npv_base_usd)
@@ -2800,7 +2801,7 @@ function TornadoChart({ t }: { t: Tornado }) {
         VAN base: <strong style={{ fontFamily: 'var(--font-mono)' }}>{mm(t.npv_base_usd)}</strong>
         <span style={{ color: 'var(--fg-muted)' }}> · variando ±{(t.variacion * 100).toFixed(0)}% @ {(t.tasa_descuento * 100).toFixed(1)}%</span>
       </p>
-      <div style={{ overflowX: 'auto' }}>
+      <div style={{ position: 'relative', overflowX: 'auto' }}>
         <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ minWidth: 520, background: 'var(--bg)', borderRadius: 8 }}>
           <line x1={x(t.npv_base_usd)} y1={PAD_T - 10} x2={x(t.npv_base_usd)} y2={H - 22} stroke="var(--fg-muted)" strokeDasharray="4 3" />
           <text x={x(t.npv_base_usd)} y={PAD_T - 14} fontSize="9" fill="var(--fg-muted)" textAnchor="middle">base</text>
@@ -2810,10 +2811,11 @@ function TornadoChart({ t }: { t: Tornado }) {
             const x2 = x(Math.max(b.npv_abajo, b.npv_arriba))
             const xb = x(t.npv_base_usd)
             return (
-              <g key={b.variable}>
+              <g key={b.variable} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} style={{ cursor: 'pointer' }}>
+                <rect x={PAD_L} y={y} width={W - PAD_L - 16} height={FILA} fill={hover === i ? 'rgba(0,0,0,0.04)' : 'transparent'} />
                 <text x={PAD_L - 8} y={y + 14} fontSize="11" fill="var(--fg-soft)" textAnchor="end">{b.variable}</text>
-                <rect x={x1} y={y + 4} width={Math.max(xb - x1, 0)} height={16} fill="#d99b91" />
-                <rect x={xb} y={y + 4} width={Math.max(x2 - xb, 0)} height={16} fill="#8f97c9" />
+                <rect x={x1} y={y + 4} width={Math.max(xb - x1, 0)} height={16} fill="#d99b91" stroke={hover === i ? 'var(--fg)' : 'none'} strokeWidth={1} />
+                <rect x={xb} y={y + 4} width={Math.max(x2 - xb, 0)} height={16} fill="#8f97c9" stroke={hover === i ? 'var(--fg)' : 'none'} strokeWidth={1} />
                 <text x={W - 62} y={y + 16} fontSize="10" fill="var(--fg-muted)">±{(b.amplitud / 2e6).toFixed(1)}MM</text>
               </g>
             )
@@ -2825,6 +2827,23 @@ function TornadoChart({ t }: { t: Tornado }) {
             <text x={124} y={-1} fontSize="9" fill="var(--fg-muted)">Variable al alza</text>
           </g>
         </svg>
+        {hover != null && (() => {
+          const b = t.barras[hover]
+          const topPct = ((PAD_T + hover * FILA) / H) * 100
+          const leftPct = (PAD_L / W) * 100
+          return (
+            <div style={{
+              position: 'absolute', top: `${topPct}%`, left: `${leftPct}%`, transform: 'translateY(-100%)',
+              background: 'var(--fg)', color: 'var(--bg)', fontSize: 11, padding: '6px 10px', borderRadius: 6,
+              pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>{b.variable}{b.nota ? ` · ${b.nota}` : ''}</div>
+              <div>VAN a la baja: {mm(b.npv_abajo)}</div>
+              <div>VAN al alza: {mm(b.npv_arriba)}</div>
+              <div>Amplitud: {mm(b.amplitud)}</div>
+            </div>
+          )
+        })()}
       </div>
       <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', marginTop: 10 }}>
         <thead>
