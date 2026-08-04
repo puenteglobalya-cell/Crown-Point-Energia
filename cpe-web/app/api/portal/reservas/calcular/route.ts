@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireReservasAccess } from '@/lib/reservas/access'
-import { calcularEscenario, calcularAgregadosAnuales, calcularMetricasEscenario, calcularDepletionReservas, calcularNpvPorTasa, cargarContexto, hashContexto } from '@/lib/reservas/engine'
+import {
+  calcularEscenario, calcularAgregadosAnuales, calcularMetricasEscenario, calcularDepletionReservas,
+  calcularNpvPorTasa, cargarContexto, hashContexto, adquirirLockEscenario, liberarLockEscenario,
+} from '@/lib/reservas/engine'
+import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { isSameOrigin } from '@/lib/csrf'
 
 export async function POST(req: NextRequest) {
@@ -22,6 +26,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'horizonte_anios inválido' }, { status: 400 })
   }
 
+  const db = createSupabaseServerAdminClient()
+  // El pipeline completo (4 escrituras seguidas, ninguna transaccional) se
+  // protege de punta a punta — no cada función suelta, porque dos clicks de
+  // "Calcular" en pestañas distintas pueden intercalarse en cualquiera de
+  // las 4 tablas, no solo en la primera.
+  try {
+    await adquirirLockEscenario(db, escenarioId)
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 409 })
+  }
   try {
     // El horizonte elegido ahora recorta de verdad la corrida del motor; antes
     // se guardaba en las métricas pero el motor siempre iba a 240 meses.
@@ -43,5 +57,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ...resumen, ...agregados, ...metricas, ...depletion, npv_por_tasa: npvPorTasa })
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 })
+  } finally {
+    await liberarLockEscenario(db, escenarioId)
   }
 }

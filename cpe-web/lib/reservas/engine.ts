@@ -227,6 +227,40 @@ export type Multiplicadores = {
   opex?: number; capex?: number; produccion?: number
 }
 
+// ─── Lock contra corridas concurrentes del mismo escenario ────────────────
+// "Calcular escenario" es en realidad un pipeline de 4 escrituras seguidas
+// (cashflow_mensual, resultados_escenario_anual, escenario_metricas,
+// reservas_depletion_anual — ninguna transaccional). Dos clicks de
+// "Calcular" sobre el MISMO escenario (típicamente dos pestañas del
+// navegador) pueden intercalar sus deletes+inserts en cualquiera de las
+// cuatro tablas, y la que termina último gana en silencio en cada una por
+// separado, sin que ninguna pestaña se entere de que su resultado no es el
+// que quedó. El lock lo toma quien orquesta el pipeline completo
+// (calcular/route.ts), no cada función suelta — si viviera dentro de una
+// sola función cubriría esa escritura y dejaría las otras tres sin
+// protección, que es exactamente lo que pasaba en la primera versión de
+// este fix.
+export async function adquirirLockEscenario(
+  db: ReturnType<typeof createSupabaseServerAdminClient>, escenarioId: number,
+): Promise<void> {
+  const staleCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+  const { data: bloqueo } = await db.from('escenarios')
+    .update({ calculando_desde: new Date().toISOString() })
+    .eq('id', escenarioId)
+    .or(`calculando_desde.is.null,calculando_desde.lt.${staleCutoff}`)
+    .select('id')
+    .maybeSingle()
+  if (!bloqueo) {
+    throw new Error('Este escenario ya se está calculando en otra pestaña o sesión — esperá a que termine antes de volver a calcularlo.')
+  }
+}
+
+export async function liberarLockEscenario(
+  db: ReturnType<typeof createSupabaseServerAdminClient>, escenarioId: number,
+): Promise<void> {
+  await db.from('escenarios').update({ calculando_desde: null }).eq('id', escenarioId)
+}
+
 export async function calcularEscenario(
   escenarioId: number,
   horizonteMeses = HORIZONTE_MESES_MAX,
@@ -967,36 +1001,20 @@ export async function calcularEscenario(
   }
 
   // El barrido de fechas corre el motor decenas de veces y no necesita
-  // escribir nada: sólo el VAN de cada alternativa.
+  // escribir nada: sólo el VAN de cada alternativa. El lock contra corridas
+  // concurrentes (ver adquirirLockEscenario/liberarLockEscenario) lo toma
+  // quien orquesta el pipeline completo (calcular/route.ts) — no acá, así
+  // no queda cubierto solamente este paso mientras calcularAgregadosAnuales/
+  // calcularMetricasEscenario/calcularDepletionReservas, que escriben justo
+  // después en la misma corrida real, se quedan sin protección.
   if (opciones.persistir !== false) {
-    // Lock liviano contra dos "Calcular escenario" concurrentes sobre el
-    // MISMO escenario (ej. dos pestañas del navegador): el delete+insert de
-    // abajo no es una transacción, así que dos corridas en paralelo pueden
-    // intercalarse y la que termina último gana en silencio, sin que la
-    // otra pestaña se entere de que su resultado no es el que quedó. El
-    // update sólo toma el lock si nadie lo tiene o si quedó pegado por un
-    // proceso que se cayó a mitad de camino (más de 5 minutos).
-    const staleCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString()
-    const { data: bloqueo } = await db.from('escenarios')
-      .update({ calculando_desde: new Date().toISOString() })
-      .eq('id', escenarioId)
-      .or(`calculando_desde.is.null,calculando_desde.lt.${staleCutoff}`)
-      .select('id')
-      .maybeSingle()
-    if (!bloqueo) {
-      throw new Error('Este escenario ya se está calculando en otra pestaña o sesión — esperá a que termine antes de volver a calcularlo.')
-    }
-    try {
-      await db.from('cashflow_mensual').delete().eq('escenario_id', escenarioId)
-      if (filas.length > 0) {
-        const CHUNK = 500
-        for (let i = 0; i < filas.length; i += CHUNK) {
-          const { error } = await db.from('cashflow_mensual').insert(filas.slice(i, i + CHUNK))
-          if (error) throw new Error(error.message)
-        }
+    await db.from('cashflow_mensual').delete().eq('escenario_id', escenarioId)
+    if (filas.length > 0) {
+      const CHUNK = 500
+      for (let i = 0; i < filas.length; i += CHUNK) {
+        const { error } = await db.from('cashflow_mensual').insert(filas.slice(i, i + CHUNK))
+        if (error) throw new Error(error.message)
       }
-    } finally {
-      await db.from('escenarios').update({ calculando_desde: null }).eq('id', escenarioId)
     }
   }
 
