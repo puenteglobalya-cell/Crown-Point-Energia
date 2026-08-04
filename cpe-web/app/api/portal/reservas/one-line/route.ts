@@ -54,11 +54,22 @@ export async function GET(req: NextRequest) {
     // escenario: nace con la campaña. Si no, ya existe y viene produciendo.
     const aPerforar = new Set(intervenciones.filter(i => i.tipo === 'perforacion' && i.pozo_id != null).map(i => i.pozo_id))
 
-    const porPozo = new Map<number, any[]>()
+    // Facilities y las Intervenciones sin pozo real (perforación/workover a
+    // probar, sin un Pozo cargado todavía) comparten pozo_id = null a
+    // propósito — agrupar por pozo_id crudo las mezclaba a todas en un solo
+    // bucket "Facilities", perdiendo la economía de los pozos a perforar
+    // dentro de esa línea. Se agrupa por pozo_id cuando existe, o por
+    // categoria (que sí las distingue) cuando no — sigue sin poder separar
+    // dos Intervenciones sin pozo real DISTINTAS entre sí (cashflow_mensual
+    // no guarda de cuál intervención salió cada fila), pero ya no las mete
+    // todas bajo "Facilities".
+    const claveDe = (f: any) => f.pozo_id != null ? String(f.pozo_id) : `sin_pozo:${f.categoria ?? 'facilities'}`
+    const porPozo = new Map<string, any[]>()
     for (const f of filas) {
-      const arr = porPozo.get(f.pozo_id) ?? []
+      const clave = claveDe(f)
+      const arr = porPozo.get(clave) ?? []
       arr.push(f)
-      porPozo.set(f.pozo_id, arr)
+      porPozo.set(clave, arr)
     }
 
     const mesesEntre = (a: string, b: string) => {
@@ -66,8 +77,10 @@ export async function GET(req: NextRequest) {
       return (y.getUTCFullYear() - x.getUTCFullYear()) * 12 + (y.getUTCMonth() - x.getUTCMonth())
     }
 
-    const lineas = [...porPozo.entries()].map(([pozoId, rows]) => {
-      const pozo = pozoPorId.get(pozoId)
+    const lineas = [...porPozo.entries()].map(([clave, rows]) => {
+      const pozoId = clave.startsWith('sin_pozo:') ? null : Number(clave)
+      const categoriaSinPozo = clave.startsWith('sin_pozo:') ? clave.slice('sin_pozo:'.length) : null
+      const pozo = pozoId != null ? pozoPorId.get(pozoId) : null
       const conc = pozo ? concPorId.get(pozo.concesion_id) : null
       const flujos = rows.map(r => ({ fecha: String(r.fecha), cash_flow_neto_usd: Number(r.cash_flow_neto_usd) }))
 
@@ -98,18 +111,23 @@ export async function GET(req: NextRequest) {
       const ebitda = ingresos - regalias - opex
       const conProduccion = rows.filter(r => Number(r.bbl_petroleo) > 0 || Number(r.mcf_gas) > 0)
 
-      // pozo_id null son las filas de CAPEX de facilities (instalaciones que
-      // sostienen el yacimiento pero no cuelgan de un pozo). Se agrupan todas
-      // juntas acá porque cashflow_mensual no guarda la concesión de origen;
-      // si en algún momento hay facilities en más de una concesión al mismo
-      // tiempo, esta línea las mezcla — separarlas requeriría esa columna.
-      const esFacilities = pozoId == null || pozoId < 0
+      // pozo_id null cubre dos casos distintos, ya separados arriba por
+      // categoria: facilities (CAPEX que sostiene el yacimiento, no cuelga
+      // de ningún pozo) y una Intervención sin pozo real (perforación/
+      // workover que se está probando, todavía sin un Pozo cargado). Ninguno
+      // de los dos tiene concesión propia en cashflow_mensual — si en algún
+      // momento hay más de una en la misma categoría al mismo tiempo, esta
+      // línea sigue mezclándolas entre sí (no con la otra categoría).
+      const esFacilities = categoriaSinPozo === 'facilities'
+      const esSinPozoReal = categoriaSinPozo != null && !esFacilities
       return {
-        pozo_id: esFacilities ? null : pozoId,
-        pozo: esFacilities ? 'Facilities' : (pozo?.nombre ?? `#${pozoId}`),
-        concesion: conc?.nombre ?? (esFacilities ? '(todas)' : '—'),
+        pozo_id: pozoId,
+        pozo: esFacilities ? 'Facilities'
+          : esSinPozoReal ? `${categoriaSinPozo} (sin pozo real)`
+          : (pozo?.nombre ?? `#${pozoId}`),
+        concesion: conc?.nombre ?? (categoriaSinPozo != null ? '(todas)' : '—'),
         yacimiento: conc ? (yacPorId.get(conc.yacimiento_id) ?? '—') : '—',
-        categoria: esFacilities ? 'facilities' : (aPerforar.has(pozoId) ? 'a_perforar' : 'existente'),
+        categoria: esFacilities ? 'facilities' : (esSinPozoReal || (pozoId != null && aPerforar.has(pozoId)) ? 'a_perforar' : 'existente'),
         npv_usd: calcularNPV(flujos, tasa, fechaBase),
         irr_pct: (() => { const r = irrAnual(serie); return r === null ? null : r * 100 })(),
         payback_anios: payback,
