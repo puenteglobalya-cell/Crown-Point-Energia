@@ -62,12 +62,18 @@ export async function POST(req: NextRequest) {
     const monto = Math.round(montoTotal * pct)
     reparto.push({ yacimiento: item.yacimiento, pozos, bbl, pct, monto })
 
+    const concepto2 = concepto || `Prorrateado ${Math.round(peso * 100)}% pozos / ${Math.round((1 - peso) * 100)}% producción desde OPEX consolidado`
     const { data: existente } = await db.from('opex_fijo').select('id').eq('concesion_id', conc.id).eq('fecha_desde', fechaDesde).maybeSingle()
-    if (existente) continue
-    const { error } = await db.from('opex_fijo').insert({
-      concesion_id: conc.id, fecha_desde: fechaDesde, monto_usd_mes: monto,
-      concepto: concepto || `Prorrateado ${Math.round(peso * 100)}% pozos / ${Math.round((1 - peso) * 100)}% producción desde OPEX consolidado`,
-    })
+    // Antes, si ya había una fila para esa concesión+fecha, se salteaba el
+    // insert sin avisar — pero la respuesta seguía mostrando el monto NUEVO
+    // como si se hubiera guardado. Reintentar el reparto con otro
+    // montoTotal para la misma fecha no actualizaba nada, y la pantalla de
+    // confirmación mentía. Se actualiza la fila existente en vez de
+    // saltearla: "repartir de nuevo" es justamente la acción de rehacer el
+    // reparto, no de dejar el primero intacto.
+    const { error } = existente
+      ? await db.from('opex_fijo').update({ monto_usd_mes: monto, concepto: concepto2 }).eq('id', existente.id)
+      : await db.from('opex_fijo').insert({ concesion_id: conc.id, fecha_desde: fechaDesde, monto_usd_mes: monto, concepto: concepto2 })
     if (error) errores.push(`${item.yacimiento}: ${error.message}`)
   }
 

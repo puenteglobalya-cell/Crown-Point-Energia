@@ -81,5 +81,20 @@ export function parsePreciosFuturos(texto: string): PuntoFuturo[] {
       ultimo = p.precio
     }
   }
+  // Los primeros contratos de la corrida (los más ilíquidos, típicamente)
+  // pueden no tener ningún precio previo del cual rellenar hacia atrás — el
+  // filter de abajo los descartaba en silencio, sin ningún aviso de que
+  // faltaban esos meses. Se rellenan hacia ADELANTE con el primer precio
+  // real que aparezca más tarde en la corrida, marcados como relleno igual
+  // que los demás — nunca se pierde un mes de la corrida sin que se note.
+  let primero: number | null = null
+  for (let i = puntos.length - 1; i >= 0; i--) {
+    const p = puntos[i]
+    if (Number.isNaN(p.precio)) {
+      if (primero != null) { p.precio = primero; p.relleno = true }
+    } else {
+      primero = p.precio
+    }
+  }
   return puntos.filter(p => !Number.isNaN(p.precio))
 }
