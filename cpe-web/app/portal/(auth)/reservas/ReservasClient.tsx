@@ -372,6 +372,7 @@ function EntitySection({ cfg, data, reload }: {
       {cfg.tabla === 'price_deck_puntos' && <PegarCorridaFuturos data={data} reload={reload} />}
       {cfg.tabla === 'formulas_precio' && <VistaPrecioMensual data={data} />}
       {cfg.tabla === 'opex_fijo' && <RepartirOpexFijo data={data} reload={reload} />}
+      {cfg.tabla === 'intervenciones' && <GrillaCronograma data={data} reload={reload} />}
 
       <form ref={formRef} key={String(editing?.id ?? 'new')} onSubmit={onSubmit} style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--rule)' }}>
         {editing && (
@@ -1147,6 +1148,137 @@ function PreciosCombinado({ data, reload }: { data: Data; reload: () => void }) 
           <EntitySection key="precios_referencia" cfg={cfgLegado} data={data} reload={reload} />
         </div>
       </details>
+    </div>
+  )
+}
+
+const CATEGORIA_A_TIPO: Record<string, string> = {
+  basico: 'perforacion', drilling: 'perforacion', workover: 'workover', pulling: 'pulling',
+}
+
+function mesISO(desde: string, offset: number): string {
+  const [y, m] = desde.split('-').map(Number)
+  const d = new Date(Date.UTC(y, m - 1 + offset, 1))
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`
+}
+
+// Cronograma de actividad tipo "pozo tipo × mes" (el formato de grilla del
+// Excel del cliente) en vez de cargar una Intervención por vez. Cada celda
+// con cantidad > 0 genera esa cantidad de Intervenciones sin pozo real
+// (mismo mecanismo que arreglamos en el motor) — con esto se puede tipear
+// "6 pozos de GSJ_CH_MODELO en abr-2026" y listo, sin pasar por SQL.
+function GrillaCronograma({ data, reload }: { data: Data; reload: () => void }) {
+  const [escenarioId, setEscenarioId] = useState('')
+  const [desde, setDesde] = useState('')
+  const [meses, setMeses] = useState('24')
+  const [cantidades, setCantidades] = useState<Record<string, string>>({})
+  const [cargando, setCargando] = useState(false)
+  const [err, setErr] = useState('')
+  const [msg, setMsg] = useState('')
+
+  const nMeses = Math.min(120, Math.max(1, Number(meses) || 0))
+  const columnas = desde ? Array.from({ length: nMeses }, (_, i) => mesISO(desde, i)) : []
+  const pozosTipo = data.pozos_tipo ?? []
+
+  function key(ptId: number, fecha: string) { return `${ptId}|${fecha}` }
+
+  async function generar() {
+    setErr(''); setMsg('')
+    if (!desde) { setErr('Elegí desde qué mes arranca la grilla'); return }
+    const filas: Record<string, unknown>[] = []
+    const problemas: string[] = []
+    for (const pt of pozosTipo) {
+      for (const fecha of columnas) {
+        const cant = Number(cantidades[key(Number(pt.id), fecha)]) || 0
+        if (cant <= 0) continue
+        const concesion = (data.concesiones ?? []).find(c => c.yacimiento_id === pt.yacimiento_id)
+        if (!concesion) { problemas.push(`${pt.nombre}: no hay concesión con el mismo yacimiento — se omite`); continue }
+        for (let i = 0; i < cant; i++) {
+          filas.push({
+            concesion_id: concesion.id,
+            tipo: CATEGORIA_A_TIPO[String(pt.categoria)] ?? 'perforacion',
+            fecha,
+            capex_usd: Number(pt.capex_default_usd) || 0,
+            pozo_tipo_id: pt.id,
+            escenario_id: escenarioId ? Number(escenarioId) : null,
+          })
+        }
+      }
+    }
+    if (filas.length === 0) { setErr(problemas[0] ?? 'No hay ninguna celda con cantidad > 0'); return }
+    setCargando(true)
+    try {
+      const res = await fetch('/api/portal/reservas/data', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ tabla: 'intervenciones', filas }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Error al generar')
+      setMsg(`${json.insertadas} intervenciones generadas ✓${problemas.length ? ` — ${problemas.join('; ')}` : ''}`)
+      setCantidades({})
+      reload()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  return (
+    <div style={{ background: 'var(--bg)', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)', padding: 16, marginBottom: 16 }}>
+      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: '0 0 10px' }}>Cronograma de actividad (grilla pozo tipo × mes)</p>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
+        Tipeá cuántos pozos de cada tipo entran cada mes y generás todas las Intervenciones de una — cada celda con cantidad {'>'} 0 crea esa
+        cantidad de Intervenciones sin pozo real (CAPEX = el default del pozo tipo, editable después una por una si hace falta).
+      </p>
+      {err && <div style={{ fontSize: 12, color: 'var(--cp-negative)', padding: '8px 12px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 10 }}>{err}</div>}
+      {msg && <div style={{ fontSize: 12, color: 'var(--cp-positive, #2d7a4a)', padding: '8px 12px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 10 }}>{msg}</div>}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div>
+          <label style={label}>Escenario (vacío = base)</label>
+          <Select opts={(data.escenarios ?? []).map(e => ({ value: String(e.id), label: String(e.nombre) }))} value={escenarioId} onChange={e => setEscenarioId(e.target.value)} />
+        </div>
+        <div>
+          <label style={label}>Desde (mes)</label>
+          <input value={desde ? desde.slice(0, 7) : ''} onChange={e => setDesde(e.target.value ? `${e.target.value}-01` : '')} type="month" style={{ ...input, width: 140 }} />
+        </div>
+        <div>
+          <label style={label}>Meses a mostrar</label>
+          <input value={meses} onChange={e => setMeses(e.target.value)} type="number" min={1} max={120} style={{ ...input, width: 100 }} />
+        </div>
+      </div>
+      {columnas.length > 0 && (
+        <div style={{ overflowX: 'auto', marginBottom: 12, border: '1px solid var(--rule)', borderRadius: 8 }}>
+          <table style={{ fontSize: 11, borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={{ padding: '6px 8px', textAlign: 'left', position: 'sticky', left: 0, background: 'var(--bg)' }}>Pozo tipo</th>
+                {columnas.map(c => <th key={c} style={{ padding: '6px 4px', fontWeight: 400, color: 'var(--fg-muted)' }}>{c.slice(0, 7)}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {pozosTipo.map(pt => (
+                <tr key={String(pt.id)} style={{ borderTop: '1px solid var(--rule)' }}>
+                  <td style={{ padding: '4px 8px', whiteSpace: 'nowrap', position: 'sticky', left: 0, background: 'var(--bg)' }}>{String(pt.nombre)}</td>
+                  {columnas.map(fecha => (
+                    <td key={fecha} style={{ padding: 2 }}>
+                      <input
+                        value={cantidades[key(Number(pt.id), fecha)] ?? ''}
+                        onChange={e => setCantidades(c => ({ ...c, [key(Number(pt.id), fecha)]: e.target.value }))}
+                        type="number" min={0} style={{ ...input, width: 44, padding: '2px 4px', textAlign: 'center' }}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <button className="btn btn-primary" onClick={generar} disabled={cargando || columnas.length === 0}>
+        {cargando ? 'Generando…' : 'Generar intervenciones'}
+      </button>
     </div>
   )
 }
