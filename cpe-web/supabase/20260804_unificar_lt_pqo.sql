@@ -15,9 +15,23 @@ where concesion_id = (select id from concesiones where nombre = 'Puesto Quiroga'
 update yacimientos set nombre = 'LT_PQO' where nombre = 'Puesto Quiroga';
 update concesiones set nombre = 'LT_PQO' where nombre = 'Puesto Quiroga';
 
--- Paso 3 — "La tapera" queda sin usar: borra su participación, regalía,
--- concesión y yacimiento.
+-- Paso 3 — "La tapera" queda sin usar: borra todo lo que la referencia,
+-- en las dos tablas (concesion_id / yacimiento_id) antes de borrar la
+-- concesión y el yacimiento en sí. El "on delete cascade" del schema
+-- original no está aplicado en la base real (de ahí el error de FK), así
+-- que se borra explícito en vez de depender de la cascada.
 delete from concesion_participacion where concesion_id = (select id from concesiones where nombre = 'La tapera');
 delete from regalias where concesion_id = (select id from concesiones where nombre = 'La tapera');
+delete from opex_fijo where concesion_id = (select id from concesiones where nombre = 'La tapera');
+delete from opex_fijo_pozo where concesion_id = (select id from concesiones where nombre = 'La tapera');
+
+delete from formulas_precio where yacimiento_id = (select id from yacimientos where nombre = 'La tapera');
+delete from opex_variable where yacimiento_id = (select id from yacimientos where nombre = 'La tapera');
+delete from precios_mensuales where yacimiento_id = (select id from yacimientos where nombre = 'La tapera');
+delete from reservas_anuales where yacimiento_id = (select id from yacimientos where nombre = 'La tapera');
+delete from reservas_movimientos where yacimiento_id = (select id from yacimientos where nombre = 'La tapera');
+delete from supuestos_generales where yacimiento_id = (select id from yacimientos where nombre = 'La tapera');
+delete from pozos_tipo where yacimiento_id = (select id from yacimientos where nombre = 'La tapera');
+
 delete from concesiones where nombre = 'La tapera';
 delete from yacimientos where nombre = 'La tapera';
