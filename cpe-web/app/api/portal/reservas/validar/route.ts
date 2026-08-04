@@ -64,11 +64,24 @@ export async function GET(req: NextRequest) {
     else if (yacSinPrecio.length > 0) add('Precios', 'aviso', `${yacSinPrecio.length} yacimientos sin precio ni fórmula: ${yacSinPrecio.map(y => y.nombre).join(', ')}.`, 'formulas_precio')
     else add('Precios', 'ok', `${ctx.preciosMens.length} precios mensuales y ${ctx.formulas.length} fórmulas.`, 'precios_mensuales')
 
+    // El escenario puede resolver el precio contra el camino viejo
+    // (precios_referencia, mes a mes) o contra un price deck asignado — un
+    // deck con sus puntos cargados también cuenta como cotización presente,
+    // si no este chequeo tiraba error aunque el motor sí tuviera de dónde
+    // sacar el precio.
     const refsUsadas = new Set(ctx.formulas.map(f => f.referencia))
-    const refsCargadas = new Set(ctx.preciosRef.map(r => r.referencia))
+    const refsCargadas = new Set([
+      ...ctx.preciosRef.map(r => r.referencia),
+      ...(ctx.deck ? ctx.deckPuntos.map((p: any) => p.referencia) : []),
+    ])
     const refsFaltantes = [...refsUsadas].filter(r => !refsCargadas.has(r))
     if (refsFaltantes.length > 0) add('Cotizaciones de referencia', 'error', `Faltan cotizaciones de: ${refsFaltantes.join(', ')}. Las fórmulas que las usan devuelven 0.`, 'precios_referencia')
-    else if (refsUsadas.size > 0) add('Cotizaciones de referencia', 'ok', `${ctx.preciosRef.length} cotizaciones cargadas para ${refsUsadas.size} referencias.`, 'precios_referencia')
+    else if (refsUsadas.size > 0) {
+      const detalle = ctx.deck
+        ? `${ctx.deckPuntos.length} puntos del price deck "${ctx.deck.nombre}" para ${refsUsadas.size} referencias.`
+        : `${ctx.preciosRef.length} cotizaciones cargadas para ${refsUsadas.size} referencias.`
+      add('Cotizaciones de referencia', 'ok', detalle, 'precios_referencia')
+    }
 
     // ─── Fiscal y participación ───
     const concConRegalia = new Set(ctx.regalias.map(r => r.concesion_id))
