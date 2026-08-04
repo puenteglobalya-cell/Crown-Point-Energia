@@ -44,9 +44,17 @@ export async function POST(req: NextRequest) {
 
   if (!Number.isFinite(campanaId)) return NextResponse.json({ error: 'campana_id inválido' }, { status: 400 })
   if (!Number.isFinite(meses) || meses < 1) return NextResponse.json({ error: 'meses inválido' }, { status: 400 })
+  // Sin este chequeo, un `paso` no numérico (NaN) hacía que el sweep corriera
+  // una sola vez (el loop `for (...; k += paso)` corta al instante) mientras
+  // la respuesta seguía teniendo la forma de un barrido completo — se veía
+  // como una recomendación sobre todo el rango pedido, siendo en realidad un
+  // solo punto.
+  if (!Number.isFinite(paso) || paso < 1) return NextResponse.json({ error: 'paso inválido' }, { status: 400 })
   if (!Number.isFinite(tasaAnual) || tasaAnual <= -1 || tasaAnual > 10) {
     return NextResponse.json({ error: 'tasa_anual inválida' }, { status: 400 })
   }
+  if (!Number.isFinite(desdeOffset)) return NextResponse.json({ error: 'desde_offset inválido' }, { status: 400 })
+  if (!Number.isFinite(horizonteAnios) || horizonteAnios < 1) return NextResponse.json({ error: 'horizonte_anios inválido' }, { status: 400 })
 
   // Comparar cantidades de equipo: con la participación cayendo, la pregunta
   // deja de ser "cuándo arranco" (la respuesta es: ya) y pasa a ser "cuántos
