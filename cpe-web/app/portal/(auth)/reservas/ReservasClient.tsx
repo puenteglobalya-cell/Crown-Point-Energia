@@ -363,6 +363,7 @@ function EntitySection({ cfg, data, reload }: {
 
       {cfg.tabla === 'price_deck_puntos' && <PegarCorridaFuturos data={data} reload={reload} />}
       {cfg.tabla === 'formulas_precio' && <VistaPrecioMensual data={data} />}
+      {cfg.tabla === 'opex_fijo' && <RepartirOpexFijo data={data} reload={reload} />}
 
       <form ref={formRef} key={String(editing?.id ?? 'new')} onSubmit={onSubmit} style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--rule)' }}>
         {editing && (
@@ -1120,6 +1121,96 @@ function PreciosCombinado({ data, reload }: { data: Data; reload: () => void }) 
           <EntitySection key="precios_referencia" cfg={cfgLegado} data={data} reload={reload} />
         </div>
       </details>
+    </div>
+  )
+}
+
+// Cuando el OPEX fijo viene como una sola cifra consolidada para toda la
+// operación (sin apertura por concesión), se reparte a mano por cantidad de
+// pozos activos de cada yacimiento en vez de cargarlo todo en uno solo.
+function RepartirOpexFijo({ data, reload }: { data: Data; reload: () => void }) {
+  const [montoTotal, setMontoTotal] = useState('')
+  const [fechaDesde, setFechaDesde] = useState('')
+  const [concepto, setConcepto] = useState('')
+  const [items, setItems] = useState<{ yacimiento: string; pozos: string }[]>(
+    data.yacimientos.map(y => ({ yacimiento: String(y.nombre), pozos: '' })),
+  )
+  const [resultado, setResultado] = useState<{ yacimiento: string; pozos: number; pct: number; monto: number }[] | null>(null)
+  const [errores, setErrores] = useState<string[]>([])
+  const [cargando, setCargando] = useState(false)
+  const [err, setErr] = useState('')
+
+  const totalPozos = items.reduce((s, i) => s + (Number(i.pozos) || 0), 0)
+
+  async function repartir() {
+    setErr(''); setResultado(null); setErrores([])
+    const monto = Number(montoTotal)
+    if (!monto || !fechaDesde || totalPozos === 0) { setErr('Completá el monto, la fecha, y al menos un yacimiento con pozos'); return }
+    setCargando(true)
+    try {
+      const res = await fetch('/api/portal/reservas/repartir-opex-fijo', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          montoTotal: monto, fechaDesde, concepto,
+          reparto: items.filter(i => Number(i.pozos) > 0).map(i => ({ yacimiento: i.yacimiento, pozos: Number(i.pozos) })),
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Error al repartir')
+      setResultado(json.reparto)
+      setErrores(json.errores ?? [])
+      reload()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  return (
+    <div style={{ background: 'var(--bg)', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)', padding: 16, marginBottom: 16 }}>
+      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: '0 0 10px' }}>Repartir OPEX fijo consolidado por cantidad de pozos</p>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
+        Si tenés una sola cifra de OPEX fijo para toda la operación, la repartís aquí entre los yacimientos según su cantidad de pozos activos —
+        la concesión tiene que existir de antes, con el mismo nombre que el yacimiento.
+      </p>
+      {err && <div style={{ fontSize: 12, color: 'var(--cp-negative)', padding: '8px 12px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 10 }}>{err}</div>}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+        <div>
+          <label style={label}>OPEX fijo total (USD/mes)</label>
+          <input value={montoTotal} onChange={e => setMontoTotal(e.target.value)} type="number" step="0.01" style={{ ...input, width: 160 }} />
+        </div>
+        <div>
+          <label style={label}>Vigente desde</label>
+          <input value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} type="date" style={{ ...input, width: 160 }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <label style={label}>Concepto (opcional)</label>
+          <input value={concepto} onChange={e => setConcepto(e.target.value)} style={input} />
+        </div>
+      </div>
+      {items.map((it, i) => (
+        <div key={it.yacimiento} style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 6 }}>
+          <span style={{ fontSize: 12, width: 160 }}>{it.yacimiento}</span>
+          <input value={it.pozos} onChange={e => setItems(arr => arr.map((x, idx) => idx === i ? { ...x, pozos: e.target.value } : x))}
+            type="number" min={0} placeholder="Cantidad de pozos" style={{ ...input, width: 140 }} />
+        </div>
+      ))}
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '6px 0 12px' }}>Total pozos: {totalPozos}</p>
+      <button className="btn btn-primary" onClick={repartir} disabled={cargando}>{cargando ? 'Repartiendo…' : 'Repartir y cargar'}</button>
+      {resultado && (
+        <div style={{ marginTop: 12, fontSize: 12 }}>
+          {resultado.map((r, i) => (
+            <div key={i} style={{ color: 'var(--fg-soft)' }}>{r.yacimiento}: {r.pozos} pozos ({(r.pct * 100).toFixed(1)}%) → USD {r.monto.toLocaleString('es-AR')}/mes</div>
+          ))}
+        </div>
+      )}
+      {errores.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          {errores.map((e, i) => <p key={i} style={{ fontSize: 11, color: 'var(--cp-negative)' }}>{e}</p>)}
+        </div>
+      )}
     </div>
   )
 }
