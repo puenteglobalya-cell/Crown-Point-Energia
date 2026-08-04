@@ -38,6 +38,28 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(rows)
     }
 
+    if (vista === 'categoria') {
+      // Producción anual apilada por categoría de actividad (básico/drilling/
+      // workover/pulling/facilities) — el gráfico del cliente separa la base
+      // existente de lo agregado por perforación nueva y por intervenciones.
+      const filas = await traerTodo<any>(() => db
+        .from('cashflow_mensual').select('fecha, categoria, bbl_petroleo, mcf_gas')
+        .eq('escenario_id', escenarioId).order('id'))
+
+      const porAnioCategoria = new Map<string, { anio: number; categoria: string; bbl: number; mcf: number }>()
+      for (const f of filas) {
+        const anio = Number(String(f.fecha).slice(0, 4))
+        const categoria = f.categoria ?? 'basico'
+        const key = `${anio}|${categoria}`
+        const acc = porAnioCategoria.get(key) ?? { anio, categoria, bbl: 0, mcf: 0 }
+        acc.bbl += Number(f.bbl_petroleo ?? 0)
+        acc.mcf += Number(f.mcf_gas ?? 0)
+        porAnioCategoria.set(key, acc)
+      }
+      const rows = [...porAnioCategoria.values()].sort((a, b) => a.anio - b.anio || a.categoria.localeCompare(b.categoria))
+      return NextResponse.json(rows)
+    }
+
     if (vista === 'fdc') {
       // Capital de desarrollo futuro: NI 51-101 pide informar los costos de
       // desarrollo futuro por año. Sale del CAPEX que el motor ya imputó, así

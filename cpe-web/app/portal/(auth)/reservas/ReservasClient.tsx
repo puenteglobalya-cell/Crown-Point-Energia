@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ENTITIES, type Data, type Row, type EntityConfig, type FieldConfig } from './entityConfig'
-import { GraficoProduccion, GraficoFlujo, GraficoWaterfall, cssImpresion, type PasoWaterfall } from './informe/piezas'
+import { GraficoProduccion, GraficoFlujo, GraficoWaterfall, cssImpresion, n0, type PasoWaterfall } from './informe/piezas'
 
 const box: React.CSSProperties = {
   background: 'var(--surface)', border: '1px solid var(--rule)',
@@ -727,7 +727,7 @@ function ResultadosTab({ data }: { data: Data }) {
       {!loading && escenarioId && vista === 'anual' && rowsAnual.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — corré el cálculo primero en la pestaña anterior.</p>}
       {!loading && escenarioId && vista === 'depletion' && rowsDepletion.length === 0 && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — necesita reservas cargadas (sección 15) y haber corrido el cálculo.</p>}
 
-      {vista === 'graficos' && escenarioId && <PanelGraficos rowsAnual={rowsAnual} />}
+      {vista === 'graficos' && escenarioId && <PanelGraficos rowsAnual={rowsAnual} escenarioId={escenarioId} />}
       {vista === 'fdc' && escenarioId && <PanelFdc escenarioId={escenarioId} />}
       {vista === 'oneline' && escenarioId && <PanelOneLine escenarioId={escenarioId} />}
 
@@ -3153,7 +3153,91 @@ function PanelClonar({ escenarioId, data }: { escenarioId: string; data: Data })
 // ─── Gráficos ────────────────────────────────────────────────────────────
 // El informe PDF ya los tenía; en pantalla todo era tabla. Se reusan las
 // mismas piezas, así que lo que se ve acá es exactamente lo que se imprime.
-function PanelGraficos({ rowsAnual }: { rowsAnual: Row[] }) {
+const COLOR_CATEGORIA: Record<string, string> = {
+  basico: '#1f2566', drilling: '#2d7a4a', workover: '#d69e2e', pulling: '#8a3ab2', facilities: '#9a9a9a',
+}
+const LABEL_CATEGORIA: Record<string, string> = {
+  basico: 'Básica', drilling: 'Drilling', workover: 'WO', pulling: 'Pulling', facilities: 'Facilities',
+}
+
+// Producción anual apilada por categoría de actividad — el formato del
+// Excel del cliente (Básica/WO/Pulling/Drilling) en vez de un solo total.
+function GraficoProduccionCategoria({ escenarioId }: { escenarioId: string }) {
+  const [filas, setFilas] = useState<Row[]>([])
+  useEffect(() => {
+    if (!escenarioId) { setFilas([]); return }
+    fetch(`/api/portal/reservas/resultados?escenario_id=${escenarioId}&vista=categoria`)
+      .then(r => r.ok ? r.json() : [])
+      .then(setFilas)
+  }, [escenarioId])
+
+  if (filas.length === 0) return <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin datos.</p>
+
+  const anios = [...new Set(filas.map(f => Number(f.anio)))].sort((a, b) => a - b)
+  const categorias = [...new Set(filas.map(f => String(f.categoria)))]
+    .sort((a, b) => (Object.keys(LABEL_CATEGORIA).indexOf(a)) - (Object.keys(LABEL_CATEGORIA).indexOf(b)))
+  const valorDe = (anio: number, categoria: string, campo: 'bbl' | 'mcf') =>
+    Number(filas.find(f => Number(f.anio) === anio && String(f.categoria) === categoria)?.[campo] ?? 0)
+
+  const barra = (campo: 'bbl' | 'mcf', titulo: string) => {
+    const W = 720, H = 220, PAD_L = 66, PAD_B = 30, PAD_T = 12
+    const totalPorAnio = anios.map(a => categorias.reduce((s, c) => s + valorDe(a, c, campo), 0))
+    const max = Math.max(...totalPorAnio, 1)
+    const bw = (W - PAD_L - 16) / anios.length
+    const y = (v: number) => H - PAD_B - (v / max) * (H - PAD_B - PAD_T)
+
+    return (
+      <div style={{ marginBottom: 18 }}>
+        <p style={{ fontSize: 12, fontWeight: 600, margin: '0 0 6px' }}>{titulo}</p>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', maxWidth: W }}>
+          {[0, 0.25, 0.5, 0.75, 1].map(t => (
+            <g key={t}>
+              <line x1={PAD_L} y1={y(max * t)} x2={W - 16} y2={y(max * t)} stroke="#e2e2e8" />
+              <text x={PAD_L - 6} y={y(max * t) + 3} fontSize={10} fill="var(--fg-muted)" textAnchor="end">{n0(max * t)}</text>
+            </g>
+          ))}
+          {anios.map((anio, i) => {
+            const x = PAD_L + i * bw + bw * 0.15
+            const w = bw * 0.7
+            let acumulado = 0
+            return (
+              <g key={anio}>
+                {categorias.map(cat => {
+                  const v = valorDe(anio, cat, campo)
+                  const y0 = y(acumulado)
+                  acumulado += v
+                  const y1 = y(acumulado)
+                  if (v <= 0) return null
+                  return <rect key={cat} x={x} y={y1} width={w} height={y0 - y1} fill={COLOR_CATEGORIA[cat] ?? '#ccc'} />
+                })}
+                {(anios.length <= 14 || i % 2 === 0) && (
+                  <text x={x + w / 2} y={H - PAD_B + 13} fontSize={10} fill="var(--fg-muted)" textAnchor="middle">{anio}</text>
+                )}
+              </g>
+            )
+          })}
+        </svg>
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 4 }}>
+          {categorias.map(cat => (
+            <span key={cat} style={{ fontSize: 11, color: 'var(--fg-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ width: 9, height: 9, background: COLOR_CATEGORIA[cat] ?? '#ccc', display: 'inline-block' }} />
+              {LABEL_CATEGORIA[cat] ?? cat}
+            </span>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {barra('bbl', 'Petróleo (bbl/año) por categoría de actividad')}
+      {barra('mcf', 'Gas (mcf/año) por categoría de actividad')}
+    </div>
+  )
+}
+
+function PanelGraficos({ rowsAnual, escenarioId }: { rowsAnual: Row[]; escenarioId: string }) {
   const consolidado = rowsAnual.filter(a => a.yacimiento_id == null)
   if (consolidado.length === 0) {
     return <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Sin resultados — corré el cálculo primero.</p>
@@ -3190,6 +3274,9 @@ function PanelGraficos({ rowsAnual }: { rowsAnual: Row[] }) {
 
         <h3 style={{ marginTop: 0 }}>Perfil de producción</h3>
         <GraficoProduccion filas={consolidado} />
+
+        <h3>Producción por categoría de actividad</h3>
+        <GraficoProduccionCategoria escenarioId={escenarioId} />
 
         <h3>Flujo de caja anual y acumulado</h3>
         <GraficoFlujo filas={flujo} />

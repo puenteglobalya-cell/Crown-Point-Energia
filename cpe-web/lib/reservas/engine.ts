@@ -105,11 +105,12 @@ export type ContextoEscenario = Awaited<ReturnType<typeof cargarContexto>>
 export async function cargarContexto(escenarioId: number) {
   const db = createSupabaseServerAdminClient()
   const [
-    pozos, curvas, intervencionesRaw, participaciones, regalias,
+    pozos, pozosTipo, curvas, intervencionesRaw, participaciones, regalias,
     opexFijo, opexVar, opexFijoPozo, formulas, preciosRef, preciosMens,
     provincias, yacimientos, concesiones, ganancias, debitosCreditos,
   ] = await Promise.all([
     traerTodo<any>(() => db.from('pozos').select('*').order('id')),
+    traerTodo<any>(() => db.from('pozos_tipo').select('*').order('id')),
     traerTodo<any>(() => db.from('curvas_produccion').select('*').order('id')),
     traerTodo<any>(() => db.from('intervenciones').select('*').or(`escenario_id.eq.${escenarioId},escenario_id.is.null`).order('id')),
     traerTodo<any>(() => db.from('concesion_participacion').select('*').order('id')),
@@ -142,7 +143,7 @@ export async function cargarContexto(escenarioId: number) {
   ])
 
   return {
-    pozos, curvas, intervencionesRaw, participaciones, regalias,
+    pozos, pozosTipo, curvas, intervencionesRaw, participaciones, regalias,
     opexFijo, opexVar, opexFijoPozo, formulas, preciosRef, preciosMens,
     provincias, yacimientos, concesiones, ganancias, debitosCreditos,
     deck: (deckRows[0] ?? null) as any, deckPuntos, reservasAnuales,
@@ -240,11 +241,17 @@ export async function calcularEscenario(
   const diag = new Diagnosticos()
 
   const {
-    pozos, curvas, intervencionesRaw, participaciones, regalias,
+    pozos, pozosTipo, curvas, intervencionesRaw, participaciones, regalias,
     opexFijo, opexVar, opexFijoPozo, formulas, preciosRef, preciosMens,
     provincias, yacimientos, concesiones, ganancias, debitosCreditos,
     deck, deckPuntos, reservasAnuales, metodoAmortizacion,
   } = opciones.contexto ?? await cargarContexto(escenarioId)
+
+  // Categoría de actividad (básico/drilling/workover/pulling) de cada pozo
+  // tipo — se persiste en cashflow_mensual para poder armar el gráfico de
+  // producción apilado por categoría (como el del Excel del cliente), sin
+  // tener que reconstruirla después cruzando intervenciones a mano.
+  const categoriaPorTipo = new Map<number, string>(pozosTipo.map((pt: any) => [pt.id, String(pt.categoria ?? 'basico')]))
 
   const intervenciones = [...intervencionesRaw].sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))
 
@@ -402,6 +409,14 @@ export async function calcularEscenario(
     // un pozo real) y del corte por límite económico (produce=false ya lo
     // hace inofensivo, pero queda explícito acá).
     esFacilities?: boolean
+    // Pozo virtual de una Intervención sin pozo real (perforación/workover/
+    // pulling a probar, ver más abajo). A diferencia de facilities SÍ es un
+    // pozo activo (cuenta para prorratear OPEX fijo y sí recibe el fijo por
+    // pozo) — lo único que cambia es que al persistir en cashflow_mensual va
+    // con pozo_id null, porque su id negativo no existe en la tabla `pozos`
+    // y rompería la FK.
+    sinPozoReal?: boolean
+    categoria: string
   }
   const registrosPorPozo = new Map<number, Registro[]>()
 
@@ -478,7 +493,8 @@ export async function calcularEscenario(
       // cashflow el CAPEX de una intervención hecha sobre un pozo parado.
       if (m > 0 && bbl === 0 && mcf === 0 && capexUsd === 0 && depreciacionLineal === 0) continue
 
-      registros.push({ pozo, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionLineal, depreciacionUsd: 0 })
+      const categoria = interv?.pozo_tipo_id ? (categoriaPorTipo.get(interv.pozo_tipo_id) ?? 'basico') : 'basico'
+      registros.push({ pozo, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionLineal, depreciacionUsd: 0, categoria })
     }
     if (registros.length > 0) registrosPorPozo.set(pozo.id, registros)
   }
@@ -545,7 +561,7 @@ export async function calcularEscenario(
 
       registros.push({
         pozo: pozoVirtual, concesion, yacimiento, provincia, fecha,
-        bbl: 0, mcf: 0, capexUsd, depreciacionLineal, depreciacionUsd: 0, esFacilities: true,
+        bbl: 0, mcf: 0, capexUsd, depreciacionLineal, depreciacionUsd: 0, esFacilities: true, categoria: 'facilities',
       })
     }
     if (registros.length > 0) registrosPorPozo.set(pozoVirtual.id, registros)
@@ -596,7 +612,8 @@ export async function calcularEscenario(
       }
 
       if (m > 0 && bbl === 0 && mcf === 0 && capexUsd === 0 && depreciacionLineal === 0) continue
-      registros.push({ pozo: pozoVirtual, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionLineal, depreciacionUsd: 0 })
+      const categoria = categoriaPorTipo.get(i.pozo_tipo_id) ?? 'drilling'
+      registros.push({ pozo: pozoVirtual, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionLineal, depreciacionUsd: 0, sinPozoReal: true, categoria })
     }
     if (registros.length > 0) registrosPorPozo.set(pozoVirtual.id, registros)
   }
@@ -733,7 +750,7 @@ export async function calcularEscenario(
     const primeraFilaDelPozo = filas.length
 
     for (const r of registros) {
-      const { pozo, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionUsd, esFacilities } = r
+      const { pozo, concesion, yacimiento, provincia, fecha, bbl, mcf, capexUsd, depreciacionUsd, esFacilities, sinPozoReal, categoria } = r
 
       const precioOil = precioEn(yacimiento, 'petroleo', fecha) * mult.precioPetroleo
       const precioGas = precioEn(yacimiento, 'gas', fecha) * mult.precioGas
@@ -781,11 +798,13 @@ export async function calcularEscenario(
 
       filas.push({
         escenario_id: escenarioId,
-        // El pozo virtual de facilities tiene un id negativo que sólo existe
-        // en esta corrida, no en la tabla `pozos` — persistirlo rompería la
-        // FK. Sin pozo_id, esta fila se ve en el consolidado del yacimiento
-        // (resultados_escenario_anual) pero no en el detalle por pozo.
-        pozo_id: esFacilities ? null : pozo.id,
+        // El pozo virtual de facilities (o de una Intervención sin pozo real)
+        // tiene un id negativo que sólo existe en esta corrida, no en la
+        // tabla `pozos` — persistirlo rompería la FK. Sin pozo_id, esta fila
+        // se ve en el consolidado del yacimiento (resultados_escenario_anual)
+        // pero no en el detalle por pozo.
+        pozo_id: (esFacilities || sinPozoReal) ? null : pozo.id,
+        categoria,
         fecha,
         bbl_petroleo: bbl,
         mcf_gas: mcf,
