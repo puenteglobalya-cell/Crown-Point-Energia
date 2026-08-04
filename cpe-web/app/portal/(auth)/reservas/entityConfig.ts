@@ -12,6 +12,10 @@ export type FieldConfig = {
   required?: boolean
   optionsFrom?: keyof Data // otra tabla — usa id como value, nombre como label
   staticOptions?: { value: string; label: string }[]
+  // El valor se guarda siempre en la unidad canónica (factor 1). Las demás
+  // opciones se multiplican por su factor al guardar, para poder tipear en
+  // otra unidad sin cambiar la columna de la base.
+  unitToggle?: { defaultUnit: string; options: { value: string; label: string; factor: number }[] }
 }
 
 export type EntityConfig = {
@@ -151,11 +155,21 @@ export const ENTITIES: EntityConfig[] = [
   },
   {
     tabla: 'opex_variable',
-    title: '10. OPEX variable (por yacimiento, USD/BOE)',
+    title: '10. OPEX variable (por yacimiento)',
+    helpText: 'Se guarda siempre en USD/BOE — si tenés el costo en USD/m3, elegí esa unidad al lado del monto y se convierte solo (1 m3 = 6.2898 bbl).',
     fields: [
       { name: 'yacimiento_id', label: 'Yacimiento', type: 'select', optionsFrom: 'yacimientos', required: true },
       { name: 'fecha_desde', label: 'Vigente desde', type: 'date', required: true },
-      { name: 'usd_por_boe', label: 'USD/BOE', type: 'number', step: '0.0001', required: true },
+      {
+        name: 'usd_por_boe', label: 'Costo variable', type: 'number', step: '0.0001', required: true,
+        unitToggle: {
+          defaultUnit: 'boe',
+          options: [
+            { value: 'boe', label: 'USD/BOE', factor: 1 },
+            { value: 'm3', label: 'USD/m3', factor: 1 / 6.2898 },
+          ],
+        },
+      },
     ],
     displayCols: (r, d) => [{ label: 'Yacimiento', value: nombreDe(d, 'yacimientos', r.yacimiento_id) }, { label: 'USD/BOE', value: String(r.usd_por_boe) }],
   },

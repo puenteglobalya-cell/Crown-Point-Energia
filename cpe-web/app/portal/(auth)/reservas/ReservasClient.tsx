@@ -311,7 +311,15 @@ function EntitySection({ cfg, data, reload }: {
     setErr(''); setMsg('')
     const f = new FormData(e.currentTarget)
     const valores: Record<string, unknown> = {}
-    for (const field of cfg.fields) valores[field.name] = parseValue(field, f.get(field.name))
+    for (const field of cfg.fields) {
+      let val = parseValue(field, f.get(field.name))
+      if (field.unitToggle && typeof val === 'number') {
+        const unidad = String(f.get(`${field.name}__unidad`) ?? field.unitToggle.defaultUnit)
+        const factor = field.unitToggle.options.find(o => o.value === unidad)?.factor ?? 1
+        val = val * factor
+      }
+      valores[field.name] = val
+    }
 
     const isEdit = editing !== null
     const res = await fetch('/api/portal/reservas/data', {
@@ -383,6 +391,24 @@ function EntitySection({ cfg, data, reload }: {
               <label style={{ fontSize: 13, display: 'flex', gap: 6, alignItems: 'center' }}>
                 <input type="checkbox" name={f.name} defaultChecked={editing ? Boolean(editing[f.name]) : Boolean(f.defaultValue)} /> {f.label}
               </label>
+            ) : f.unitToggle ? (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  name={f.name}
+                  type={f.type}
+                  step={f.step}
+                  min={f.min}
+                  max={f.max}
+                  required={f.required}
+                  defaultValue={editing ? String(editing[f.name] ?? '') : (f.defaultValue !== undefined ? String(f.defaultValue) : undefined)}
+                  style={{ ...input, flex: 1 }}
+                />
+                <Select
+                  name={`${f.name}__unidad`}
+                  defaultValue={f.unitToggle.defaultUnit}
+                  opts={f.unitToggle.options.map(o => ({ value: o.value, label: o.label }))}
+                />
+              </div>
             ) : (
               <input
                 name={f.name}
