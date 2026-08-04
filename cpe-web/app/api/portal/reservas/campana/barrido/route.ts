@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
         { contexto: ctxCandidato, persistir: false },
       )
 
-      const flujos = cashflow as unknown as { fecha: string; cash_flow_neto_usd: number; capex_usd: number }[]
+      const flujos = cashflow as unknown as { fecha: string; cash_flow_neto_usd: number; capex_usd: number; participacion_pct: number }[]
       const primeraProd = cronograma.reduce((a, p) => (p.primeraProduccion < a ? p.primeraProduccion : a), cronograma[0].primeraProduccion)
       const ultimaProd = cronograma.reduce((a, p) => (p.primeraProduccion > a ? p.primeraProduccion : a), cronograma[0].primeraProduccion)
 
@@ -177,7 +177,10 @@ export async function POST(req: NextRequest) {
         primera_produccion: primeraProd,
         ultima_produccion: ultimaProd,
         npv_usd: calcularNPV(flujos, tasaAnual, fechaBase),
-        capex_total_usd: flujos.reduce((s, f) => s + f.capex_usd, 0),
+        // capex_usd viene al 100% — se pondera por participación para que
+        // quede en la misma unidad que el VAN (neto a CPE), igual que en
+        // resultados/consolidado/incremental/informe/one-line/pareto.
+        capex_total_usd: flujos.reduce((s, f) => s + f.capex_usd * (f.participacion_pct ?? 1), 0),
         participacion_primera_produccion: partEn(primeraProd),
         pozos_antes_del_cambio: quiebre ? cronograma.filter(c => c.primeraProduccion < quiebre).length : null,
       }

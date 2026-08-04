@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
       }
 
       const { cashflow } = await calcularEscenario(escenarioId, horizonteMeses, { contexto: ctxCandidato, persistir: false })
-      return { cronograma, cashflow: cashflow as unknown as { fecha: string; ingreso_bruto_usd: number; capex_usd: number; cash_flow_neto_usd: number }[] }
+      return { cronograma, cashflow: cashflow as unknown as { fecha: string; ingreso_bruto_usd: number; capex_usd: number; cash_flow_neto_usd: number; participacion_pct: number }[] }
     }
 
     const fechaBaseActual = String(campana.fecha_inicio)
@@ -113,13 +113,17 @@ export async function POST(req: NextRequest) {
     const npvAcelerado = calcularNPV(acelerado.cashflow, tasaAnual, fechaDescuento)
 
     // Serie mensual acumulada de cada corrida, alineada por fecha calendario.
+    // ingreso_bruto_usd y capex_usd vienen al 100% — se ponderan por
+    // participación para quedar en la misma unidad que cash_flow_neto_usd
+    // (que ya está neto a CPE) y que el VAN de arriba.
     function acumularPorMes(cashflow: typeof base.cashflow) {
       const porMes = new Map<string, { ingreso: number; capex: number; neto: number }>()
       for (const f of cashflow) {
         const mes = String(f.fecha).slice(0, 7)
+        const part = Number(f.participacion_pct ?? 1)
         const acc = porMes.get(mes) ?? { ingreso: 0, capex: 0, neto: 0 }
-        acc.ingreso += Number(f.ingreso_bruto_usd ?? 0)
-        acc.capex += Number(f.capex_usd ?? 0)
+        acc.ingreso += Number(f.ingreso_bruto_usd ?? 0) * part
+        acc.capex += Number(f.capex_usd ?? 0) * part
         acc.neto += Number(f.cash_flow_neto_usd ?? 0)
         porMes.set(mes, acc)
       }
