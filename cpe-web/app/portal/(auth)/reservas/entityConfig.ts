@@ -113,8 +113,12 @@ export const ENTITIES: EntityConfig[] = [
         { value: 'basico', label: 'Básico' }, { value: 'drilling', label: 'Drilling' },
         { value: 'workover', label: 'Workover' }, { value: 'pulling', label: 'Pulling' },
       ] },
+      { name: 'capex_default_usd', label: 'CAPEX default al activar esta curva (USD) — informativo, no lo usa el motor. El que manda es el capex_usd de cada Intervención.', type: 'number', step: '0.01' },
     ],
-    displayCols: (r, d) => [{ label: 'Nombre', value: String(r.nombre) }, { label: 'Categoría', value: String(r.categoria) }, { label: 'Yacimiento', value: nombreDe(d, 'yacimientos', r.yacimiento_id) }],
+    displayCols: (r, d) => [
+      { label: 'Nombre', value: String(r.nombre) }, { label: 'Categoría', value: String(r.categoria) }, { label: 'Yacimiento', value: nombreDe(d, 'yacimientos', r.yacimiento_id) },
+      { label: 'CAPEX default', value: r.capex_default_usd != null ? `US$ ${Number(r.capex_default_usd).toLocaleString('es-AR')}` : '—' },
+    ],
   },
   {
     tabla: 'curvas_produccion',
