@@ -184,10 +184,14 @@ export const ENTITIES: EntityConfig[] = [
     fields: [
       { name: 'concesion_id', label: 'Concesión', type: 'select', optionsFrom: 'concesiones', required: true },
       { name: 'fecha_desde', label: 'Vigente desde', type: 'date', required: true },
+      { name: 'fecha_hasta', label: 'Vigente hasta (vacío = sigue vigente)', type: 'date' },
       { name: 'usd_mes_pozo', label: 'USD/mes por pozo', type: 'number', step: '0.01', required: true },
       { name: 'concepto', label: 'Concepto', type: 'text' },
     ],
-    displayCols: (r, d) => [{ label: 'Concesión', value: nombreDe(d, 'concesiones', r.concesion_id) }, { label: 'USD/mes/pozo', value: String(r.usd_mes_pozo) }, { label: 'Concepto', value: String(r.concepto ?? '—') }],
+    displayCols: (r, d) => [
+      { label: 'Concesión', value: nombreDe(d, 'concesiones', r.concesion_id) }, { label: 'USD/mes/pozo', value: String(r.usd_mes_pozo) },
+      { label: 'Hasta', value: r.fecha_hasta ? String(r.fecha_hasta) : 'vigente' }, { label: 'Concepto', value: String(r.concepto ?? '—') },
+    ],
   },
   {
     tabla: 'formulas_precio',
