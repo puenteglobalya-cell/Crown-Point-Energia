@@ -11,7 +11,7 @@ select 'A - Todo El Tordillo', null, (select price_deck_id from escenarios where
 where not exists (select 1 from escenarios where nombre = 'A - Todo El Tordillo');
 
 with esc as (select id as escenario_id from escenarios where nombre = 'A - Todo El Tordillo'),
-v as (values
+v(fecha_txt, pozo_tipo, capex_txt) as (values
   ('2026-09-01', 'GSJ_WO_MODELO', 556000),
   ('2026-10-01', 'GSJ_WO_MODELO', 556000),
   ('2026-11-01', 'GSJ_WO_MODELO', 556000),
@@ -246,18 +246,18 @@ v as (values
   ('2028-06-01', 'GSJ_CH_MODELO', 4550000),
   ('2028-07-01', 'GSJ_CH_MODELO', 4550000),
   ('2028-08-01', 'GSJ_CH_MODELO', 4550000)
-) 
+)
 insert into intervenciones (escenario_id, concesion_id, tipo, fecha, capex_usd, pozo_tipo_id)
 select esc.escenario_id,
-       (select c.id from concesiones c join pozos_tipo pt on pt.yacimiento_id = c.yacimiento_id where pt.nombre = v.column2 limit 1),
-       case when v.column2 = 'GSJ_WO_MODELO' then 'workover' else 'perforacion' end,
-       v.column1::date, v.column3::numeric,
-       (select id from pozos_tipo where nombre = v.column2)
-from esc, v(column1, column2, column3)
+       (select c.id from concesiones c join pozos_tipo pt on pt.yacimiento_id = c.yacimiento_id where pt.nombre = v.pozo_tipo limit 1),
+       case when v.pozo_tipo = 'GSJ_WO_MODELO' then 'workover' else 'perforacion' end,
+       v.fecha_txt::date, v.capex_txt::numeric,
+       (select id from pozos_tipo where nombre = v.pozo_tipo)
+from esc, v
 where not exists (
   select 1 from intervenciones i2
-  where i2.escenario_id = esc.escenario_id and i2.fecha = v.column1::date
-    and i2.pozo_tipo_id = (select id from pozos_tipo where nombre = v.column2)
+  where i2.escenario_id = esc.escenario_id and i2.fecha = v.fecha_txt::date
+    and i2.pozo_tipo_id = (select id from pozos_tipo where nombre = v.pozo_tipo)
     and i2.pozo_id is null
 );
 
@@ -267,7 +267,7 @@ select 'B - Todo LT_PQO', null, (select price_deck_id from escenarios where nomb
 where not exists (select 1 from escenarios where nombre = 'B - Todo LT_PQO');
 
 with esc as (select id as escenario_id from escenarios where nombre = 'B - Todo LT_PQO'),
-v as (values
+v(fecha_txt, pozo_tipo, capex_txt) as (values
   ('2026-09-01', 'GSJ_WO_MODELO', 556000),
   ('2026-10-01', 'GSJ_WO_MODELO', 556000),
   ('2026-11-01', 'GSJ_WO_MODELO', 556000),
@@ -502,18 +502,18 @@ v as (values
   ('2028-06-01', 'GSJ_PQO_MODELO', 4550000),
   ('2028-07-01', 'GSJ_PQO_MODELO', 4550000),
   ('2028-08-01', 'GSJ_PQO_MODELO', 4550000)
-) 
+)
 insert into intervenciones (escenario_id, concesion_id, tipo, fecha, capex_usd, pozo_tipo_id)
 select esc.escenario_id,
-       (select c.id from concesiones c join pozos_tipo pt on pt.yacimiento_id = c.yacimiento_id where pt.nombre = v.column2 limit 1),
-       case when v.column2 = 'GSJ_WO_MODELO' then 'workover' else 'perforacion' end,
-       v.column1::date, v.column3::numeric,
-       (select id from pozos_tipo where nombre = v.column2)
-from esc, v(column1, column2, column3)
+       (select c.id from concesiones c join pozos_tipo pt on pt.yacimiento_id = c.yacimiento_id where pt.nombre = v.pozo_tipo limit 1),
+       case when v.pozo_tipo = 'GSJ_WO_MODELO' then 'workover' else 'perforacion' end,
+       v.fecha_txt::date, v.capex_txt::numeric,
+       (select id from pozos_tipo where nombre = v.pozo_tipo)
+from esc, v
 where not exists (
   select 1 from intervenciones i2
-  where i2.escenario_id = esc.escenario_id and i2.fecha = v.column1::date
-    and i2.pozo_tipo_id = (select id from pozos_tipo where nombre = v.column2)
+  where i2.escenario_id = esc.escenario_id and i2.fecha = v.fecha_txt::date
+    and i2.pozo_tipo_id = (select id from pozos_tipo where nombre = v.pozo_tipo)
     and i2.pozo_id is null
 );
 
@@ -523,7 +523,7 @@ select 'C - 50/50', null, (select price_deck_id from escenarios where nombre = '
 where not exists (select 1 from escenarios where nombre = 'C - 50/50');
 
 with esc as (select id as escenario_id from escenarios where nombre = 'C - 50/50'),
-v as (values
+v(fecha_txt, pozo_tipo, capex_txt) as (values
   ('2026-09-01', 'GSJ_WO_MODELO', 556000),
   ('2026-10-01', 'GSJ_WO_MODELO', 556000),
   ('2026-11-01', 'GSJ_WO_MODELO', 556000),
@@ -758,17 +758,17 @@ v as (values
   ('2028-06-01', 'GSJ_PQO_MODELO', 4550000),
   ('2028-07-01', 'GSJ_CH_MODELO', 4550000),
   ('2028-08-01', 'GSJ_PQO_MODELO', 4550000)
-) 
+)
 insert into intervenciones (escenario_id, concesion_id, tipo, fecha, capex_usd, pozo_tipo_id)
 select esc.escenario_id,
-       (select c.id from concesiones c join pozos_tipo pt on pt.yacimiento_id = c.yacimiento_id where pt.nombre = v.column2 limit 1),
-       case when v.column2 = 'GSJ_WO_MODELO' then 'workover' else 'perforacion' end,
-       v.column1::date, v.column3::numeric,
-       (select id from pozos_tipo where nombre = v.column2)
-from esc, v(column1, column2, column3)
+       (select c.id from concesiones c join pozos_tipo pt on pt.yacimiento_id = c.yacimiento_id where pt.nombre = v.pozo_tipo limit 1),
+       case when v.pozo_tipo = 'GSJ_WO_MODELO' then 'workover' else 'perforacion' end,
+       v.fecha_txt::date, v.capex_txt::numeric,
+       (select id from pozos_tipo where nombre = v.pozo_tipo)
+from esc, v
 where not exists (
   select 1 from intervenciones i2
-  where i2.escenario_id = esc.escenario_id and i2.fecha = v.column1::date
-    and i2.pozo_tipo_id = (select id from pozos_tipo where nombre = v.column2)
+  where i2.escenario_id = esc.escenario_id and i2.fecha = v.fecha_txt::date
+    and i2.pozo_tipo_id = (select id from pozos_tipo where nombre = v.pozo_tipo)
     and i2.pozo_id is null
 );
