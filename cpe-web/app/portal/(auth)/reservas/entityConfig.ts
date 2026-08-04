@@ -101,7 +101,7 @@ export const ENTITIES: EntityConfig[] = [
   },
   {
     tabla: 'pozos_tipo',
-    title: '6. Pozo tipo (curva de referencia)',
+    title: '6. Pozo tipo (curva compartida entre varios pozos)',
     fields: [
       { name: 'nombre', label: 'Nombre', type: 'text', required: true },
       { name: 'yacimiento_id', label: 'Yacimiento', type: 'select', optionsFrom: 'yacimientos', required: true },
@@ -196,7 +196,7 @@ export const ENTITIES: EntityConfig[] = [
   },
   {
     tabla: 'price_decks',
-    title: '11a. Price deck (curva de precios con nombre)',
+    title: '11a. Curva de precios (price deck)',
     helpText: 'Evita cargar 240 cotizaciones a mano por referencia. Un deck son unos pocos puntos anuales más una escalación para los años siguientes: entre puntos se interpola. Un escenario apunta a un deck y cambiarlo recalcula todo. Para NI 51-101, que pide precios de pronóstico Y constantes, se arman dos decks y se corre el mismo escenario contra cada uno (un deck constante es uno con escalación 0).',
     fields: [
       { name: 'nombre', label: 'Nombre (ej. "Pronóstico Sproule 2026")', type: 'text', required: true },
@@ -215,10 +215,10 @@ export const ENTITIES: EntityConfig[] = [
   },
   {
     tabla: 'price_deck_puntos',
-    title: '11b. Punto del price deck',
+    title: '11b. Punto de la curva de precios',
     helpText: 'Un punto por referencia y por año (o por mes, si completás "Mes" — útil para una corrida real de futuros con un contrato por mes en el corto plazo, ej. ICE Brent). Entre puntos cargados se interpola linealmente; después del último se aplica la escalación del deck. La referencia tiene que coincidir con la que usa la fórmula de precio (ej. "brent").',
     fields: [
-      { name: 'price_deck_id', label: 'Price deck', type: 'select', optionsFrom: 'price_decks', required: true },
+      { name: 'price_deck_id', label: 'Curva de precios', type: 'select', optionsFrom: 'price_decks', required: true },
       { name: 'referencia', label: 'Referencia (ej. brent)', type: 'text', required: true },
       { name: 'anio', label: 'Año', type: 'number', required: true },
       { name: 'mes', label: 'Mes (1-12, vacío = punto anual)', type: 'number', min: 1, max: 12 },
@@ -233,7 +233,7 @@ export const ENTITIES: EntityConfig[] = [
   },
   {
     tabla: 'precios_referencia',
-    title: '12. Precio de referencia (legado — usar Price deck)',
+    title: '12. Cotización mensual a mano (camino viejo — usar la Curva de precios)',
     helpText: 'Camino viejo, cotización a mano mes por mes. Un escenario con price deck asignado (11a) ignora esta tabla por completo. Se mantiene solo por compatibilidad con escenarios existentes que todavía no migraron a un deck.',
     fields: [
       { name: 'referencia', label: 'Referencia', type: 'text', defaultValue: 'brent', required: true },
@@ -300,7 +300,7 @@ export const ENTITIES: EntityConfig[] = [
     fields: [
       { name: 'nombre', label: 'Nombre', type: 'text', required: true },
       { name: 'proyecto_id', label: 'Proyecto', type: 'select', optionsFrom: 'proyectos' },
-      { name: 'price_deck_id', label: 'Price deck (vacío = usa las cotizaciones cargadas mes a mes)', type: 'select', optionsFrom: 'price_decks' },
+      { name: 'price_deck_id', label: 'Curva de precios (vacío = usa las cotizaciones cargadas mes a mes)', type: 'select', optionsFrom: 'price_decks' },
       { name: 'descripcion', label: 'Descripción', type: 'text' },
       { name: 'es_base', label: 'Es el escenario base', type: 'checkbox' },
     ],
@@ -331,7 +331,7 @@ export const ENTITIES: EntityConfig[] = [
   },
   {
     tabla: 'intervenciones',
-    title: '14. Intervención (drilling / workover / pulling / facilities)',
+    title: '14. Pozos nuevos e intervenciones (perforación / workover / pulling / facilities)',
     helpText: 'Facilities es CAPEX que sostiene el yacimiento activo (líneas, baterías, tratamiento) pero NO agrega producción propia — dejá "Pozo" vacío y "Curva que activa" vacío. El motor lo amortiza contra la producción total del yacimiento igual que el CAPEX de cualquier pozo, repartiendo la cuota entre los pozos que producen ese mes; el desembolso de caja queda en el mes en que se hizo.',
     fields: [
       { name: 'pozo_id', label: 'Pozo (vacío si es drilling nuevo o facilities)', type: 'select', optionsFrom: 'pozos' },

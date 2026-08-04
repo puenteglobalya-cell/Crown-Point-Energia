@@ -165,7 +165,7 @@ function calcularPasosCarga(data: Data): PasoCarga[] {
   const n = (t: string) => (data[t] ?? []).length
   return [
     { id: 'estructura', titulo: '1. Estructura', detalle: 'Provincia, yacimiento, concesión, % participación', ok: n('yacimientos') > 0 && n('concesion_participacion') > 0, ir: 'yacimientos' },
-    { id: 'precios', titulo: '2. Precios', detalle: 'Cotización Oil/Gas (price deck) + fórmula asociada', ok: n('formulas_precio') > 0 && (n('price_deck_puntos') > 0 || n('precios_mensuales') > 0), ir: 'formulas_precio' },
+    { id: 'precios', titulo: '2. Precios', detalle: 'Cotización Oil/Gas (curva de precios) + fórmula asociada', ok: n('formulas_precio') > 0 && (n('price_deck_puntos') > 0 || n('precios_mensuales') > 0), ir: 'formulas_precio' },
     { id: 'impuestos', titulo: '3. Impuestos y costos', detalle: 'Regalías, IIBB (va en Provincia), OPEX fijo/variable/por pozo', ok: n('regalias') > 0 && (n('opex_fijo') > 0 || n('opex_variable') > 0 || n('opex_fijo_pozo') > 0), ir: 'regalias' },
     { id: 'pozos', titulo: '4. Pozos y cronograma', detalle: 'Pozos tipo + su curva de producción + cuándo entra cada uno', ok: n('pozos_tipo') > 0 && n('curvas_produccion') > 0, ir: 'pozos_tipo' },
     { id: 'escenario', titulo: '5. Proyecto y escenario', detalle: 'Agrupa todo lo anterior para poder calcularlo', ok: n('proyectos') > 0 && n('escenarios') > 0, ir: 'proyectos' },
@@ -1134,7 +1134,7 @@ function VistaPrecioMensual({ data }: { data: Data }) {
       <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: '0 0 10px' }}>Vista mensual de precio (Oil y Gas)</p>
       <div style={{ display: 'flex', gap: 10, marginBottom: 10, alignItems: 'flex-end' }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <label style={label}>Price deck</label>
+          <label style={label}>Curva de precios</label>
           <Select opts={data.price_decks.map(d => ({ value: String(d.id), label: String(d.nombre) }))} value={deckId} onChange={e => setDeckId(e.target.value)} />
         </div>
         <button className="btn" onClick={ver} disabled={!deckId || cargando}>{cargando ? 'Calculando…' : 'Ver'}</button>
@@ -1200,7 +1200,7 @@ function PegarCorridaFuturos({ data, reload }: { data: Data; reload: () => void 
       {msg && <div style={{ fontSize: 12, color: 'var(--cp-positive, #2d7a4a)', padding: '8px 12px', background: 'rgba(45,122,74,0.08)', borderRadius: 8, marginBottom: 10 }}>{msg}</div>}
       <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label style={label}>Price deck</label>
+          <label style={label}>Curva de precios</label>
           <Select opts={data.price_decks.map(d => ({ value: String(d.id), label: String(d.nombre) }))} value={deckId} onChange={e => setDeckId(e.target.value)} />
         </div>
         <div>
