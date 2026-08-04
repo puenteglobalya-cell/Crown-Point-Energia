@@ -32,7 +32,9 @@ const MAX_FILAS_LISTA = 100
 // cada curva para optimizar el cash flow.
 const GRUPOS_CARGA: { titulo: string; tablas: string[] }[] = [
   { titulo: 'Estructura', tablas: ['provincias', 'yacimientos', 'concesiones', 'concesion_participacion'] },
-  { titulo: 'Precios', tablas: ['formulas_precio', 'price_decks', 'price_deck_puntos', 'precios_referencia', 'precios_mensuales'] },
+  // Las 4 tablas de precio se ven como una sola sección — PreciosCombinado
+  // decide qué mostrar arriba (la fórmula completa) y qué queda plegado.
+  { titulo: 'Precios', tablas: ['formulas_precio'] },
   { titulo: 'Impuestos y costos', tablas: ['regalias', 'opex_fijo', 'opex_variable', 'opex_fijo_pozo'] },
   { titulo: 'Pozos y cronograma', tablas: ['pozos', 'pozos_tipo', 'curvas_produccion', 'campanas', 'intervenciones'] },
   { titulo: 'Proyectos y escenarios', tablas: ['proyectos', 'costos_proyecto', 'escenarios'] },
@@ -79,7 +81,7 @@ export default function ReservasClient() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px' }}>
-      <div style={{ maxWidth: tab === 'cargar' ? 1180 : 920, margin: '0 auto' }}>
+      <div style={{ maxWidth: tab === 'cargar' ? 1440 : 920, margin: '0 auto' }}>
         <Link href="/portal" style={{ fontSize: 13, color: 'var(--fg-muted)', textDecoration: 'none' }}>← Portal</Link>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', margin: '8px 0 20px' }}>
           Simulador de reservas
@@ -132,7 +134,7 @@ export default function ReservasClient() {
                           cursor: 'pointer',
                         }}
                       >
-                        {cfg.title.replace(/^\d+[a-z]?\.\s*/, '')}
+                        {tabla === 'formulas_precio' ? 'Precios (Brent/Gas)' : cfg.title.replace(/^\d+[a-z]?\.\s*/, '')}
                       </button>
                     )
                   })}
@@ -140,7 +142,9 @@ export default function ReservasClient() {
               ))}
             </nav>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <EntitySection key={activa.tabla} cfg={activa} data={data} reload={reload} />
+              {seccionActiva === 'formulas_precio'
+                ? <PreciosCombinado data={data} reload={reload} />
+                : <EntitySection key={activa.tabla} cfg={activa} data={data} reload={reload} />}
             </div>
           </div>
         )}
@@ -1083,6 +1087,43 @@ type RepartoUI = { destinoId: string; pct: string; pctGas: string }
 // precio neto — para poder mirar y decir "esto está bien" en vez de confiar
 // en campos sueltos. Dos tablas, Oil y Gas, con la misma fórmula que corre
 // el motor.
+// Fusiona las 4 pantallas sueltas de precio (fórmula, price deck, puntos,
+// cotización legado) en una sola: la fórmula completa (Brent + descuento +
+// resto) arriba, bien visible, y lo que se toca poco (crear un deck nuevo,
+// tocar un punto suelto, el camino legado) plegado abajo con <details>.
+function PreciosCombinado({ data, reload }: { data: Data; reload: () => void }) {
+  const cfgFormula = ENTITIES.find(e => e.tabla === 'formulas_precio')!
+  const cfgDecks = ENTITIES.find(e => e.tabla === 'price_decks')!
+  const cfgPuntos = ENTITIES.find(e => e.tabla === 'price_deck_puntos')!
+  const cfgLegado = ENTITIES.find(e => e.tabla === 'precios_referencia')!
+
+  return (
+    <div>
+      <VistaPrecioMensual data={data} />
+      <EntitySection key="formulas_precio" cfg={cfgFormula} data={data} reload={reload} />
+
+      <details style={{ marginBottom: 16 }}>
+        <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--fg-soft)', padding: '8px 0' }}>
+          Curva de precios — crear un price deck nuevo o cargar sus puntos a mano
+        </summary>
+        <div style={{ marginTop: 10 }}>
+          <EntitySection key="price_decks" cfg={cfgDecks} data={data} reload={reload} />
+          <EntitySection key="price_deck_puntos" cfg={cfgPuntos} data={data} reload={reload} />
+        </div>
+      </details>
+
+      <details>
+        <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--fg-soft)', padding: '8px 0' }}>
+          Camino legado — cotización mensual a mano (sólo si algún escenario todavía no usa un price deck)
+        </summary>
+        <div style={{ marginTop: 10 }}>
+          <EntitySection key="precios_referencia" cfg={cfgLegado} data={data} reload={reload} />
+        </div>
+      </details>
+    </div>
+  )
+}
+
 function VistaPrecioMensual({ data }: { data: Data }) {
   const [deckId, setDeckId] = useState('')
   const [vista, setVista] = useState<{ deck: string | null; petroleo: any[]; gas: any[] } | null>(null)
