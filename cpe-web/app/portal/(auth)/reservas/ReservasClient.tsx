@@ -373,6 +373,7 @@ function EntitySection({ cfg, data, reload }: {
       {cfg.tabla === 'formulas_precio' && <VistaPrecioMensual data={data} />}
       {cfg.tabla === 'opex_fijo' && <RepartirOpexFijo data={data} reload={reload} />}
       {cfg.tabla === 'intervenciones' && <GrillaCronograma data={data} reload={reload} />}
+      {cfg.tabla === 'pozos_tipo' && <EstadisticasPozoTipo data={data} />}
 
       <form ref={formRef} key={String(editing?.id ?? 'new')} onSubmit={onSubmit} style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--rule)' }}>
         {editing && (
@@ -1148,6 +1149,73 @@ function PreciosCombinado({ data, reload }: { data: Data; reload: () => void }) 
           <EntitySection key="precios_referencia" cfg={cfgLegado} data={data} reload={reload} />
         </div>
       </details>
+    </div>
+  )
+}
+
+// Estadísticas rápidas de cada pozo tipo a partir de su curva — sin correr
+// el motor: cuánto acumula petróleo en el año 1, en los primeros 24 meses, y
+// cómo declina año a año, para comparar de un vistazo qué tipo conviene
+// perforar antes de armar todo un escenario.
+function EstadisticasPozoTipo({ data }: { data: Data }) {
+  const stats = (data.pozos_tipo ?? []).map(pt => {
+    const curvas = (data.curvas_produccion ?? []).filter(c => c.pozo_tipo_id === pt.id)
+    const bblEnRango = (desde: number, hasta: number) => curvas
+      .filter(c => Number(c.mes_offset) >= desde && Number(c.mes_offset) < hasta)
+      .reduce((s, c) => s + Number(c.bbl_petroleo ?? 0), 0)
+    const anio1 = bblEnRango(0, 12)
+    const anio2 = bblEnRango(12, 24)
+    const anio3 = bblEnRango(24, 36)
+    return {
+      pt, anio1, anio2, anio3, bbl24m: anio1 + anio2,
+      declino2: anio1 > 0 ? (1 - anio2 / anio1) * 100 : null,
+      declino3: anio2 > 0 ? (1 - anio3 / anio2) * 100 : null,
+      sinCurva: curvas.length === 0,
+    }
+  })
+  if (stats.length === 0) return null
+  const mejorBbl24m = Math.max(...stats.map(s => s.bbl24m), 0)
+
+  return (
+    <div style={{ background: 'var(--bg)', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)', padding: 16, marginBottom: 16, overflowX: 'auto' }}>
+      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: '0 0 10px' }}>Estadísticas de la curva (petróleo)</p>
+      <table style={{ fontSize: 12, borderCollapse: 'collapse', width: '100%' }}>
+        <thead>
+          <tr style={{ color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+            <th style={{ padding: '6px 8px', textAlign: 'left' }}>Pozo tipo</th>
+            <th style={{ padding: '6px 8px', textAlign: 'right' }}>Año 1 (bbl)</th>
+            <th style={{ padding: '6px 8px', textAlign: 'right' }}>Año 2 (bbl)</th>
+            <th style={{ padding: '6px 8px', textAlign: 'right' }}>Año 3 (bbl)</th>
+            <th style={{ padding: '6px 8px', textAlign: 'right' }}>Acum. 24m (bbl)</th>
+            <th style={{ padding: '6px 8px', textAlign: 'right' }}>Declino año 2</th>
+            <th style={{ padding: '6px 8px', textAlign: 'right' }}>Declino año 3</th>
+          </tr>
+        </thead>
+        <tbody>
+          {stats.map(s => (
+            <tr key={String(s.pt.id)} style={{ borderBottom: '1px solid var(--rule)', background: !s.sinCurva && s.bbl24m === mejorBbl24m ? 'rgba(45,122,74,0.06)' : undefined }}>
+              <td style={{ padding: '6px 8px', fontWeight: !s.sinCurva && s.bbl24m === mejorBbl24m ? 600 : 400 }}>
+                {String(s.pt.nombre)}{!s.sinCurva && s.bbl24m === mejorBbl24m ? ' ★' : ''}
+              </td>
+              {s.sinCurva ? (
+                <td colSpan={6} style={{ padding: '6px 8px', color: 'var(--fg-muted)' }}>Sin curva cargada</td>
+              ) : (
+                <>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Math.round(s.anio1).toLocaleString('es-AR')}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Math.round(s.anio2).toLocaleString('es-AR')}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Math.round(s.anio3).toLocaleString('es-AR')}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{Math.round(s.bbl24m).toLocaleString('es-AR')}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{s.declino2 != null ? `${s.declino2.toFixed(0)}%` : '—'}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{s.declino3 != null ? `${s.declino3.toFixed(0)}%` : '—'}</td>
+                </>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '8px 0 0' }}>
+        ★ = mayor producción acumulada en los primeros 24 meses. "Declino año 2/3" es la caída de bbl de ese año contra el anterior — no incluye precio ni costo, es solo la curva física.
+      </p>
     </div>
   )
 }
