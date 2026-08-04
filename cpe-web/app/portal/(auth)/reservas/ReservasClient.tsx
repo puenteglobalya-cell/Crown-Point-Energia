@@ -1411,8 +1411,8 @@ function RepartirOpexFijo({ data, reload }: { data: Data; reload: () => void }) 
   const [montoTotal, setMontoTotal] = useState('')
   const [fechaDesde, setFechaDesde] = useState('')
   const [concepto, setConcepto] = useState('')
-  const [items, setItems] = useState<{ yacimiento: string; pozos: string }[]>(
-    data.yacimientos.map(y => ({ yacimiento: String(y.nombre), pozos: '' })),
+  const [items, setItems] = useState<{ yacimientoId: number; yacimiento: string; pozos: string }[]>(
+    data.yacimientos.map(y => ({ yacimientoId: Number(y.id), yacimiento: String(y.nombre), pozos: '' })),
   )
   const [resultado, setResultado] = useState<{ yacimiento: string; pozos: number; bbl: number; pct: number; monto: number }[] | null>(null)
   const [errores, setErrores] = useState<string[]>([])
@@ -1433,7 +1433,7 @@ function RepartirOpexFijo({ data, reload }: { data: Data; reload: () => void }) 
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           montoTotal: monto, fechaDesde, concepto, pesoPozos: Number(pesoPozos) / 100,
-          reparto: items.filter(i => Number(i.pozos) > 0).map(i => ({ yacimiento: i.yacimiento, pozos: Number(i.pozos) })),
+          reparto: items.filter(i => Number(i.pozos) > 0).map(i => ({ yacimientoId: i.yacimientoId, yacimiento: i.yacimiento, pozos: Number(i.pozos) })),
         }),
       })
       const json = await res.json()
@@ -1453,7 +1453,7 @@ function RepartirOpexFijo({ data, reload }: { data: Data; reload: () => void }) 
       <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: '0 0 10px' }}>Repartir OPEX fijo consolidado (mix de pozos y producción)</p>
       <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
         Si tenés una sola cifra de OPEX fijo para toda la operación, la repartís aquí entre los yacimientos con un mix de cantidad de pozos activos y
-        producción de petróleo del año 1 (tomada de las curvas ya cargadas) — la concesión tiene que existir de antes, con el mismo nombre que el yacimiento.
+        producción de petróleo del año 1 (tomada de las curvas ya cargadas) — la concesión tiene que existir de antes, con ese yacimiento asignado.
       </p>
       <div style={{ marginBottom: 10 }}>
         <label style={label}>Peso por cantidad de pozos: {pesoPozos}% (el resto, {100 - Number(pesoPozos)}%, es por producción)</label>
