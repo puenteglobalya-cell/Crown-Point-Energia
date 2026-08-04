@@ -401,6 +401,16 @@ export async function calcularEscenario(
     formulasPorYacProd.set(key, arr)
   }
 
+  // "Avisado una vez" para diagnósticos que, sin esto, generan una entrada
+  // por cada mes del hueco en vez de una por yacimiento/concesión — mismo
+  // bug que curva_agotada (ronda 9): el mensaje llevaba el mes adentro, que
+  // es también la clave de dedupe de Diagnosticos, así que cada mes distinto
+  // era una entrada nueva. Un hueco de 36 meses en 20 pozos de la misma
+  // concesión generaba hasta 36 entradas en vez de 1.
+  const avisadoPrecioRef = new Set<string>()
+  const avisadoRegalias = new Set<number>()
+  const avisadoParticipacion = new Set<number>()
+
   function precioEn(yacimiento: any, producto: 'petroleo' | 'gas', fecha: string): number {
     const directo = precioMensPorClave.get(`${yacimiento.id}|${producto}|${mesDe(fecha)}`)
     if (directo) return directo.precio_usd
@@ -416,7 +426,11 @@ export async function calcularEscenario(
       ?? precioRefPorClave.get(`${formula.referencia}|${mesDe(fecha)}`)?.precio_usd
       ?? null
     if (precioRef == null) {
-      diag.add('precio_sin_referencia', `${yacimiento.nombre}: falta la cotización "${formula.referencia}" de ${producto} en ${fecha.slice(0, 7)} — se toma 0`)
+      const clave = `${yacimiento.id}|${producto}|${formula.referencia}`
+      if (!avisadoPrecioRef.has(clave)) {
+        avisadoPrecioRef.add(clave)
+        diag.add('precio_sin_referencia', `${yacimiento.nombre}: falta la cotización "${formula.referencia}" de ${producto} desde ${fecha.slice(0, 7)} — se toma 0`)
+      }
       return 0
     }
     // DDE% no lo tipea nadie mes a mes: es la escala lineal por nivel de
@@ -877,7 +891,10 @@ export async function calcularEscenario(
       const ingresoBruto = bbl * precioOil + mcf * precioGas
 
       const regalia = vigente(regaliasPorConc.get(concesion.id) ?? [], fecha)
-      if (!regalia) diag.add('sin_regalias', `Concesión "${concesion.nombre}": no hay regalía vigente en ${fecha.slice(0, 7)} — se calcula 0%`)
+      if (!regalia && !avisadoRegalias.has(concesion.id)) {
+        avisadoRegalias.add(concesion.id)
+        diag.add('sin_regalias', `Concesión "${concesion.nombre}": no hay regalía vigente desde ${fecha.slice(0, 7)} — se calcula 0%`)
+      }
       const regaliaUsd = ingresoBruto * (regalia?.porcentaje ?? 0)
 
       const iibbUsd = ingresoBruto * (provincia?.alicuota_iibb ?? 0)
@@ -900,7 +917,10 @@ export async function calcularEscenario(
       const resultadoNeto = baseImponible - impuestoGanancias
 
       const part = vigente(partPorConc.get(concesion.id) ?? [], fecha)
-      if (!part) diag.add('sin_participacion', `Concesión "${concesion.nombre}": no hay participación vigente en ${fecha.slice(0, 7)} — se asume 100%`)
+      if (!part && !avisadoParticipacion.has(concesion.id)) {
+        avisadoParticipacion.add(concesion.id)
+        diag.add('sin_participacion', `Concesión "${concesion.nombre}": no hay participación vigente desde ${fecha.slice(0, 7)} — se asume 100%`)
+      }
       const participacionPct = part?.porcentaje ?? 1
       // Cash flow real: la amortización es no-cash (se vuelve a sumar) y el
       // CAPEX sí es una salida de caja real en el mes en que ocurre.
