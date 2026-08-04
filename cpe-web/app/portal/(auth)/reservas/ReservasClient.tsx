@@ -1135,10 +1135,11 @@ function RepartirOpexFijo({ data, reload }: { data: Data; reload: () => void }) 
   const [items, setItems] = useState<{ yacimiento: string; pozos: string }[]>(
     data.yacimientos.map(y => ({ yacimiento: String(y.nombre), pozos: '' })),
   )
-  const [resultado, setResultado] = useState<{ yacimiento: string; pozos: number; pct: number; monto: number }[] | null>(null)
+  const [resultado, setResultado] = useState<{ yacimiento: string; pozos: number; bbl: number; pct: number; monto: number }[] | null>(null)
   const [errores, setErrores] = useState<string[]>([])
   const [cargando, setCargando] = useState(false)
   const [err, setErr] = useState('')
+  const [pesoPozos, setPesoPozos] = useState('50')
 
   const totalPozos = items.reduce((s, i) => s + (Number(i.pozos) || 0), 0)
 
@@ -1152,7 +1153,7 @@ function RepartirOpexFijo({ data, reload }: { data: Data; reload: () => void }) 
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          montoTotal: monto, fechaDesde, concepto,
+          montoTotal: monto, fechaDesde, concepto, pesoPozos: Number(pesoPozos) / 100,
           reparto: items.filter(i => Number(i.pozos) > 0).map(i => ({ yacimiento: i.yacimiento, pozos: Number(i.pozos) })),
         }),
       })
@@ -1170,11 +1171,15 @@ function RepartirOpexFijo({ data, reload }: { data: Data; reload: () => void }) 
 
   return (
     <div style={{ background: 'var(--bg)', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)', padding: 16, marginBottom: 16 }}>
-      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: '0 0 10px' }}>Repartir OPEX fijo consolidado por cantidad de pozos</p>
+      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', margin: '0 0 10px' }}>Repartir OPEX fijo consolidado (mix de pozos y producción)</p>
       <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
-        Si tenés una sola cifra de OPEX fijo para toda la operación, la repartís aquí entre los yacimientos según su cantidad de pozos activos —
-        la concesión tiene que existir de antes, con el mismo nombre que el yacimiento.
+        Si tenés una sola cifra de OPEX fijo para toda la operación, la repartís aquí entre los yacimientos con un mix de cantidad de pozos activos y
+        producción de petróleo del año 1 (tomada de las curvas ya cargadas) — la concesión tiene que existir de antes, con el mismo nombre que el yacimiento.
       </p>
+      <div style={{ marginBottom: 10 }}>
+        <label style={label}>Peso por cantidad de pozos: {pesoPozos}% (el resto, {100 - Number(pesoPozos)}%, es por producción)</label>
+        <input type="range" min={0} max={100} step={5} value={pesoPozos} onChange={e => setPesoPozos(e.target.value)} style={{ width: 260 }} />
+      </div>
       {err && <div style={{ fontSize: 12, color: 'var(--cp-negative)', padding: '8px 12px', background: 'rgba(179,59,46,0.08)', borderRadius: 8, marginBottom: 10 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
         <div>
@@ -1202,7 +1207,7 @@ function RepartirOpexFijo({ data, reload }: { data: Data; reload: () => void }) 
       {resultado && (
         <div style={{ marginTop: 12, fontSize: 12 }}>
           {resultado.map((r, i) => (
-            <div key={i} style={{ color: 'var(--fg-soft)' }}>{r.yacimiento}: {r.pozos} pozos ({(r.pct * 100).toFixed(1)}%) → USD {r.monto.toLocaleString('es-AR')}/mes</div>
+            <div key={i} style={{ color: 'var(--fg-soft)' }}>{r.yacimiento}: {r.pozos} pozos, {Math.round(r.bbl).toLocaleString('es-AR')} bbl año 1 ({(r.pct * 100).toFixed(1)}%) → USD {r.monto.toLocaleString('es-AR')}/mes</div>
           ))}
         </div>
       )}
