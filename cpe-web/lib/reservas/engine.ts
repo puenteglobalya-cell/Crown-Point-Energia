@@ -490,6 +490,14 @@ export async function calcularEscenario(
     if (concesion.fecha_vencimiento && (!fechaCorte || concesion.fecha_vencimiento < fechaCorte)) {
       fechaCorte = concesion.fecha_vencimiento
     }
+    // El mensaje de curva_agotada no lleva el mes en el detalle (a
+    // diferencia de otros diagnósticos) justo para que Diagnosticos.add()
+    // (dedupe por tipo+detalle) lo colapse en una sola entrada por pozo en
+    // vez de una por mes — un pozo seco 100 meses generaba antes 100
+    // entradas separadas con pozos_mes:1 cada una en vez de una con
+    // pozos_mes:100, exactamente el "mucho volumen entrena a ignorar el
+    // aviso" que este diagnóstico se supone que evita.
+    let curvaAgotadaAvisada = false
 
     // El pozo puede tener CAPEX de perforación anterior a fecha_alta (que es
     // la fecha de PRIMERA PRODUCCIÓN, no la de inicio de perforación — hay
@@ -546,8 +554,9 @@ export async function calcularEscenario(
       // mes (cargada incompleta, o más corta que la vida del pozo), antes no
       // se avisaba nada — el pozo pasaba a producir 0 en silencio por el
       // resto de su vida, justo lo que este archivo dice evitar.
-      if (enProduccion && curvaFaltante && interv?.pozo_tipo_id) {
-        diag.add('curva_agotada', `Pozo "${pozo.nombre}": la curva del pozo tipo activado por su intervención no tiene datos para ${fecha.slice(0, 7)} — produce 0 desde ahí`)
+      if (enProduccion && curvaFaltante && interv?.pozo_tipo_id && !curvaAgotadaAvisada) {
+        curvaAgotadaAvisada = true
+        diag.add('curva_agotada', `Pozo "${pozo.nombre}": la curva del pozo tipo activado por su intervención no tiene datos desde ${fecha.slice(0, 7)} — produce 0 de ahí en adelante`)
       }
 
       // CAPEX del mes. La amortización ya no se calcula acá: con unidades de
@@ -685,6 +694,10 @@ export async function calcularEscenario(
     const provincia = provinciaPorId.get(yacimiento.provincia_id) ?? null
     const pozoVirtual = { id: nuevoPozoIdSeq--, nombre: `${i.tipo} nuevo — ${concesion.nombre} (#${i.id})`, costo_abandono_usd: 0 }
     const fechaCorte: string | null = concesion.fecha_vencimiento ?? null
+    // Ver el comentario análogo en el pozo real: sin este flag, un mismo
+    // detalle con el mes adentro genera una entrada de diagnóstico distinta
+    // por cada mes seco en vez de una sola por intervención.
+    let curvaAgotadaAvisada = false
 
     const registros: Registro[] = []
     for (let m = 0; m < horizonte; m++) {
@@ -702,8 +715,9 @@ export async function calcularEscenario(
       const mesesDesdeProduccion = monthsBetween(i.fecha, fecha)
       const enProduccion = mesesDesdeProduccion >= 0
       const c = enProduccion ? curvaPorTipo.get(`${i.pozo_tipo_id}|${mesesDesdeProduccion}`) : undefined
-      if (enProduccion && c === undefined) {
-        diag.add('curva_agotada', `Intervención "${i.tipo} nuevo — ${concesion.nombre} (#${i.id})": la curva de su pozo tipo no tiene datos para ${fecha.slice(0, 7)} — produce 0 desde ahí`)
+      if (enProduccion && c === undefined && !curvaAgotadaAvisada) {
+        curvaAgotadaAvisada = true
+        diag.add('curva_agotada', `Intervención "${i.tipo} nuevo — ${concesion.nombre} (#${i.id})": la curva de su pozo tipo no tiene datos desde ${fecha.slice(0, 7)} — produce 0 de ahí en adelante`)
       }
       const bbl = (c?.bbl_petroleo ?? 0) * mult.produccion
       const mcf = (c?.mcf_gas ?? 0) * mult.produccion
