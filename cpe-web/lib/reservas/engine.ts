@@ -297,9 +297,15 @@ export async function calcularEscenario(
     opexVarPorYac.set(o.yacimiento_id, arr)
   }
 
-  const alicuotaGanancias = vigente(ganancias, new Date().toISOString().slice(0, 10))?.alicuota
+  // Por fecha simulada, no por la fecha real del día en que se corre el
+  // cálculo — todas las demás tasas (regalías, OPEX, participación) ya se
+  // resuelven así con `vigente()` dentro del loop mensual. Esta quedaba
+  // anclada a "hoy": un cambio de alícuota con vigencia futura nunca se
+  // aplicaba en ningún mes de los 20 años de proyección, todo el horizonte
+  // usaba la tasa vigente el día del click en "Calcular".
+  const alicuotaGananciasEn = (fecha: string) => vigente(ganancias, fecha)?.alicuota
     ?? ganancias[ganancias.length - 1]?.alicuota ?? 0.35
-  const alicuotaDyC = vigente(debitosCreditos, new Date().toISOString().slice(0, 10))?.alicuota
+  const alicuotaDyCEn = (fecha: string) => vigente(debitosCreditos, fecha)?.alicuota
     ?? debitosCreditos[debitosCreditos.length - 1]?.alicuota ?? 0.006
 
   const precioMensPorClave = new Map<string, any>(
@@ -443,25 +449,43 @@ export async function calcularEscenario(
       fechaCorte = concesion.fecha_vencimiento
     }
 
+    // El pozo puede tener CAPEX de perforación anterior a fecha_alta (que es
+    // la fecha de PRIMERA PRODUCCIÓN, no la de inicio de perforación — hay
+    // semanas o meses entre una cosa y otra, ver el comentario de más abajo
+    // sobre `fecha_inicio_perforacion`). El loop antes arrancaba siempre en
+    // fecha_alta, así que esos meses de perforación nunca se visitaban y su
+    // CAPEX desaparecía del cash flow sin dejar rastro. Se arranca desde la
+    // fecha más temprana entre fecha_alta y el inicio de perforación de sus
+    // propias intervenciones.
+    const inicioLoop = intervDelPozo.reduce((min, i) => {
+      const f = i.fecha_inicio_perforacion ?? i.fecha
+      return f < min ? f : min
+    }, pozo.fecha_alta)
+
     const registros: Registro[] = []
     for (let m = 0; m < horizonte; m++) {
-      const fecha = mesDesde(pozo.fecha_alta, m)
+      const fecha = mesDesde(inicioLoop, m)
       if (fechaCorte && fecha >= fechaCorte) break
 
-      const interv = intervConCurvaDesc.find(i => i.fecha <= fecha)
+      // Antes de la primera producción sólo puede haber CAPEX (perforación en
+      // curso) — no hay curva que buscar todavía.
+      const enProduccion = fecha >= pozo.fecha_alta
+      const interv = enProduccion ? intervConCurvaDesc.find(i => i.fecha <= fecha) : undefined
       let bbl = 0, mcf = 0
-      if (interv?.pozo_tipo_id) {
-        const c = curvaPorTipo.get(`${interv.pozo_tipo_id}|${monthsBetween(interv.fecha, fecha)}`)
-        bbl = c?.bbl_petroleo ?? 0
-        mcf = c?.mcf_gas ?? 0
-      } else {
-        const c = curvaPorPozo.get(`${pozo.id}|${m}`)
-        bbl = c?.bbl_petroleo ?? 0
-        mcf = c?.mcf_gas ?? 0
+      if (enProduccion) {
+        if (interv?.pozo_tipo_id) {
+          const c = curvaPorTipo.get(`${interv.pozo_tipo_id}|${monthsBetween(interv.fecha, fecha)}`)
+          bbl = c?.bbl_petroleo ?? 0
+          mcf = c?.mcf_gas ?? 0
+        } else {
+          const c = curvaPorPozo.get(`${pozo.id}|${monthsBetween(pozo.fecha_alta, fecha)}`)
+          bbl = c?.bbl_petroleo ?? 0
+          mcf = c?.mcf_gas ?? 0
+        }
       }
       bbl *= mult.produccion
       mcf *= mult.produccion
-      if (m === 0 && bbl === 0 && mcf === 0 && !interv) {
+      if (fecha === pozo.fecha_alta && bbl === 0 && mcf === 0 && !interv) {
         diag.add('pozo_sin_curva', `Pozo "${pozo.nombre}": no hay curva de producción cargada para su primer mes`)
       }
 
@@ -537,12 +561,20 @@ export async function calcularEscenario(
     }
     const provincia = provinciaPorId.get(yacimiento.provincia_id) ?? null
 
-    const anclaje = [...intervFac].sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)))[0]
+    // Se ordena por el mismo campo que se usa para anclar el loop
+    // (fecha_inicio_perforacion, con .fecha como fallback) — antes se
+    // ordenaba por .fecha pero se anclaba por fecha_inicio_perforacion, dos
+    // campos distintos: si otra intervención del grupo tenía una
+    // fecha_inicio_perforacion más temprana que la del "ancla" elegido por
+    // .fecha, su CAPEX caía antes de m=0 y se perdía sin dejar rastro.
+    const anclaje = [...intervFac].sort((a, b) =>
+      String(a.fecha_inicio_perforacion ?? a.fecha).localeCompare(String(b.fecha_inicio_perforacion ?? b.fecha)))[0]
+    const inicioLoop = anclaje.fecha_inicio_perforacion ?? anclaje.fecha
     const pozoVirtual = { id: facilitiesIdSeq--, nombre: `Facilities — ${concesion.nombre}`, costo_abandono_usd: 0 }
 
     const registros: Registro[] = []
     for (let m = 0; m < horizonte; m++) {
-      const fecha = mesDesde(anclaje.fecha_inicio_perforacion ?? anclaje.fecha, m)
+      const fecha = mesDesde(inicioLoop, m)
       if (concesion.fecha_vencimiento && fecha >= concesion.fecha_vencimiento) break
 
       let capexUsd = 0, depreciacionLineal = 0
@@ -761,7 +793,7 @@ export async function calcularEscenario(
       const regaliaUsd = ingresoBruto * (regalia?.porcentaje ?? 0)
 
       const iibbUsd = ingresoBruto * (provincia?.alicuota_iibb ?? 0)
-      const dycUsd = ingresoBruto * alicuotaDyC
+      const dycUsd = ingresoBruto * alicuotaDyCEn(fecha)
 
       const fijo = vigente(opexFijoPorConc.get(concesion.id) ?? [], fecha)
       const activos = activosPorConcesionMes.get(`${concesion.id}|${fecha}`) || 1
@@ -776,7 +808,7 @@ export async function calcularEscenario(
       const opexFijoPozoUsd = esFacilities ? 0 : (fijoPozo?.usd_mes_pozo ?? 0) * mult.opex
 
       const baseImponible = ingresoBruto - regaliaUsd - iibbUsd - dycUsd - opexFijoUsd - opexVarUsd - opexFijoPozoUsd - depreciacionUsd
-      const impuestoGanancias = baseImponible > 0 ? baseImponible * alicuotaGanancias : 0
+      const impuestoGanancias = baseImponible > 0 ? baseImponible * alicuotaGananciasEn(fecha) : 0
       const resultadoNeto = baseImponible - impuestoGanancias
 
       const part = vigente(partPorConc.get(concesion.id) ?? [], fecha)
@@ -804,6 +836,12 @@ export async function calcularEscenario(
         // se ve en el consolidado del yacimiento (resultados_escenario_anual)
         // pero no en el detalle por pozo.
         pozo_id: (esFacilities || sinPozoReal) ? null : pozo.id,
+        // Se guarda directo en vez de derivarlo después por pozo_id -> concesion
+        // -> yacimiento: esa derivación da null para facilities y para
+        // Intervenciones sin pozo real (pozo_id es null a propósito en esos
+        // casos), y eso las excluía en silencio de los reportes por yacimiento
+        // y de la depleción de reservas.
+        yacimiento_id: yacimiento.id,
         categoria,
         fecha,
         bbl_petroleo: bbl,
@@ -838,6 +876,7 @@ export async function calcularEscenario(
     // antes el pozo simplemente dejaba de generar filas y el cierre salía
     // gratis, lo que sobrestimaba el VAN. Se lee de forma defensiva para que
     // el motor funcione con o sin la migración 20260801_reservas_abandono.sql.
+    let costoAbandonoDeEstePozo = 0
     const ultima = filas[filas.length - 1]
     if (ultima && filas.length > primeraFilaDelPozo) {
       const costoAbandono = Number(registros[0].pozo.costo_abandono_usd ?? 0)
@@ -851,38 +890,50 @@ export async function calcularEscenario(
         ultima.capex_usd = (ultima.capex_usd as number) + costoAbandono
         ultima.cash_flow_neto_usd = (ultima.cash_flow_neto_usd as number) - costoAbandono * part
         abandonoTotal += costoAbandono
+        costoAbandonoDeEstePozo = costoAbandono
         diag.add('abandono_imputado', `Pozo "${registros[0].pozo.nombre}": costo de abandono de US$ ${costoAbandono.toLocaleString('es-AR')} imputado en ${String(ultima.fecha).slice(0, 7)}`)
       }
     }
+
+    // ─── Cuadre POR POZO: la amortización de este pozo tiene que dar su
+    // propio CAPEX ────────────────────────────────────────────────────────
+    // Antes este chequeo se hacía UNA VEZ sobre el total del escenario y el
+    // faltante se volcaba sobre `filas[filas.length - 1]` — la última fila
+    // de TODO el escenario, es decir del último pozo insertado en
+    // `registrosPorPozo`, sin ninguna relación con cuál pozo era el que
+    // realmente se había cortado. Con dos o más pozos cortados en la misma
+    // corrida, sus faltantes se sumaban y el total terminaba imputado a un
+    // pozo (y una concesión, con su propia participación) que no tenía nada
+    // que ver. Se mueve dentro del loop para que cada pozo cuadre contra su
+    // propio CAPEX y su propia última fila.
+    const filasDelPozo = filas.slice(primeraFilaDelPozo)
+    const capexAmortizablePozo = filasDelPozo.reduce((acc, f) => acc + (f.capex_usd as number), 0) - costoAbandonoDeEstePozo
+    const amortizadoPozo = filasDelPozo.reduce((acc, f) => acc + (f.depreciacion_usd as number), 0)
+    const faltantePozo = capexAmortizablePozo - amortizadoPozo
+
+    if (faltantePozo > 1 && filasDelPozo.length > 0) {
+      const ultimaDelPozo = filas[filas.length - 1]
+      const nuevaDepr = (ultimaDelPozo.depreciacion_usd as number) + faltantePozo
+      // Se recalcula la fila afectada de punta a punta: la baja es deducible,
+      // así que cambia el impuesto y el flujo, no sólo la línea de amortización.
+      const base = (ultimaDelPozo.resultado_antes_ganancias_usd as number) - faltantePozo
+      const impuesto = base > 0 ? base * alicuotaGananciasEn(String(ultimaDelPozo.fecha)) : 0
+      const neto = base - impuesto
+      const part = ultimaDelPozo.participacion_pct as number
+      ultimaDelPozo.depreciacion_usd = nuevaDepr
+      ultimaDelPozo.resultado_antes_ganancias_usd = base
+      ultimaDelPozo.impuesto_ganancias_usd = impuesto
+      ultimaDelPozo.resultado_neto_usd = neto
+      ultimaDelPozo.cash_flow_neto_usd = (neto + nuevaDepr - (ultimaDelPozo.capex_usd as number)) * part
+      diag.add('baja_por_abandono', `Pozo "${registros[0].pozo.nombre}": US$ ${Math.round(faltantePozo).toLocaleString('es-AR')} de CAPEX quedaron sin amortizar porque se cortó antes de agotar su curva — se imputan como baja en su último mes`)
+    }
   }
 
-  // ─── Cuadre: la amortización total tiene que dar el CAPEX total ───────
-  // Es el chequeo que cierra el método. Si un pozo se corta por límite
-  // económico antes de agotar su curva, la parte de su inversión que no se
-  // llegó a amortizar queda sin deducir; contablemente eso es una BAJA por
-  // abandono, y se imputa en el último mes de vida del pozo. Con eso el
-  // cuadre da exacto y además queda bien tratado el efecto impositivo.
+  // ─── Cuadre global: verificación, no corrección ────────────────────────
+  // Cada pozo ya cuadró su propio CAPEX contra su propia amortización arriba
+  // — esto sólo confirma que la suma total efectivamente cierra, como
+  // chequeo de sanidad.
   const capexAmortizable = filas.reduce((acc, f) => acc + (f.capex_usd as number), 0) - abandonoTotal
-  const amortizado = filas.reduce((acc, f) => acc + (f.depreciacion_usd as number), 0)
-  const faltante = capexAmortizable - amortizado
-
-  if (faltante > 1 && filas.length > 0) {
-    const ultima = filas[filas.length - 1]
-    const nuevaDepr = (ultima.depreciacion_usd as number) + faltante
-    // Se recalcula la fila afectada de punta a punta: la baja es deducible,
-    // así que cambia el impuesto y el flujo, no sólo la línea de amortización.
-    const base = (ultima.resultado_antes_ganancias_usd as number) - faltante
-    const impuesto = base > 0 ? base * alicuotaGanancias : 0
-    const neto = base - impuesto
-    const part = ultima.participacion_pct as number
-    ultima.depreciacion_usd = nuevaDepr
-    ultima.resultado_antes_ganancias_usd = base
-    ultima.impuesto_ganancias_usd = impuesto
-    ultima.resultado_neto_usd = neto
-    ultima.cash_flow_neto_usd = (neto + nuevaDepr - (ultima.capex_usd as number)) * part
-    diag.add('baja_por_abandono', `US$ ${Math.round(faltante).toLocaleString('es-AR')} de CAPEX quedaron sin amortizar porque algún pozo se cortó antes de agotar su curva — se imputan como baja en el último mes`)
-  }
-
   const amortizadoFinal = filas.reduce((acc, f) => acc + (f.depreciacion_usd as number), 0)
   const descuadre = Math.abs(capexAmortizable - amortizadoFinal)
   if (descuadre > 1) {
@@ -981,10 +1032,8 @@ export function calcularNPV(cashflows: { fecha: string; cash_flow_neto_usd: numb
 export async function calcularAgregadosAnuales(escenarioId: number) {
   const db = createSupabaseServerAdminClient()
 
-  const [cashflows, pozos, concesiones] = await Promise.all([
+  const [cashflows] = await Promise.all([
     traerTodo<any>(() => db.from('cashflow_mensual').select('*').eq('escenario_id', escenarioId).order('id')),
-    traerTodo<any>(() => db.from('pozos').select('id, concesion_id').order('id')),
-    traerTodo<any>(() => db.from('concesiones').select('id, yacimiento_id').order('id')),
     // Los 6 movimientos de NI 51-101 que no calcula el motor. Si la migración
     // 20260801_reservas_reconciliacion.sql no corrió todavía, la tabla no
     // existe y la reconciliación se reduce a apertura → producción → cierre.
@@ -992,11 +1041,6 @@ export async function calcularAgregadosAnuales(escenarioId: number) {
       .or(`escenario_id.eq.${escenarioId},escenario_id.is.null`).order('id'))
       .catch(() => [] as any[]),
   ])
-
-  const concesionPorId = new Map<number, any>(concesiones.map(c => [c.id, c]))
-  const yacimientoPorPozo = new Map<number, number | null>(
-    pozos.map(p => [p.id, concesionPorId.get(p.concesion_id)?.yacimiento_id ?? null]),
-  )
 
   type Acc = {
     produccion_petroleo_bbl: number; produccion_gas_mcf: number; ingresos_usd: number
@@ -1030,7 +1074,7 @@ export async function calcularAgregadosAnuales(escenarioId: number) {
 
   for (const cf of cashflows) {
     const anio = Number(String(cf.fecha).slice(0, 4))
-    const yacId = yacimientoPorPozo.get(cf.pozo_id) ?? null
+    const yacId = cf.yacimiento_id ?? null
 
     const accYac = porYacimiento.get(`${yacId ?? 'null'}_${anio}`) ?? empty()
     acumular(accYac, cf)
@@ -1279,13 +1323,15 @@ export async function calcularDepletionReservas(escenarioId: number) {
   // son un volumen físico en el subsuelo, así que el roll-forward va contra el
   // volumen del proyecto completo y no contra la producción neta a CPE (que es
   // lo que informa resultados_escenario_anual).
-  const [reservas, cashflows, certezas, yacimientos, pozosRef, concesionesRef, movimientos] = await Promise.all([
+  const [reservas, cashflows, certezas, yacimientos, movimientos] = await Promise.all([
     traerTodo<any>(() => db.from('reservas_anuales').select('*').or(`escenario_id.eq.${escenarioId},escenario_id.is.null`).order('id')),
-    traerTodo<any>(() => db.from('cashflow_mensual').select('pozo_id, fecha, bbl_petroleo, mcf_gas').eq('escenario_id', escenarioId).order('id')),
+    // yacimiento_id se guarda directo en la fila (ver 20260805_cashflow_yacimiento_id.sql)
+    // en vez de derivarse de pozo_id -> concesion_id -> yacimiento_id, que daba null
+    // para facilities y para Intervenciones sin pozo real y las excluía en silencio
+    // de la depleción de reservas.
+    traerTodo<any>(() => db.from('cashflow_mensual').select('yacimiento_id, fecha, bbl_petroleo, mcf_gas').eq('escenario_id', escenarioId).order('id')),
     traerTodo<any>(() => db.from('parametros_certeza_reservas').select('*').order('id')),
     traerTodo<any>(() => db.from('yacimientos').select('id, nombre').order('id')),
-    traerTodo<any>(() => db.from('pozos').select('id, concesion_id').order('id')),
-    traerTodo<any>(() => db.from('concesiones').select('id, yacimiento_id').order('id')),
     // Los 6 movimientos de NI 51-101 que no calcula el motor. Si la migración
     // 20260801_reservas_reconciliacion.sql no corrió todavía, la tabla no
     // existe y la reconciliación se reduce a apertura → producción → cierre.
@@ -1294,14 +1340,10 @@ export async function calcularDepletionReservas(escenarioId: number) {
       .catch(() => [] as any[]),
   ])
 
-  const concPorId = new Map<number, any>(concesionesRef.map(c => [c.id, c]))
-  const yacDePozo = new Map<number, number | null>(
-    pozosRef.map(p => [p.id, concPorId.get(p.concesion_id)?.yacimiento_id ?? null]),
-  )
   // Producción física por yacimiento y año, en BOE
   const produccionYacAnio = new Map<string, number>()
   for (const cf of cashflows) {
-    const yac = yacDePozo.get(cf.pozo_id)
+    const yac = cf.yacimiento_id
     if (yac == null) continue
     const key = `${yac}|${String(cf.fecha).slice(0, 4)}`
     produccionYacAnio.set(key, (produccionYacAnio.get(key) ?? 0) + cf.bbl_petroleo + cf.mcf_gas / MCF_POR_BOE)
