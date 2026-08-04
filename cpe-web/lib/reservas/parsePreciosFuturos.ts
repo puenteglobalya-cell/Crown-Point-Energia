@@ -14,6 +14,34 @@ const MESES: Record<string, number> = {
   jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
 }
 
+// Segundo formato: pantallas tipo CME/NYMEX, con el contrato en su propia
+// línea ("SEP 2026", mes en letras + año de 4 dígitos) seguido de varias
+// líneas más (código, "Opt", Last, cambio, settle, high, low, volumen, hora,
+// fecha). Cuando no hubo operaciones esa sesión "Last" viene como "-" y hay
+// que usar el precio de ajuste/settle que sigue — se toma la primera línea
+// que sea un número puro (sin "-" solo, sin "(%)"), que es Last si cotizó o
+// el settle si no.
+function parseBloquesConHeader(texto: string): PuntoFuturo[] {
+  const regexHeader = /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(\d{4})\s*$/gim
+  const matches: { mes: number; anio: number; index: number; largo: number }[] = []
+  let m: RegExpExecArray | null
+  while ((m = regexHeader.exec(texto))) {
+    matches.push({ mes: MESES[m[1].toLowerCase()], anio: Number(m[2]), index: m.index, largo: m[0].length })
+  }
+  if (matches.length === 0) return []
+
+  const puntos: PuntoFuturo[] = []
+  for (let i = 0; i < matches.length; i++) {
+    const desde = matches[i].index + matches[i].largo
+    const hasta = i + 1 < matches.length ? matches[i + 1].index : texto.length
+    const lineas = texto.slice(desde, hasta).split('\n').map(l => l.trim()).filter(Boolean)
+    const precioLinea = lineas.find(l => /^-?\d+(\.\d+)?$/.test(l))
+    const precio = precioLinea ? Number(precioLinea) : NaN
+    puntos.push({ anio: matches[i].anio, mes: matches[i].mes, precio, relleno: Number.isNaN(precio), contrato: `${matches[i].mes}/${matches[i].anio}` })
+  }
+  return puntos
+}
+
 export function parsePreciosFuturos(texto: string): PuntoFuturo[] {
   const regexContrato = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[\s-]?(\d{2})\b/gi
   const matches: { contrato: string; mes: number; anio: number; index: number; largo: number }[] = []
@@ -24,21 +52,25 @@ export function parsePreciosFuturos(texto: string): PuntoFuturo[] {
       index: m.index, largo: m[0].length,
     })
   }
-  if (matches.length === 0) return []
 
-  const puntos: PuntoFuturo[] = []
-  for (let i = 0; i < matches.length; i++) {
-    const desde = matches[i].index + matches[i].largo
-    const hasta = i + 1 < matches.length ? matches[i + 1].index : texto.length
-    const bloque = texto.slice(desde, hasta)
-    const posFecha = bloque.search(/\d{1,2}\/\d{1,2}\/\d{2,4}/)
-    let precio = NaN
-    if (posFecha !== -1) {
-      const num = bloque.slice(0, posFecha).match(/-?\d+(\.\d+)?/)
-      if (num) precio = Number(num[0])
-    }
-    puntos.push({ anio: matches[i].anio, mes: matches[i].mes, precio, relleno: Number.isNaN(precio), contrato: matches[i].contrato })
+  let puntos: PuntoFuturo[]
+  if (matches.length > 0) {
+    puntos = matches.map(({ contrato, mes, anio, index, largo }, i) => {
+      const desde = index + largo
+      const hasta = i + 1 < matches.length ? matches[i + 1].index : texto.length
+      const bloque = texto.slice(desde, hasta)
+      const posFecha = bloque.search(/\d{1,2}\/\d{1,2}\/\d{2,4}/)
+      let precio = NaN
+      if (posFecha !== -1) {
+        const num = bloque.slice(0, posFecha).match(/-?\d+(\.\d+)?/)
+        if (num) precio = Number(num[0])
+      }
+      return { anio, mes, precio, relleno: Number.isNaN(precio), contrato }
+    })
+  } else {
+    puntos = parseBloquesConHeader(texto)
   }
+  if (puntos.length === 0) return []
 
   puntos.sort((a, b) => (a.anio * 12 + a.mes) - (b.anio * 12 + b.mes))
   let ultimo: number | null = null
