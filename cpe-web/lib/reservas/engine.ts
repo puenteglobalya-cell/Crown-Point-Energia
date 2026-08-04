@@ -364,10 +364,12 @@ export async function calcularEscenario(
       diag.add('precio_sin_referencia', `${yacimiento.nombre}: falta la cotización "${formula.referencia}" de ${producto} en ${fecha.slice(0, 7)} — se toma 0`)
       return 0
     }
-    // DDE% puede ser fijo (dde_pct) o una escala lineal por nivel de Brent
-    // (dde_brent_min/max, dde_pct_min/max) — así carga el equipo técnico su
-    // Excel real, donde el descuento sube con el precio de referencia.
-    const ddePct = (formula.dde_brent_min != null && formula.dde_brent_max != null)
+    // DDE% no lo tipea nadie mes a mes: es la escala lineal por nivel de
+    // Brent (dde_brent_min/max, dde_pct_min/max), o el fijo (dde_pct) sólo si
+    // no hay tramo cargado. "aplicar_dde" en false lo apaga sin borrar el
+    // tramo, para un período donde puntualmente no corresponda aplicarlo.
+    const ddePct = formula.aplicar_dde === false ? 0
+      : (formula.dde_brent_min != null && formula.dde_brent_max != null)
       ? (precioRef <= formula.dde_brent_min ? (formula.dde_pct_min ?? 0)
         : precioRef >= formula.dde_brent_max ? (formula.dde_pct_max ?? 0)
         : (formula.dde_pct_min ?? 0) + ((formula.dde_pct_max ?? 0) - (formula.dde_pct_min ?? 0))

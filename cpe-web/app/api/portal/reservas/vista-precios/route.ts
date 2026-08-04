@@ -13,6 +13,7 @@ export const dynamic = 'force-dynamic'
 type Fila = { mes: string; referencia: number; descuentoFijo: number; ddePct: number; divisor: number; extra: number; precioNeto: number }
 
 function ddePctEn(f: any, referencia: number): number {
+  if (f.aplicar_dde === false) return 0
   if (f.dde_brent_min != null && f.dde_brent_max != null) {
     if (referencia <= f.dde_brent_min) return f.dde_pct_min ?? 0
     if (referencia >= f.dde_brent_max) return f.dde_pct_max ?? 0
