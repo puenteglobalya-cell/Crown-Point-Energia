@@ -303,10 +303,18 @@ export async function calcularEscenario(
   // anclada a "hoy": un cambio de alícuota con vigencia futura nunca se
   // aplicaba en ningún mes de los 20 años de proyección, todo el horizonte
   // usaba la tasa vigente el día del click en "Calcular".
+  // El fallback (ningún tramo vigente para esa fecha) toma la fila de
+  // fecha_desde MÁS RECIENTE, no la última por orden de carga (`.order('id')`
+  // en cargarContexto) — cargar después una alícuota histórica (fecha_desde
+  // vieja, id nuevo porque se insertó más tarde) hacía que el fallback
+  // devolviera esa tasa vieja para los meses sin tramo explícito, en vez de
+  // la más reciente.
+  const masReciente = <T extends { alicuota: number; fecha_desde: string }>(rows: T[]): T | undefined =>
+    rows.reduce((mejor: T | undefined, r) => (!mejor || r.fecha_desde > mejor.fecha_desde) ? r : mejor, undefined)
   const alicuotaGananciasEn = (fecha: string) => vigente(ganancias, fecha)?.alicuota
-    ?? ganancias[ganancias.length - 1]?.alicuota ?? 0.35
+    ?? masReciente(ganancias)?.alicuota ?? 0.35
   const alicuotaDyCEn = (fecha: string) => vigente(debitosCreditos, fecha)?.alicuota
-    ?? debitosCreditos[debitosCreditos.length - 1]?.alicuota ?? 0.006
+    ?? masReciente(debitosCreditos)?.alicuota ?? 0.006
 
   const precioMensPorClave = new Map<string, any>(
     preciosMens.map(p => [`${p.yacimiento_id}|${p.producto}|${mesDe(p.fecha)}`, p]),
@@ -468,8 +476,16 @@ export async function calcularEscenario(
       if (fechaCorte && fecha >= fechaCorte) break
 
       // Antes de la primera producción sólo puede haber CAPEX (perforación en
-      // curso) — no hay curva que buscar todavía.
-      const enProduccion = fecha >= pozo.fecha_alta
+      // curso) — no hay curva que buscar todavía. Se compara por mes
+      // (monthsBetween), no con >= de texto: `fecha` siempre es el día 1 de
+      // la grilla (mesDesde), pero fecha_alta puede ser cualquier día del
+      // mes (ej. "2026-05-15") — comparando texto, el mes de mayo entero
+      // quedaba antes de fecha_alta, la producción arrancaba un mes tarde,
+      // y el offset de curva (que sí usa monthsBetween) ya contaba ese mes
+      // tardío como el offset 1 en vez de 0 — se perdía el primer punto de
+      // la curva (típicamente el pico) para siempre.
+      const mesesDesdeAlta = monthsBetween(pozo.fecha_alta, fecha)
+      const enProduccion = mesesDesdeAlta >= 0
       const interv = enProduccion ? intervConCurvaDesc.find(i => i.fecha <= fecha) : undefined
       let bbl = 0, mcf = 0
       if (enProduccion) {
@@ -478,14 +494,14 @@ export async function calcularEscenario(
           bbl = c?.bbl_petroleo ?? 0
           mcf = c?.mcf_gas ?? 0
         } else {
-          const c = curvaPorPozo.get(`${pozo.id}|${monthsBetween(pozo.fecha_alta, fecha)}`)
+          const c = curvaPorPozo.get(`${pozo.id}|${mesesDesdeAlta}`)
           bbl = c?.bbl_petroleo ?? 0
           mcf = c?.mcf_gas ?? 0
         }
       }
       bbl *= mult.produccion
       mcf *= mult.produccion
-      if (fecha === pozo.fecha_alta && bbl === 0 && mcf === 0 && !interv) {
+      if (mesesDesdeAlta === 0 && bbl === 0 && mcf === 0 && !interv) {
         diag.add('pozo_sin_curva', `Pozo "${pozo.nombre}": no hay curva de producción cargada para su primer mes`)
       }
 
@@ -630,7 +646,17 @@ export async function calcularEscenario(
       const fecha = mesDesde(i.fecha_inicio_perforacion ?? i.fecha, m)
       if (fechaCorte && fecha >= fechaCorte) break
 
-      const c = curvaPorTipo.get(`${i.pozo_tipo_id}|${m}`)
+      // El offset de la curva es relativo a la fecha de PRIMERA PRODUCCIÓN
+      // (i.fecha), no al mes de perforación (m, relativo a
+      // fecha_inicio_perforacion) — antes usaba `m` directo, así que con
+      // perforación 3 meses antes de la primera producción la curva
+      // arrancaba 3 meses adelantada, produciendo durante la perforación
+      // misma. Mismo criterio que el pozo real (curvaPorPozo indexado por
+      // monthsBetween(fecha_alta, fecha)) y que la curva por intervención
+      // de un pozo real (monthsBetween(interv.fecha, fecha)).
+      const mesesDesdeProduccion = monthsBetween(i.fecha, fecha)
+      const enProduccion = mesesDesdeProduccion >= 0
+      const c = enProduccion ? curvaPorTipo.get(`${i.pozo_tipo_id}|${mesesDesdeProduccion}`) : undefined
       const bbl = (c?.bbl_petroleo ?? 0) * mult.produccion
       const mcf = (c?.mcf_gas ?? 0) * mult.produccion
 
