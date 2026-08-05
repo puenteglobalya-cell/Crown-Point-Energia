@@ -2116,13 +2116,140 @@ type RespuestaCronograma = {
   aplicado?: number
 }
 
+type ActividadTipo = {
+  pozo_tipo_id: number; nombre: string; categoria: string
+  sin_curva?: boolean; sin_produccion?: boolean
+  precio_venta_usd_bbl?: number | null
+  volumen_bbl_primeros_5_anios?: number[]
+  volumen_bbl_5_anios_total?: number
+  costo_usd_boe?: number | null
+  capex_usd?: number; npv_usd?: number; irr_pct?: number | null
+  payback_anios?: number | null; cortado_por_limite?: boolean; meses_vida?: number
+}
+type ResumenAnio = { anio: number; perforacion: number; workover: number; pulling: number; facilities: number; capex_usd: number }
+
+const fmtUsd = (n: number | null | undefined) => n == null ? '—' : `US$ ${Math.round(n).toLocaleString('en-US')}`
+const fmtPct = (n: number | null | undefined) => n == null ? '—' : `${n.toFixed(1)}%`
+
+// Razonabilidad de la actividad: precio tomado, volumen y VAN/TIR/repago por
+// pozo tipo, corriendo el motor real contra un pozo aislado de cada uno. La
+// pregunta que responde es "¿esta actividad, tal como está parametrizada,
+// tiene sentido económico?" -- antes había que abrir vida-económica pozo por
+// pozo o el cashflow mensual para verlo.
+function ActividadTipoResumen({ escenarioId, onResumenAnual }: { escenarioId: string; onResumenAnual: (r: ResumenAnio[]) => void }) {
+  const [items, setItems] = useState<ActividadTipo[] | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    if (!escenarioId) { setItems(null); return }
+    setLoading(true); setErr('')
+    fetch(`/api/portal/reservas/actividad-tipo?escenario_id=${escenarioId}`, { cache: 'no-store' })
+      .then(async r => { const j = await r.json(); if (!r.ok) throw new Error(j.error ?? 'Error'); return j })
+      .then(j => { setItems(j.actividades); onResumenAnual(j.resumen_anual ?? []) })
+      .catch(e => setErr((e as Error).message))
+      .finally(() => setLoading(false))
+  }, [escenarioId])
+
+  if (!escenarioId) return null
+  if (loading) return <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Calculando razonabilidad de actividad…</p>
+  if (err) return <p style={{ color: 'var(--cp-negative)', fontSize: 13 }}>{err}</p>
+  if (!items || items.length === 0) return null
+
+  return (
+    <div style={{ overflowX: 'auto', marginBottom: 22 }}>
+      <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+            <th style={{ padding: '6px 8px' }}>Pozo tipo</th>
+            <th style={{ padding: '6px 8px' }}>Actividad</th>
+            <th style={{ padding: '6px 8px' }}>Precio tomado</th>
+            <th style={{ padding: '6px 8px' }}>Vol. año 1–5 (bbl)</th>
+            <th style={{ padding: '6px 8px' }}>Costo US$/boe</th>
+            <th style={{ padding: '6px 8px' }}>CAPEX</th>
+            <th style={{ padding: '6px 8px' }}>VAN</th>
+            <th style={{ padding: '6px 8px' }}>TIR</th>
+            <th style={{ padding: '6px 8px' }}>Repago</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map(it => (
+            <tr key={it.pozo_tipo_id} style={{ borderBottom: '1px solid var(--rule)' }}>
+              <td style={{ padding: '6px 8px', fontWeight: 600 }}>{it.nombre}</td>
+              <td style={{ padding: '6px 8px' }}>{it.categoria}</td>
+              {it.sin_curva ? (
+                <td colSpan={6} style={{ padding: '6px 8px', color: 'var(--fg-muted)' }}>Sin curva cargada</td>
+              ) : it.sin_produccion ? (
+                <td colSpan={6} style={{ padding: '6px 8px', color: 'var(--fg-muted)' }}>Sin producción simulada</td>
+              ) : (
+                <>
+                  <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{fmtUsd(it.precio_venta_usd_bbl)}/bbl</td>
+                  <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>
+                    {(it.volumen_bbl_primeros_5_anios ?? []).map(v => Math.round(v).toLocaleString('en-US')).join(' · ')}
+                  </td>
+                  <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{fmtUsd(it.costo_usd_boe)}</td>
+                  <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{fmtUsd(it.capex_usd)}</td>
+                  <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: (it.npv_usd ?? 0) < 0 ? 'var(--cp-negative)' : undefined }}>{fmtUsd(it.npv_usd)}</td>
+                  <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{fmtPct(it.irr_pct)}</td>
+                  <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>
+                    {it.payback_anios == null ? 'No repaga' : `${it.payback_anios.toFixed(1)} años`}
+                    {it.cortado_por_limite ? ' · cortado por límite económico' : ''}
+                  </td>
+                </>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function ResumenAnualActividad({ resumen }: { resumen: ResumenAnio[] }) {
+  if (resumen.length === 0) return null
+  return (
+    <div style={{ marginTop: 22 }}>
+      <p style={{ fontSize: 13, fontWeight: 700, margin: '0 0 8px' }}>Resumen de actividad por año</p>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+              <th style={{ padding: '6px 8px' }}>Año</th>
+              <th style={{ padding: '6px 8px' }}>Perforaciones</th>
+              <th style={{ padding: '6px 8px' }}>Workovers</th>
+              <th style={{ padding: '6px 8px' }}>Pullings</th>
+              <th style={{ padding: '6px 8px' }}>Facilities</th>
+              <th style={{ padding: '6px 8px' }}>CAPEX del año</th>
+            </tr>
+          </thead>
+          <tbody>
+            {resumen.map(r => (
+              <tr key={r.anio} style={{ borderBottom: '1px solid var(--rule)' }}>
+                <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{r.anio}</td>
+                <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{r.perforacion}</td>
+                <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{r.workover}</td>
+                <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{r.pulling}</td>
+                <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{r.facilities}</td>
+                <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{fmtUsd(r.capex_usd)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 function CronogramaTab({ data, reload }: { data: Data; reload: () => void }) {
   const [campanaId, setCampanaId] = useState('')
   const [resp, setResp] = useState<RespuestaCronograma | null>(null)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState('')
+  const [resumenAnual, setResumenAnual] = useState<ResumenAnio[]>([])
 
+  const escenarios = data.escenarios ?? []
+  const [escenarioId, setEscenarioId] = useState('')
   const campanas = data.campanas ?? []
 
   async function ver(id: string) {
@@ -2163,8 +2290,21 @@ function CronogramaTab({ data, reload }: { data: Data; reload: () => void }) {
   }
 
   return (
-    <Seccion title="Cronograma de campaña — cuándo se perfora cada pozo">
-      <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 14 }}>
+    <Seccion title="Razonabilidad de actividad y cronograma de campaña">
+      <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 6 }}>
+        Antes de mirar cronograma: ¿tiene sentido la actividad tal como está parametrizada? Por cada pozo tipo de
+        drilling/workover/pulling, el precio de venta que toma el motor, el volumen de los primeros 5 años, el costo
+        por boe, y el VAN/TIR/repago de correrlo aislado (sin CAPEX de campaña, sólo su propia curva).
+      </p>
+      {escenarios.length > 0 && (
+        <Field><label style={label}>Escenario para evaluar la actividad</label>
+          <Select value={escenarioId} onChange={e => setEscenarioId(e.target.value)}
+            opts={escenarios.map(e => ({ value: String(e.id), label: String(e.nombre) }))} />
+        </Field>
+      )}
+      <ActividadTipoResumen escenarioId={escenarioId} onResumenAnual={setResumenAnual} />
+
+      <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '18px 0 14px' }}>
         La participación de CPE en cada concesión cambia de porcentaje en el tiempo, así que <strong>cuándo</strong> se
         perfora cambia el cash flow. Acá el cronograma se deriva de la cantidad de equipos y los días por etapa:
         cada pozo se asigna al primer equipo que se libera. Cambiá los equipos o los días en la campaña, volvé a
@@ -2245,6 +2385,8 @@ function CronogramaTab({ data, reload }: { data: Data; reload: () => void }) {
           <PropuestaAceleracion campanaId={campanaId} />
         </>
       )}
+
+      <ResumenAnualActividad resumen={resumenAnual} />
     </Seccion>
   )
 }
