@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         fecha_inicio_perforacion: null,
       }] as any[],
     }
-    const resultado = await calcularEscenario(escenarioId, HORIZONTE_MESES_MAX, { contexto: ctxAislado, persistir: false })
+    const resultado = await calcularEscenario(escenarioId, HORIZONTE_MESES_MAX, { contexto: ctxAislado, persistir: false, incremental: true })
     const cortado = resultado.diagnosticos.some((d: any) => d.tipo === 'corte_limite_economico')
     return NextResponse.json({ meses: resultado.filas, cortado })
   } catch (e) {

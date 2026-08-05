@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
           fecha_inicio_perforacion: null,
         }] as any[],
       }
-      const resultado = await calcularEscenario(escenarioId, HORIZONTE_MESES_MAX, { contexto: ctxAislado, persistir: false })
+      const resultado = await calcularEscenario(escenarioId, HORIZONTE_MESES_MAX, { contexto: ctxAislado, persistir: false, incremental: true })
       const filas = resultado.cashflow as unknown as any[]
       if (!filas || filas.length === 0) {
         actividades.push({ pozo_tipo_id: pt.id, nombre: pt.nombre, categoria: pt.categoria, sin_produccion: true })

@@ -264,7 +264,7 @@ export async function liberarLockEscenario(
 export async function calcularEscenario(
   escenarioId: number,
   horizonteMeses = HORIZONTE_MESES_MAX,
-  opciones: { contexto?: ContextoEscenario; persistir?: boolean; multiplicadores?: Multiplicadores } = {},
+  opciones: { contexto?: ContextoEscenario; persistir?: boolean; multiplicadores?: Multiplicadores; incremental?: boolean } = {},
 ) {
   const mult = {
     precioPetroleo: 1, precioGas: 1, opex: 1, capex: 1, produccion: 1,
@@ -900,9 +900,16 @@ export async function calcularEscenario(
       const iibbUsd = ingresoBruto * (provincia?.alicuota_iibb ?? 0)
       const dycUsd = ingresoBruto * alicuotaDyCEn(fecha)
 
+      // El OPEX fijo de concesión es un costo compartido que ya existe
+      // independientemente de este pozo — en una corrida incremental (vida
+      // económica de un pozo tipo aislado, sin el resto de la concesión) no
+      // corresponde cargárselo entero: sería como si este único pozo pagara
+      // el costo fijo de los ~300 pozos reales que en la corrida real lo
+      // comparten. Sí corresponde el fijo POR POZO (opexFijoPozoUsd) y el
+      // variable por boe: esos sí nacen con el pozo nuevo.
       const fijo = vigente(opexFijoPorConc.get(concesion.id) ?? [], fecha)
       const activos = activosPorConcesionMes.get(`${concesion.id}|${fecha}`) || 1
-      const opexFijoUsd = ((fijo?.monto_usd_mes ?? 0) / activos) * mult.opex
+      const opexFijoUsd = opciones.incremental ? 0 : ((fijo?.monto_usd_mes ?? 0) / activos) * mult.opex
       const variable = vigente(opexVarPorYac.get(yacimiento.id) ?? [], fecha)
       const boe = bbl + mcf / MCF_POR_BOE
       const opexVarUsd = boe * (variable?.usd_por_boe ?? 0) * mult.opex

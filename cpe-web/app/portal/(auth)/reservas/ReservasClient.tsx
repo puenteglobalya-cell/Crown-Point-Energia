@@ -2296,6 +2296,11 @@ function CronogramaTab({ data, reload }: { data: Data; reload: () => void }) {
         precio de venta, caudal (bbl/d) de los primeros 5 años, costo US$/boe, y VAN/TIR/repago — para ver de un
         vistazo si la actividad, tal como está parametrizada, tiene sentido económico.
       </p>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 14px', fontStyle: 'italic' }}>
+        Costo incremental: sólo el OPEX propio del pozo nuevo (fijo por pozo + variable por boe). No incluye el OPEX
+        fijo de concesión, que es un costo compartido que ya existe con o sin este pozo — ese sí se ve en el
+        flujo consolidado del escenario, prorrateado entre todos los pozos activos.
+      </p>
       {escenarios.length > 0 && (
         <Field><label style={label}>Escenario para evaluar la actividad</label>
           <Select value={escenarioId} onChange={e => setEscenarioId(e.target.value)}
