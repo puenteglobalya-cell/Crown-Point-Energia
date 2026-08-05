@@ -794,7 +794,7 @@ export async function calcularEscenario(
   }
 
   let yacimientosConUoP = new Set<number>()
-  const MAX_ITERACIONES_CORTE = 8
+  const MAX_ITERACIONES_CORTE = 16
 
   for (let iteracion = 0; iteracion < MAX_ITERACIONES_CORTE; iteracion++) {
     recalcularActivosAprox()
