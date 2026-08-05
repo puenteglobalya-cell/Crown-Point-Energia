@@ -2292,9 +2292,9 @@ function CronogramaTab({ data, reload }: { data: Data; reload: () => void }) {
   return (
     <Seccion title="Razonabilidad de actividad y cronograma de campaña">
       <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 6 }}>
-        Antes de mirar cronograma: ¿tiene sentido la actividad tal como está parametrizada? Por cada pozo tipo de
-        drilling/workover/pulling, el precio de venta que toma el motor, el volumen de los primeros 5 años, el costo
-        por boe, y el VAN/TIR/repago de correrlo aislado (sin CAPEX de campaña, sólo su propia curva).
+        Por cada pozo tipo de drilling/workover/pulling, corrido aislado con la curva propia (sin CAPEX de campaña):
+        precio de venta, caudal (bbl/d) de los primeros 5 años, costo US$/boe, y VAN/TIR/repago — para ver de un
+        vistazo si la actividad, tal como está parametrizada, tiene sentido económico.
       </p>
       {escenarios.length > 0 && (
         <Field><label style={label}>Escenario para evaluar la actividad</label>
