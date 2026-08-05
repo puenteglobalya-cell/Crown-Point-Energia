@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       // Bruto (sin participación) -- sólo como peso para las razones (regalía
       // %, participación % ponderada); nunca se muestra directo.
       ingresoBrutoPeso: number
-      regalias: number; opex: number; capex: number; depreciacion: number
+      regalias: number; regaliasNeto: number; opex: number; capex: number; depreciacion: number
       bbl: number; boeNeto: number; bblPrecioPonderado: number; participacionPonderada: number
     }
     const porAnio = new Map<number, Acc>()
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       const boe = bbl + Number(f.mcf_gas) / MCF_POR_BOE
       const ingresoBruto = Number(f.ingreso_bruto_usd)
       const a = porAnio.get(anioRelativo) ?? {
-        ingresoBrutoPeso: 0, regalias: 0, opex: 0, capex: 0, depreciacion: 0,
+        ingresoBrutoPeso: 0, regalias: 0, regaliasNeto: 0, opex: 0, capex: 0, depreciacion: 0,
         bbl: 0, boeNeto: 0, bblPrecioPonderado: 0, participacionPonderada: 0,
       }
       a.ingresoBrutoPeso += ingresoBruto
@@ -63,6 +63,9 @@ export async function GET(req: NextRequest) {
       // torta le toque a CPE -- dividir neto/neto o bruto/bruto da la misma
       // razón, pero mezclar (neto sobre bruto) la escalaría por participación.
       a.regalias += Number(f.regalias_usd)
+      // Neta, para el US$/boe: tiene que quedar en la misma base (neta) que
+      // el OPEX/boe para poder compararlos directo.
+      a.regaliasNeto += Number(f.regalias_usd) * part
       a.opex += (Number(f.opex_fijo_usd) + Number(f.opex_variable_usd) + Number(f.opex_fijo_pozo_usd)) * part
       a.capex += Number(f.capex_usd) * part
       a.depreciacion += Number(f.depreciacion_usd) * part
@@ -78,6 +81,7 @@ export async function GET(req: NextRequest) {
       precio_usd_bbl: a.bbl > 0 ? a.bblPrecioPonderado / a.bbl : null,
       costo_opex_usd_boe: a.boeNeto > 0 ? a.opex / a.boeNeto : null,
       regalia_pct: a.ingresoBrutoPeso > 0 ? a.regalias / a.ingresoBrutoPeso : null,
+      regalia_usd_boe: a.boeNeto > 0 ? a.regaliasNeto / a.boeNeto : null,
       amortizacion_usd: a.depreciacion,
       participacion_pct: a.ingresoBrutoPeso > 0 ? a.participacionPonderada / a.ingresoBrutoPeso : null,
       capex_usd: a.capex,

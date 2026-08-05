@@ -686,7 +686,8 @@ function CalcularTab({ data }: { data: Data }) {
 
 type AnioTablero = {
   anio: number; precio_usd_bbl: number | null; costo_opex_usd_boe: number | null
-  regalia_pct: number | null; amortizacion_usd: number; participacion_pct: number | null; capex_usd: number
+  regalia_pct: number | null; regalia_usd_boe: number | null
+  amortizacion_usd: number; participacion_pct: number | null; capex_usd: number
 }
 
 const fmtUsd2 = (n: number | null) => n == null ? '—' : `US$ ${n.toFixed(2)}`
@@ -720,6 +721,7 @@ function TableroAnualPanel({ escenarioId }: { escenarioId: string }) {
     { label: 'Precio US$/bbl (ponderado)', render: a => fmtUsd2(a.precio_usd_bbl) },
     { label: 'Costo OPEX US$/boe', render: a => fmtUsd2(a.costo_opex_usd_boe) },
     { label: 'Regalía %', render: a => fmtPct1(a.regalia_pct) },
+    { label: 'Regalía US$/boe', render: a => fmtUsd2(a.regalia_usd_boe) },
     { label: 'Participación de CPE %', render: a => fmtPct1(a.participacion_pct) },
     { label: 'Amortización', render: a => fmtUsdMM(a.amortizacion_usd) },
     { label: 'CAPEX', render: a => fmtUsdMM(a.capex_usd) },
