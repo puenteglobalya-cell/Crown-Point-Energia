@@ -1026,11 +1026,18 @@ export async function calcularEscenario(
     const amortizadoPozo = filasDelPozo.reduce((acc, f) => acc + (f.depreciacion_usd as number), 0)
     const faltantePozo = capexAmortizablePozo - amortizadoPozo
 
-    if (faltantePozo > 1 && filasDelPozo.length > 0) {
-      const ultimaDelPozo = filas[filas.length - 1]
+    // Antes sólo se corregía cuando faltaba amortizar (faltantePozo > 1) --
+    // la amortización por unidades de producción puede irse para el otro
+    // lado y SOBRE-amortizar un pozo (faltantePozo negativo), y ese exceso
+    // nunca se recuperaba: quedaba flotando como una diferencia global que
+    // no se podía rastrear a ningún pozo en particular. Se corrige en
+    // cualquiera de los dos sentidos.
+    if (Math.abs(faltantePozo) > 1 && filasDelPozo.length > 0) {
+      const ultimaDelPozo = filasDelPozo[filasDelPozo.length - 1]
       const nuevaDepr = (ultimaDelPozo.depreciacion_usd as number) + faltantePozo
-      // Se recalcula la fila afectada de punta a punta: la baja es deducible,
-      // así que cambia el impuesto y el flujo, no sólo la línea de amortización.
+      // Se recalcula la fila afectada de punta a punta: el ajuste es
+      // deducible (o reversa una deducción de más), así que cambia el
+      // impuesto y el flujo, no sólo la línea de amortización.
       const base = (ultimaDelPozo.resultado_antes_ganancias_usd as number) - faltantePozo
       const impuesto = base > 0 ? base * alicuotaGananciasEn(String(ultimaDelPozo.fecha)) : 0
       const neto = base - impuesto
@@ -1040,7 +1047,10 @@ export async function calcularEscenario(
       ultimaDelPozo.impuesto_ganancias_usd = impuesto
       ultimaDelPozo.resultado_neto_usd = neto
       ultimaDelPozo.cash_flow_neto_usd = (neto + nuevaDepr - (ultimaDelPozo.capex_usd as number)) * part
-      diag.add('baja_por_abandono', `Pozo "${registros[0].pozo.nombre}": US$ ${Math.round(faltantePozo).toLocaleString('es-AR')} de CAPEX quedaron sin amortizar porque se cortó antes de agotar su curva — se imputan como baja en su último mes`)
+      const msg = faltantePozo > 0
+        ? `Pozo "${registros[0].pozo.nombre}": US$ ${Math.round(faltantePozo).toLocaleString('es-AR')} de CAPEX quedaron sin amortizar porque se cortó antes de agotar su curva — se imputan como baja en su último mes`
+        : `Pozo "${registros[0].pozo.nombre}": la amortización por unidades de producción sobre-amortizó el pozo por US$ ${Math.round(-faltantePozo).toLocaleString('es-AR')} — se revierte el exceso en su último mes`
+      diag.add('baja_por_abandono', msg)
     }
   }
 
