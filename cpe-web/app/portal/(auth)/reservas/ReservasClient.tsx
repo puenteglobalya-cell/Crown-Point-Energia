@@ -678,8 +678,79 @@ function CalcularTab({ data }: { data: Data }) {
           </div>
         )
       })()}
+      {resultado && escenarioId && <TableroAnualPanel escenarioId={escenarioId} />}
       {resultado && escenarioId && <CostoBoePanel escenarioId={escenarioId} />}
     </Seccion>
+  )
+}
+
+type AnioTablero = {
+  anio: number; precio_usd_bbl: number | null; costo_opex_usd_boe: number | null
+  regalia_pct: number | null; amortizacion_usd: number; participacion_pct: number | null; capex_usd: number
+}
+
+const fmtUsd2 = (n: number | null) => n == null ? '—' : `US$ ${n.toFixed(2)}`
+const fmtPct1 = (n: number | null) => n == null ? '—' : `${(n * 100).toFixed(1)}%`
+const fmtUsdMM = (n: number) => `US$ ${(n / 1_000_000).toFixed(2)} MM`
+
+// Tablero de razonabilidad: una fila por variable, una columna por año —
+// los primeros 5-6 años son los que más pesan en cualquier cash flow de
+// largo plazo, así que es donde más importa poder chequear de un vistazo
+// que precio, costo, regalía, amortización, participación y CAPEX están
+// tomando valores razonables antes de confiar en el resultado a 20 años.
+function TableroAnualPanel({ escenarioId }: { escenarioId: string }) {
+  const [anios, setAnios] = useState<AnioTablero[] | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    setLoading(true); setErr(''); setAnios(null)
+    fetch(`/api/portal/reservas/tablero-anual?escenario_id=${escenarioId}`, { cache: 'no-store' })
+      .then(async r => { const j = await r.json(); if (!r.ok) throw new Error(j.error ?? 'Error'); return j })
+      .then(j => setAnios(j.anios))
+      .catch(e => setErr((e as Error).message))
+      .finally(() => setLoading(false))
+  }, [escenarioId])
+
+  if (loading) return <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 16 }}>Armando el tablero…</p>
+  if (err) return null
+  if (!anios || anios.length === 0) return null
+
+  const filas: { label: string; render: (a: AnioTablero) => string }[] = [
+    { label: 'Precio US$/bbl (ponderado)', render: a => fmtUsd2(a.precio_usd_bbl) },
+    { label: 'Costo OPEX US$/boe', render: a => fmtUsd2(a.costo_opex_usd_boe) },
+    { label: 'Regalía %', render: a => fmtPct1(a.regalia_pct) },
+    { label: 'Participación de CPE %', render: a => fmtPct1(a.participacion_pct) },
+    { label: 'Amortización', render: a => fmtUsdMM(a.amortizacion_usd) },
+    { label: 'CAPEX', render: a => fmtUsdMM(a.capex_usd) },
+  ]
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <p style={{ fontSize: 12, fontWeight: 700, margin: '0 0 4px' }}>Tablero de razonabilidad — año 1 a {anios.length}</p>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
+        Las variables que más pesan en el cash flow, año por año, para chequear de un vistazo si son razonables antes
+        de confiar en el resultado consolidado a 20 años.
+      </p>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+              <th style={{ padding: '6px 8px' }}>Variable</th>
+              {anios.map(a => <th key={a.anio} style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>Año {a.anio}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {filas.map(f => (
+              <tr key={f.label} style={{ borderBottom: '1px solid var(--rule)' }}>
+                <td style={{ padding: '6px 8px', fontWeight: 600 }}>{f.label}</td>
+                {anios.map(a => <td key={a.anio} style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{f.render(a)}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   )
 }
 
