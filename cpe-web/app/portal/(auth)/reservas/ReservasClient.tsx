@@ -3319,15 +3319,24 @@ function TornadoChart({ t }: { t: Tornado }) {
           <text x={x(t.npv_base_usd)} y={PAD_T - 14} fontSize="9" fill="var(--fg-muted)" textAnchor="middle">base</text>
           {t.barras.map((b, i) => {
             const y = PAD_T + i * FILA
-            const x1 = x(Math.min(b.npv_abajo, b.npv_arriba))
-            const x2 = x(Math.max(b.npv_abajo, b.npv_arriba))
+            // El rojo SIEMPRE es "a la baja" y el azul SIEMPRE es "al alza"
+            // -- no el lado izquierdo/derecho del VAN. Para producción y
+            // precio (variables de ingreso) coinciden: bajar la variable
+            // baja el VAN, así que el rojo queda a la izquierda. Para CAPEX
+            // y OPEX (son costos) es al revés -- bajar el costo SUBE el VAN,
+            // así que ahí el rojo aparece a la derecha. Dibujar por
+            // magnitud (el más chico a la izquierda) en vez de por
+            // dirección de la variable hacía que el color no coincidiera
+            // con la leyenda para esas dos filas.
+            const xAbajo = x(b.npv_abajo)
+            const xArriba = x(b.npv_arriba)
             const xb = x(t.npv_base_usd)
             return (
               <g key={b.variable} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} style={{ cursor: 'pointer' }}>
                 <rect x={PAD_L} y={y} width={W - PAD_L - 16} height={FILA} fill={hover === i ? 'rgba(0,0,0,0.04)' : 'transparent'} />
                 <text x={PAD_L - 8} y={y + 14} fontSize="11" fill="var(--fg-soft)" textAnchor="end">{b.variable}</text>
-                <rect x={x1} y={y + 4} width={Math.max(xb - x1, 0)} height={16} fill="#d99b91" stroke={hover === i ? 'var(--fg)' : 'none'} strokeWidth={1} />
-                <rect x={xb} y={y + 4} width={Math.max(x2 - xb, 0)} height={16} fill="#8f97c9" stroke={hover === i ? 'var(--fg)' : 'none'} strokeWidth={1} />
+                <rect x={Math.min(xb, xAbajo)} y={y + 4} width={Math.abs(xb - xAbajo)} height={16} fill="#d99b91" stroke={hover === i ? 'var(--fg)' : 'none'} strokeWidth={1} />
+                <rect x={Math.min(xb, xArriba)} y={y + 4} width={Math.abs(xb - xArriba)} height={16} fill="#8f97c9" stroke={hover === i ? 'var(--fg)' : 'none'} strokeWidth={1} />
                 <text x={W - 62} y={y + 16} fontSize="10" fill="var(--fg-muted)">±{(b.amplitud / 2e6).toFixed(1)}MM</text>
               </g>
             )
