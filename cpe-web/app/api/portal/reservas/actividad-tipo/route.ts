@@ -94,8 +94,13 @@ export async function GET(req: NextRequest) {
 
       const primeros5 = filas.slice(0, 60)
       const bblPrimeros5 = primeros5.reduce((s, f) => s + Number(f.bbl_petroleo), 0)
-      const volumenPorAnio = Array.from({ length: 5 }, (_, y) =>
-        primeros5.slice(y * 12, y * 12 + 12).reduce((s, f) => s + Number(f.bbl_petroleo), 0))
+      // bbl/d promedio del año (no el total anual): así se ve de un vistazo la
+      // magnitud del caudal, en la misma unidad que se usa para pensar un pozo.
+      const bbldPorAnio = Array.from({ length: 5 }, (_, y) => {
+        const tramo = primeros5.slice(y * 12, y * 12 + 12)
+        const sumaBbl = tramo.reduce((s, f) => s + Number(f.bbl_petroleo), 0)
+        return tramo.length > 0 ? sumaBbl / (tramo.length * 30.4368) : 0
+      })
 
       const bbl = filas.reduce((s, f) => s + Number(f.bbl_petroleo), 0)
       const mcf = filas.reduce((s, f) => s + Number(f.mcf_gas), 0)
@@ -112,7 +117,7 @@ export async function GET(req: NextRequest) {
         nombre: pt.nombre,
         categoria: pt.categoria,
         precio_venta_usd_bbl: precioPromedio,
-        volumen_bbl_primeros_5_anios: volumenPorAnio,
+        volumen_bbld_primeros_5_anios: bbldPorAnio,
         volumen_bbl_5_anios_total: bblPrimeros5,
         costo_usd_boe: costoBoe,
         capex_usd: capex,

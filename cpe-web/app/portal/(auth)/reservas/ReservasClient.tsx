@@ -2120,7 +2120,7 @@ type ActividadTipo = {
   pozo_tipo_id: number; nombre: string; categoria: string
   sin_curva?: boolean; sin_produccion?: boolean
   precio_venta_usd_bbl?: number | null
-  volumen_bbl_primeros_5_anios?: number[]
+  volumen_bbld_primeros_5_anios?: number[]
   volumen_bbl_5_anios_total?: number
   costo_usd_boe?: number | null
   capex_usd?: number; npv_usd?: number; irr_pct?: number | null
@@ -2164,7 +2164,7 @@ function ActividadTipoResumen({ escenarioId, onResumenAnual }: { escenarioId: st
             <th style={{ padding: '6px 8px' }}>Pozo tipo</th>
             <th style={{ padding: '6px 8px' }}>Actividad</th>
             <th style={{ padding: '6px 8px' }}>Precio tomado</th>
-            <th style={{ padding: '6px 8px' }}>Vol. año 1–5 (bbl)</th>
+            <th style={{ padding: '6px 8px' }}>Vol. año 1–5 (bbl/d)</th>
             <th style={{ padding: '6px 8px' }}>Costo US$/boe</th>
             <th style={{ padding: '6px 8px' }}>CAPEX</th>
             <th style={{ padding: '6px 8px' }}>VAN</th>
@@ -2185,7 +2185,7 @@ function ActividadTipoResumen({ escenarioId, onResumenAnual }: { escenarioId: st
                 <>
                   <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{fmtUsd(it.precio_venta_usd_bbl)}/bbl</td>
                   <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>
-                    {(it.volumen_bbl_primeros_5_anios ?? []).map(v => Math.round(v).toLocaleString('en-US')).join(' · ')}
+                    {(it.volumen_bbld_primeros_5_anios ?? []).map(v => Math.round(v).toLocaleString('en-US')).join(' · ')}
                   </td>
                   <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{fmtUsd(it.costo_usd_boe)}</td>
                   <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{fmtUsd(it.capex_usd)}</td>
