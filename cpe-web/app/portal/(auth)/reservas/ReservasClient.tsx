@@ -678,7 +678,76 @@ function CalcularTab({ data }: { data: Data }) {
           </div>
         )
       })()}
+      {resultado && escenarioId && <CostoBoePanel escenarioId={escenarioId} />}
     </Seccion>
+  )
+}
+
+type AnioCostoBoe = {
+  anio: number; boe: number
+  opex_fijo_usd_boe: number | null; opex_variable_usd_boe: number | null
+  opex_fijo_pozo_usd_boe: number | null; costo_total_usd_boe: number | null
+}
+
+const fmtUsdBoe = (n: number | null) => n == null ? '—' : `US$ ${n.toFixed(2)}`
+
+// Chequeo de razonabilidad post-cálculo: el fijo por pozo y el fijo de
+// concesión (prorrateado) se cargan por separado en "Cargar datos" -- este
+// panel los junta con el variable y muestra cuánto termina impactando por
+// boe, año por año, para poder mirar de un vistazo si el costo consolidado
+// es razonable sin abrir el cashflow mensual fila por fila.
+function CostoBoePanel({ escenarioId }: { escenarioId: string }) {
+  const [anios, setAnios] = useState<AnioCostoBoe[] | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    setLoading(true); setErr(''); setAnios(null)
+    fetch(`/api/portal/reservas/costo-boe?escenario_id=${escenarioId}`, { cache: 'no-store' })
+      .then(async r => { const j = await r.json(); if (!r.ok) throw new Error(j.error ?? 'Error'); return j })
+      .then(j => setAnios(j.anios))
+      .catch(e => setErr((e as Error).message))
+      .finally(() => setLoading(false))
+  }, [escenarioId])
+
+  if (loading) return <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 16 }}>Calculando costo por boe…</p>
+  if (err) return null
+  if (!anios || anios.length === 0) return null
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <p style={{ fontSize: 12, fontWeight: 700, margin: '0 0 4px' }}>Costo integral por boe — primeros 5 años</p>
+      <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
+        OPEX fijo de concesión (prorrateado) + variable + fijo por pozo, todo neto de participación, dividido por
+        boe neto producido — para validar que el costo cargado por barril/por pozo está impactando razonablemente.
+      </p>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ textAlign: 'left', color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
+              <th style={{ padding: '6px 8px' }}>Año</th>
+              <th style={{ padding: '6px 8px' }}>Boe netos</th>
+              <th style={{ padding: '6px 8px' }}>Fijo concesión US$/boe</th>
+              <th style={{ padding: '6px 8px' }}>Variable US$/boe</th>
+              <th style={{ padding: '6px 8px' }}>Fijo por pozo US$/boe</th>
+              <th style={{ padding: '6px 8px', fontWeight: 700 }}>Total US$/boe</th>
+            </tr>
+          </thead>
+          <tbody>
+            {anios.map(a => (
+              <tr key={a.anio} style={{ borderBottom: '1px solid var(--rule)' }}>
+                <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{a.anio}</td>
+                <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{Math.round(a.boe).toLocaleString('en-US')}</td>
+                <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{fmtUsdBoe(a.opex_fijo_usd_boe)}</td>
+                <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{fmtUsdBoe(a.opex_variable_usd_boe)}</td>
+                <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{fmtUsdBoe(a.opex_fijo_pozo_usd_boe)}</td>
+                <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmtUsdBoe(a.costo_total_usd_boe)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   )
 }
 
