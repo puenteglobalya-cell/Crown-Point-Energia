@@ -31,12 +31,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'El escenario no tiene resultados. Corré el cálculo primero.' }, { status: 400 })
     }
 
-    const anioBase = Number(String(filas[0].fecha).slice(0, 4))
+    // Se ancla a años CALENDARIO desde 2026, no desde la fecha en que arranca
+    // la data del escenario (ver el mismo comentario en tablero-anual).
+    const ANIO_ANCLA = 2026
     const porAnio = new Map<number, { opex_fijo: number; opex_variable: number; opex_fijo_pozo: number; boe: number }>()
 
     for (const f of filas) {
       const anio = Number(String(f.fecha).slice(0, 4))
-      const anioRelativo = anio - anioBase
+      const anioRelativo = anio - ANIO_ANCLA
       if (anioRelativo < 0 || anioRelativo >= 5) continue
       const part = Number(f.participacion_pct ?? 1)
       const fila = porAnio.get(anio) ?? { opex_fijo: 0, opex_variable: 0, opex_fijo_pozo: 0, boe: 0 }
@@ -56,7 +58,7 @@ export async function GET(req: NextRequest) {
       costo_total_usd_boe: v.boe > 0 ? (v.opex_fijo + v.opex_variable + v.opex_fijo_pozo) / v.boe : null,
     }))
 
-    return NextResponse.json({ anio_base: anioBase, anios })
+    return NextResponse.json({ anio_base: ANIO_ANCLA, anios })
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 })
   }

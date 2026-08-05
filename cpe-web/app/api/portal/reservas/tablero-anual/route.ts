@@ -31,7 +31,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'El escenario no tiene resultados. Corré el cálculo primero.' }, { status: 400 })
     }
 
-    const anioBase = Number(String(filas[0].fecha).slice(0, 4))
+    // Se ancla a años CALENDARIO desde 2026, no desde la fecha en que arranca
+    // la data del escenario -- un escenario con producción básica cargada
+    // desde 2025-12 mezclaría un mes de 2025 con 11 de 2026 en el "año 1" si
+    // se anclara al primer registro, en vez de comparar años calendario
+    // limpios entre escenarios.
+    const ANIO_ANCLA = 2026
     type Acc = {
       // Bruto (sin participación) -- sólo como peso para las razones (regalía
       // %, participación % ponderada); nunca se muestra directo.
@@ -42,7 +47,7 @@ export async function GET(req: NextRequest) {
     const porAnio = new Map<number, Acc>()
 
     for (const f of filas) {
-      const anioRelativo = Number(String(f.fecha).slice(0, 4)) - anioBase
+      const anioRelativo = Number(String(f.fecha).slice(0, 4)) - ANIO_ANCLA
       if (anioRelativo < 0 || anioRelativo >= ANIOS_TABLERO) continue
       const part = Number(f.participacion_pct ?? 1)
       const bbl = Number(f.bbl_petroleo)
@@ -69,7 +74,7 @@ export async function GET(req: NextRequest) {
     }
 
     const anios = [...porAnio.entries()].sort((a, b) => a[0] - b[0]).map(([anioRelativo, a]) => ({
-      anio: anioBase + anioRelativo,
+      anio: ANIO_ANCLA + anioRelativo,
       precio_usd_bbl: a.bbl > 0 ? a.bblPrecioPonderado / a.bbl : null,
       costo_opex_usd_boe: a.boeNeto > 0 ? a.opex / a.boeNeto : null,
       regalia_pct: a.ingresoBrutoPeso > 0 ? a.regalias / a.ingresoBrutoPeso : null,
@@ -78,7 +83,7 @@ export async function GET(req: NextRequest) {
       capex_usd: a.capex,
     }))
 
-    return NextResponse.json({ anio_base: anioBase, anios })
+    return NextResponse.json({ anio_base: ANIO_ANCLA, anios })
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 })
   }
