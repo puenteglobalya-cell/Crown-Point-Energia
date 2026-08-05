@@ -3,8 +3,10 @@ import { verifyAuthenticationResponse } from '@simplewebauthn/server'
 import { isoBase64URL } from '@simplewebauthn/server/helpers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { getRpID, getOrigin, CHALLENGE_COOKIE } from '@/lib/webauthn'
+import { isSameOrigin } from '@/lib/csrf'
 
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const expectedChallenge = req.cookies.get(CHALLENGE_COOKIE)?.value
   if (!expectedChallenge) {
     return NextResponse.json({ error: 'Challenge expirado, intentá de nuevo' }, { status: 400 })

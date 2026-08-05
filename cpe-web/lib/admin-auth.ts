@@ -3,10 +3,15 @@ import { cookies } from 'next/headers'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 
 export const CMS_ADMIN_EMAILS: string[] =
-  (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
+  (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
 
+// Supabase Auth normaliza emails a minúsculas, pero sin este .toLowerCase()
+// acá el allowlist dependía de que CMS_ADMIN_EMAILS también se hubiera
+// tipeado en minúsculas en Vercel — si alguien lo cargaba con mayúsculas, ese
+// admin perdía acceso elevado en silencio (falla cerrado, no es un agujero de
+// seguridad, pero sí un problema operativo).
 export function isAdminEmail(email: string | null | undefined): boolean {
-  return !!email && CMS_ADMIN_EMAILS.includes(email)
+  return !!email && CMS_ADMIN_EMAILS.includes(email.toLowerCase())
 }
 
 async function getAuthenticatedUser() {

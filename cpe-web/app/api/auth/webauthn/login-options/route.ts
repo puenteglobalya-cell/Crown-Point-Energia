@@ -3,8 +3,10 @@ import { generateAuthenticationOptions } from '@simplewebauthn/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { getRpID, CHALLENGE_COOKIE } from '@/lib/webauthn'
 import { proteger } from '@/lib/proteccion'
+import { isSameOrigin } from '@/lib/csrf'
 
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const { email } = await req.json()
   if (!email) return NextResponse.json({ error: 'Falta email' }, { status: 400 })
 

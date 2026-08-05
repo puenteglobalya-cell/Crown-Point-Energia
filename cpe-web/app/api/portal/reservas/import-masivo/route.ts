@@ -10,6 +10,12 @@ import { ENTITIES } from '@/app/portal/(auth)/reservas/entityConfig'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
+// Mismo tope que el resto de los uploads de la app (admin/reportes,
+// cms/docs, admin/investor-documents) — sin esto, un archivo enorme (o un
+// zip-bomb-style .xlsx) se pasaba directo a ExcelJS sin ningún chequeo antes
+// de parsearlo.
+const MAX_FILE_SIZE = 52_428_800 // 50 MB
+
 type Opciones = Record<string, { id: unknown; nombre?: unknown }[]>
 
 function celdaATexto(v: ExcelJS.CellValue): string {
@@ -48,6 +54,9 @@ export async function POST(req: NextRequest) {
   const form = await req.formData()
   const file = form.get('file')
   if (!(file instanceof Blob)) return NextResponse.json({ error: 'Falta el archivo' }, { status: 400 })
+  if (file.size > MAX_FILE_SIZE) {
+    return NextResponse.json({ error: `El archivo pesa más de ${MAX_FILE_SIZE / 1024 / 1024} MB — partilo en tandas más chicas.` }, { status: 400 })
+  }
 
   const wb = new ExcelJS.Workbook()
   try {

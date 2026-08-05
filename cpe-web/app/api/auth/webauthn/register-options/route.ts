@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateRegistrationOptions } from '@simplewebauthn/server'
 import { createSupabaseServerClient, createSupabaseServerAdminClient } from '@/lib/supabase'
 import { getRpID, RP_NAME, CHALLENGE_COOKIE } from '@/lib/webauthn'
+import { isSameOrigin } from '@/lib/csrf'
 
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const supabase = createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

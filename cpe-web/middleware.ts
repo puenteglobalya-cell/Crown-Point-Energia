@@ -13,7 +13,7 @@ const AUTH_COOKIE_OPTIONS: CookieOptions = {
 }
 type RoleRow = { role: string; activo: boolean }
 
-const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
+const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
 
 function buildCsp(nonce: string): string {
   return [
@@ -142,7 +142,7 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       return NextResponse.redirect(new URL('/portal/login', request.url))
     }
-    const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
+    const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email.toLowerCase())
     let portalIsAdmin = !!isAdminEmail
     if (!isAdminEmail) {
       const roleRow = await getRole()
@@ -163,13 +163,13 @@ export async function middleware(request: NextRequest) {
 
   // Logged-in admin on /portal/login → redirect to /portal
   if (pathname === '/portal/login' && user) {
-    const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
+    const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email.toLowerCase())
     if (isAdminEmail) return NextResponse.redirect(new URL('/portal', request.url))
   }
 
   // ── Admin auth ───────────────────────────────────────────────────────────
   if ((pathname === '/admin' || pathname.startsWith('/admin/')) && !pathname.startsWith('/admin/login') && !pathname.startsWith('/admin/reset-password')) {
-    const isAdminEmailFlag = user?.email && CMS_ADMIN_EMAILS.includes(user.email)
+    const isAdminEmailFlag = user?.email && CMS_ADMIN_EMAILS.includes(user.email.toLowerCase())
     let isAdminUser = !!isAdminEmailFlag
     if (!isAdminEmailFlag) {
       let userRole: string | null = null
@@ -200,7 +200,7 @@ export async function middleware(request: NextRequest) {
 
   // Logged-in admin on /admin/login → redirect to /admin
   if (pathname === '/admin/login' && user) {
-    const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
+    const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email.toLowerCase())
     if (isAdminEmail) {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
@@ -218,7 +218,7 @@ export async function middleware(request: NextRequest) {
   // ── Infografía: portal users only ────────────────────────────────────────
   if (pathname.startsWith('/infografia')) {
     if (!user) return NextResponse.redirect(new URL('/portal/login', request.url))
-    const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email)
+    const isAdminEmail = user.email && CMS_ADMIN_EMAILS.includes(user.email.toLowerCase())
     if (!isAdminEmail) {
       const roleRow = await getRole()
       if (!roleRow?.activo) return NextResponse.redirect(new URL('/portal/login', request.url))

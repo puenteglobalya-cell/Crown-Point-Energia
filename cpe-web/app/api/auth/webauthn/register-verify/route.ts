@@ -4,8 +4,10 @@ import { isoBase64URL } from '@simplewebauthn/server/helpers'
 import { createSupabaseServerClient, createSupabaseServerAdminClient } from '@/lib/supabase'
 import { getRpID, getOrigin, CHALLENGE_COOKIE } from '@/lib/webauthn'
 import { dbError } from '@/lib/api-error'
+import { isSameOrigin } from '@/lib/csrf'
 
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const supabase = createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
