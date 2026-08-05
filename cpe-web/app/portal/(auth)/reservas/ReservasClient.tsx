@@ -347,7 +347,10 @@ function EntitySection({ cfg, data, reload }: {
   }
 
   async function onDelete(row: Row) {
-    if (!confirm('¿Eliminar este registro? Si otros registros dependen de él, la base va a rechazar el borrado.')) return
+    const mensaje = cfg.tabla === 'pozos_tipo'
+      ? '¿Eliminar este pozo tipo? También borra TODAS sus filas de curva de producción (no se puede deshacer). Las Intervenciones que lo usan quedan sin curva asignada, no se borran.'
+      : '¿Eliminar este registro? Si otros registros dependen de él, la base va a rechazar el borrado.'
+    if (!confirm(mensaje)) return
     setErr(''); setMsg('')
     const res = await fetch('/api/portal/reservas/data', {
       method: 'DELETE',
@@ -1183,7 +1186,15 @@ function EstadisticasPozoTipo({ data }: { data: Data }) {
     }
   })
   if (stats.length === 0) return null
-  const mejorBbl24m = Math.max(...stats.map(s => s.bbl24m), 0)
+  // El ★ solo compara entre pozo tipo de ACTIVIDAD (drilling/workover/
+  // pulling) — comparar contra la básica no tiene sentido, es el agregado
+  // de todo el campo (cientos de pozos) contra un pozo individual, así que
+  // "gana" siempre y no dice nada útil.
+  const mejorBbl24m = Math.max(...stats.filter(s => s.pt.categoria !== 'basico').map(s => s.bbl24m), 0)
+  const LABEL_TIPO: Record<string, string> = {
+    basico: 'Básica — agregado de todo el campo', drilling: 'Pozo nuevo (drilling)',
+    workover: 'Workover', pulling: 'Pulling',
+  }
 
   return (
     <div style={{ background: 'var(--bg)', border: '1px dashed var(--rule)', borderRadius: 'var(--r-md)', padding: 16, marginBottom: 16, overflowX: 'auto' }}>
@@ -1192,6 +1203,7 @@ function EstadisticasPozoTipo({ data }: { data: Data }) {
         <thead>
           <tr style={{ color: 'var(--fg-muted)', borderBottom: '1px solid var(--rule)' }}>
             <th style={{ padding: '6px 8px', textAlign: 'left' }}>Pozo tipo</th>
+            <th style={{ padding: '6px 8px', textAlign: 'left' }}>Qué es</th>
             <th style={{ padding: '6px 8px', textAlign: 'right' }}>Año 1 (bbl)</th>
             <th style={{ padding: '6px 8px', textAlign: 'right' }}>Año 2 (bbl)</th>
             <th style={{ padding: '6px 8px', textAlign: 'right' }}>Año 3 (bbl)</th>
@@ -1203,9 +1215,10 @@ function EstadisticasPozoTipo({ data }: { data: Data }) {
         <tbody>
           {stats.map(s => (
             <tr key={String(s.pt.id)} style={{ borderBottom: '1px solid var(--rule)', background: !s.sinCurva && s.bbl24m === mejorBbl24m ? 'rgba(45,122,74,0.06)' : undefined }}>
-              <td style={{ padding: '6px 8px', fontWeight: !s.sinCurva && s.bbl24m === mejorBbl24m ? 600 : 400 }}>
-                {String(s.pt.nombre)}{!s.sinCurva && s.bbl24m === mejorBbl24m ? ' ★' : ''}
+              <td style={{ padding: '6px 8px', fontWeight: !s.sinCurva && s.pt.categoria !== 'basico' && s.bbl24m === mejorBbl24m ? 600 : 400 }}>
+                {String(s.pt.nombre)}{!s.sinCurva && s.pt.categoria !== 'basico' && s.bbl24m === mejorBbl24m ? ' ★' : ''}
               </td>
+              <td style={{ padding: '6px 8px', color: 'var(--fg-muted)' }}>{LABEL_TIPO[String(s.pt.categoria)] ?? String(s.pt.categoria)}</td>
               {s.sinCurva ? (
                 <td colSpan={6} style={{ padding: '6px 8px', color: 'var(--fg-muted)' }}>Sin curva cargada</td>
               ) : (
@@ -1223,7 +1236,8 @@ function EstadisticasPozoTipo({ data }: { data: Data }) {
         </tbody>
       </table>
       <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '8px 0 0' }}>
-        ★ = mayor producción acumulada en los primeros 24 meses. "Declino año 2/3" es la caída de bbl de ese año contra el anterior — no incluye precio ni costo, es solo la curva física.
+        ★ = mayor producción acumulada en los primeros 24 meses, comparado solo entre pozo tipo de actividad (drilling/workover/pulling) — la básica no entra en esa comparación, es el agregado de
+        todo el campo, no un pozo individual. "Declino año 2/3" es la caída de bbl de ese año contra el anterior — no incluye precio ni costo, es solo la curva física.
       </p>
     </div>
   )
