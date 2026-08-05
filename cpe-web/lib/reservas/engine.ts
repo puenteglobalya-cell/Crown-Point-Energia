@@ -752,6 +752,65 @@ export async function calcularEscenario(
     if (registros.length > 0) registrosPorPozo.set(pozoVirtual.id, registros)
   }
 
+  // ─── Pre-corte por límite económico, ANTES del pool de UoP ─────────────
+  // El corte por límite económico recién se decide en la Pasada 2, más
+  // abajo -- pero el pool de amortización por unidades de producción (justo
+  // después) necesita saber cuánto va a producir REALMENTE cada pozo para
+  // armar su base de reservas. Sin este pre-corte, `registrosPorPozo`
+  // todavía tiene la curva COMPLETA de cada pozo (muchos años, aunque casi
+  // toda esa producción nunca se vaya a simular porque el pozo se corta
+  // mucho antes) — eso infla la base de reservas con producción "fantasma"
+  // que nunca ocurre, y el CAPEX de los pozos que sí siguen produciendo
+  // nunca termina de amortizarse porque las reservas nunca llegan a cero
+  // (quedan "reservas" contadas de más que jamás se producen). Se estima el
+  // corte con un cálculo liviano usando depreciación LINEAL (ignora el pool,
+  // todavía no existe en este punto) -- la depreciación sólo afecta el corte
+  // a través del impuesto, y justo en los meses límite la ganancia imponible
+  // suele ser cero o negativa, así que el impuesto ya es cero de cualquier
+  // forma: usar la lineal en vez del UoP final no cambia el mes de corte en
+  // la práctica.
+  const activosAprox = new Map<string, number>()
+  for (const registros of registrosPorPozo.values()) {
+    for (const r of registros) {
+      if (r.esFacilities) continue
+      const key = `${r.concesion.id}|${r.fecha}`
+      activosAprox.set(key, (activosAprox.get(key) ?? 0) + 1)
+    }
+  }
+  for (const [pozoId, registros] of registrosPorPozo) {
+    let mesesNegativosSeguidos = 0
+    let corteIdx = -1
+    for (let idx = 0; idx < registros.length; idx++) {
+      const r = registros[idx]
+      const precioOil = precioEn(r.yacimiento, 'petroleo', r.fecha) * mult.precioPetroleo
+      const precioGas = precioEn(r.yacimiento, 'gas', r.fecha) * mult.precioGas
+      const ingresoBruto = r.bbl * precioOil + r.mcf * precioGas
+      const regalia = vigente(regaliasPorConc.get(r.concesion.id) ?? [], r.fecha)
+      const regaliaUsd = ingresoBruto * (regalia?.porcentaje ?? 0)
+      const iibbUsd = ingresoBruto * (r.provincia?.alicuota_iibb ?? 0)
+      const dycUsd = ingresoBruto * alicuotaDyCEn(r.fecha)
+      const fijo = vigente(opexFijoPorConc.get(r.concesion.id) ?? [], r.fecha)
+      const activos = activosAprox.get(`${r.concesion.id}|${r.fecha}`) || 1
+      const opexFijoUsd = ((fijo?.monto_usd_mes ?? 0) / activos) * mult.opex
+      const variable = vigente(opexVarPorYac.get(r.yacimiento.id) ?? [], r.fecha)
+      const boe = r.bbl + r.mcf / MCF_POR_BOE
+      const opexVarUsd = boe * (variable?.usd_por_boe ?? 0) * mult.opex
+      const fijoPozo = vigente(opexFijoPozoPorConc.get(r.concesion.id) ?? [], r.fecha)
+      const opexFijoPozoUsd = r.esFacilities ? 0 : (fijoPozo?.usd_mes_pozo ?? 0) * mult.opex
+      const baseImponible = ingresoBruto - regaliaUsd - iibbUsd - dycUsd - opexFijoUsd - opexVarUsd - opexFijoPozoUsd - r.depreciacionLineal
+      const impuesto = baseImponible > 0 ? baseImponible * alicuotaGananciasEn(r.fecha) : 0
+      const resultadoNeto = baseImponible - impuesto
+      const flujoOperativo = resultadoNeto + r.depreciacionLineal
+      const produce = r.bbl > 0 || r.mcf > 0
+      if (produce && flujoOperativo < 0) mesesNegativosSeguidos++
+      else if (produce) mesesNegativosSeguidos = 0
+      if (mesesNegativosSeguidos >= 2) { corteIdx = idx; break }
+    }
+    if (corteIdx >= 0 && corteIdx < registros.length - 1) {
+      registrosPorPozo.set(pozoId, registros.slice(0, corteIdx + 1))
+    }
+  }
+
   // ─── Amortización por unidades de producción (UoP) ────────────────────
   // Método estándar del sector, y el que definió el cliente: la cuota del mes
   // es el valor residual del CAPEX por la proporción de reservas que se produjo
