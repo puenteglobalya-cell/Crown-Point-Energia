@@ -614,30 +614,70 @@ function CalcularTab({ data }: { data: Data }) {
           </div>
         </div>
       )}
-      {resultado && (resultado.diagnosticos?.length ?? 0) > 0 && (
-        <div style={{ marginTop: 20, border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', padding: '14px 16px', background: 'rgba(214,158,46,0.06)' }}>
-          <p style={{ fontSize: 12, fontWeight: 700, margin: '0 0 4px', color: 'var(--fg)' }}>
-            Revisar — {resultado.diagnosticos!.length} {resultado.diagnosticos!.length === 1 ? 'aviso' : 'avisos'} sobre los datos
-          </p>
-          <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
-            El cálculo corrió igual, pero donde falta un dato el motor asume cero (o 100% de participación).
-            Estos huecos son la causa más común de un NPV que no cierra.
-          </p>
-          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--fg-soft)' }}>
-            {resultado.diagnosticos!.slice(0, 12).map((d, i) => (
-              <li key={i} style={{ marginBottom: 3 }}>
-                {d.detalle}
-                {d.pozos_mes > 1 && <span style={{ color: 'var(--fg-muted)' }}> · {d.pozos_mes.toLocaleString('es-AR')} pozos-mes</span>}
-              </li>
-            ))}
-          </ul>
-          {resultado.diagnosticos!.length > 12 && (
-            <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '8px 0 0' }}>
-              …y {resultado.diagnosticos!.length - 12} avisos más.
+      {resultado && (resultado.diagnosticos?.length ?? 0) > 0 && (() => {
+        // "curva_agotada" y "corte_limite_economico" son esperables por
+        // decenas en una corrida de 20 años con cientos de pozos (cada uno
+        // agota su curva o llega a su límite económico en algún momento) --
+        // amontonados junto con avisos genuinamente raros (falta una
+        // regalía, un pozo sin concesión, la amortización no cuadra) hacían
+        // que estos últimos se pierdan en el volumen. Se separan: los raros
+        // van primero y expandidos, los de rutina quedan colapsados con un
+        // conteo por tipo.
+        const TIPOS_RUTINARIOS = new Set(['curva_agotada', 'corte_limite_economico', 'abandono_imputado', 'baja_por_abandono'])
+        const diags = resultado.diagnosticos!
+        const raros = diags.filter(d => !TIPOS_RUTINARIOS.has(d.tipo))
+        const rutinarios = diags.filter(d => TIPOS_RUTINARIOS.has(d.tipo))
+        const rutinariosPorTipo = new Map<string, number>()
+        for (const d of rutinarios) rutinariosPorTipo.set(d.tipo, (rutinariosPorTipo.get(d.tipo) ?? 0) + 1)
+
+        return (
+          <div style={{ marginTop: 20, border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', padding: '14px 16px', background: 'rgba(214,158,46,0.06)' }}>
+            <p style={{ fontSize: 12, fontWeight: 700, margin: '0 0 4px', color: 'var(--fg)' }}>
+              Revisar — {diags.length} {diags.length === 1 ? 'aviso' : 'avisos'} sobre los datos
             </p>
-          )}
-        </div>
-      )}
+            <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '0 0 10px' }}>
+              El cálculo corrió igual, pero donde falta un dato el motor asume cero (o 100% de participación).
+              Estos huecos son la causa más común de un NPV que no cierra.
+            </p>
+
+            {raros.length > 0 ? (
+              <>
+                <p style={{ fontSize: 11, fontWeight: 700, margin: '0 0 6px', color: 'var(--cp-negative)' }}>
+                  {raros.length} para revisar (no son de rutina):
+                </p>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--fg-soft)' }}>
+                  {raros.slice(0, 20).map((d, i) => (
+                    <li key={i} style={{ marginBottom: 3 }}>
+                      {d.detalle}
+                      {d.pozos_mes > 1 && <span style={{ color: 'var(--fg-muted)' }}> · {d.pozos_mes.toLocaleString('es-AR')} pozos-mes</span>}
+                    </li>
+                  ))}
+                </ul>
+                {raros.length > 20 && (
+                  <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '8px 0 0' }}>…y {raros.length - 20} más de este tipo.</p>
+                )}
+              </>
+            ) : (
+              <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '0 0 6px' }}>
+                Ningún aviso fuera de lo esperado — todo lo que sigue es de rutina.
+              </p>
+            )}
+
+            {rutinarios.length > 0 && (
+              <details style={{ marginTop: raros.length > 0 ? 12 : 0 }}>
+                <summary style={{ fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
+                  {rutinarios.length} de rutina (curva agotada / corte por límite económico — esperables en una corrida larga con muchos pozos)
+                </summary>
+                <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 11, color: 'var(--fg-muted)' }}>
+                  {[...rutinariosPorTipo.entries()].map(([tipo, n]) => (
+                    <li key={tipo}>{tipo}: {n}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        )
+      })()}
     </Seccion>
   )
 }
