@@ -1021,6 +1021,17 @@ export async function calcularEscenario(
     // pozo (y una concesión, con su propia participación) que no tenía nada
     // que ver. Se mueve dentro del loop para que cada pozo cuadre contra su
     // propio CAPEX y su propia última fila.
+    // Bajo unidades de producción el CAPEX se pool-ea a nivel YACIMIENTO y se
+    // reparte entre pozos en proporción a lo que produce cada uno (ver bloque
+    // de más arriba) -- un pozo puede terminar amortizando mucho más (o
+    // menos) que su propio CAPEX sin que sea un error: ese pool ya cuadra
+    // solo a nivel yacimiento, "por construcción" (comentario de la sección
+    // de UoP). Forzar el cuadre por pozo ahí adentro revierte ese reparto
+    // intencional -- por eso se salta para yacimientos que usan UoP; el
+    // cuadre por pozo sólo aplica bajo amortización lineal, donde cada pozo
+    // amortiza estrictamente su propio CAPEX y un corte anticipado sí deja un
+    // resto genuino sin amortizar.
+    const yacimientoDelPozo = registros[0]?.yacimiento?.id
     const filasDelPozo = filas.slice(primeraFilaDelPozo)
     const capexAmortizablePozo = filasDelPozo.reduce((acc, f) => acc + (f.capex_usd as number), 0) - costoAbandonoDeEstePozo
     const amortizadoPozo = filasDelPozo.reduce((acc, f) => acc + (f.depreciacion_usd as number), 0)
@@ -1032,7 +1043,7 @@ export async function calcularEscenario(
     // nunca se recuperaba: quedaba flotando como una diferencia global que
     // no se podía rastrear a ningún pozo en particular. Se corrige en
     // cualquiera de los dos sentidos.
-    if (Math.abs(faltantePozo) > 1 && filasDelPozo.length > 0) {
+    if (Math.abs(faltantePozo) > 1 && filasDelPozo.length > 0 && !yacimientosConUoP.has(yacimientoDelPozo)) {
       const ultimaDelPozo = filasDelPozo[filasDelPozo.length - 1]
       const nuevaDepr = (ultimaDelPozo.depreciacion_usd as number) + faltantePozo
       // Se recalcula la fila afectada de punta a punta: el ajuste es
