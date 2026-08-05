@@ -1433,11 +1433,11 @@ function GrillaCronograma({ data, reload }: { data: Data; reload: () => void }) 
               {pozosTipo.map(pt => (
                 <tr key={String(pt.id)} style={{ borderTop: '1px solid var(--rule)' }}>
                   <td style={{ padding: '4px 8px', whiteSpace: 'nowrap', position: 'sticky', left: 0, background: 'var(--bg)' }}>{String(pt.nombre)}</td>
-                  <td style={{ padding: '4px 8px', whiteSpace: 'nowrap', fontSize: 10, color: 'var(--fg-muted)' }}>
+                  <td style={{ padding: '4px 8px', whiteSpace: 'nowrap', fontSize: 11 }}>
                     {vidaEconomica[Number(pt.id)] ?? (
-                      <button type="button" onClick={() => verVidaEconomica(Number(pt.id))} disabled={calculandoVida === Number(pt.id)}
-                        style={{ background: 'none', border: 'none', color: 'var(--accent)', textDecoration: 'underline', cursor: 'pointer', fontSize: 10, padding: 0 }}>
-                        {calculandoVida === Number(pt.id) ? 'calculando…' : 'ver'}
+                      <button type="button" className="btn btn-primary" onClick={() => verVidaEconomica(Number(pt.id))} disabled={calculandoVida === Number(pt.id)}
+                        style={{ fontSize: 11, padding: '4px 12px' }}>
+                        {calculandoVida === Number(pt.id) ? 'Calculando…' : 'Ver vida económica'}
                       </button>
                     )}
                   </td>
