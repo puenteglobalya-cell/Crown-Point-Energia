@@ -605,6 +605,7 @@ ${hasVentanas ? `
     <div style="border:1px solid ${v.color}55;border-radius:8px;padding:12px 14px;background:${v.color}0d">
       <div style="font-size:11px;font-weight:700;color:${v.color}">${esc(v.area)} — Referencia ${esc(datos.mes)}</div>
       <div style="font-size:10px;color:var(--muted2);margin:2px 0 8px">${esc(v.regla)} · ${new Date(v.fecha_desde+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'short'})} – ${new Date(v.fecha_hasta+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'short'})}</div>
+      <div style="font-size:9px;color:var(--muted2);font-style:italic;margin-bottom:6px">BRENT de Referencia — no incluye ajustes (premio/descuento)</div>
       <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:${v.color}">US$ ${f(v.promedio,2)}/bbl</div>
       ${v.nota ? `<div style="font-size:9.5px;color:var(--rojo,#B33B2E);margin-top:4px">* ${esc(v.nota)}</div>` : ''}
     </div>`).join('')}
@@ -921,7 +922,7 @@ new Chart(document.getElementById('cVentanas'),{
       tooltip:{...tip, callbacks:{label:c=>\` US$ \${c.raw.toFixed(2)}/bbl\`}}
     },
     scales:{
-      x:{grid:{color:C.bg2}, ticks:{font:{family:"'JetBrains Mono'",size:9.5},color:C.muted,maxRotation:60,autoSkip:true}},
+      x:{grid:{color:C.bg2}, ticks:{font:{family:"'JetBrains Mono'",size:9.5},color:C.muted,maxRotation:60,autoSkip:true,autoSkipPadding:14,maxTicksLimit:14}},
       y:{grid:{color:C.bg2}, ticks:{callback:v=>\`\$\${v}\`,font:{family:"'JetBrains Mono'",size:10.5},color:C.muted}}
     }
   },
