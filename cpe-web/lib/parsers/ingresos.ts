@@ -551,8 +551,13 @@ function parsearVentanasCotizacion(wb: ExcelJS.Workbook): { ventanas: VentanaCot
       : undefined
     ventanas.push({
       area, regla: REGLA_VENTANA[area],
-      fecha_desde: grupo[grupo.length - 1].fecha.toISOString().slice(0, 10),
-      fecha_hasta: grupo[0].fecha.toISOString().slice(0, 10),
+      // Sobre `puntos` (con valor), no `grupo` (que puede incluir una fecha
+      // sin cotización, ej. "PENDIENTE") -- la serie del gráfico sólo tiene
+      // fechas con valor, así que un fecha_hasta/desde tomado del grupo
+      // completo podía no encontrar match ahí y hacer desaparecer toda la
+      // ventana (y su sombreado) en vez de sólo faltarle un punto.
+      fecha_desde: puntos[puntos.length - 1].fecha.toISOString().slice(0, 10),
+      fecha_hasta: puntos[0].fecha.toISOString().slice(0, 10),
       promedio,
       ...(nota ? { nota } : {}),
       puntos: [...puntos].reverse().map(p => ({ fecha: p.fecha.toISOString().slice(0, 10), brent: p.brent })),
