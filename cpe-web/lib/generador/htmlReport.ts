@@ -101,6 +101,36 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   const brentLegend  = macroPrevBrent ? 'true' : 'false'
   const hhLegend     = macroPrevHH    ? 'true' : 'false'
 
+  // ── Disparidad de ventanas de cotización ICE Brent ──────────────────────
+  // Cada área fija su Brent de referencia contra una ventana de cotización
+  // distinta (ver lib/parsers/ingresos.ts) -- mismo mes de entrega, precio
+  // distinto según qué días de cotización tomó cada una. Va antes de la
+  // tabla de DDEE porque el Brent de referencia de esa tabla es justamente
+  // el resultado de esta disparidad.
+  const ventanas = datos.ventanas_cotizacion ?? []
+  const serieBrent = datos.serie_brent_diaria ?? []
+  const hasVentanas = ventanas.length > 0 && serieBrent.length > 0
+  const VENTANA_COLORES = ['#6CAE52', '#4F5478', '#C9A24A', '#B33B2E']
+  const ventanasConIdx = hasVentanas ? ventanas.map((v, i) => ({
+    ...v,
+    color: VENTANA_COLORES[i % VENTANA_COLORES.length],
+    i0: serieBrent.findIndex(p => p.fecha === v.fecha_desde),
+    i1: serieBrent.findIndex(p => p.fecha === v.fecha_hasta),
+  })).filter(v => v.i0 !== -1 && v.i1 !== -1) : []
+  const serieBrentLabels = hasVentanas
+    ? JSON.stringify(serieBrent.map(p => {
+        const d = new Date(p.fecha + 'T00:00:00')
+        return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })
+      }))
+    : '[]'
+  const serieBrentData = hasVentanas ? j(serieBrent.map(p => p.brent)) : '[]'
+  const ventanasJs = hasVentanas ? JSON.stringify(ventanasConIdx.map(v => ({
+    area: v.area, color: v.color, i0: Math.min(v.i0, v.i1), i1: Math.max(v.i0, v.i1),
+  }))) : '[]'
+  const diferenciaVentanas = ventanasConIdx.length >= 2
+    ? Math.max(...ventanasConIdx.map(v => v.promedio)) - Math.min(...ventanasConIdx.map(v => v.promedio))
+    : null
+
   // ── DDEE export rights effective rate table ─────────────────────────────
   const IIBB = 0.03
   const ddeeRows = [55, 58, 60, 62, 64, 65, 66, 68, 70, 72, 75, 78, 80, 85, 90].map(p => {
@@ -549,6 +579,30 @@ ${hasMacro ? `
 <p style="font-size:10px;color:var(--muted2);text-align:right;margin-bottom:32px">Futuros próximos 12 meses · ${macroDate}${macroPrevNote} · ICE Futures Europe + CME Group</p>
 ` : ''}
 
+${hasVentanas ? `
+<div class="sec">Disparidad de Ventanas de Cotización ICE Brent</div>
+<div class="card" style="padding:22px 20px">
+  <div class="card-hdr">ICE Brent diario con las ventanas de cotización de cada área <span class="card-hdr-val">us$/bbl</span></div>
+  <p style="font-size:11px;color:var(--muted2);line-height:1.6;margin:8px 0 14px">
+    La diferencia de precio entre áreas para un mismo mes de entrega se origina en la <strong>ventana de cotización</strong>:
+    cada una toma un tramo distinto de cotizaciones del ICE Brent, no el mismo precio spot.
+  </p>
+  <div class="ch" style="height:260px"><canvas id="cVentanas"></canvas></div>
+  <div style="display:grid;grid-template-columns:repeat(${ventanasConIdx.length},1fr);gap:14px;margin-top:16px">
+    ${ventanasConIdx.map(v => `
+    <div style="border:1px solid ${v.color}55;border-radius:8px;padding:12px 14px;background:${v.color}0d">
+      <div style="font-size:11px;font-weight:700;color:${v.color}">${esc(v.area)} — Referencia ${esc(datos.mes)}</div>
+      <div style="font-size:10px;color:var(--muted2);margin:2px 0 8px">${esc(v.regla)} · ${new Date(v.fecha_desde+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'short'})} – ${new Date(v.fecha_hasta+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'short'})}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:${v.color}">US$ ${f(v.promedio,2)}/bbl</div>
+    </div>`).join('')}
+  </div>
+  ${diferenciaVentanas != null ? `
+  <p style="font-size:11px;color:var(--rojo, #B33B2E);text-align:center;background:#B33B2E0d;border-radius:6px;padding:8px;margin-top:14px">
+    Diferencia: US$ ${f(diferenciaVentanas,2)}/bbl por ventana de cotización — mismo mes de entrega, distinto precio
+  </p>` : ''}
+</div>
+` : ''}
+
 <div class="sec">Alícuota Efectiva — Derechos de Exportación (DDEE)</div>
 <div class="card" style="padding:22px 20px">
   <div class="card-hdr">Alícuota neta de DDEE según precio Brent <span class="card-hdr-val">incluye grossing-up con IIBB</span></div>
@@ -824,6 +878,52 @@ new Chart(document.getElementById('cPrecios'),{
         ctx.textAlign='left';
         ctx.textBaseline='middle';
         ctx.fillText(\`x̅ \${val.toFixed(1)}\`,x+52,y);
+        ctx.restore();
+      });
+    }
+  }]
+});
+` : ''}
+
+${hasVentanas ? `
+// ── DISPARIDAD DE VENTANAS DE COTIZACIÓN ICE BRENT ──────────
+const ventanasBandas = ${ventanasJs};
+new Chart(document.getElementById('cVentanas'),{
+  type:'line',
+  data:{
+    labels:${serieBrentLabels},
+    datasets:[{
+      label:'ICE Brent diario',
+      data:${serieBrentData},
+      borderColor:C.violeta, backgroundColor:'transparent',
+      tension:.25, pointRadius:2, pointHoverRadius:5,
+      pointBackgroundColor:C.violeta, borderWidth:2,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{display:false},
+      tooltip:{...tip, callbacks:{label:c=>\` US$ \${c.raw.toFixed(2)}/bbl\`}}
+    },
+    scales:{
+      x:{grid:{color:C.bg2}, ticks:{font:{family:"'JetBrains Mono'",size:9.5},color:C.muted,maxRotation:60,autoSkip:true}},
+      y:{grid:{color:C.bg2}, ticks:{callback:v=>\`\$\${v}\`,font:{family:"'JetBrains Mono'",size:10.5},color:C.muted}}
+    }
+  },
+  plugins:[{
+    id:'bandasVentana',
+    beforeDraw(chart){
+      const {ctx,chartArea:{top,bottom},scales:{x}}=chart;
+      ventanasBandas.forEach(v=>{
+        const x0=x.getPixelForValue(v.i0), x1=x.getPixelForValue(v.i1);
+        ctx.save();
+        ctx.fillStyle=v.color+'22';
+        ctx.fillRect(x0,top,x1-x0,bottom-top);
+        ctx.strokeStyle=v.color+'99';
+        ctx.setLineDash([4,3]);
+        ctx.strokeRect(x0,top,x1-x0,bottom-top);
         ctx.restore();
       });
     }

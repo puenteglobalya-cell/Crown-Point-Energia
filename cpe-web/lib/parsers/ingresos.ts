@@ -27,6 +27,17 @@ export interface DatosIngresos {
     RCLV: AreaGas
   }
   mensual_historico?: MesHistorico[]
+  ventanas_cotizacion?: VentanaCotizacion[]
+  serie_brent_diaria?: PuntoBrent[]
+}
+
+export interface PuntoBrent { fecha: string; brent: number }
+
+export interface VentanaCotizacion {
+  area: string; regla: string
+  fecha_desde: string; fecha_hasta: string
+  promedio: number
+  puntos: PuntoBrent[]
 }
 
 export interface AreaOil {
@@ -467,6 +478,11 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
       }
       return historico
     })(),
+
+    ...(() => {
+      const { ventanas, serie } = parsearVentanasCotizacion(wb)
+      return ventanas.length > 0 ? { ventanas_cotizacion: ventanas, serie_brent_diaria: serie } : {}
+    })(),
   }
 }
 
@@ -474,6 +490,60 @@ function leerHoja(wb: ExcelJS.Workbook, nombre: string): any[][] | null {
   const ws = wb.getWorksheet(nombre)
   if (!ws) return null
   return worksheetToGrid(ws)
+}
+
+// ─── Ventanas de cotización (hoja "Precio estimado") ─────────────────────
+// Cada área fija su Brent de referencia contra una ventana de cotización
+// distinta: ET-LT-PQ toma las primeras 7 cotizaciones DESPUÉS del cierre de
+// mes, PC-KK toma las 15 cotizaciones previas a la entrega (terminando el
+// 15 del mes de entrega). La hoja repite la etiqueta de área en TODAS las
+// filas de su ventana (no sólo en la primera) -- se agrupan las filas
+// consecutivas con la misma etiqueta en una sola ventana, en vez de generar
+// una ventana nueva por cada fila etiquetada.
+const REGLA_VENTANA: Record<string, string> = {
+  'ET-LT-PQ': '7 primeras cotizaciones tras el cierre de mes',
+  'PC-KK': '15 cotizaciones previas a la entrega',
+}
+
+function parsearVentanasCotizacion(wb: ExcelJS.Workbook): { ventanas: VentanaCotizacion[]; serie: PuntoBrent[] } {
+  const data = leerHoja(wb, 'Precio estimado')
+  if (!data) return { ventanas: [], serie: [] }
+
+  type Fila = { area: string | null; fecha: Date; brent: number }
+  const filas: Fila[] = []
+  for (const row of data) {
+    const fecha = row[4] // columna E
+    const brent = row[5] // columna F
+    if (!(fecha instanceof Date) || typeof brent !== 'number') continue
+    const areaRaw = row[3] // columna D
+    filas.push({ area: typeof areaRaw === 'string' && areaRaw.trim() ? areaRaw.trim() : null, fecha, brent })
+  }
+  // Se reordena de la fecha más nueva a la más vieja en vez de asumir el
+  // orden del Excel: agrupar filas "consecutivas" con la misma etiqueta
+  // depende de este orden.
+  filas.sort((a, b) => b.fecha.getTime() - a.fecha.getTime())
+
+  const ventanas: VentanaCotizacion[] = []
+  let i = 0
+  while (i < filas.length) {
+    const area = filas[i].area
+    if (!area || !REGLA_VENTANA[area]) { i++; continue }
+    let j = i
+    while (j < filas.length && filas[j].area === area) j++
+    const puntos = filas.slice(i, j)
+    const promedio = puntos.reduce((s, p) => s + p.brent, 0) / puntos.length
+    ventanas.push({
+      area, regla: REGLA_VENTANA[area],
+      fecha_desde: puntos[puntos.length - 1].fecha.toISOString().slice(0, 10),
+      fecha_hasta: puntos[0].fecha.toISOString().slice(0, 10),
+      promedio,
+      puntos: [...puntos].reverse().map(p => ({ fecha: p.fecha.toISOString().slice(0, 10), brent: p.brent })),
+    })
+    i = j
+  }
+
+  const serie = [...filas].reverse().map(f => ({ fecha: f.fecha.toISOString().slice(0, 10), brent: f.brent }))
+  return { ventanas, serie }
 }
 
 function leerHojaConFecha(wb: ExcelJS.Workbook): any[][] | null {
