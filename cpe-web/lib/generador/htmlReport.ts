@@ -107,8 +107,15 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   // distinto según qué días de cotización tomó cada una. Va antes de la
   // tabla de DDEE porque el Brent de referencia de esa tabla es justamente
   // el resultado de esta disparidad.
-  const ventanas = datos.ventanas_cotizacion ?? []
-  const serieBrent = datos.serie_brent_diaria ?? []
+  const ventanasRaw = datos.ventanas_cotizacion ?? []
+  // El gráfico arranca en la fecha de inicio de la ventana más temprana, no
+  // en el primer día de la serie completa -- meses de historia de Brent sin
+  // ninguna ventana marcada son ruido, no contexto útil para esta comparación.
+  const fechaMinVentana = ventanasRaw.length > 0
+    ? ventanasRaw.reduce((min, v) => v.fecha_desde < min ? v.fecha_desde : min, ventanasRaw[0].fecha_desde)
+    : null
+  const serieBrent = (datos.serie_brent_diaria ?? []).filter(p => !fechaMinVentana || p.fecha >= fechaMinVentana)
+  const ventanas = ventanasRaw
   const hasVentanas = ventanas.length > 0 && serieBrent.length > 0
   const VENTANA_COLORES = ['#6CAE52', '#4F5478', '#C9A24A', '#B33B2E']
   const ventanasConIdx = hasVentanas ? ventanas.map((v, i) => ({
@@ -285,6 +292,7 @@ header{
 .aval{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;color:var(--text);}
 .aval.hi{color:var(--ac,var(--naranja));}
 .aval.neg{color:var(--rojo);}
+.aval.pos{color:#2d7a4a;}
 .aval.mu{color:var(--muted2);font-style:italic;}
 .anote{margin-top:8px;padding:8px 0 4px;border-top:1px dashed var(--border);font-size:10.5px;color:var(--muted);line-height:1.5;}
 .abr{margin-top:12px;height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;}
@@ -468,7 +476,9 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="arow"><span class="albl">m³ entregados</span><span class="aval">${fN(areas.ET.entregados_m3)}</span></div>
     <div class="arow"><span class="albl">Volumen (bbl)</span><span class="aval">${fN(areas.ET.vol_bbl)}</span></div>
     ${areas.ET.brent_ref ? `<div class="arow"><span class="albl">BRENT ref. (us$/bbl)</span><span class="aval">${f(areas.ET.brent_ref)}</span></div>` : ''}
-    ${areas.ET.descuento ? `<div class="arow"><span class="albl">Descuento (us$/bbl)</span><span class="aval neg">(${f(Math.abs(areas.ET.descuento))})</span></div>` : ''}
+    ${areas.ET.descuento ? (areas.ET.descuento < 0
+      ? `<div class="arow"><span class="albl">Premio (us$/bbl)</span><span class="aval pos">+${f(Math.abs(areas.ET.descuento))}</span></div>`
+      : `<div class="arow"><span class="albl">Descuento (us$/bbl)</span><span class="aval neg">(${f(areas.ET.descuento)})</span></div>`) : ''}
     <div class="arow"><span class="albl">Precio neto (us$/bbl)</span><span class="aval hi">${f(areas.ET.precio_neto)}</span></div>
     <div class="arow"><span class="albl">Ingreso período (us$)</span><span class="aval hi">${fN(areas.ET.ingreso)}</span></div>
     ${areas.ET.stock_m3 ? `
@@ -488,6 +498,8 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     ${areas.PCKK.brent_2q ? `<div class="arow"><span class="albl">BRENT 2° Quincena (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_2q)}</span></div>` : ''}
     ${areas.PCKK.brent_ref && !areas.PCKK.brent_1q ? `<div class="arow"><span class="albl">BRENT ref. (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_ref)}</span></div>` : ''}
     ${areas.PCKK.brent_1q && areas.PCKK.brent_2q ? `<div class="anote">* Precio calculado en base a las <strong style="color:var(--azul)">2 semanas anteriores</strong> a la quincena de entrega</div>` : ''}
+    ${areas.PCKK.descuento ? `<div class="arow"><span class="albl">Descuento (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento)})</span></div>` : ''}
+    ${areas.PCKK.descuento_fijo ? `<div class="arow"><span class="albl">Descuento Cañadón Seco (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento_fijo)})</span></div>` : ''}
     <div class="arow"><span class="albl">Precio estimado (us$/bbl)</span><span class="aval hi">${f(areas.PCKK.precio_neto)}</span></div>
     <div class="arow"><span class="albl">Ingreso período (us$)</span><span class="aval hi">${fN(areas.PCKK.ingreso)}</span></div>
     ${areas.PCKK.stock_m3 ? `
@@ -594,6 +606,7 @@ ${hasVentanas ? `
       <div style="font-size:11px;font-weight:700;color:${v.color}">${esc(v.area)} — Referencia ${esc(datos.mes)}</div>
       <div style="font-size:10px;color:var(--muted2);margin:2px 0 8px">${esc(v.regla)} · ${new Date(v.fecha_desde+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'short'})} – ${new Date(v.fecha_hasta+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'short'})}</div>
       <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:${v.color}">US$ ${f(v.promedio,2)}/bbl</div>
+      ${v.nota ? `<div style="font-size:9.5px;color:var(--rojo,#B33B2E);margin-top:4px">* ${esc(v.nota)}</div>` : ''}
     </div>`).join('')}
   </div>
   ${diferenciaVentanas != null ? `

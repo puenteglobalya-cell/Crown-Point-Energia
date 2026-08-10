@@ -37,6 +37,7 @@ export interface VentanaCotizacion {
   area: string; regla: string
   fecha_desde: string; fecha_hasta: string
   promedio: number
+  nota?: string
   puntos: PuntoBrent[]
 }
 
@@ -57,6 +58,7 @@ export interface AreaOil {
   brent_1q?: number
   brent_2q?: number
   descuento?: number
+  descuento_fijo?: number
 }
 
 export interface AreaGas {
@@ -410,6 +412,8 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
         in_kind_bbl:   inkindBbl?.[3]  ?? undefined,
         in_kind_pct:   inkindPct?.[3]  ?? undefined,
         in_kind_us:    inkindUs?.[3]   ?? undefined,
+        descuento:      buscarValor(detalle, 'Descuento', 3) ?? 0,
+        descuento_fijo: buscarValor(detalle, 'Cañadon Seco', 3) ?? buscarValor(detalle, 'Cañadón Seco', 3) ?? 0,
       },
       CH: {
         prod_100_m3d:  prod100?.[4]    ?? 0,
@@ -509,14 +513,21 @@ function parsearVentanasCotizacion(wb: ExcelJS.Workbook): { ventanas: VentanaCot
   const data = leerHoja(wb, 'Precio estimado')
   if (!data) return { ventanas: [], serie: [] }
 
-  type Fila = { area: string | null; fecha: Date; brent: number }
+  // Se conservan también las filas con Brent vacío (ej. la cotización de
+  // hoy, todavía "PENDIENTE") -- si se descartan de una, el agrupador nunca
+  // se entera de que faltó un día dentro de la ventana, y el promedio queda
+  // corto sin ningún aviso al pie del gráfico.
+  type Fila = { area: string | null; fecha: Date; brent: number | null }
   const filas: Fila[] = []
   for (const row of data) {
     const fecha = row[4] // columna E
-    const brent = row[5] // columna F
-    if (!(fecha instanceof Date) || typeof brent !== 'number') continue
+    if (!(fecha instanceof Date)) continue
+    const brentRaw = row[5] // columna F
     const areaRaw = row[3] // columna D
-    filas.push({ area: typeof areaRaw === 'string' && areaRaw.trim() ? areaRaw.trim() : null, fecha, brent })
+    filas.push({
+      area: typeof areaRaw === 'string' && areaRaw.trim() ? areaRaw.trim() : null,
+      fecha, brent: typeof brentRaw === 'number' ? brentRaw : null,
+    })
   }
   // Se reordena de la fecha más nueva a la más vieja en vez de asumir el
   // orden del Excel: agrupar filas "consecutivas" con la misma etiqueta
@@ -530,19 +541,28 @@ function parsearVentanasCotizacion(wb: ExcelJS.Workbook): { ventanas: VentanaCot
     if (!area || !REGLA_VENTANA[area]) { i++; continue }
     let j = i
     while (j < filas.length && filas[j].area === area) j++
-    const puntos = filas.slice(i, j)
+    const grupo = filas.slice(i, j)
+    const puntos = grupo.filter((p): p is Fila & { brent: number } => p.brent != null)
+    const faltantes = grupo.filter(p => p.brent == null)
+    if (puntos.length === 0) { i = j; continue }
     const promedio = puntos.reduce((s, p) => s + p.brent, 0) / puntos.length
+    const nota = faltantes.length > 0
+      ? `Promedio con ${puntos.length} cotizaciones -- falta ${faltantes.map(f => f.fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })).join(', ')}`
+      : undefined
     ventanas.push({
       area, regla: REGLA_VENTANA[area],
-      fecha_desde: puntos[puntos.length - 1].fecha.toISOString().slice(0, 10),
-      fecha_hasta: puntos[0].fecha.toISOString().slice(0, 10),
+      fecha_desde: grupo[grupo.length - 1].fecha.toISOString().slice(0, 10),
+      fecha_hasta: grupo[0].fecha.toISOString().slice(0, 10),
       promedio,
+      ...(nota ? { nota } : {}),
       puntos: [...puntos].reverse().map(p => ({ fecha: p.fecha.toISOString().slice(0, 10), brent: p.brent })),
     })
     i = j
   }
 
-  const serie = [...filas].reverse().map(f => ({ fecha: f.fecha.toISOString().slice(0, 10), brent: f.brent }))
+  const serie = [...filas].reverse()
+    .filter((f): f is Fila & { brent: number } => f.brent != null)
+    .map(f => ({ fecha: f.fecha.toISOString().slice(0, 10), brent: f.brent }))
   return { ventanas, serie }
 }
 
