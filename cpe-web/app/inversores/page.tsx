@@ -32,6 +32,14 @@ export const metadata = {
   alternates: { canonical: 'https://crownpointenergy.com/inversores' },
 }
 
+const FIX_MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+function fmtFixDate(iso: string): string {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return iso
+  const [, y, mo, d] = m
+  return `${d}-${FIX_MESES[parseInt(mo, 10) - 1]}-${y.slice(2)}`
+}
+
 export default async function InversoresPage() {
   let s, allDocs: Documento[] = [], irDocs: IrDocument[] = [],
     irEvents: Awaited<ReturnType<typeof fetchIrEvents>> = [],
@@ -42,6 +50,11 @@ export default async function InversoresPage() {
   type CnvHecho = { doc_id: number; fecha: string; hora: string; tipo: string; descripcion: string; pdf_url: string | null }
   let cnvHechos: CnvHecho[] = []
 
+  type CalificacionLocal = { plazo: string; fecha: string; rating: string; perspectiva: string; accion: string }
+  type OnVigente = { isin: string; concepto: string; fecha: string; rating: string; perspectiva: string; accion: string }
+  let calificacionLocal: CalificacionLocal[] = []
+  let onVigentes: OnVigente[] = []
+
   const db = createSupabaseServerAdminClient()
 
   // ir_documents fetched independently so a failure here never blanks the rest of the page
@@ -49,7 +62,7 @@ export default async function InversoresPage() {
   irDocs = (irDocsRes.data ?? []) as IrDocument[]
 
   try {
-    const [sResult, docsResult, evts, anls, obs, cnvRes, mtgs] = await Promise.all([
+    const [sResult, docsResult, evts, anls, obs, cnvRes, mtgs, calRes, onRes] = await Promise.all([
       getCmsState(),
       db.from('documentos')
         .select('*')
@@ -65,6 +78,8 @@ export default async function InversoresPage() {
         .order('fecha', { ascending: false })
         .limit(100),
       fetchShareholderMeetings(),
+      db.from('fix_calificacion_local').select('plazo,fecha,rating,perspectiva,accion').order('plazo'),
+      db.from('fix_on_vigentes').select('isin,concepto,fecha,rating,perspectiva,accion').order('orden'),
     ])
     s = sResult
     allDocs = docsResult as Documento[]
@@ -73,6 +88,8 @@ export default async function InversoresPage() {
     obligaciones = obs
     cnvHechos = (cnvRes.data ?? []) as CnvHecho[]
     meetings = mtgs
+    calificacionLocal = (calRes.data ?? []) as CalificacionLocal[]
+    onVigentes = (onRes.data ?? []) as OnVigente[]
   } catch {
     s = await getCmsState()
   }
@@ -243,22 +260,26 @@ export default async function InversoresPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>08-may-26</td>
-                      <td><span className="lang-es" aria-hidden={lang !== 'es'}>Largo Plazo</span><span className="lang-en" aria-hidden={lang !== 'en'}>Long Term</span></td>
-                      <td>
-                        <span className="fix-rating-badge">
-                          <span className="fix-rating-value">BBB(arg)</span>
-                        </span>
-                      </td>
-                      <td>
-                        <span className="fix-perspectiva">
-                          <span className="fix-dot" />
-                          <span className="lang-es" aria-hidden={lang !== 'es'}>Estable</span><span className="lang-en" aria-hidden={lang !== 'en'}>Stable</span>
-                        </span>
-                      </td>
-                      <td><span className="fix-accion"><span className="lang-es" aria-hidden={lang !== 'es'}>Confirma</span><span className="lang-en" aria-hidden={lang !== 'en'}>Affirmed</span></span></td>
-                    </tr>
+                    {(calificacionLocal.length > 0 ? calificacionLocal : [
+                      { plazo: 'Largo Plazo', fecha: '2026-05-08', rating: 'BBB(arg)', perspectiva: 'Estable', accion: 'Confirma' },
+                    ]).map(c => (
+                      <tr key={c.plazo}>
+                        <td style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>{fmtFixDate(c.fecha)}</td>
+                        <td>{c.plazo}</td>
+                        <td>
+                          <span className="fix-rating-badge">
+                            <span className="fix-rating-value">{c.rating}</span>
+                          </span>
+                        </td>
+                        <td>
+                          <span className="fix-perspectiva">
+                            <span className="fix-dot" />
+                            {c.perspectiva}
+                          </span>
+                        </td>
+                        <td><span className="fix-accion">{c.accion}</span></td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
                 </div>
@@ -402,29 +423,14 @@ export default async function InversoresPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      {
-                        concepto: { es: 'ON Clase VI Garantizadas — hasta USD 20 MM ampliable a USD 30 MM', en: 'Class VI Secured Notes — up to USD 20 MM expandable to USD 30 MM' },
-                        fecha: '08-may-26', isin: 'AR0134464806',
-                        rating: 'A-(arg)', perspectiva: { es: 'Estable', en: 'Stable' }, accion: { es: 'Confirma', en: 'Affirmed' },
-                      },
-                      {
-                        concepto: { es: 'ON Clase VII — hasta USD 10 MM ampliables hasta USD 25 MM (conjunta con Clase VIII)', en: 'Class VII Notes — up to USD 10 MM expandable to USD 25 MM (combined with Class VIII)' },
-                        fecha: '08-may-26', isin: 'AR0370555119',
-                        rating: 'BBB(arg)', perspectiva: { es: 'Estable', en: 'Stable' }, accion: { es: 'Confirma', en: 'Affirmed' },
-                      },
-                      {
-                        concepto: { es: 'ON Clase IX Garantizadas — hasta USD 15 MM ampliables hasta USD 30 MM', en: 'Class IX Secured Notes — up to USD 15 MM expandable to USD 30 MM' },
-                        fecha: '08-may-26', isin: 'AR0764757453',
-                        rating: 'A-(arg)', perspectiva: { es: 'Estable', en: 'Stable' }, accion: { es: 'Confirma', en: 'Affirmed' },
-                      },
-                    ].map((on, i) => (
-                      <tr key={i}>
-                        <td style={{ color: 'var(--fg)', maxWidth: 280 }}>
-                          <span className="lang-es" aria-hidden={lang !== 'es'}>{on.concepto.es}</span>
-                          <span className="lang-en" aria-hidden={lang !== 'en'}>{on.concepto.en}</span>
-                        </td>
-                        <td style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>{on.fecha}</td>
+                    {(onVigentes.length > 0 ? onVigentes : [
+                      { concepto: 'ON Clase VI Garantizadas — hasta USD 20 MM ampliable a USD 30 MM', fecha: '2026-05-08', isin: 'AR0134464806', rating: 'A-(arg)', perspectiva: 'Estable', accion: 'Confirma' },
+                      { concepto: 'ON Clase VII — hasta USD 10 MM ampliables hasta USD 25 MM (conjunta con Clase VIII)', fecha: '2026-05-08', isin: 'AR0370555119', rating: 'BBB(arg)', perspectiva: 'Estable', accion: 'Confirma' },
+                      { concepto: 'ON Clase IX Garantizadas — hasta USD 15 MM ampliables hasta USD 30 MM', fecha: '2026-05-08', isin: 'AR0764757453', rating: 'A-(arg)', perspectiva: 'Estable', accion: 'Confirma' },
+                    ]).map(on => (
+                      <tr key={on.isin}>
+                        <td style={{ color: 'var(--fg)', maxWidth: 280 }}>{on.concepto}</td>
+                        <td style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>{fmtFixDate(on.fecha)}</td>
                         <td className="on-isin">{on.isin}</td>
                         <td>
                           <span className="fix-rating-badge">
@@ -434,11 +440,10 @@ export default async function InversoresPage() {
                         <td>
                           <span className="fix-perspectiva">
                             <span className="fix-dot" />
-                            <span className="lang-es" aria-hidden={lang !== 'es'}>{on.perspectiva.es}</span>
-                            <span className="lang-en" aria-hidden={lang !== 'en'}>{on.perspectiva.en}</span>
+                            {on.perspectiva}
                           </span>
                         </td>
-                        <td><span className="fix-accion"><span className="lang-es" aria-hidden={lang !== 'es'}>{on.accion.es}</span><span className="lang-en" aria-hidden={lang !== 'en'}>{on.accion.en}</span></span></td>
+                        <td><span className="fix-accion">{on.accion}</span></td>
                       </tr>
                     ))}
                   </tbody>
