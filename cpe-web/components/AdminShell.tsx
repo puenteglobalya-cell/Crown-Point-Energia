@@ -33,6 +33,7 @@ const NAV_GROUPS: { key: string; label: string; items: NavItem[] }[] = [
       { href: '/admin/kpi', label: 'KPIs Excel', icon: 'grid' },
       { href: '/admin/comunicados', label: 'Comunicados', icon: 'megaphone' },
       { href: '/admin/cnv-sync', label: 'Hechos CNV', icon: 'alert' },
+      { href: '/admin/fixscr-sync', label: 'Calificación FIX SCR', icon: 'alert' },
       { href: '/admin/push', label: 'Push', icon: 'bell' },
     ],
   },
