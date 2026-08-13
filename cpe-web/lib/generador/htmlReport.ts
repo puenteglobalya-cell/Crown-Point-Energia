@@ -42,7 +42,7 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   // quiere ver por separado de la venta regular, no reemplazándola.
   const inKindPCKK = Math.abs(areas.PCKK.in_kind_us ?? 0)
   const ingGasTotal = ingGasET + ingGasRCLV
-  const totalUS    = ingOilET + ingOilPCKK + ingOilCH + ingOilRCLV + ingGasTotal
+  const totalUS    = ingOilET + ingOilPCKK + ingOilCH + ingOilRCLV + ingGasTotal + inKindPCKK
   const totalMM    = totalUS / 1_000_000
   const totalMMStr = `us$ ${totalMM.toFixed(2).replace('.', ',')}MM`
 
@@ -1133,7 +1133,7 @@ function pedirPDF(btn){
 ${cclRate ? `<script>
 (function(){
   var totalUS = ${totalUS.toFixed(2)};
-  var oilUS = ${(ingOilET + ingOilPCKK + ingOilCH + ingOilRCLV).toFixed(2)};
+  var oilUS = ${(ingOilET + ingOilPCKK + ingOilCH + ingOilRCLV + inKindPCKK).toFixed(2)};
   var gasUS = ${ingGasTotal.toFixed(2)};
   var defaultCcl = ${Math.round(cclRate)};
   var inp = document.getElementById('cclInput');
