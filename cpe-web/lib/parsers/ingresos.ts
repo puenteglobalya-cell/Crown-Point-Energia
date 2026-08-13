@@ -330,7 +330,11 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
 
   const ventas_MM_final     = ventas_MM  > 0 ? ventas_MM  : ventasDerived
   const vol_producido_final = vol_prod   > 0 ? vol_prod   : volProdDerived
-  const vol_vendido_final   = vol_venta  > 0 ? vol_venta  : volVentaDerived
+  // El in kind de PC-KK (bbl entregados en especie, no vendidos por caja) no
+  // estaba contado en "Volumen Ventas" -- igual que pasaba con su valorización
+  // en us$ (ver htmlReport.ts), se suma acá convertido a BOE/d.
+  const inKindBoeD          = Math.abs(inkindBbl?.[3] ?? 0) / dias
+  const vol_vendido_final   = (vol_venta  > 0 ? vol_venta  : volVentaDerived) + inKindBoeD
 
   // Gas prices from Resumen H13 (ET/ETLPPQ) and I13 (RCLV) — direct cell address
   const resumenWs = wb.getWorksheet('Resumen')
