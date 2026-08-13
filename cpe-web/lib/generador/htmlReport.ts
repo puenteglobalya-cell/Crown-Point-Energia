@@ -66,6 +66,17 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   const mensualRCLV   = hasHistorico ? j(mensual_historico!.map(h => h.RCLV_MM)) : '[]'
   const mensualCH     = hasHistorico ? j(mensual_historico!.map(h => h.CH_MM))   : '[]'
   const mensualGas    = hasHistorico ? j(mensual_historico!.map(h => h.gas_MM))  : '[]'
+  // El in kind sólo se conoce para el mes actual (no hay histórico parseado
+  // de meses anteriores) -- se marca en cero en todos los meses salvo el
+  // que coincide con el período de este reporte.
+  const MES_ABR_CHART = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+  const mesActualAbrev = (() => {
+    const [py, pm] = datos.periodo.split('-')
+    return `${MES_ABR_CHART[parseInt(pm, 10) - 1]}-${py.slice(2)}`
+  })()
+  const mensualInKind = hasHistorico
+    ? j(mensual_historico!.map(h => h.mes === mesActualAbrev ? inKindPCKK / 1_000_000 : 0))
+    : '[]'
 
   const precioETArr   = hasPriceHistory ? j(mensual_historico!.map(h => h.precio_ET))   : '[]'
   const precioPCKKArr = hasPriceHistory ? j(mensual_historico!.map(h => h.precio_PCKK)) : '[]'
@@ -408,8 +419,11 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
 
   <div class="kpi">
     <div class="kpi-lbl">Ventas del Período</div>
-    <div class="kpi-val">${f(datos.ventas_MM)}<span class="kpi-unit">MM us$</span></div>
-    <div class="kpi-sub"><span class="tag rj">Stock mes sig.: ${f(datos.stock_MM)} MM us$</span></div>
+    <div class="kpi-val">${f(datos.ventas_MM + inKindPCKK / 1_000_000)}<span class="kpi-unit">MM us$</span></div>
+    <div class="kpi-sub">
+      <span class="tag rj">Stock mes sig.: ${f(datos.stock_MM)} MM us$</span>
+      ${inKindPCKK > 0 ? `<span class="tag mu">Venta ${f(datos.ventas_MM)} MM · In kind ${f(inKindPCKK / 1_000_000)} MM</span>` : ''}
+    </div>
   </div>
 
   <div class="kpi">
@@ -451,7 +465,10 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
   <div class="kpi">
     <div class="kpi-lbl">Ventas Valorizadas</div>
     <div class="kpi-val">${fN(datos.vol_vendido_boed * datos.dias)}<span class="kpi-unit">BOE/mes</span></div>
-    <div class="kpi-sub"><span class="tag mu">${f(valorizadoVendidoMes / 1_000_000)} MM us$ en el mes</span></div>
+    <div class="kpi-sub">
+      <span class="tag mu">${f((valorizadoVendidoMes + inKindPCKK) / 1_000_000)} MM us$ en el mes</span>
+      ${inKindPCKK > 0 ? `<span class="tag mu">Venta ${f(valorizadoVendidoMes / 1_000_000)} MM · In kind ${f(inKindPCKK / 1_000_000)} MM</span>` : ''}
+    </div>
   </div>
 
 </div>
@@ -785,6 +802,7 @@ new Chart(document.getElementById('cMensual'),{
       {label:'RCLV',    data:${mensualRCLV},  backgroundColor:C.violeta, borderRadius:4, borderSkipped:false},
       {label:'CH/PPCO', data:${mensualCH},    backgroundColor:C.verde,   borderRadius:4, borderSkipped:false},
       {label:'Gas',     data:${mensualGas},   backgroundColor:C.warm,    borderRadius:4, borderSkipped:false},
+      {label:'In kind (PC-KK)', data:${mensualInKind}, backgroundColor:C.inkind, borderRadius:4, borderSkipped:false},
     ]
   },
   options:{
