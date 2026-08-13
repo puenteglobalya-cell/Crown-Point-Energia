@@ -36,6 +36,11 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   const ingOilRCLV = areas.RCLV.ingreso
   const ingGasET   = gas.ET.ingreso
   const ingGasRCLV = gas.RCLV.ingreso
+  // In kind valorizado de PC-KK: hoy no está contado en ningún ingreso de
+  // arriba (no viene de "Total us$" del detalle) -- se agrega COMO EXTRA en
+  // las barras y el donut, no restado de ingOilPCKK, porque el cliente lo
+  // quiere ver por separado de la venta regular, no reemplazándola.
+  const inKindPCKK = Math.abs(areas.PCKK.in_kind_us ?? 0)
   const ingGasTotal = ingGasET + ingGasRCLV
   const totalUS    = ingOilET + ingOilPCKK + ingOilCH + ingOilRCLV + ingGasTotal
   const totalMM    = totalUS / 1_000_000
@@ -683,7 +688,7 @@ const C = {
   naranja:'#1F2566', azul:'#6CAE52', verde:'#C9A24A',
   violeta:'#4F5478', warm:'#8BC87A', rojo:'#B33B2E',
   muted:'#4F5478', muted2:'#8488A8', border:'#DCDAE6',
-  bg2:'#E6EAF5', card:'#FFFFFF'
+  bg2:'#E6EAF5', card:'#FFFFFF', inkind:'#3E7A9B'
 };
 const tip = {
   backgroundColor:C.card, borderColor:C.border, borderWidth:1,
@@ -703,25 +708,30 @@ new Chart(document.getElementById('cBarras'),{
       data:[${ingOilET.toFixed(0)},${ingOilPCKK.toFixed(0)},${ingOilCH.toFixed(0)},${ingOilRCLV.toFixed(0)},${ingGasET.toFixed(0)},${ingGasRCLV.toFixed(0)}],
       backgroundColor:[C.naranja,C.azul,C.verde,C.violeta,C.verde+'88',C.muted+'88'],
       borderRadius:5, borderSkipped:false
+    },{
+      label:'In kind valorizado',
+      data:[0,${inKindPCKK.toFixed(0)},0,0,0,0],
+      backgroundColor:C.inkind,
+      borderRadius:5, borderSkipped:false
     }]
   },
   options:{
     responsive:true, maintainAspectRatio:false,
     plugins:{
-      legend:{display:false},
-      tooltip:{...tip, callbacks:{label:c=>\` us$ \${(c.raw/1e6).toFixed(2)} MM\`}}
+      legend:{labels:{font:{size:10},usePointStyle:true,pointStyleWidth:7,color:C.muted}},
+      tooltip:{...tip, callbacks:{label:c=>\` \${c.dataset.label}: us$ \${(c.raw/1e6).toFixed(2)} MM\`}}
     },
     scales:{
-      x:{grid:{color:C.bg2}, ticks:{font:{family:"'JetBrains Mono'",size:10},color:C.muted}},
-      y:{grid:{color:C.bg2}, ticks:{callback:v=>\`\${(v/1e6).toFixed(0)}MM\`,font:{family:"'JetBrains Mono'",size:10},color:C.muted}}
+      x:{stacked:true, grid:{color:C.bg2}, ticks:{font:{family:"'JetBrains Mono'",size:10},color:C.muted}},
+      y:{stacked:true, grid:{color:C.bg2}, ticks:{callback:v=>\`\${(v/1e6).toFixed(0)}MM\`,font:{family:"'JetBrains Mono'",size:10},color:C.muted}}
     }
   }
 });
 
 // ── DONUT CON VALORES ────────────────────────────────────────
-const dVals   = [${ingOilET.toFixed(0)},${ingOilPCKK.toFixed(0)},${ingOilCH.toFixed(0)},${ingOilRCLV.toFixed(0)},${ingGasTotal.toFixed(0)}];
-const dLabels = ['ET / LT-PQ','PC-KK','CH / PPCO','RCLV','Gas'];
-const dColors = [C.naranja,C.azul,C.verde,C.violeta,C.warm];
+const dVals   = [${ingOilET.toFixed(0)},${ingOilPCKK.toFixed(0)},${ingOilCH.toFixed(0)},${ingOilRCLV.toFixed(0)},${ingGasTotal.toFixed(0)},${inKindPCKK.toFixed(0)}];
+const dLabels = ['ET / LT-PQ','PC-KK','CH / PPCO','RCLV','Gas','PC-KK (in kind)'];
+const dColors = [C.naranja,C.azul,C.verde,C.violeta,C.warm,C.inkind];
 const dTotal  = dVals.reduce((a,b)=>a+b,0);
 
 new Chart(document.getElementById('cDonut'),{
