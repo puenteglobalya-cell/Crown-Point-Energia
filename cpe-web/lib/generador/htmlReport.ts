@@ -613,6 +613,17 @@ ${hasMacro ? `
 <p style="font-size:10px;color:var(--muted2);text-align:right;margin-bottom:32px">Futuros próximos 12 meses · ${macroDate}${macroPrevNote} · ICE Futures Europe + CME Group</p>
 ` : ''}
 
+${datos.consumo_gas_cammesa && datos.consumo_gas_cammesa.length > 0 ? `
+<div class="sec">Consumo de Gas (CAMMESA)</div>
+<div class="card-full">
+  <div class="card-hdr">Consumo Diario de Gas — Plan Gas <span class="card-hdr-val">m³</span></div>
+  <div class="ch" style="height:240px"><canvas id="cConsumoGas"></canvas></div>
+</div>
+` : ''}
+<!-- Slot para CAMMESA (nemo CONSUMO_GAS_PD_PLAN_GAS, https://api.cammesa.com/pub-svc/public/...):
+     completar datos.consumo_gas_cammesa en el parser/sync y agregar el dataset del cConsumoGas
+     en el bloque de <script> junto a los otros charts. -->
+
 ${hasVentanas ? `
 <div class="sec">Disparidad de Ventanas de Cotización ICE Brent</div>
 <div class="card" style="padding:22px 20px">

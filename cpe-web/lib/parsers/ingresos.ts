@@ -29,7 +29,13 @@ export interface DatosIngresos {
   mensual_historico?: MesHistorico[]
   ventanas_cotizacion?: VentanaCotizacion[]
   serie_brent_diaria?: PuntoBrent[]
+  // Consumo diario de gas (CAMMESA, nemo CONSUMO_GAS_PD_PLAN_GAS) -- todavía no
+  // se sincroniza automáticamente; cuando se conecte, completar este campo acá
+  // y en htmlReport.ts aparece la sección "Consumo de Gas (CAMMESA)".
+  consumo_gas_cammesa?: PuntoConsumoGas[]
 }
+
+export interface PuntoConsumoGas { fecha: string; consumo_m3: number }
 
 export interface PuntoBrent { fecha: string; brent: number }
 
