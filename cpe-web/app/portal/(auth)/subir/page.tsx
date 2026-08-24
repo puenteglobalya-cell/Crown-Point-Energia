@@ -95,6 +95,9 @@ export default function PortalSubirPage() {
         fetch('/api/ccl').then(r => r.ok ? r.json() : null).then(d => {
           if (d?.indexValue) setCclRate(d.indexValue)
         }).catch(() => {})
+        fetch(`/api/cammesa-gas?periodo=${parsed.periodo}`).then(r => r.ok ? r.json() : null).then(d => {
+          if (d?.puntos?.length) setDatosIngresos(prev => prev ? { ...prev, consumo_gas_cammesa: d.puntos } : prev)
+        }).catch(() => {})
       } else if (tipo === 'facturacion') {
         const parsed = await parsearFacturacionExcel(f)
         setDatosFacturacion(parsed)

@@ -106,6 +106,11 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   const macroPrevHH  = (hasMacroPrev && macro!.hasHH)
     ? JSON.stringify(macro!.prevPoints!.map(p => p.hh > 0 ? +p.hh.toFixed(3) : null)) : ''
   const macroGridCols = (macro?.hasHH && macro?.hasBrent) ? '1fr 1fr' : '1fr'
+
+  // ── Consumo de gas CAMMESA (opcional) ──────────────────────────────────────
+  const consumoGas       = datos.consumo_gas_cammesa ?? []
+  const consumoGasLabels = JSON.stringify(consumoGas.map(p => new Date(p.fecha+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'short'})))
+  const consumoGasData   = JSON.stringify(consumoGas.map(p => Math.round(p.consumo_m3)))
   const macroPrevNote = macroPrevDate ? ` · comparado con ${macroPrevDate}` : ''
   // Pre-built prev dataset strings to avoid deep template literal nesting
   const brentPrevDs  = macroPrevBrent
@@ -613,16 +618,14 @@ ${hasMacro ? `
 <p style="font-size:10px;color:var(--muted2);text-align:right;margin-bottom:32px">Futuros próximos 12 meses · ${macroDate}${macroPrevNote} · ICE Futures Europe + CME Group</p>
 ` : ''}
 
-${datos.consumo_gas_cammesa && datos.consumo_gas_cammesa.length > 0 ? `
+${consumoGas.length > 0 ? `
 <div class="sec">Consumo de Gas (CAMMESA)</div>
 <div class="card-full">
-  <div class="card-hdr">Consumo Diario de Gas — Plan Gas <span class="card-hdr-val">m³</span></div>
+  <div class="card-hdr">Consumo Diario de Gas — Mercado Eléctrico Mayorista, Plan Gas <span class="card-hdr-val">dam³/d</span></div>
   <div class="ch" style="height:240px"><canvas id="cConsumoGas"></canvas></div>
 </div>
+<p style="font-size:10px;color:var(--muted2);text-align:right;margin-bottom:32px">Fuente: CAMMESA · consumo nacional total, no específico de CPE</p>
 ` : ''}
-<!-- Slot para CAMMESA (nemo CONSUMO_GAS_PD_PLAN_GAS, https://api.cammesa.com/pub-svc/public/...):
-     completar datos.consumo_gas_cammesa en el parser/sync y agregar el dataset del cConsumoGas
-     en el bloque de <script> junto a los otros charts. -->
 
 ${hasVentanas ? `
 <div class="sec">Disparidad de Ventanas de Cotización ICE Brent</div>
@@ -988,6 +991,10 @@ ${hasMacro ? `
 const _mL=${macroLabels};
 ${macro!.hasBrent ? `new Chart(document.getElementById('cMacroBrent'),{type:'line',data:{labels:_mL,datasets:[{label:'Actual',data:${macroBrentData},borderColor:'#82BC00',backgroundColor:'rgba(130,188,0,.12)',tension:.35,pointRadius:3.5,pointHoverRadius:5.5,pointBackgroundColor:'#82BC00',borderWidth:2.5,fill:true}${brentPrevDs}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:${brentLegend},labels:{font:{size:10},usePointStyle:true,color:C.muted}},tooltip:{...tip,callbacks:{label:c=>\`  \${c.dataset.label}: \${c.parsed.y?.toFixed(2)} USD/bbl\`}}},scales:{x:{grid:{color:C.bg2},ticks:{font:{family:"'JetBrains Mono'",size:10.5},color:C.muted,maxRotation:40}},y:{grid:{color:C.bg2},ticks:{callback:v=>\`\$\${Number(v).toFixed(0)}\`,font:{family:"'JetBrains Mono'",size:10.5},color:C.muted}}}}});` : ''}
 ${macro!.hasHH ? `new Chart(document.getElementById('cMacroHH'),{type:'line',data:{labels:_mL,datasets:[{label:'Actual',data:${macroHHData},borderColor:'#8B1A2A',backgroundColor:'rgba(139,26,42,.08)',tension:.35,pointRadius:3.5,pointHoverRadius:5.5,pointBackgroundColor:'#8B1A2A',borderWidth:2.5,fill:true}${hhPrevDs}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:${hhLegend},labels:{font:{size:10},usePointStyle:true,color:C.muted}},tooltip:{...tip,callbacks:{label:c=>\`  \${c.dataset.label}: \${c.parsed.y?.toFixed(3)} USD/MMBtu\`}}},scales:{x:{grid:{color:C.bg2},ticks:{font:{family:"'JetBrains Mono'",size:10.5},color:C.muted,maxRotation:40}},y:{grid:{color:C.bg2},ticks:{callback:v=>\`\$\${Number(v).toFixed(2)}\`,font:{family:"'JetBrains Mono'",size:10.5},color:C.muted}}}}});` : ''}
+` : ''}
+
+${consumoGas.length > 0 ? `
+new Chart(document.getElementById('cConsumoGas'),{type:'line',data:{labels:${consumoGasLabels},datasets:[{label:'Consumo total',data:${consumoGasData},borderColor:C.inkind,backgroundColor:C.inkind+'1f',tension:.3,pointRadius:2.5,pointHoverRadius:5,pointBackgroundColor:C.inkind,borderWidth:2.5,fill:true}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{...tip,callbacks:{label:c=>\`  \${Number(c.parsed.y).toLocaleString('es-AR')} dam³/d\`}}},scales:{x:{grid:{color:C.bg2},ticks:{autoSkipPadding:14,maxTicksLimit:14,font:{family:"'JetBrains Mono'",size:10.5},color:C.muted}},y:{grid:{color:C.bg2},ticks:{callback:v=>Number(v).toLocaleString('es-AR'),font:{family:"'JetBrains Mono'",size:10.5},color:C.muted}}}}});
 ` : ''}
 
 function pedirPDF(btn){
