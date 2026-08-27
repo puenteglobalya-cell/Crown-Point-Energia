@@ -10,6 +10,15 @@ type NavItem = { href: string; label: string; icon: IconName; roles?: string[]; 
 // ─── 4 top-level categories (Área 1, punto 1) ────────────────────────────────
 const NAV_GROUPS: { key: string; label: string; items: NavItem[] }[] = [
   {
+    key: 'accesos-portal',
+    label: 'Accesos al Portal',
+    items: [
+      { href: '/portal', label: 'Reportes', icon: 'chart', hint: 'Portal privado — listado de reportes publicados' },
+      { href: '/portal/comercial', label: 'Comercial', icon: 'chart', hint: 'Reportes de Ingresos / Modelo de Comercialización' },
+      { href: '/portal/reservas', label: 'Simulador de reservas', icon: 'grid', hint: 'Motor de cálculo de reservas' },
+    ],
+  },
+  {
     key: 'contenido-web',
     label: 'Contenido Web',
     items: [
