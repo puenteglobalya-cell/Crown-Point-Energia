@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { requireAdminUser } from '@/lib/admin-auth'
+import { requireCmsUser } from '@/lib/cms-access'
 import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
 
 async function requireAdmin() {
-  return requireAdminUser()
+  return requireCmsUser()
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {

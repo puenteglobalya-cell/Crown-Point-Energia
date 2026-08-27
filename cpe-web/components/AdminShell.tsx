@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-type NavItem = { href: string; label: string; icon: IconName; roles?: string[]; hint?: string }
+type NavItem = { href: string; label: string; icon: IconName; roles?: string[]; hint?: string; cmsGated?: boolean }
 
 // ─── 4 top-level categories (Área 1, punto 1) ────────────────────────────────
 const NAV_GROUPS: { key: string; label: string; items: NavItem[] }[] = [
@@ -14,8 +14,8 @@ const NAV_GROUPS: { key: string; label: string; items: NavItem[] }[] = [
     label: 'Contenido Web',
     items: [
       { href: '/admin/inicio', label: 'Inicio', icon: 'home' },
-      { href: '/admin', label: 'Visibilidad y textos', icon: 'sliders', hint: 'Mostrar/ocultar secciones y editar textos cortos del sitio' },
-      { href: '/admin/cms', label: 'Editor de contenido', icon: 'edit', hint: 'Editor completo: inversores, operaciones, compañía, ESG, carreras' },
+      { href: '/admin', label: 'Visibilidad y textos', icon: 'sliders', hint: 'Mostrar/ocultar secciones y editar textos cortos del sitio', cmsGated: true },
+      { href: '/admin/cms', label: 'Editor de contenido', icon: 'edit', hint: 'Editor completo: inversores, operaciones, compañía, ESG, carreras', cmsGated: true },
       { href: '/admin/imagenes', label: 'Imágenes', icon: 'image' },
       { href: '/admin/bloques-fotos', label: 'Fotos de bloques', icon: 'image' },
       { href: '/admin/documentos', label: 'Documentos públicos', icon: 'file', hint: 'Balances, reportes y legales visibles para cualquier visitante' },
@@ -128,13 +128,16 @@ function Icon({ name, size = 17 }: { name: IconName; size?: number }) {
   )
 }
 
+// Cualquier rol que no sea 'admin' solo llega a /admin/* en primer lugar
+// porque el middleware ya lo dejó pasar a una ruta puntual (RRHH → rrhh,
+// Denuncias → compliance, o /admin + /admin/cms → manage_cms) — acá se
+// sandboxea el resto del menú para que no vea links a páginas a las que de
+// todos modos no puede entrar.
 function getVisibleGroups(role: string): typeof NAV_GROUPS {
-  if (role === 'rrhh' || role === 'compliance') {
-    return NAV_GROUPS
-      .map(g => ({ ...g, items: g.items.filter(item => item.roles?.includes(role)) }))
-      .filter(g => g.items.length > 0)
-  }
+  if (role === 'admin') return NAV_GROUPS
   return NAV_GROUPS
+    .map(g => ({ ...g, items: g.items.filter(item => item.roles?.includes(role) || item.cmsGated) }))
+    .filter(g => g.items.length > 0)
 }
 
 function isActiveHref(pathname: string, href: string) {

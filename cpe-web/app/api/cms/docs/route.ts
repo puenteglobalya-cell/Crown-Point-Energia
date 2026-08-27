@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { requireAdminUser } from '@/lib/admin-auth'
+import { requireCmsUser } from '@/lib/cms-access'
 import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
 
 const MAX_FILE_SIZE = 52_428_800 // 50 MB — matches Supabase bucket limit
 
 async function getAdmin() {
-  return requireAdminUser()
+  return requireCmsUser()
 }
 
 export async function GET() {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { requireAdminUser } from '@/lib/admin-auth'
+import { requireCmsUser } from '@/lib/cms-access'
 import { getCmsState, patchCmsState, type CMSState } from '@/lib/cms'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { isSameOrigin } from '@/lib/csrf'
@@ -9,7 +9,7 @@ import { dbError } from '@/lib/api-error'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const user = await requireAdminUser()
+  const user = await requireCmsUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const db = createSupabaseServerAdminClient()
@@ -25,7 +25,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  const user = await requireAdminUser()
+  const user = await requireCmsUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { action, id, label } = await req.json() as { action?: string; id?: number; label?: string }
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const { error } = await db.from('cms_history').insert({
       snapshot:   state,
       label:      label ?? null,
-      created_by: user.email,
+      created_by: user.user.email,
     })
     if (error) return dbError(error)
     return NextResponse.json({ ok: true })
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     await db.from('cms_history').insert({
       snapshot:   current,
       label:      `Auto (antes de restaurar #${id})`,
-      created_by: user.email,
+      created_by: user.user.email,
     })
 
     await patchCmsState(data.snapshot as CMSState)

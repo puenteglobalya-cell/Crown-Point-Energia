@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { requireAdminUser } from '@/lib/admin-auth'
+import { requireCmsUser } from '@/lib/cms-access'
 import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
 
@@ -56,7 +56,7 @@ function pickCols(body: Record<string, unknown>, cols: string[]): Record<string,
 type Params = { params: { table: string } }
 
 export async function GET(req: NextRequest, { params }: Params) {
-  if (!await requireAdminUser()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!await requireCmsUser()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const cfg = ALLOWED_TABLES[params.table]
   if (!cfg) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
 export async function POST(req: NextRequest, { params }: Params) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (!await requireAdminUser()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!await requireCmsUser()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const cfg = ALLOWED_TABLES[params.table]
   if (!cfg) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
 export async function PATCH(req: NextRequest, { params }: Params) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (!await requireAdminUser()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!await requireCmsUser()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const cfg = ALLOWED_TABLES[params.table]
   if (!cfg) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -110,7 +110,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
 export async function DELETE(req: NextRequest, { params }: Params) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (!await requireAdminUser()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!await requireCmsUser()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const cfg = ALLOWED_TABLES[params.table]
   if (!cfg) return NextResponse.json({ error: 'Not found' }, { status: 404 })

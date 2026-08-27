@@ -15,6 +15,29 @@ type RoleRow = { role: string; activo: boolean }
 
 const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
 
+// Default from lib/permissions-config.ts, duplicated here (not imported) so
+// this edge middleware never has to pull in that module's dependents — same
+// reasoning as AUTH_COOKIE_OPTIONS above. Keep in sync manually.
+const CMS_DEFAULT_ROLES = new Set(['admin'])
+
+async function roleCanManageCms(role: string): Promise<boolean> {
+  if (role === 'admin') return true
+  try {
+    const db = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data, error } = await Promise.race([
+      db.from('role_permissions').select('enabled').eq('role', role).eq('permission', 'manage_cms').maybeSingle(),
+      new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+    ])
+    if (error || !data) return CMS_DEFAULT_ROLES.has(role)
+    return !!data.enabled
+  } catch {
+    return CMS_DEFAULT_ROLES.has(role)
+  }
+}
+
 function buildCsp(nonce: string): string {
   return [
     "default-src 'self'",
@@ -184,6 +207,13 @@ export async function middleware(request: NextRequest) {
         }
       } else if (pathname.startsWith('/admin/denuncias')) {
         if (userRole !== 'compliance' && userRole !== 'admin') {
+          return NextResponse.redirect(new URL('/admin/login', request.url))
+        }
+      } else if (pathname === '/admin' || pathname.startsWith('/admin/cms')) {
+        // '/admin' (visibilidad y textos cortos) + '/admin/cms' (editor de
+        // contenido completo) son las dos pantallas de "editar la web" — las
+        // únicas que un rol con manage_cms (sin ser Admin) puede tocar.
+        if (!userRole || !(await roleCanManageCms(userRole))) {
           return NextResponse.redirect(new URL('/admin/login', request.url))
         }
       } else {

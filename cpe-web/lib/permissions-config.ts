@@ -11,7 +11,7 @@ export const PERMISSIONS = {
   publish_reports: 'Publicar / despublicar reportes',
   delete_reports:  'Eliminar reportes',
   manage_users:    'Gestionar usuarios',
-  manage_cms:      'Panel CMS / Admin',
+  manage_cms:      'Editar contenido de la web (CMS)',
   view_investor:   'Ver sección inversores',
   view_reservas:   'Ver simulador de reservas',
 } as const
@@ -25,7 +25,8 @@ export const PERMISSION_KEYS = Object.keys(PERMISSIONS) as Permission[]
 export const PERMISSION_GROUPS: { titulo: string; permisos: Permission[] }[] = [
   { titulo: 'Secciones del portal', permisos: ['view_dashboard', 'view_comercial', 'view_investor', 'view_reservas'] },
   { titulo: 'Reportes',             permisos: ['view_reports', 'view_drafts', 'upload_reports', 'publish_reports', 'delete_reports'] },
-  { titulo: 'Administración',       permisos: ['manage_users', 'manage_cms'] },
+  { titulo: 'Contenido web',        permisos: ['manage_cms'] },
+  { titulo: 'Administración',       permisos: ['manage_users'] },
 ]
 
 // These are always enabled for admin and cannot be toggled off
