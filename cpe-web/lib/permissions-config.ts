@@ -19,6 +19,15 @@ export const PERMISSIONS = {
 export type Permission = keyof typeof PERMISSIONS
 export const PERMISSION_KEYS = Object.keys(PERMISSIONS) as Permission[]
 
+// Agrupación solo para la UI de /admin/permisos (secciones colapsables) —
+// no afecta el motor de permisos. Todo permiso nuevo debe entrar en algún
+// grupo acá o queda fuera de la matriz visual (aunque el chequeo funcione igual).
+export const PERMISSION_GROUPS: { titulo: string; permisos: Permission[] }[] = [
+  { titulo: 'Secciones del portal', permisos: ['view_dashboard', 'view_comercial', 'view_investor', 'view_reservas'] },
+  { titulo: 'Reportes',             permisos: ['view_reports', 'view_drafts', 'upload_reports', 'publish_reports', 'delete_reports'] },
+  { titulo: 'Administración',       permisos: ['manage_users', 'manage_cms'] },
+]
+
 // These are always enabled for admin and cannot be toggled off
 export const ADMIN_LOCKED: Permission[] = ['manage_users', 'manage_cms']
 

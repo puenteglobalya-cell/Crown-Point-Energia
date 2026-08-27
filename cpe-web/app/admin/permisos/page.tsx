@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import { AdminPageHeader } from '@/components/AdminPageHeader'
-import { PERMISSIONS, ADMIN_LOCKED as ADMIN_LOCKED_LIST } from '@/lib/permissions-config'
+import { PERMISSIONS, PERMISSION_GROUPS, ADMIN_LOCKED as ADMIN_LOCKED_LIST } from '@/lib/permissions-config'
 
 const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas', 'compliance'] as const
 type Role = typeof ROLES[number]
@@ -24,6 +24,7 @@ export default function PermisosPage() {
   const [matrix, setMatrix]   = useState<Matrix>({})
   const [loading, setLoading] = useState(true)
   const [savingKey, setSavingKey] = useState('')
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -33,8 +34,6 @@ export default function PermisosPage() {
   }, [])
 
   useEffect(() => { load() }, [load])
-
-  const permissions = Object.keys(PERMISSION_LABELS)
 
   async function toggle(role: Role, permission: string, enabled: boolean) {
     if (role === 'admin' && ADMIN_LOCKED.has(permission) && !enabled) return
@@ -47,6 +46,14 @@ export default function PermisosPage() {
       body: JSON.stringify({ role, permission, enabled }),
     })
     setSavingKey('')
+  }
+
+  function toggleGroup(titulo: string) {
+    setCollapsed(prev => {
+      const next = new Set(prev)
+      if (next.has(titulo)) next.delete(titulo); else next.add(titulo)
+      return next
+    })
   }
 
   return (
@@ -75,29 +82,46 @@ export default function PermisosPage() {
               </tr>
             </thead>
             <tbody>
-              {permissions.map((perm, i) => (
-                <tr key={perm} style={{ borderBottom: i < permissions.length - 1 ? '1px solid var(--rule)' : 'none' }}>
-                  <td style={{ padding: '10px 14px', color: 'var(--fg)', fontWeight: 500 }}>
-                    {PERMISSION_LABELS[perm]}
-                  </td>
-                  {ROLES.map(role => {
-                    const locked = role === 'admin' && ADMIN_LOCKED.has(perm)
-                    const key = `${role}:${perm}`
-                    return (
-                      <td key={role} style={{ textAlign: 'center', padding: '10px 14px' }}>
-                        <input
-                          type="checkbox"
-                          checked={!!matrix[role]?.[perm]}
-                          disabled={locked || savingKey === key}
-                          onChange={e => toggle(role, perm, e.target.checked)}
-                          style={{ width: 16, height: 16, cursor: locked ? 'not-allowed' : 'pointer', opacity: locked ? 0.5 : 1 }}
-                          title={locked ? 'Siempre activo para Admin' : undefined}
-                        />
+              {PERMISSION_GROUPS.map(grupo => {
+                const isCollapsed = collapsed.has(grupo.titulo)
+                return (
+                  <Fragment key={grupo.titulo}>
+                    <tr style={{ background: 'var(--bg-alt)' }}>
+                      <td
+                        colSpan={ROLES.length + 1}
+                        onClick={() => toggleGroup(grupo.titulo)}
+                        style={{ padding: '8px 14px', fontSize: 11.5, fontWeight: 700, color: 'var(--fg-muted)', letterSpacing: '.03em', cursor: 'pointer', userSelect: 'none', borderTop: '1px solid var(--rule)', borderBottom: '1px solid var(--rule)' }}
+                      >
+                        <span style={{ display: 'inline-block', width: 12, transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform .15s' }}>▾</span>
+                        {' '}{grupo.titulo}
                       </td>
-                    )
-                  })}
-                </tr>
-              ))}
+                    </tr>
+                    {!isCollapsed && grupo.permisos.map((perm, i) => (
+                      <tr key={perm} style={{ borderBottom: i < grupo.permisos.length - 1 ? '1px solid var(--rule)' : 'none' }}>
+                        <td style={{ padding: '10px 14px 10px 30px', color: 'var(--fg)', fontWeight: 500 }}>
+                          {PERMISSION_LABELS[perm]}
+                        </td>
+                        {ROLES.map(role => {
+                          const locked = role === 'admin' && ADMIN_LOCKED.has(perm)
+                          const key = `${role}:${perm}`
+                          return (
+                            <td key={role} style={{ textAlign: 'center', padding: '10px 14px' }}>
+                              <input
+                                type="checkbox"
+                                checked={!!matrix[role]?.[perm]}
+                                disabled={locked || savingKey === key}
+                                onChange={e => toggle(role, perm, e.target.checked)}
+                                style={{ width: 16, height: 16, cursor: locked ? 'not-allowed' : 'pointer', opacity: locked ? 0.5 : 1 }}
+                                title={locked ? 'Siempre activo para Admin' : undefined}
+                              />
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </Fragment>
+                )
+              })}
             </tbody>
           </table>
         </div>
