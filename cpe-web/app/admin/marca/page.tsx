@@ -142,6 +142,21 @@ const LOGO_RULES = {
   ],
 }
 
+// Mismo truco que en el simulador de reservas (ReservasClient.tsx): aísla
+// .print-area sin necesidad de conocer el nav de AdminShell, y fuerza que se
+// impriman los fondos de color (los navegadores los omiten por default).
+const PRINT_CSS = `
+@media print {
+  body * { visibility: hidden !important; }
+  .print-area, .print-area * { visibility: visible !important; }
+  .print-area { position: absolute !important; top: 0; left: 0; width: 100%; margin: 0 !important; padding: 16px !important; }
+  .no-print { display: none !important; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  @page { size: portrait; margin: 12mm; }
+  section { break-inside: avoid; }
+}
+`
+
 function ColorChip({ name, hex, on, token, usage }: { name: string; hex: string; on: string; token?: string; usage: string }) {
   const [copied, setCopied] = useState(false)
 
@@ -182,14 +197,22 @@ export default function MarcaPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '36px 24px' }}>
+    <div className="print-area" style={{ maxWidth: 1200, margin: '0 auto', padding: '36px 24px' }}>
+      <style>{PRINT_CSS}</style>
 
       {/* Header */}
-      <div style={{ marginBottom: 40 }}>
+      <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         <AdminPageHeader
           title="Manual de Marca"
           subtitle="Referencia de identidad visual de Crown Point Energía S.A. — paleta de colores, tipografía, logo y pautas de uso para garantizar coherencia en todas las comunicaciones."
         />
+        <button
+          className="no-print btn"
+          onClick={() => window.print()}
+          style={{ padding: '8px 16px', fontSize: 12, flexShrink: 0 }}
+        >
+          ↓ Descargar PDF
+        </button>
       </div>
 
       {/* ── 1. LOGO ─────────────────────────────────────────────────────────── */}
@@ -200,7 +223,7 @@ export default function MarcaPage() {
 
           {/* Logo preview */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--rule)', display: 'flex', gap: 8 }}>
+            <div className="no-print" style={{ padding: '12px 16px', borderBottom: '1px solid var(--rule)', display: 'flex', gap: 8 }}>
               {(['light', 'dark', 'green'] as const).map(t => (
                 <button
                   key={t}
