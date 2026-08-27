@@ -1,31 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import PushSubscriber from '@/components/PushSubscriber'
-
-// TEMP diagnostic — remove once the mobile-nav report is resolved.
-function ViewportDebugBadge() {
-  const [info, setInfo] = useState('')
-  useEffect(() => {
-    function update() {
-      setInfo(`${window.innerWidth}×${window.innerHeight} dpr=${window.devicePixelRatio} vv=${(window as any).visualViewport?.width ?? '—'}`)
-    }
-    update()
-    window.addEventListener('resize', update)
-    return () => window.removeEventListener('resize', update)
-  }, [])
-  return (
-    <div style={{
-      position: 'fixed', bottom: 8, left: 8, zIndex: 999,
-      background: '#000', color: '#0f0', fontSize: 11, fontFamily: 'monospace',
-      padding: '4px 8px', borderRadius: 4, opacity: 0.85, pointerEvents: 'none',
-    }}>
-      {info}
-    </div>
-  )
-}
 
 const ROLE_LABELS: Record<string, string> = {
   viewer:     'Consulta',
@@ -107,7 +85,6 @@ export default function PortalNav({
 
   return (
     <nav className="portal-nav">
-      <ViewportDebugBadge />
       <div className="portal-nav-row">
         {/* Left: logo + nav links (collapses on mobile) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>

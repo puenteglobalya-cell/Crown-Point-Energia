@@ -171,7 +171,7 @@ export const cssImpresion = `
 
 @media print {
   @page { size: A4 portrait; margin: 14mm 12mm; }
-  .no-print, .portal-main > nav, header nav { display: none !important; }
+  .no-print, .portal-nav { display: none !important; }
   body, .portal-main { background: #fff !important; padding: 0 !important; margin: 0 !important; }
   .informe { max-width: none; padding: 0; font-size: 10.5px; }
   .informe section { break-inside: avoid; }
