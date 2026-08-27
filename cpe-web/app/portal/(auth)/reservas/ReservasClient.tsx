@@ -258,10 +258,48 @@ function GuiaCarga({ pasos, omitidos, onIr, onCalcular, onOmitir }: {
   )
 }
 
-function Seccion({ title, children }: { title: string; children: React.ReactNode }) {
+// Imprime/exporta a PDF sólo el contenido de la pestaña activa: como las
+// otras 6 pestañas están desmontadas (renderizado condicional en
+// ReservasClient), alcanza con ocultar todo lo que no sea .print-area — no
+// hace falta apuntar al nav del portal ni a los botones de cada pestaña.
+// Orientación horizontal por default porque casi todas estas pantallas son
+// tablas financieras anchas.
+const PRINT_CSS = `
+@media print {
+  body * { visibility: hidden !important; }
+  .print-area, .print-area * { visibility: visible !important; }
+  .print-area { position: absolute !important; top: 0; left: 0; width: 100%; margin: 0 !important; padding: 12px !important; border: none !important; box-shadow: none !important; }
+  .no-print { display: none !important; }
+  @page { size: landscape; margin: 10mm; }
+  .print-area, .print-area * { overflow: visible !important; max-height: none !important; }
+  .print-area table { font-size: 9px; }
+  .print-area h3 { font-size: 16px; }
+}
+`
+
+function PrintButton() {
   return (
-    <div style={box}>
-      <h3 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 14px', color: 'var(--fg)' }}>{title}</h3>
+    <button
+      className="no-print btn"
+      onClick={() => window.print()}
+      style={{ padding: '6px 14px', fontSize: 12, flexShrink: 0 }}
+    >
+      🖨 Imprimir / PDF
+    </button>
+  )
+}
+
+function Seccion({ title, children, extra }: { title: string; children: React.ReactNode; extra?: React.ReactNode }) {
+  return (
+    <div style={box} className="print-area">
+      <style>{PRINT_CSS}</style>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: 'var(--fg)' }}>{title}</h3>
+        <div className="no-print" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {extra}
+          <PrintButton />
+        </div>
+      </div>
       {children}
     </div>
   )
@@ -518,20 +556,29 @@ function CalcularTab({ data }: { data: Data }) {
   }
 
   return (
-    <Seccion title="Correr el motor de cálculo">
+    <Seccion
+      title="Correr el motor de cálculo"
+      extra={resultado && escenarioId && (
+        <a className="btn" href={`/api/portal/reservas/export?escenario_id=${escenarioId}`} style={{ padding: '6px 14px', fontSize: 12, textDecoration: 'none' }}>
+          ↓ Excel
+        </a>
+      )}
+    >
       <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 14 }}>
         Recorre mes a mes cada pozo del escenario elegido y puebla el cash flow (ventas, regalías, OPEX, CAPEX/amortización, IIBB, Imp. D&amp;C, impuesto a las ganancias). Vuelve a correrse desde cero cada vez — reemplaza el resultado anterior de ese escenario.
       </p>
-      <Field><label style={label}>Escenario</label>
-        <Select name="escenario_id" value={escenarioId} onChange={e => setEscenarioId(e.target.value)} opts={data.escenarios.map(e => ({ value: String(e.id), label: String(e.nombre) }))} />
-      </Field>
+      <div className="no-print">
+        <Field><label style={label}>Escenario</label>
+          <Select name="escenario_id" value={escenarioId} onChange={e => setEscenarioId(e.target.value)} opts={data.escenarios.map(e => ({ value: String(e.id), label: String(e.nombre) }))} />
+        </Field>
+      </div>
       <Field><label style={label}>Tasa de descuento anual (ej. 0.10 = 10%)</label>
         <input value={tasa} onChange={e => setTasa(e.target.value)} type="number" step="0.001" style={input} />
       </Field>
       <Field><label style={label}>Horizonte en años (máximo 20)</label>
         <input value={horizonte} onChange={e => setHorizonte(e.target.value)} type="number" step="1" min="1" max="20" style={input} />
       </Field>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      <div className="no-print" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button className="btn btn-primary" disabled={!escenarioId || loading} onClick={calcular}>
           {loading ? 'Calculando…' : 'Calcular'}
         </button>
@@ -884,12 +931,14 @@ function ResultadosTab({ data }: { data: Data }) {
 
   return (
     <Seccion title="Resultados por escenario">
-      <Field><label style={label}>Escenario</label>
-        <Select name="escenario_id" value={escenarioId} onChange={e => cargar(e.target.value)} opts={data.escenarios.map(e => ({ value: String(e.id), label: String(e.nombre) }))} />
-      </Field>
-      {escenarioId && <BadgeEstado escenarioId={escenarioId} />}
+      <div className="no-print">
+        <Field><label style={label}>Escenario</label>
+          <Select name="escenario_id" value={escenarioId} onChange={e => cargar(e.target.value)} opts={data.escenarios.map(e => ({ value: String(e.id), label: String(e.nombre) }))} />
+        </Field>
+        {escenarioId && <BadgeEstado escenarioId={escenarioId} />}
+      </div>
       {escenarioId && (
-        <div style={{ marginBottom: 14 }}>
+        <div className="no-print" style={{ marginBottom: 14 }}>
           <a className="btn" href={`/api/portal/reservas/export?escenario_id=${escenarioId}`}
             style={{ padding: '7px 16px', fontSize: 12, textDecoration: 'none', display: 'inline-block' }}>
             ↓ Descargar Excel (con fórmulas)
@@ -905,7 +954,7 @@ function ResultadosTab({ data }: { data: Data }) {
         </div>
       )}
       {escenarioId && (
-        <div style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div className="no-print" style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
           {(['graficos', 'mensual', 'anual', 'oneline', 'depletion', 'fdc'] as const).map(v => (
             <button key={v} onClick={() => setVista(v)} style={{
               background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: 0,
@@ -3043,7 +3092,7 @@ function ConsolidadoTab() {
         Todos los proyectos se descuentan a la <strong>misma fecha base</strong>, si no la suma no significa nada.
       </p>
 
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 16 }}>
+      <div className="no-print" style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 16 }}>
         <div style={{ minWidth: 130 }}>
           <label style={label}>Tasa de descuento</label>
           <input value={tasa} onChange={e => setTasa(e.target.value)} type="number" step="0.01" style={input} />
@@ -4141,7 +4190,14 @@ function ComparablesTab({ data }: { data: Data }) {
   }
 
   return (
-    <Seccion title="Valuación por comparables de mercado">
+    <Seccion
+      title="Valuación por comparables de mercado"
+      extra={escenarioId && (
+        <a className="btn" href={`/api/portal/reservas/export?escenario_id=${escenarioId}`} style={{ padding: '6px 14px', fontSize: 12, textDecoration: 'none' }}>
+          ↓ Excel del escenario
+        </a>
+      )}
+    >
       <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 14 }}>
         Contrasta el valor técnico contra lo que el mercado paga por activos parecidos. Los múltiplos salen de las
         empresas cargadas en "Comparables de mercado" y se aplican a las métricas de CPE que sale del propio
@@ -4149,10 +4205,12 @@ function ComparablesTab({ data }: { data: Data }) {
         corre el promedio y la mediana no.
       </p>
 
-      <Field><label style={label}>Escenario (de donde salen reservas, producción y NPV10 de CPE)</label>
-        <Select value={escenarioId} onChange={e => cargar(e.target.value)}
-          opts={(data.escenarios ?? []).map(e => ({ value: String(e.id), label: String(e.nombre) }))} />
-      </Field>
+      <div className="no-print">
+        <Field><label style={label}>Escenario (de donde salen reservas, producción y NPV10 de CPE)</label>
+          <Select value={escenarioId} onChange={e => cargar(e.target.value)}
+            opts={(data.escenarios ?? []).map(e => ({ value: String(e.id), label: String(e.nombre) }))} />
+        </Field>
+      </div>
 
       {err && <p style={{ color: 'var(--cp-negative)', fontSize: 13 }}>{err}</p>}
       {loading && <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Calculando múltiplos…</p>}
