@@ -201,20 +201,20 @@ function parsearSalesVolume(
     const label = parseMesLabel(row[1])
     if (!label || seen.has(label)) continue
 
-    const PCKK_MM = Number(row[3] ?? 0) / 1_000_000
-    const ET_MM   = Number(row[4] ?? 0) / 1_000_000
-    const RCLV_MM = Number(row[5] ?? 0) / 1_000_000
-    const CH_MM   = (Number(row[6] ?? 0) + Number(row[7] ?? 0)) / 1_000_000
-    const gas_MM  = (Number(row[9] ?? 0) + Number(row[10] ?? 0)) / 1_000_000
+    const PCKK_MM = num(row[3]) / 1_000_000
+    const ET_MM   = num(row[4]) / 1_000_000
+    const RCLV_MM = num(row[5]) / 1_000_000
+    const CH_MM   = (num(row[6]) + num(row[7])) / 1_000_000
+    const gas_MM  = (num(row[9]) + num(row[10])) / 1_000_000
     const total_MM = PCKK_MM + ET_MM + RCLV_MM + CH_MM + gas_MM
     if (total_MM <= 0) continue
 
     // Match price row by same month label
     const priceRow = priceByLabel[label]
-    let precio_PCKK = Number(priceRow?.[3] ?? 0)  // D = PCKK
-    let precio_ET   = Number(priceRow?.[4] ?? 0)  // E = ETLPPQ
-    let precio_RCLV = Number(priceRow?.[5] ?? 0)  // F = RCLV
-    let precio_CH   = Number(priceRow?.[6] ?? 0)  // G = CH
+    let precio_PCKK = num(priceRow?.[3])  // D = PCKK
+    let precio_ET   = num(priceRow?.[4])  // E = ETLPPQ
+    let precio_RCLV = num(priceRow?.[5])  // F = RCLV
+    let precio_CH   = num(priceRow?.[6])  // G = CH
 
     // Current month has no price row yet — use prices from the detail sheet
     if (precio_ET === 0) {
@@ -290,7 +290,7 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   const gasProd = buscarFila(detalle, /Neto.*Gas|Gas.*Neto/, true)
   const gasPrec = buscarFila(detalle, /us.*mcf|mcf.*us/, true)
 
-  const stock_total = (stockUs?.[2] ?? 0) + (stockUs?.[3] ?? 0)
+  const stock_total = num(stockUs?.[2]) + num(stockUs?.[3])
 
   const currentPrices = {
     ET:   precioN?.[2] ?? 0,
@@ -304,8 +304,8 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
 
   // Oil production m³/d → BOE/d
   const oilProdM3d = (
-    (prodNeta?.[2] ?? 0) + (prodNeta?.[3] ?? 0) +
-    (prodNeta?.[4] ?? 0) + (prodNeta?.[5] ?? 0)
+    num(prodNeta?.[2]) + num(prodNeta?.[3]) +
+    num(prodNeta?.[4]) + num(prodNeta?.[5])
   )
   const oilProdBOEd = oilProdM3d * M3_TO_BBL
 
@@ -318,8 +318,8 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
 
   // Oil bbls entregados → BOE/d sold
   const oilBblsVendidos = (
-    (bbls?.[2] ?? 0) + (bbls?.[3] ?? 0) +
-    (bbls?.[4] ?? 0) + (bbls?.[5] ?? 0)
+    num(bbls?.[2]) + num(bbls?.[3]) +
+    num(bbls?.[4]) + num(bbls?.[5])
   )
   const oilVendBOEd = dias > 0 ? oilBblsVendidos / dias : 0
   const oilPctVend = (buscarValor(resumen, 'Oil', 1) ?? 0)
@@ -329,9 +329,9 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
 
   // ventas_MM from sum of area ingresos
   const ventasDerived = (
-    (totalUs?.[2] ?? 0) + (totalUs?.[3] ?? 0) +
-    (totalUs?.[4] ?? 0) + (totalUs?.[5] ?? 0) +
-    (totalUs?.[6] ?? 0) + (totalUs?.[7] ?? 0)
+    num(totalUs?.[2]) + num(totalUs?.[3]) +
+    num(totalUs?.[4]) + num(totalUs?.[5]) +
+    num(totalUs?.[6]) + num(totalUs?.[7])
   ) / 1_000_000
 
   const ventas_MM_final     = ventas_MM  > 0 ? ventas_MM  : ventasDerived
@@ -339,7 +339,7 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   // El in kind de PC-KK (bbl entregados en especie, no vendidos por caja) no
   // estaba contado en "Volumen Ventas" -- igual que pasaba con su valorización
   // en us$ (ver htmlReport.ts), se suma acá convertido a BOE/d.
-  const inKindBoeD          = Math.abs(inkindBbl?.[3] ?? 0) / dias
+  const inKindBoeD          = Math.abs(num(inkindBbl?.[3])) / dias
   const vol_vendido_final   = (vol_venta  > 0 ? vol_venta  : volVentaDerived) + inKindBoeD
 
   // Gas prices from Resumen H13 (ET/ETLPPQ) and I13 (RCLV) — direct cell address
@@ -348,10 +348,10 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
   const precioGasResumenRCLV = resumenWs ? (Number(cellVal(resumenWs.getCell('I13').value)) || 0) : 0
 
   // Gas area prices — derive from ingreso ÷ volume when direct read is 0
-  const gasETProdRaw   = gasProd?.[6] ?? prodNeta?.[6] ?? 0
-  const gasRCLVProdRaw = gasProd?.[7] ?? prodNeta?.[7] ?? 0
-  const gasETIngreso   = totalUs?.[6] ?? 0
-  const gasRCLVIngreso = totalUs?.[7] ?? 0
+  const gasETProdRaw   = num(gasProd?.[6] ?? prodNeta?.[6])
+  const gasRCLVProdRaw = num(gasProd?.[7] ?? prodNeta?.[7])
+  const gasETIngreso   = num(totalUs?.[6])
+  const gasRCLVIngreso = num(totalUs?.[7])
 
   const rawETPrec   = precioGasResumenET   || gasPrec?.[6] || precioN?.[6] || 0
   const rawRCLVPrec = precioGasResumenRCLV || gasPrec?.[7] || precioN?.[7] || 0
@@ -394,53 +394,53 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
 
     areas: {
       ET: {
-        prod_100_m3d:  prod100?.[2]    ?? 0,
-        prod_neta_m3d: prodNeta?.[2]   ?? 0,
-        entregados_m3: entregados?.[2] ?? 0,
-        vol_bbl:       bbls?.[2]       ?? 0,
-        precio_neto:   precioN?.[2]    ?? 0,
-        ingreso:       totalUs?.[2]    ?? 0,
+        prod_100_m3d:  num(prod100?.[2]),
+        prod_neta_m3d: num(prodNeta?.[2]),
+        entregados_m3: num(entregados?.[2]),
+        vol_bbl:       num(bbls?.[2]),
+        precio_neto:   num(precioN?.[2]),
+        ingreso:       num(totalUs?.[2]),
         brent_ref,
-        stock_m3:      stockM3?.[2]    ?? 0,
-        stock_dias:    stockDias?.[2]  ?? 0,
-        stock_us:      stockUs?.[2]    ?? 0,
+        stock_m3:      num(stockM3?.[2]),
+        stock_dias:    num(stockDias?.[2]),
+        stock_us:      num(stockUs?.[2]),
         descuento:     buscarValor(detalle, 'Descuento', 2) ?? 0,
       },
       PCKK: {
-        prod_100_m3d:  prod100?.[3]    ?? 0,
-        prod_neta_m3d: prodNeta?.[3]   ?? 0,
-        entregados_m3: entregados?.[3] ?? 0,
-        vol_bbl:       bbls?.[3]       ?? 0,
-        precio_neto:   precioN?.[3]    ?? 0,
-        ingreso:       totalUs?.[3]    ?? 0,
+        prod_100_m3d:  num(prod100?.[3]),
+        prod_neta_m3d: num(prodNeta?.[3]),
+        entregados_m3: num(entregados?.[3]),
+        vol_bbl:       num(bbls?.[3]),
+        precio_neto:   num(precioN?.[3]),
+        ingreso:       num(totalUs?.[3]),
         brent_ref,
         brent_1q,
         brent_2q,
-        stock_m3:      stockM3?.[3]    ?? 0,
-        stock_dias:    stockDias?.[3]  ?? 0,
-        stock_us:      stockUs?.[3]    ?? 0,
-        in_kind_bbl:   inkindBbl?.[3]  ?? undefined,
-        in_kind_pct:   inkindPct?.[3]  ?? undefined,
-        in_kind_us:    inkindUs?.[3]   ?? undefined,
+        stock_m3:      num(stockM3?.[3]),
+        stock_dias:    num(stockDias?.[3]),
+        stock_us:      num(stockUs?.[3]),
+        in_kind_bbl:   inkindBbl?.[3]  != null ? num(inkindBbl?.[3])  : undefined,
+        in_kind_pct:   inkindPct?.[3]  != null ? num(inkindPct?.[3])  : undefined,
+        in_kind_us:    inkindUs?.[3]   != null ? num(inkindUs?.[3])   : undefined,
         descuento:      buscarValor(detalle, 'Descuento', 3) ?? 0,
         descuento_fijo: buscarValor(detalle, 'Cañadon Seco', 3) ?? buscarValor(detalle, 'Cañadón Seco', 3) ?? 0,
       },
       CH: {
-        prod_100_m3d:  prod100?.[4]    ?? 0,
-        prod_neta_m3d: prodNeta?.[4]   ?? 0,
-        entregados_m3: entregados?.[4] ?? 0,
-        vol_bbl:       bbls?.[4]       ?? 0,
-        precio_neto:   precioN?.[4]    ?? 0,
-        ingreso:       totalUs?.[4]    ?? 0,
+        prod_100_m3d:  num(prod100?.[4]),
+        prod_neta_m3d: num(prodNeta?.[4]),
+        entregados_m3: num(entregados?.[4]),
+        vol_bbl:       num(bbls?.[4]),
+        precio_neto:   num(precioN?.[4]),
+        ingreso:       num(totalUs?.[4]),
         brent_ref:     medanito,
       },
       RCLV: {
-        prod_100_m3d:  prod100?.[5]    ?? 0,
-        prod_neta_m3d: prodNeta?.[5]   ?? 0,
-        entregados_m3: entregados?.[5] ?? 0,
-        vol_bbl:       bbls?.[5]       ?? 0,
-        precio_neto:   precioN?.[5]    ?? 0,
-        ingreso:       totalUs?.[5]    ?? 0,
+        prod_100_m3d:  num(prod100?.[5]),
+        prod_neta_m3d: num(prodNeta?.[5]),
+        entregados_m3: num(entregados?.[5]),
+        vol_bbl:       num(bbls?.[5]),
+        precio_neto:   num(precioN?.[5]),
+        ingreso:       num(totalUs?.[5]),
         brent_ref,
       },
     },
@@ -456,7 +456,7 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
         prod_mcfd:   gasRCLVProdRaw,
         vol_mes_mcf: gasRCLVProdRaw * dias,
         precio_mcf:  gasRCLVPrec_final,
-        ingreso:     totalUs?.[7]  ?? 0,
+        ingreso:     num(totalUs?.[7]),
       },
     },
 
@@ -468,11 +468,11 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
       const [py, pm] = periodo.split('-')
       const mesAbrev = `${MES_ABR[parseInt(pm) - 1]}-${py.slice(2)}`
       if (historico.length > 0 && !historico.some(h => h.mes === mesAbrev)) {
-        const ET_MM_c   = (totalUs?.[2] ?? 0) / 1_000_000
-        const PCKK_MM_c = (totalUs?.[3] ?? 0) / 1_000_000
-        const CH_MM_c   = (totalUs?.[4] ?? 0) / 1_000_000
-        const RCLV_MM_c = (totalUs?.[5] ?? 0) / 1_000_000
-        const gas_MM_c  = (gasETIngreso + (totalUs?.[7] ?? 0)) / 1_000_000
+        const ET_MM_c   = num(totalUs?.[2]) / 1_000_000
+        const PCKK_MM_c = num(totalUs?.[3]) / 1_000_000
+        const CH_MM_c   = num(totalUs?.[4]) / 1_000_000
+        const RCLV_MM_c = num(totalUs?.[5]) / 1_000_000
+        const gas_MM_c  = (gasETIngreso + num(totalUs?.[7])) / 1_000_000
         const total_c   = ET_MM_c + PCKK_MM_c + CH_MM_c + RCLV_MM_c + gas_MM_c
         if (total_c > 0) {
           historico.push({
@@ -483,10 +483,10 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
             CH_MM:       CH_MM_c,
             RCLV_MM:     RCLV_MM_c,
             gas_MM:      gas_MM_c,
-            precio_ET:   precioN?.[2] ?? 0,
-            precio_PCKK: precioN?.[3] ?? 0,
-            precio_CH:   precioN?.[4] ?? 0,
-            precio_RCLV: precioN?.[5] ?? 0,
+            precio_ET:   num(precioN?.[2]),
+            precio_PCKK: num(precioN?.[3]),
+            precio_CH:   num(precioN?.[4]),
+            precio_RCLV: num(precioN?.[5]),
           })
         }
       }
@@ -614,6 +614,15 @@ function formatearMes(periodo: string): string {
   const meses = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
   return `${meses[parseInt(m)]} ${y}`
+}
+
+// Convierte a número de forma segura -- una celda con error de fórmula de
+// Excel (#REF!, #N/A, #DIV/0!) llega como string, y Number(esaCelda) da NaN.
+// Sin esto, un solo error de fórmula en un mes contamina con NaN toda la
+// cadena de sumas (ventas_MM, vol_producido, etc.) sin ningún aviso.
+function num(v: any): number {
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) ? n : 0
 }
 
 function buscarFila(data: any[][], patron: string | RegExp, exacto = false): any[] | null {
