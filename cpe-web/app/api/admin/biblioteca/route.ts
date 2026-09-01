@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { requireCmsUser } from '@/lib/cms-access'
+import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
 import { logActivity } from '@/lib/roles'
 
+// Admin puro -- no manage_cms: esta pantalla lista el email de todos los
+// usuarios del sistema (para asignar grupos), demasiado para un rol externo
+// como Diseño Web aunque solo tenga permiso de CMS.
 async function checkAdmin(req?: NextRequest) {
   if (req && !isSameOrigin(req)) return null
-  return requireCmsUser()
+  return requireAdminUser()
 }
 
 export async function GET() {
@@ -41,7 +44,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { action } = body
 
-  void logActivity({ userId: auth.user.id, userEmail: auth.user.email ?? null, action: `biblioteca_${action}`, resourceType: 'biblioteca', metadata: body })
+  void logActivity({ userId: auth.id, userEmail: auth.email ?? null, action: `biblioteca_${action}`, resourceType: 'biblioteca', metadata: body })
 
   if (action === 'create_carpeta') {
     const { nombre, descripcion } = body

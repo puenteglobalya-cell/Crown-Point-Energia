@@ -29,7 +29,7 @@ const NAV_GROUPS: { key: string; label: string; items: NavItem[] }[] = [
       { href: '/admin/bloques-fotos', label: 'Fotos de bloques', icon: 'image', cmsGated: true },
       { href: '/admin/documentos', label: 'Documentos públicos', icon: 'file', hint: 'Balances, reportes y legales visibles para cualquier visitante', cmsGated: true },
       { href: '/admin/ir-docs', label: 'Documentos IR — públicos', icon: 'folder', hint: 'Visibles en la web pública /inversores: EE.FF., MD&A, AGM, ESTMA, gobierno corporativo', cmsGated: true },
-      { href: '/admin/biblioteca', label: 'Biblioteca restringida', icon: 'book', hint: 'Documentos con acceso limitado por usuario o grupo', cmsGated: true },
+      { href: '/admin/biblioteca', label: 'Biblioteca restringida', icon: 'book', hint: 'Documentos con acceso limitado por usuario o grupo' },
       { href: '/admin/marca', label: 'Manual de marca', icon: 'bookmark', cmsGated: true },
       { href: '/admin/word-export', label: 'Exportar Word', icon: 'download', cmsGated: true },
     ],
