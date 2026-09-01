@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { logActivity } from '@/lib/roles'
+import { logActivity, ALL_ROLES } from '@/lib/roles'
 import { requireAdminUser, isAdminEmail } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { enviarInvitacionUsuario } from '@/lib/email'
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Faltan campos requeridos: email y role' }, { status: 400 })
   }
 
-  if (!['viewer', 'uploader', 'admin', 'rrhh', 'accionista'].includes(role)) {
+  if (!(ALL_ROLES as readonly string[]).includes(role)) {
     return NextResponse.json({ error: 'Rol inválido' }, { status: 400 })
   }
 

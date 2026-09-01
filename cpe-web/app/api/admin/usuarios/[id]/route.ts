@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { logActivity } from '@/lib/roles'
+import { logActivity, ALL_ROLES } from '@/lib/roles'
 import { requireAdminUser } from '@/lib/admin-auth'
 import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
@@ -15,7 +15,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json()
   const { role, activo, dni, nombre, apellido, ubicacion, sector, telefono, notas } = body
 
-  if (role !== undefined && !['viewer', 'uploader', 'admin', 'rrhh', 'accionista'].includes(role)) {
+  if (role !== undefined && !(ALL_ROLES as readonly string[]).includes(role)) {
     return NextResponse.json({ error: 'Rol inválido' }, { status: 400 })
   }
 

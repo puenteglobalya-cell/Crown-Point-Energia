@@ -11,7 +11,12 @@ import {
 } from '@/lib/permissions-config'
 
 export type { Permission }
-export type UserRole = 'viewer' | 'uploader' | 'admin' | 'rrhh' | 'accionista' | 'finanzas' | 'compliance' | 'diseno_web'
+// Única lista de roles válidos -- todo chequeo de "¿es un rol válido?" en el
+// código debe importar esto en vez de tipear su propio array a mano (ver
+// api/admin/usuarios: tenía su propia lista pegada que se había quedado
+// atrás y ya ni siquiera incluía 'finanzas' ni 'compliance').
+export const ALL_ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas', 'compliance', 'diseno_web'] as const
+export type UserRole = typeof ALL_ROLES[number]
 export type RoleRow = { role: UserRole; activo: boolean }
 
 export { ADMIN_LOCKED }
