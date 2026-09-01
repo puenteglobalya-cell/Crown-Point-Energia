@@ -4,10 +4,10 @@ import { Fragment, useCallback, useEffect, useState } from 'react'
 import { AdminPageHeader } from '@/components/AdminPageHeader'
 import { PERMISSIONS, PERMISSION_GROUPS, ADMIN_LOCKED as ADMIN_LOCKED_LIST } from '@/lib/permissions-config'
 
-const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas', 'compliance'] as const
+const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas', 'compliance', 'diseno_web'] as const
 type Role = typeof ROLES[number]
 const ROLE_LABELS: Record<Role, string> = {
-  viewer: 'Consulta', uploader: 'Carga', admin: 'Admin', rrhh: 'RRHH', accionista: 'Accionista', finanzas: 'Finanzas', compliance: 'Compliance',
+  viewer: 'Consulta', uploader: 'Carga', admin: 'Admin', rrhh: 'RRHH', accionista: 'Accionista', finanzas: 'Finanzas', compliance: 'Compliance', diseno_web: 'Diseño Web',
 }
 
 // Única fuente de verdad: lib/permissions-config.ts — antes esta pantalla
