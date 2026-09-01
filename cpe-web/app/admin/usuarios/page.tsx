@@ -12,9 +12,9 @@ type User = {
 }
 type BibGrupo = { id: number; slug: string; label: string; orden: number }
 
-const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas', 'compliance'] as const
+const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas', 'compliance', 'diseno_web'] as const
 const ROLE_LABELS: Record<string, string> = {
-  viewer: 'Consulta', uploader: 'Carga', admin: 'Admin', rrhh: 'RRHH', accionista: 'Accionista', finanzas: 'Finanzas', compliance: 'Compliance',
+  viewer: 'Consulta', uploader: 'Carga', admin: 'Admin', rrhh: 'RRHH', accionista: 'Accionista', finanzas: 'Finanzas', compliance: 'Compliance', diseno_web: 'Diseño Web',
 }
 const ROLE_COLOR: Record<string, { bg: string; fg: string }> = {
   admin:      { bg: 'rgba(108,174,82,.15)',  fg: '#3a7d2a' },
@@ -23,6 +23,7 @@ const ROLE_COLOR: Record<string, { bg: string; fg: string }> = {
   rrhh:       { bg: 'rgba(201,80,40,.1)',    fg: '#b03010' },
   finanzas:   { bg: 'rgba(47,160,138,.15)',  fg: '#2FA08A' },
   compliance: { bg: 'rgba(179,59,46,.12)',   fg: '#b33b2e' },
+  diseno_web: { bg: 'rgba(78,126,196,.12)',  fg: '#4E7EC4' },
   viewer:     { bg: 'var(--bg-alt)',          fg: 'var(--fg-muted)' },
 }
 

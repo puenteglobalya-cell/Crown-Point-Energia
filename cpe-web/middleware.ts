@@ -20,6 +20,19 @@ const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e =
 // reasoning as AUTH_COOKIE_OPTIONS above. Keep in sync manually.
 const CMS_DEFAULT_ROLES = new Set(['admin'])
 
+// Todo el grupo "Contenido Web" del nav de Admin (components/AdminShell.tsx)
+// -- mantener en sync si se agrega/saca un item de ese grupo. '/admin' es un
+// caso aparte (match exacto abajo): con el prefijo genérico matchearía
+// cualquier /admin/lo-que-sea, incluidas las pantallas que NO son de este
+// grupo (usuarios, permisos, reportes...).
+const CMS_GATED_SUBPATHS = [
+  '/admin/inicio', '/admin/cms', '/admin/imagenes', '/admin/bloques-fotos',
+  '/admin/documentos', '/admin/ir-docs', '/admin/biblioteca', '/admin/marca', '/admin/word-export',
+]
+function isCmsGatedPath(pathname: string): boolean {
+  return pathname === '/admin' || CMS_GATED_SUBPATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
+}
+
 async function roleCanManageCms(role: string): Promise<boolean> {
   if (role === 'admin') return true
   try {
@@ -209,10 +222,9 @@ export async function middleware(request: NextRequest) {
         if (userRole !== 'compliance' && userRole !== 'admin') {
           return NextResponse.redirect(new URL('/admin/login', request.url))
         }
-      } else if (pathname === '/admin' || pathname.startsWith('/admin/cms')) {
-        // '/admin' (visibilidad y textos cortos) + '/admin/cms' (editor de
-        // contenido completo) son las dos pantallas de "editar la web" — las
-        // únicas que un rol con manage_cms (sin ser Admin) puede tocar.
+      } else if (isCmsGatedPath(pathname)) {
+        // Todo el grupo "Contenido Web" del nav de Admin -- lo único que un
+        // rol con manage_cms (p.ej. Diseño Web, sin ser Admin) puede tocar.
         if (!userRole || !(await roleCanManageCms(userRole))) {
           return NextResponse.redirect(new URL('/admin/login', request.url))
         }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdminUser } from '@/lib/admin-auth'
+import { requireCmsUser } from '@/lib/cms-access'
 import { isSameOrigin } from '@/lib/csrf'
 import { getCmsState } from '@/lib/cms'
 import { fetchOperationsBlocks, fetchTeamMembers } from '@/lib/content-fetch'
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
-  const user = await requireAdminUser()
+  const user = await requireCmsUser()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

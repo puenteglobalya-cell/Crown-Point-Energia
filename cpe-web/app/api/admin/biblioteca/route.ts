@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { requireAdminUser } from '@/lib/admin-auth'
+import { requireCmsUser } from '@/lib/cms-access'
 import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
 
 async function checkAdmin(req?: NextRequest) {
   if (req && !isSameOrigin(req)) return null
-  return requireAdminUser()
+  return requireCmsUser()
 }
 
 export async function GET() {
