@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
-import { requireCmsUser } from '@/lib/cms-access'
+import { requireAdminUser } from '@/lib/admin-auth'
 import { Sparkline } from './Sparkline'
 import { AdminPageHeader } from '@/components/AdminPageHeader'
 
@@ -40,7 +40,7 @@ function fmtDate(s: string | null) {
 }
 
 export default async function AdminInicioPage() {
-  await requireCmsUser()
+  await requireAdminUser()
   const db = createSupabaseServerAdminClient()
 
   const [

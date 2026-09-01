@@ -22,7 +22,7 @@ const NAV_GROUPS: { key: string; label: string; items: NavItem[] }[] = [
     key: 'contenido-web',
     label: 'Contenido Web',
     items: [
-      { href: '/admin/inicio', label: 'Inicio', icon: 'home', cmsGated: true },
+      { href: '/admin/inicio', label: 'Inicio', icon: 'home' },
       { href: '/admin', label: 'Visibilidad y textos', icon: 'sliders', hint: 'Mostrar/ocultar secciones y editar textos cortos del sitio', cmsGated: true },
       { href: '/admin/cms', label: 'Editor de contenido', icon: 'edit', hint: 'Editor completo: inversores, operaciones, compañía, ESG, carreras', cmsGated: true },
       { href: '/admin/imagenes', label: 'Imágenes', icon: 'image', cmsGated: true },

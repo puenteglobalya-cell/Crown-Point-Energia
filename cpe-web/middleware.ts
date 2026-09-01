@@ -26,7 +26,7 @@ const CMS_DEFAULT_ROLES = new Set(['admin'])
 // cualquier /admin/lo-que-sea, incluidas las pantallas que NO son de este
 // grupo (usuarios, permisos, reportes...).
 const CMS_GATED_SUBPATHS = [
-  '/admin/inicio', '/admin/cms', '/admin/imagenes', '/admin/bloques-fotos',
+  '/admin/cms', '/admin/imagenes', '/admin/bloques-fotos',
   '/admin/documentos', '/admin/ir-docs', '/admin/marca', '/admin/word-export',
 ]
 function isCmsGatedPath(pathname: string): boolean {
