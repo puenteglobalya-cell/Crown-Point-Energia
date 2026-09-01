@@ -312,12 +312,13 @@ function filterBySearch(pg: PageGroup, q: string): PageGroup | null {
   return groups.length > 0 ? { ...pg, groups } : null
 }
 
-type Tab = 'estilo' | 'visibilidad' | 'textos' | 'sitio' | 'export'
+type Tab = 'estilo' | 'visibilidad' | 'textos' | 'css' | 'sitio' | 'export'
 
 const TAB_LABELS: Record<Tab, string> = {
   estilo:       'Estilo',
   visibilidad:  'Visibilidad',
   textos:       'Textos',
+  css:          'CSS personalizado',
   sitio:        'Vista previa',
   export:       'Export',
 }
@@ -329,6 +330,7 @@ export default function AdminPage() {
   const [savedMsg, setSavedMsg] = useState('')
   const [draftFields, setDraftFields] = useState<Record<string, string>>({})
   const [draftFieldsEn, setDraftFieldsEn] = useState<Record<string, string>>({})
+  const [draftCss, setDraftCss] = useState('')
   const [search, setSearch] = useState('')
   const [openPages, setOpenPages] = useState<Record<string, boolean>>({})
   const [exportJson, setExportJson] = useState('')
@@ -347,6 +349,7 @@ export default function AdminPage() {
       setState(s)
       setDraftFields({ ...s.fields })
       setDraftFieldsEn({ ...s.fieldsEn })
+      setDraftCss(s.customCss ?? '')
       setExportJson(JSON.stringify(s, null, 2))
     }
   }, [])
@@ -811,6 +814,43 @@ export default function AdminPage() {
                 style={{ justifyContent: 'center', padding: '14px 32px', opacity: saving ? 0.7 : 1 }}
               >
                 {saving ? 'Guardando…' : 'Guardar textos'}
+              </button>
+              {savedMsg && (
+                <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                  ✓ {savedMsg}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Tab: CSS personalizado ────────────────────────────────────── */}
+        {tab === 'css' && (
+          <div>
+            <p style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 16, lineHeight: 1.6 }}>
+              Se inyecta en el sitio público (no afecta /portal ni /admin). Pensado para ajustes finos de diseño
+              sin necesitar acceso al código — colores, espaciados, tipografía puntual.
+            </p>
+            <textarea
+              value={draftCss}
+              onChange={e => setDraftCss(e.target.value)}
+              placeholder={'.hero-title {\n  font-size: 3rem;\n}'}
+              spellCheck={false}
+              style={{
+                width: '100%', minHeight: 320, padding: '14px 16px',
+                fontFamily: 'var(--font-mono, ui-monospace, monospace)', fontSize: 13, lineHeight: 1.6,
+                border: '1px solid var(--rule)', borderRadius: 'var(--r-md)',
+                background: 'var(--surface)', color: 'var(--fg)', resize: 'vertical',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 14 }}>
+              <button
+                className="btn btn-primary"
+                disabled={saving}
+                onClick={() => save({ customCss: draftCss })}
+                style={{ opacity: saving ? 0.7 : 1 }}
+              >
+                {saving ? 'Guardando…' : 'Guardar CSS'}
               </button>
               {savedMsg && (
                 <span style={{ fontSize: 12, color: 'var(--cp-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>

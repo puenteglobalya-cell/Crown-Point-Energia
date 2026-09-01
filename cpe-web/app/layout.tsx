@@ -179,6 +179,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           nonce={nonce}
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
+        {showSiteChrome && state.customCss && (
+          <style dangerouslySetInnerHTML={{ __html: state.customCss }} />
+        )}
       </head>
       <body>
         {showSiteChrome && (

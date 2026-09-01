@@ -9,6 +9,7 @@ export type CMSState = {
   fields: Record<string, string>
   fieldsEn: Record<string, string>
   maintenance: boolean
+  customCss: string
 }
 
 const HARD_DEFAULTS: CMSState = {
@@ -19,6 +20,7 @@ const HARD_DEFAULTS: CMSState = {
   fields: {},
   fieldsEn: {},
   maintenance: false,
+  customCss: '',
 }
 
 // Cached CMS fetch — tagged 'cms' so revalidateTag('cms') in the admin POST
@@ -30,7 +32,7 @@ export const getCmsState = unstable_cache(
       const supabase = createSupabaseServerAdminClient()
 
       const [settingsRes, sectionsRes, fieldsRes] = await Promise.all([
-        supabase.from('cms_settings').select('direction,theme,lang,maintenance').eq('id', 1).single(),
+        supabase.from('cms_settings').select('direction,theme,lang,maintenance,custom_css').eq('id', 1).single(),
         supabase.from('cms_sections').select('key,visible'),
         supabase.from('cms_fields').select('key,value_es,value_en'),
       ])
@@ -57,6 +59,7 @@ export const getCmsState = unstable_cache(
         fields: fieldMap,
         fieldsEn: fieldMapEn,
         maintenance: settings?.maintenance ?? false,
+        customCss: settings?.custom_css ?? '',
       }
     } catch {
       return HARD_DEFAULTS
@@ -71,13 +74,14 @@ export async function patchCmsState(patch: Partial<CMSState>): Promise<void> {
 
   const ops: PromiseLike<unknown>[] = []
 
-  if (patch.direction || patch.theme || patch.lang || patch.maintenance !== undefined) {
+  if (patch.direction || patch.theme || patch.lang || patch.maintenance !== undefined || patch.customCss !== undefined) {
     ops.push(
       supabase.from('cms_settings').update({
         ...(patch.direction && { direction: patch.direction }),
         ...(patch.theme && { theme: patch.theme }),
         ...(patch.lang && { lang: patch.lang }),
         ...(patch.maintenance !== undefined && { maintenance: patch.maintenance }),
+        ...(patch.customCss !== undefined && { custom_css: patch.customCss }),
         updated_at: new Date().toISOString(),
       }).eq('id', 1).then(r => r)
     )
