@@ -4,6 +4,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireCmsUser } from '@/lib/cms-access'
 import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
+import { logActivity } from '@/lib/roles'
 
 async function isAdmin() {
   return requireCmsUser()
@@ -21,7 +22,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (!await isAdmin()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await isAdmin()
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
 
@@ -39,6 +41,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await admin.from('comunicados').insert(record).select().single()
   if (error) return dbError(error)
 
+  void logActivity({ userId: auth.user.id, userEmail: auth.user.email ?? null, action: 'cms_comunicados_create', resourceType: 'comunicados', resourceId: String(data.id), metadata: record })
   revalidatePath('/comunicados')
   revalidatePath('/')
   return NextResponse.json(data)

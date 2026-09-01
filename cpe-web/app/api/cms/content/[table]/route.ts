@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireCmsUser } from '@/lib/cms-access'
+import { logActivity } from '@/lib/roles'
 import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
 
@@ -70,7 +71,8 @@ export async function GET(req: NextRequest, { params }: Params) {
 
 export async function POST(req: NextRequest, { params }: Params) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (!await requireCmsUser()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireCmsUser()
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const cfg = ALLOWED_TABLES[params.table]
   if (!cfg) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -82,13 +84,15 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { data, error } = await db.from(params.table).insert(record).select().single()
   if (error) return dbError(error)
 
+  void logActivity({ userId: auth.user.id, userEmail: auth.user.email ?? null, action: 'cms_content_create', resourceType: params.table, resourceId: String(data.id ?? data.pilar ?? ''), metadata: record })
   for (const path of cfg.revalidate) revalidatePath(path)
   return NextResponse.json(data, { status: 201 })
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (!await requireCmsUser()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireCmsUser()
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const cfg = ALLOWED_TABLES[params.table]
   if (!cfg) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -104,13 +108,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const { data, error } = await db.from(params.table).update(patch).eq(pk, pkVal).select().single()
   if (error) return dbError(error)
 
+  void logActivity({ userId: auth.user.id, userEmail: auth.user.email ?? null, action: 'cms_content_update', resourceType: params.table, resourceId: String(pkVal), metadata: patch })
   for (const path of cfg.revalidate) revalidatePath(path)
   return NextResponse.json(data)
 }
 
 export async function DELETE(req: NextRequest, { params }: Params) {
   if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  if (!await requireCmsUser()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireCmsUser()
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const cfg = ALLOWED_TABLES[params.table]
   if (!cfg) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -124,6 +130,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const { error } = await db.from(params.table).delete().eq(pk, id)
   if (error) return dbError(error)
 
+  void logActivity({ userId: auth.user.id, userEmail: auth.user.email ?? null, action: 'cms_content_delete', resourceType: params.table, resourceId: id })
   for (const path of cfg.revalidate) revalidatePath(path)
   return NextResponse.json({ ok: true })
 }

@@ -3,6 +3,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { requireCmsUser } from '@/lib/cms-access'
 import { isSameOrigin } from '@/lib/csrf'
 import { dbError } from '@/lib/api-error'
+import { logActivity } from '@/lib/roles'
 
 async function checkAdmin(req?: NextRequest) {
   if (req && !isSameOrigin(req)) return null
@@ -34,10 +35,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  if (!await checkAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await checkAdmin(req)
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const db = createSupabaseServerAdminClient()
   const body = await req.json()
   const { action } = body
+
+  void logActivity({ userId: auth.user.id, userEmail: auth.user.email ?? null, action: `biblioteca_${action}`, resourceType: 'biblioteca', metadata: body })
 
   if (action === 'create_carpeta') {
     const { nombre, descripcion } = body
