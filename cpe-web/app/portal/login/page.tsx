@@ -5,10 +5,12 @@ import { startAuthentication } from '@simplewebauthn/browser'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
 const SESSION_START_PREFIX = 'cpe_session_start_'
+const REMEMBER_EMAIL_KEY = 'cpe_remembered_email'
 
 export default function PortalLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [remember, setRemember] = useState(true)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [expired, setExpired] = useState(false)
@@ -26,7 +28,15 @@ export default function PortalLoginPage() {
   useEffect(() => {
     setExpired(new URLSearchParams(window.location.search).get('expirada') === '1')
     setPasskeySupported(!!window.PublicKeyCredential)
+    const remembered = localStorage.getItem(REMEMBER_EMAIL_KEY)
+    if (remembered) setEmail(remembered)
+    else setRemember(false)
   }, [])
+
+  function saveRememberedEmail() {
+    if (remember && email) localStorage.setItem(REMEMBER_EMAIL_KEY, email)
+    else localStorage.removeItem(REMEMBER_EMAIL_KEY)
+  }
 
   async function afterLogin(supabase: ReturnType<typeof createSupabaseBrowserClient>, userId?: string) {
     const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
@@ -73,6 +83,7 @@ export default function PortalLoginPage() {
       })
       if (otpError) throw new Error('No se pudo iniciar sesión')
 
+      saveRememberedEmail()
       await afterLogin(supabase, data.user?.id)
     } catch (e) {
       setError(e instanceof Error && e.message ? e.message : 'No se pudo ingresar con la llave de acceso.')
@@ -102,6 +113,7 @@ export default function PortalLoginPage() {
     }
 
     const supabase = createSupabaseBrowserClient()
+    saveRememberedEmail()
     await afterLogin(supabase, body.userId ?? undefined)
   }
 
@@ -164,6 +176,15 @@ export default function PortalLoginPage() {
               autoComplete="email"
             />
           </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--fg-soft)', cursor: 'pointer', marginTop: -6 }}>
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={e => setRemember(e.target.checked)}
+              style={{ width: 15, height: 15, cursor: 'pointer' }}
+            />
+            Recordar mi email
+          </label>
           <div className="form-row">
             <label>Contraseña</label>
             <div style={{ position: 'relative' }}>
