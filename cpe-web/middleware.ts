@@ -192,6 +192,12 @@ export async function middleware(request: NextRequest) {
       if (roleRow.role === 'finanzas' && !FINANZAS_ALLOWED.some(p => pathname === p || pathname.startsWith(p + '/'))) {
         return NextResponse.redirect(new URL('/portal/finanzas', request.url))
       }
+
+      // 'diseno_web' no tiene ningún permiso de portal (ni siquiera un
+      // sub-portal como finanzas) -- su lugar es /admin (Contenido Web).
+      if (roleRow.role === 'diseno_web') {
+        return NextResponse.redirect(new URL('/admin', request.url))
+      }
     }
     const mfaRedirect = await enforceAdminMfa(portalIsAdmin)
     if (mfaRedirect) return mfaRedirect
