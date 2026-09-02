@@ -202,7 +202,16 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
     const neta = (ddee - IIBB) / (1 - IIBB)
     return { precio: p, ddee, neta }
   })
-  const brentRef = datos.brent_prom
+  // datos.brent_prom sale de una celda puntual del Excel ("mes") que algunos
+  // meses queda en 0 (p.ej. si esa columna no se completó) -- como respaldo,
+  // se promedia la serie diaria de Brent del propio mes del reporte, que sí
+  // se parsea siempre desde la hoja "Precio estimado".
+  const brentMesActual = (() => {
+    const puntos = (datos.serie_brent_diaria ?? []).filter(p => p.fecha.startsWith(datos.periodo))
+    if (puntos.length === 0) return datos.brent_prom
+    return puntos.reduce((s, p) => s + p.brent, 0) / puntos.length
+  })()
+  const brentRef = datos.brent_prom > 0 ? datos.brent_prom : brentMesActual
   const closestDdee = ddeeRows.reduce((best, r) =>
     Math.abs(r.precio - brentRef) < Math.abs(best.precio - brentRef) ? r : best
   )
@@ -236,6 +245,14 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   const valorizadoVendidoMes = valorizadoVendidoDia * datos.dias
   const valorizadoProducidoDia = valorizarDia(datos.vol_producido_boed, datos.oil_pct_prod, datos.gas_pct_prod)
   const valorizadoProducidoMes = valorizadoProducidoDia * datos.dias
+
+  // Precio implícito us$/BOE = us$ del mes / BOE del mes -- mismo total y
+  // mismo volumen que ya se muestran en cada tarjeta, solo que expresado
+  // por unidad en vez de en MM us$ y BOE/mes por separado.
+  const boeProducidoMes = datos.vol_producido_boed * datos.dias
+  const precioBoeProducido = boeProducidoMes > 0 ? valorizadoProducidoMes / boeProducidoMes : 0
+  const boeVendidoMes = datos.vol_vendido_boed * datos.dias
+  const precioBoeVendido = boeVendidoMes > 0 ? (valorizadoVendidoMes + inKindPCKK) / boeVendidoMes : 0
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -488,7 +505,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
   <div class="kpi">
     <div class="kpi-lbl">Precio Neto Oil</div>
     <div class="kpi-val">${f(datos.precio_neto_oil)}<span class="kpi-unit">us$/bbl</span></div>
-    <div class="kpi-sub"><span class="tag wm">BRENT ref: ${f(datos.brent_prom)} us$/bbl</span></div>
+    <div class="kpi-sub"><span class="tag wm">BRENT ref: ${f(brentRef)} us$/bbl</span></div>
   </div>
 
   <div class="kpi">
@@ -500,7 +517,10 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
   <div class="kpi">
     <div class="kpi-lbl">Producción Valorizada</div>
     <div class="kpi-val">${fN(datos.vol_producido_boed * datos.dias)}<span class="kpi-unit">BOE/mes</span></div>
-    <div class="kpi-sub"><span class="tag mu">${f(valorizadoProducidoMes / 1_000_000)} MM us$ en el mes</span></div>
+    <div class="kpi-sub">
+      <span class="tag mu">${f(valorizadoProducidoMes / 1_000_000)} MM us$ en el mes</span>
+      <span class="tag mu">US$ ${f(precioBoeProducido)}/BOE</span>
+    </div>
   </div>
 
   <div class="kpi">
@@ -508,6 +528,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="kpi-val">${fN(datos.vol_vendido_boed * datos.dias)}<span class="kpi-unit">BOE/mes</span></div>
     <div class="kpi-sub">
       <span class="tag mu">${f((valorizadoVendidoMes + inKindPCKK) / 1_000_000)} MM us$ en el mes</span>
+      <span class="tag mu">US$ ${f(precioBoeVendido)}/BOE</span>
       ${inKindPCKK > 0 ? `<span class="tag mu">Venta ${f(valorizadoVendidoMes / 1_000_000)} MM · In kind ${f(inKindPCKK / 1_000_000)} MM</span>` : ''}
     </div>
   </div>
