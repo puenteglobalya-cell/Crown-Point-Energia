@@ -30,6 +30,10 @@ function esc(s: string): string {
 export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, cclRate?: number | null): string {
   const { areas, gas, mensual_historico } = datos
 
+  // RCLV dejó de operarse -- a partir del período 2026-09 se oculta del
+  // reporte entero (tarjetas de detalle, gráficos), no solo cuando da 0.
+  const hideRCLV = datos.periodo >= '2026-09'
+
   const ingOilET   = areas.ET.ingreso
   const ingOilPCKK = areas.PCKK.ingreso
   const ingOilCH   = areas.CH.ingreso
@@ -77,6 +81,34 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   const mensualInKind = hasHistorico
     ? j(mensual_historico!.map(h => h.mes === mesActualAbrev ? inKindPCKK / 1_000_000 : 0))
     : '[]'
+
+  // Entradas de "Ingresos por Área y Tipo" (barras) y "Participación en
+  // Ventas" (donut) -- armadas como arrays filtrables en vez de literales
+  // fijos para poder sacar RCLV sin duplicar la lista en cada gráfico.
+  const barEntries = [
+    { label: 'ET/LT-PQ',  val: ingOilET,   color: 'C.naranja' },
+    { label: 'PC-KK',     val: ingOilPCKK, color: 'C.azul' },
+    { label: 'CH/PPCO',   val: ingOilCH,   color: 'C.verde' },
+    { label: 'RCLV',      val: ingOilRCLV, color: 'C.violeta', hide: hideRCLV },
+    { label: 'Gas ET',    val: ingGasET,   color: "C.verde+'88'" },
+    { label: 'Gas RCLV',  val: ingGasRCLV, color: "C.muted+'88'", hide: hideRCLV },
+  ].filter(e => !e.hide)
+  const barLabelsJs = JSON.stringify(barEntries.map(e => e.label))
+  const barDataJs   = `[${barEntries.map(e => e.val.toFixed(0)).join(',')}]`
+  const barColorsJs = `[${barEntries.map(e => e.color).join(',')}]`
+  const barInkindJs = `[${barEntries.map(e => e.label === 'PC-KK' ? inKindPCKK.toFixed(0) : '0').join(',')}]`
+
+  const donutEntries = [
+    { label: 'ET / LT-PQ',       val: ingOilET,    color: 'C.naranja' },
+    { label: 'PC-KK',            val: ingOilPCKK,  color: 'C.azul' },
+    { label: 'CH / PPCO',        val: ingOilCH,    color: 'C.verde' },
+    { label: 'RCLV',             val: ingOilRCLV,  color: 'C.violeta', hide: hideRCLV },
+    { label: 'Gas',              val: ingGasTotal, color: 'C.warm' },
+    { label: 'PC-KK (in kind)',  val: inKindPCKK,  color: 'C.inkind' },
+  ].filter(e => !e.hide)
+  const dValsJs   = `[${donutEntries.map(e => e.val.toFixed(0)).join(',')}]`
+  const dLabelsJs = JSON.stringify(donutEntries.map(e => e.label))
+  const dColorsJs = `[${donutEntries.map(e => e.color).join(',')}]`
 
   const precioETArr   = hasPriceHistory ? j(mensual_historico!.map(h => h.precio_ET))   : '[]'
   const precioPCKKArr = hasPriceHistory ? j(mensual_historico!.map(h => h.precio_PCKK)) : '[]'
@@ -136,7 +168,11 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
     ? ventanasRaw.reduce((min, v) => v.fecha_desde < min ? v.fecha_desde : min, ventanasRaw[0].fecha_desde)
     : null
   const serieBrent = (datos.serie_brent_diaria ?? []).filter(p => !fechaMinVentana || p.fecha >= fechaMinVentana)
-  const ventanas = ventanasRaw
+  // PC-KK primero: coincide con el orden del resto de los gráficos del
+  // reporte (Ingresos por Área, Participación en Ventas) y se lee mejor.
+  const ORDEN_VENTANA: Record<string, number> = { 'PC-KK': 0, 'ET-LT-PQ': 1 }
+  const ventanas = [...ventanasRaw].sort((a, b) =>
+    (ORDEN_VENTANA[a.area] ?? 99) - (ORDEN_VENTANA[b.area] ?? 99))
   const hasVentanas = ventanas.length > 0 && serieBrent.length > 0
   const VENTANA_COLORES = ['#6CAE52', '#4F5478', '#C9A24A', '#B33B2E']
   const ventanasConIdx = hasVentanas ? ventanas.map((v, i) => ({
@@ -458,7 +494,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
   <div class="kpi">
     <div class="kpi-lbl">Precio Neto Gas</div>
     <div class="kpi-val">${f(datos.precio_neto_gas)}<span class="kpi-unit">us$/mcf</span></div>
-    <div class="kpi-sub"><span class="tag mu">ET + RCLV promedio</span></div>
+    <div class="kpi-sub"><span class="tag mu">${hideRCLV ? 'ET' : 'ET + RCLV'} promedio</span></div>
   </div>
 
   <div class="kpi">
@@ -553,6 +589,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
   </div>
 
   <!-- RCLV -->
+  ${hideRCLV ? '' : `
   <div class="acard" style="--ac:var(--violeta)">
     <div class="aname"><div class="adot"></div>RCLV — Petróleo</div>
     <div class="arow"><span class="albl">Producción neta (m³/d)</span><span class="aval">${f(areas.RCLV.prod_neta_m3d, 2)}</span></div>
@@ -564,12 +601,13 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="arow"><span class="albl">Ingreso período (us$)</span><span class="aval hi">${fN(areas.RCLV.ingreso)}</span></div>
     <div class="abr"><div class="abr-f" style="width:${pct(ingOilRCLV)}%"></div></div>
   </div>
+  `}
 
 </div>
 
 <!-- DETALLE GAS -->
 <div class="sec">Detalle por Área — Gas</div>
-<div class="areas areas-2col">
+<div class="areas ${hideRCLV ? '' : 'areas-2col'}">
 
   <div class="acard" style="--ac:var(--warm)">
     <div class="aname"><div class="adot"></div>Gas — ET-LT-PQ</div>
@@ -580,6 +618,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="abr"><div class="abr-f" style="width:${pct(ingGasET)}%"></div></div>
   </div>
 
+  ${hideRCLV ? '' : `
   <div class="acard" style="--ac:var(--muted)">
     <div class="aname"><div class="adot" style="background:var(--muted)"></div>Gas — RCLV</div>
     <div class="arow"><span class="albl">Producción neta (Mm³/d)</span><span class="aval">${fN(gas.RCLV.prod_mcfd)}</span></div>
@@ -588,6 +627,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="arow"><span class="albl">Ingreso período (us$)</span><span class="aval" style="color:var(--muted)">${fN(gas.RCLV.ingreso)}</span></div>
     <div class="abr"><div class="abr-f" style="width:${pct(ingGasRCLV)}%;background:var(--muted)"></div></div>
   </div>
+  `}
 
 </div>
 
@@ -733,15 +773,15 @@ Chart.defaults.font.family = "'Inter', sans-serif";
 new Chart(document.getElementById('cBarras'),{
   type:'bar',
   data:{
-    labels:['ET/LT-PQ','PC-KK','CH/PPCO','RCLV','Gas ET','Gas RCLV'],
+    labels:${barLabelsJs},
     datasets:[{
       label:'Ingreso (us$)',
-      data:[${ingOilET.toFixed(0)},${ingOilPCKK.toFixed(0)},${ingOilCH.toFixed(0)},${ingOilRCLV.toFixed(0)},${ingGasET.toFixed(0)},${ingGasRCLV.toFixed(0)}],
-      backgroundColor:[C.naranja,C.azul,C.verde,C.violeta,C.verde+'88',C.muted+'88'],
+      data:${barDataJs},
+      backgroundColor:${barColorsJs},
       borderRadius:5, borderSkipped:false
     },{
       label:'In kind valorizado',
-      data:[0,${inKindPCKK.toFixed(0)},0,0,0,0],
+      data:${barInkindJs},
       backgroundColor:C.inkind,
       borderRadius:5, borderSkipped:false
     }]
@@ -760,9 +800,9 @@ new Chart(document.getElementById('cBarras'),{
 });
 
 // ── DONUT CON VALORES ────────────────────────────────────────
-const dVals   = [${ingOilET.toFixed(0)},${ingOilPCKK.toFixed(0)},${ingOilCH.toFixed(0)},${ingOilRCLV.toFixed(0)},${ingGasTotal.toFixed(0)},${inKindPCKK.toFixed(0)}];
-const dLabels = ['ET / LT-PQ','PC-KK','CH / PPCO','RCLV','Gas','PC-KK (in kind)'];
-const dColors = [C.naranja,C.azul,C.verde,C.violeta,C.warm,C.inkind];
+const dVals   = ${dValsJs};
+const dLabels = ${dLabelsJs};
+const dColors = ${dColorsJs};
 const dTotal  = dVals.reduce((a,b)=>a+b,0);
 
 new Chart(document.getElementById('cDonut'),{
@@ -813,7 +853,7 @@ new Chart(document.getElementById('cMensual'),{
     datasets:[
       {label:'PC-KK',   data:${mensualPCKK},  backgroundColor:C.azul,    borderRadius:4, borderSkipped:false},
       {label:'ET/LT',   data:${mensualET},    backgroundColor:C.naranja, borderRadius:4, borderSkipped:false},
-      {label:'RCLV',    data:${mensualRCLV},  backgroundColor:C.violeta, borderRadius:4, borderSkipped:false},
+      ${hideRCLV ? '' : `{label:'RCLV',    data:${mensualRCLV},  backgroundColor:C.violeta, borderRadius:4, borderSkipped:false},`}
       {label:'CH/PPCO', data:${mensualCH},    backgroundColor:C.verde,   borderRadius:4, borderSkipped:false},
       {label:'Gas',     data:${mensualGas},   backgroundColor:C.warm,    borderRadius:4, borderSkipped:false},
       {label:'In kind (PC-KK)', data:${mensualInKind}, backgroundColor:C.inkind, borderRadius:4, borderSkipped:false},
@@ -839,7 +879,7 @@ const preciosData = {
   'ET/LT-PQ': {data:${precioETArr},   color:C.naranja, fill:true},
   'PC-KK':    {data:${precioPCKKArr}, color:C.azul,   fill:false},
   'CH / PPC': {data:${precioCHArr},   color:C.verde,  fill:false},
-  'RCLV':     {data:${precioRCLVArr}, color:C.violeta,fill:false},
+  ${hideRCLV ? '' : `'RCLV':     {data:${precioRCLVArr}, color:C.violeta,fill:false},`}
 };
 const avg = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
 
