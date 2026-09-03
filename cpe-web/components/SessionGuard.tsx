@@ -5,11 +5,11 @@ import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
 // 30 min resultaba muy poco operativamente — se quedaban desloguéandose
 // en medio de una tarea larga (leer un reporte, completar un formulario
-// con calma). 2 horas para el resto de los roles, 4 para admin, que además
-// suele quedarse largos ratos cargando datos del simulador de reservas sin
-// tocar el mouse (mirando un Excel en otra pantalla).
-const IDLE_TIMEOUT_DEFAULT_MS = 2 * 60 * 60 * 1000
-const IDLE_TIMEOUT_ADMIN_MS = 4 * 60 * 60 * 1000
+// con calma). 8 horas para todos los roles -- cubre una jornada completa
+// sin que alguien (p.ej. el jefe, dejando el portal abierto en otra
+// pestaña toda la mañana) tenga que reloguearse en medio del día.
+const IDLE_TIMEOUT_DEFAULT_MS = 8 * 60 * 60 * 1000
+const IDLE_TIMEOUT_ADMIN_MS = 8 * 60 * 60 * 1000
 const WARNING_BEFORE_MS = 2 * 60 * 1000
 const STORAGE_KEY = 'cpe_last_activity'
 

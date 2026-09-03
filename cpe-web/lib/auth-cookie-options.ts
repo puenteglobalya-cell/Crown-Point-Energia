@@ -11,5 +11,5 @@ import type { CookieOptions } from '@supabase/ssr'
 // both server code and client components — lib/supabase.ts pulls in
 // next/headers, which poisons any client bundle that imports it.
 export const AUTH_COOKIE_OPTIONS: CookieOptions = {
-  maxAge: 60 * 60 * 24 * 7, // 7 days
+  maxAge: 60 * 60 * 24 * 30, // 30 days
 }

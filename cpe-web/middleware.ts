@@ -1,16 +1,9 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
+import { AUTH_COOKIE_OPTIONS } from '@/lib/auth-cookie-options'
 
 type CookieEntry = { name: string; value: string; options?: CookieOptions }
-
-// Kept in sync with AUTH_COOKIE_OPTIONS in lib/supabase.ts (duplicated rather
-// than imported to avoid pulling next/headers into the edge middleware
-// bundle) — caps how long a copied/stolen session cookie stays valid,
-// since @supabase/ssr's own default is 400 days with httpOnly:false.
-const AUTH_COOKIE_OPTIONS: CookieOptions = {
-  maxAge: 60 * 60 * 24 * 7, // 7 days
-}
 type RoleRow = { role: string; activo: boolean }
 
 const CMS_ADMIN_EMAILS = (process.env.CMS_ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
