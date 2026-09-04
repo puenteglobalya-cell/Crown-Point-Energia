@@ -33,9 +33,24 @@ export interface DatosIngresos {
   // se sincroniza automáticamente; cuando se conecte, completar este campo acá
   // y en htmlReport.ts aparece la sección "Consumo de Gas (CAMMESA)".
   consumo_gas_cammesa?: PuntoConsumoGas[]
+  balance_stock?: BalanceStockArea[]
 }
 
 export interface PuntoConsumoGas { fecha: string; consumo_m3: number }
+
+// "Balance de Petróleo" -- tabla al final de la hoja "Hoja1" con el balance
+// de stock por área (producción, bombeo, diferencia de stock, importación,
+// stock actual, acumulados del mes). No siempre está presente en el Excel.
+export interface BalanceStockArea {
+  area: string
+  produccion_m3: number
+  bombeo_m3: number
+  diferencia_stock_m3: number
+  importacion_m3: number
+  stock_actual_m3: number
+  produccion_acum_m3: number
+  venta_acum_m3: number
+}
 
 export interface PuntoBrent { fecha: string; brent: number }
 
@@ -497,7 +512,46 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
       const { ventanas, serie } = parsearVentanasCotizacion(wb)
       return ventanas.length > 0 ? { ventanas_cotizacion: ventanas, serie_brent_diaria: serie } : {}
     })(),
+
+    ...(() => {
+      const balance = parsearBalanceStock(wb)
+      return balance.length > 0 ? { balance_stock: balance } : {}
+    })(),
   }
+}
+
+// "Balance de Petróleo" en la hoja "Hoja1" -- ubica la fila de encabezado
+// buscando "Area" en la col. A y "Producción de Petróleo" en la col. B (la
+// posición de filas varía mes a mes), y lee filas siguientes hasta la
+// primera fila vacía. Columnas en orden fijo: Area, Producción, Bombeo Seco,
+// Diferencia de Stock, Importación, Stock Actual, Producción Acum., Venta Acum.
+function parsearBalanceStock(wb: ExcelJS.Workbook): BalanceStockArea[] {
+  const data = leerHoja(wb, 'Hoja1')
+  if (!data) return []
+
+  const headerRow = data.findIndex(row =>
+    String(row?.[0] ?? '').trim().toLowerCase() === 'area' &&
+    String(row?.[1] ?? '').toLowerCase().includes('producción de petróleo')
+  )
+  if (headerRow === -1) return []
+
+  const areas: BalanceStockArea[] = []
+  for (let i = headerRow + 1; i < data.length; i++) {
+    const row = data[i]
+    const nombre = String(row?.[0] ?? '').trim()
+    if (!nombre) break
+    areas.push({
+      area: nombre,
+      produccion_m3:        num(row[1]),
+      bombeo_m3:             num(row[2]),
+      diferencia_stock_m3:  num(row[3]),
+      importacion_m3:        num(row[4]),
+      stock_actual_m3:      num(row[5]),
+      produccion_acum_m3:   num(row[6]),
+      venta_acum_m3:        num(row[7]),
+    })
+  }
+  return areas
 }
 
 function leerHoja(wb: ExcelJS.Workbook, nombre: string): any[][] | null {

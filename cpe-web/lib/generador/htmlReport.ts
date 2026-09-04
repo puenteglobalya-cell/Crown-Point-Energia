@@ -373,6 +373,7 @@ header{
 .abr-f{height:100%;border-radius:2px;background:var(--ac,var(--naranja));}
 
 .areas-2col{grid-template-columns:repeat(2,1fr);max-width:760px;}
+.areas-3col{grid-template-columns:repeat(3,1fr);max-width:1140px;}
 
 /* ── FULL-WIDTH CARD ────────────────────────────────────── */
 .card-full{
@@ -550,7 +551,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
 
 <!-- DETALLE PETRÓLEO -->
 <div class="sec">Detalle por Área — Petróleo</div>
-<div class="areas">
+<div class="areas ${hideRCLV ? 'areas-3col' : ''}">
 
   <!-- ET / LT-PQ -->
   <div class="acard" style="--ac:var(--naranja)">
@@ -625,6 +626,33 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
   `}
 
 </div>
+
+${datos.balance_stock && datos.balance_stock.length > 0 ? `
+<!-- BALANCE DE PETRÓLEO / EVOLUCIÓN DE STOCK -->
+<div class="sec">Evolución de Stock — Balance de Petróleo</div>
+<div class="card-full">
+  <div class="card-hdr">Balance por área <span class="card-hdr-val">m³</span></div>
+  <table class="t">
+    <thead><tr>
+      <th>Área</th><th>Producción</th><th>Bombeo seco</th><th>Dif. de stock</th>
+      <th>Importación</th><th>Stock actual</th><th>Prod. acum. mes</th><th>Venta acum. mes</th>
+    </tr></thead>
+    <tbody>
+      ${datos.balance_stock.map(b => `
+      <tr${b.area.toLowerCase().startsWith('cpe') ? ' class="tot"' : ''}>
+        <td>${esc(b.area)}</td>
+        <td>${fN(b.produccion_m3)}</td>
+        <td>${fN(b.bombeo_m3)}</td>
+        <td>${fN(b.diferencia_stock_m3)}</td>
+        <td>${fN(b.importacion_m3)}</td>
+        <td>${fN(b.stock_actual_m3)}</td>
+        <td>${fN(b.produccion_acum_m3)}</td>
+        <td>${fN(b.venta_acum_m3)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>
+</div>
+` : ''}
 
 <!-- DETALLE GAS -->
 <div class="sec">Detalle por Área — Gas</div>
