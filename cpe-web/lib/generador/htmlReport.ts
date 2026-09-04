@@ -631,11 +631,14 @@ ${datos.evolucion_stock && datos.evolucion_stock.length > 0 ? `
 <!-- EVOLUCIÓN DE STOCK ET / PC-KK -->
 <div class="sec">Evolución de Stock</div>
 <div class="card-full">
-  <div class="card-hdr">Saldo estimado al cierre del mes <span class="card-hdr-val">m³</span></div>
+  <div class="card-hdr">Saldo estimado al cierre del mes <span class="card-hdr-val">Volumen en m³</span></div>
+  <p style="font-size:11px;color:var(--muted2);margin:-8px 0 14px">
+    "Saldo estimado al cierre" es el mismo volumen que "Stock mes siguiente" en el detalle por área de arriba.
+  </p>
   <table class="t">
     <thead><tr>
-      <th>Área</th><th>Stock</th><th>Producción</th><th>Merma</th>
-      <th>Entrega In Kind</th><th>Venta</th><th>Saldo estimado al cierre</th>
+      <th>Área</th><th>Stock (m³)</th><th>Producción (m³)</th><th>Merma (m³)</th>
+      <th>Entrega In Kind (m³)</th><th>Venta (m³)</th><th>Saldo estimado al cierre (m³)</th>
     </tr></thead>
     <tbody>
       ${datos.evolucion_stock.map(e => `
@@ -647,33 +650,6 @@ ${datos.evolucion_stock && datos.evolucion_stock.length > 0 ? `
         <td>${fN(e.entrega_in_kind_m3)}</td>
         <td>${fN(e.venta_m3)}</td>
         <td><b>${fN(e.saldo_estimado_m3)}</b></td>
-      </tr>`).join('')}
-    </tbody>
-  </table>
-</div>
-` : ''}
-
-${datos.balance_stock && datos.balance_stock.length > 0 ? `
-<!-- BALANCE DE PETRÓLEO POR YACIMIENTO -->
-<div class="sec">Balance de Petróleo por Yacimiento</div>
-<div class="card-full">
-  <div class="card-hdr">Balance por yacimiento <span class="card-hdr-val">m³</span></div>
-  <table class="t">
-    <thead><tr>
-      <th>Yacimiento</th><th>Producción</th><th>Bombeo seco</th><th>Dif. de stock</th>
-      <th>Importación</th><th>Stock actual</th><th>Prod. acum. mes</th><th>Venta acum. mes</th>
-    </tr></thead>
-    <tbody>
-      ${datos.balance_stock.map(b => `
-      <tr${b.area.toLowerCase().startsWith('cpe') ? ' class="tot"' : ''}>
-        <td>${esc(b.area)}</td>
-        <td>${fN(b.produccion_m3)}</td>
-        <td>${fN(b.bombeo_m3)}</td>
-        <td>${fN(b.diferencia_stock_m3)}</td>
-        <td>${fN(b.importacion_m3)}</td>
-        <td>${fN(b.stock_actual_m3)}</td>
-        <td>${fN(b.produccion_acum_m3)}</td>
-        <td>${fN(b.venta_acum_m3)}</td>
       </tr>`).join('')}
     </tbody>
   </table>
