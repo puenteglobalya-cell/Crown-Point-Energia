@@ -34,13 +34,14 @@ export interface DatosIngresos {
   // y en htmlReport.ts aparece la sección "Consumo de Gas (CAMMESA)".
   consumo_gas_cammesa?: PuntoConsumoGas[]
   balance_stock?: BalanceStockArea[]
+  evolucion_stock?: StockAreaEvolucion[]
 }
 
 export interface PuntoConsumoGas { fecha: string; consumo_m3: number }
 
 // "Balance de Petróleo" -- tabla al final de la hoja "Hoja1" con el balance
-// de stock por área (producción, bombeo, diferencia de stock, importación,
-// stock actual, acumulados del mes). No siempre está presente en el Excel.
+// operativo por yacimiento (producción, bombeo, diferencia de stock,
+// importación, stock actual, acumulados del mes). No siempre está presente.
 export interface BalanceStockArea {
   area: string
   produccion_m3: number
@@ -50,6 +51,19 @@ export interface BalanceStockArea {
   stock_actual_m3: number
   produccion_acum_m3: number
   venta_acum_m3: number
+}
+
+// Evolución de stock ET/PC-KK -- tabla "Stock / Producción / Merma /
+// Entrega In Kind / Venta / Saldo estimado al cierre" que vive en la hoja
+// del mes en curso (nombre variable, p.ej. "2026-09"), no en "Hoja1".
+export interface StockAreaEvolucion {
+  area: string
+  stock_inicial_m3: number
+  produccion_m3: number
+  merma_m3: number
+  entrega_in_kind_m3: number
+  venta_m3: number
+  saldo_estimado_m3: number
 }
 
 export interface PuntoBrent { fecha: string; brent: number }
@@ -517,6 +531,11 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
       const balance = parsearBalanceStock(wb)
       return balance.length > 0 ? { balance_stock: balance } : {}
     })(),
+
+    ...(() => {
+      const evolucion = parsearEvolucionStock(wb)
+      return evolucion.length > 0 ? { evolucion_stock: evolucion } : {}
+    })(),
   }
 }
 
@@ -552,6 +571,44 @@ function parsearBalanceStock(wb: ExcelJS.Workbook): BalanceStockArea[] {
     })
   }
   return areas
+}
+
+// Vive en la hoja del mes en curso, cuyo nombre cambia todos los meses
+// (p.ej. "2026-09") -- se busca por contenido en TODAS las hojas en vez de
+// por nombre fijo. Bloque: fila de encabezado (áreas en col B/C), después
+// Stock / Producción / Merma / Entrega In Kind / Venta / Saldo estimado.
+function parsearEvolucionStock(wb: ExcelJS.Workbook): StockAreaEvolucion[] {
+  for (const ws of wb.worksheets) {
+    const data = worksheetToGrid(ws)
+    const saldoRow = data.findIndex(row => String(row?.[0] ?? '').toLowerCase().includes('saldo estimado al cierre'))
+    if (saldoRow < 6) continue // no hay lugar arriba para las 6 filas del bloque
+
+    const headerRow = saldoRow - 6
+    const stockRow = saldoRow - 5
+    const prodRow = saldoRow - 4
+    const mermaRow = saldoRow - 3
+    const inKindRow = saldoRow - 2
+    const ventaRow = saldoRow - 1
+
+    if (String(data[stockRow]?.[0] ?? '').trim().toLowerCase() !== 'stock') continue
+
+    const areas: StockAreaEvolucion[] = []
+    for (const col of [1, 2] as const) {
+      const nombre = String(data[headerRow]?.[col] ?? '').trim()
+      if (!nombre) continue
+      areas.push({
+        area: nombre,
+        stock_inicial_m3:    num(data[stockRow]?.[col]),
+        produccion_m3:       num(data[prodRow]?.[col]),
+        merma_m3:            num(data[mermaRow]?.[col]),
+        entrega_in_kind_m3:  num(data[inKindRow]?.[col]),
+        venta_m3:            num(data[ventaRow]?.[col]),
+        saldo_estimado_m3:   num(data[saldoRow]?.[col]),
+      })
+    }
+    if (areas.length > 0) return areas
+  }
+  return []
 }
 
 function leerHoja(wb: ExcelJS.Workbook, nombre: string): any[][] | null {
