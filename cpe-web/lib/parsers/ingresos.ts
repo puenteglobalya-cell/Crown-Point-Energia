@@ -30,6 +30,17 @@ export interface DatosIngresos {
   ventanas_cotizacion?: VentanaCotizacion[]
   serie_brent_diaria?: PuntoBrent[]
   evolucion_stock?: StockAreaEvolucion[]
+  serie_crudos_45d?: PuntoCrudos[]
+}
+
+// Evolución de los últimos 45 días (desde la fecha actual) de los 4 crudos
+// de referencia -- hoja "Precio estimado", nombres en F3:I3.
+export interface PuntoCrudos {
+  fecha: string
+  iceBrent: number | null
+  medanito: number | null
+  escalanteFobArg: number | null
+  laBrentFuturesStrip: number | null
 }
 
 // Evolución de stock ET/PC-KK -- tabla "Stock / Producción / Merma /
@@ -510,6 +521,11 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
       const evolucion = parsearEvolucionStock(wb)
       return evolucion.length > 0 ? { evolucion_stock: evolucion } : {}
     })(),
+
+    ...(() => {
+      const serie = parsearSerieCrudos45d(wb)
+      return serie.length > 0 ? { serie_crudos_45d: serie } : {}
+    })(),
   }
 }
 
@@ -630,6 +646,36 @@ function parsearVentanasCotizacion(wb: ExcelJS.Workbook): { ventanas: VentanaCot
     .filter((f): f is Fila & { brent: number } => f.brent != null)
     .map(f => ({ fecha: f.fecha.toISOString().slice(0, 10), brent: f.brent }))
   return { ventanas, serie }
+}
+
+// Evolución de los 4 crudos de referencia (hoja "Precio estimado", cols
+// F:I, nombres en la fila 3) para los últimos 45 días desde la fecha
+// actual real (no la del período del archivo) -- se recorta siempre a la
+// ventana [hoy-45d, hoy], igual que pide el pedido original.
+function parsearSerieCrudos45d(wb: ExcelJS.Workbook): PuntoCrudos[] {
+  const data = leerHoja(wb, 'Precio estimado')
+  if (!data) return []
+
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+  const desde = new Date(hoy)
+  desde.setDate(desde.getDate() - 45)
+
+  const puntos: PuntoCrudos[] = []
+  for (const row of data) {
+    const fecha = row[4] // columna E
+    if (!(fecha instanceof Date)) continue
+    if (fecha < desde || fecha > hoy) continue
+    puntos.push({
+      fecha: fecha.toISOString().slice(0, 10),
+      iceBrent: typeof row[5] === 'number' ? row[5] : null,
+      medanito: typeof row[6] === 'number' ? row[6] : null,
+      escalanteFobArg: typeof row[7] === 'number' ? row[7] : null,
+      laBrentFuturesStrip: typeof row[8] === 'number' ? row[8] : null,
+    })
+  }
+  puntos.sort((a, b) => a.fecha.localeCompare(b.fecha))
+  return puntos
 }
 
 function leerHojaConFecha(wb: ExcelJS.Workbook): any[][] | null {

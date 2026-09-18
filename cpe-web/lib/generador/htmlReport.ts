@@ -1,4 +1,4 @@
-import type { DatosIngresos } from '@/lib/parsers/ingresos'
+import type { DatosIngresos, PuntoCrudos } from '@/lib/parsers/ingresos'
 
 export interface MacroSnapshot {
   points:     Array<{ label: string; hh: number; brent: number }>
@@ -138,6 +138,28 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   const macroPrevHH  = (hasMacroPrev && macro!.hasHH)
     ? JSON.stringify(macro!.prevPoints!.map(p => p.hh > 0 ? +p.hh.toFixed(3) : null)) : ''
   const macroGridCols = (macro?.hasHH && macro?.hasBrent) ? '1fr 1fr' : '1fr'
+
+  // ── Evolución de crudos, últimos 45 días (opcional) ───────────────────────
+  const serieCrudos = datos.serie_crudos_45d ?? []
+  const hasCrudos45d = serieCrudos.length > 0
+  const crudosLabels = hasCrudos45d
+    ? JSON.stringify(serieCrudos.map(p => new Date(p.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })))
+    : '[]'
+  const crudosSeries: { key: keyof PuntoCrudos; label: string; color: string }[] = [
+    { key: 'iceBrent',            label: 'ICE Brent',                        color: '#82BC00' },
+    { key: 'medanito',            label: 'Medanito',                         color: '#2E86C1' },
+    { key: 'escalanteFobArg',     label: 'Escalante FOB Argentina',          color: '#D68910' },
+    { key: 'laBrentFuturesStrip', label: 'Latin America Brent Futures Strip', color: '#8B1A2A' },
+  ]
+  const crudosDatasetsJs = hasCrudos45d
+    ? crudosSeries.map(s => {
+        const data = JSON.stringify(serieCrudos.map(p => {
+          const v = p[s.key]
+          return typeof v === 'number' ? +v.toFixed(2) : null
+        }))
+        return `{label:'${s.label}',data:${data},borderColor:'${s.color}',backgroundColor:'${s.color}22',tension:.3,pointRadius:2.5,pointHoverRadius:5,pointBackgroundColor:'${s.color}',borderWidth:2,fill:false,spanGaps:true}`
+      }).join(',')
+    : ''
 
   const macroPrevNote = macroPrevDate ? ` · comparado con ${macroPrevDate}` : ''
   // Pre-built prev dataset strings to avoid deep template literal nesting
@@ -696,6 +718,15 @@ ${hasPriceHistory ? `
 </div>
 ` : ''}
 
+${hasCrudos45d ? `
+<!-- EVOLUCIÓN DE CRUDOS -->
+<div class="sec">Evolución de Crudos</div>
+<div class="card-full">
+  <div class="card-hdr">Cotizaciones diarias <span class="card-hdr-val">us$/bbl · últimos 45 días</span></div>
+  <div class="ch" style="height:320px"><canvas id="cCrudos45d"></canvas></div>
+</div>
+` : ''}
+
 ${hasMacro ? `
 <div class="sec">Contexto de Mercado</div>
 <div style="display:grid;grid-template-columns:${macroGridCols};gap:20px;margin-bottom:8px">
@@ -1063,6 +1094,10 @@ new Chart(document.getElementById('cVentanas'),{
     }
   }]
 });
+` : ''}
+
+${hasCrudos45d ? `
+new Chart(document.getElementById('cCrudos45d'),{type:'line',data:{labels:${crudosLabels},datasets:[${crudosDatasetsJs}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10},usePointStyle:true,color:C.muted}},tooltip:{...tip,callbacks:{label:c=>\`  \${c.dataset.label}: \${c.parsed.y?.toFixed(2)} us\$/bbl\`}}},scales:{x:{grid:{color:C.bg2},ticks:{font:{family:"'JetBrains Mono'",size:9.5},color:C.muted,maxRotation:50,autoSkip:true,autoSkipPadding:12}},y:{grid:{color:C.bg2},ticks:{callback:v=>\`\$\${Number(v).toFixed(0)}\`,font:{family:"'JetBrains Mono'",size:10.5},color:C.muted}}}}});
 ` : ''}
 
 ${hasMacro ? `
