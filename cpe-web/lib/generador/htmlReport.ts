@@ -268,8 +268,11 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
     const gasVolMcfd = volBoed * (gasPct / 100) * BOE_TO_MCF
     return oilVolBbld * datos.precio_neto_oil + gasVolMcfd * datos.precio_neto_gas
   }
-  const valorizadoVendidoDia = valorizarDia(datos.vol_vendido_boed, datos.oil_pct_vend, datos.gas_pct_vend)
-  const valorizadoVendidoMes = valorizadoVendidoDia * datos.dias
+  // "Ventas Valorizadas" tiene que reconciliar con la tarjeta "Ventas del
+  // Período" (misma venta, mismo mes) -- se usa el monto real reportado
+  // (datos.ventas_MM) en vez de recalcularlo con el precio neto oil/gas
+  // promediado, que difiere porque mezcla precios netos distintos por área.
+  const valorizadoVendidoMes = datos.ventas_MM * 1_000_000
   const valorizadoProducidoDia = valorizarDia(datos.vol_producido_boed, datos.oil_pct_prod, datos.gas_pct_prod)
   const valorizadoProducidoMes = valorizadoProducidoDia * datos.dias
 
@@ -533,7 +536,6 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
   <div class="kpi">
     <div class="kpi-lbl">Precio Neto Oil</div>
     <div class="kpi-val">${f(datos.precio_neto_oil)}<span class="kpi-unit">us$/bbl</span></div>
-    <div class="kpi-sub"><span class="tag wm">BRENT ref: ${f(brentRef)} us$/bbl</span></div>
   </div>
 
   <div class="kpi">
