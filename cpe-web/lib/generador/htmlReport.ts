@@ -45,6 +45,11 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   // las barras y el donut, no restado de ingOilPCKK, porque el cliente lo
   // quiere ver por separado de la venta regular, no reemplazándola.
   const inKindPCKK = Math.abs(areas.PCKK.in_kind_us ?? 0)
+  // El precio de PC-KK se toma en brida de entrada (no en boca de pozo), lo
+  // que implica un ahorro de almacenamiento de 0,80 us$/bbl todos los meses
+  // -- se muestra como nota informativa sobre el volumen del período.
+  const AHORRO_ALMACENAMIENTO_PCKK_USD_BBL = 0.80
+  const ahorroAlmacenamientoPCKK = (areas.PCKK.vol_bbl ?? 0) * AHORRO_ALMACENAMIENTO_PCKK_USD_BBL
   const ingGasTotal = ingGasET + ingGasRCLV
   const totalUS    = ingOilET + ingOilPCKK + ingOilCH + ingOilRCLV + ingGasTotal + inKindPCKK
   const totalMM    = totalUS / 1_000_000
@@ -604,6 +609,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     ${areas.PCKK.descuento ? `<div class="arow"><span class="albl">Descuento (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento)})</span></div>` : ''}
     ${areas.PCKK.descuento_fijo ? `<div class="arow"><span class="albl">Descuento Cañadón Seco (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento_fijo)})</span></div>` : ''}
     <div class="arow"><span class="albl">Precio estimado (us$/bbl)</span><span class="aval hi">${f(areas.PCKK.precio_neto)}</span></div>
+    <div class="anote">* Precio en <strong style="color:var(--azul)">brida de entrada</strong> — implica un ahorro de almacenamiento de 0,80 us$/bbl, equivalente a <strong style="color:var(--azul)">${fN(ahorroAlmacenamientoPCKK)} us$</strong> este período</div>
     <div class="arow"><span class="albl">Ingreso período (us$)</span><span class="aval hi">${fN(areas.PCKK.ingreso)}</span></div>
     ${areas.PCKK.stock_m3 ? `
     <div class="arow"><span class="albl">Stock mes siguiente (m³)</span><span class="aval mu">${fN(areas.PCKK.stock_m3)} / ${f(areas.PCKK.stock_dias ?? 0, 1)}d</span></div>
