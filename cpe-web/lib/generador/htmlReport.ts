@@ -47,9 +47,13 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   const inKindPCKK = Math.abs(areas.PCKK.in_kind_us ?? 0)
   // El precio de PC-KK se toma en brida de entrada (no en boca de pozo), lo
   // que implica un ahorro de almacenamiento de 0,80 us$/bbl todos los meses
-  // -- se muestra como nota informativa sobre el volumen del período.
+  // -- se calcula sobre la PRODUCCIÓN del período (no el volumen entregado
+  // ni vendido), convertida de m³ a bbl con el mismo factor que el resto
+  // del reporte (M3_TO_BBL = 6,2898).
   const AHORRO_ALMACENAMIENTO_PCKK_USD_BBL = 0.80
-  const ahorroAlmacenamientoPCKK = (areas.PCKK.vol_bbl ?? 0) * AHORRO_ALMACENAMIENTO_PCKK_USD_BBL
+  const M3_TO_BBL = 6.2898
+  const produccionBblPCKK = (areas.PCKK.prod_neta_m3d ?? 0) * datos.dias * M3_TO_BBL
+  const ahorroAlmacenamientoPCKK = produccionBblPCKK * AHORRO_ALMACENAMIENTO_PCKK_USD_BBL
   const ingGasTotal = ingGasET + ingGasRCLV
   const totalUS    = ingOilET + ingOilPCKK + ingOilCH + ingOilRCLV + ingGasTotal + inKindPCKK
   const totalMM    = totalUS / 1_000_000
