@@ -40,6 +40,17 @@ export default async function PortalFinanzasPage() {
       </div>
 
       <section className="portal-section">
+        <h2 className="portal-section__title">Herramientas</h2>
+        <Link
+          href="/portal/finanzas/padron-agip"
+          className="btn btn-secondary"
+          style={{ textDecoration: 'none', padding: '10px 20px', fontSize: 14, display: 'inline-block' }}
+        >
+          Padrón AGIP — Alícuotas IIBB
+        </Link>
+      </section>
+
+      <section className="portal-section">
         <h2 className="portal-section__title">Reportes</h2>
         <ReportesLista items={items} userCanUpload={true} isAccionista={false} />
       </section>
