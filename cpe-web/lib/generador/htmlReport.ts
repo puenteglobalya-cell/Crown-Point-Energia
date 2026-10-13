@@ -201,13 +201,19 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
     const segundaQ = v.puntos.filter(p => p.fecha >= corteMesEntrega)
     if (primeraQ.length === 0 || segundaQ.length === 0) return [v]
     const promedioDe = (pts: typeof v.puntos) => pts.reduce((s, p) => s + p.brent, 0) / pts.length
+    // Se prioriza el promedio oficial de cada quincena (areas.PCKK.brent_1q
+    // / brent_2q, ya parseado de las filas "1Quincena"/"2Quincena" de la
+    // hoja de detalle) sobre el recalculado acá a partir de los puntos
+    // diarios: ambos deberían coincidir, pero el oficial es la fuente que
+    // ya usa la tarjeta de detalle por área, así que ante cualquier
+    // diferencia (redondeo, un día de más/menos) prevalece ese.
     return [
       { ...v, area: 'PC-KK', regla: '1ª quincena previa a la entrega',
         fecha_desde: primeraQ[0].fecha, fecha_hasta: primeraQ[primeraQ.length - 1].fecha,
-        promedio: promedioDe(primeraQ), puntos: primeraQ, nota: undefined },
+        promedio: areas.PCKK.brent_1q || promedioDe(primeraQ), puntos: primeraQ, nota: undefined },
       { ...v, area: 'PC-KK', regla: '2ª quincena previa a la entrega',
         fecha_desde: segundaQ[0].fecha, fecha_hasta: segundaQ[segundaQ.length - 1].fecha,
-        promedio: promedioDe(segundaQ), puntos: segundaQ, nota: undefined },
+        promedio: areas.PCKK.brent_2q || promedioDe(segundaQ), puntos: segundaQ, nota: undefined },
     ]
   }
   const ventanasPCKKSplit = ventanasRaw.flatMap(splitPCKK)
