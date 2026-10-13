@@ -1,4 +1,4 @@
-import type { DatosIngresos, PuntoCrudos } from '@/lib/parsers/ingresos'
+import type { DatosIngresos, PuntoCrudos, VentanaCotizacion } from '@/lib/parsers/ingresos'
 
 export interface MacroSnapshot {
   points:     Array<{ label: string; hh: number; brent: number }>
@@ -188,17 +188,42 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   // tabla de DDEE porque el Brent de referencia de esa tabla es justamente
   // el resultado de esta disparidad.
   const ventanasRaw = datos.ventanas_cotizacion ?? []
+  // PC-KK promedia 2 quincenas distintas (la 2ª mitad del mes anterior a la
+  // entrega + la 1ª mitad del mes de entrega) -- la hoja "Precio estimado"
+  // las etiqueta como una sola ventana continua, pero mostrarlas separadas
+  // (como ya se hace en la tarjeta de detalle por área) es mucho más claro
+  // que un único promedio ciego a esa frontera. Se parte por fecha usando
+  // los mismos puntos diarios de la ventana -- no una fuente nueva.
+  const splitPCKK = (v: VentanaCotizacion): VentanaCotizacion[] => {
+    if (v.area !== 'PC-KK') return [v]
+    const corteMesEntrega = `${datos.periodo}-01`
+    const primeraQ = v.puntos.filter(p => p.fecha < corteMesEntrega)
+    const segundaQ = v.puntos.filter(p => p.fecha >= corteMesEntrega)
+    if (primeraQ.length === 0 || segundaQ.length === 0) return [v]
+    const promedioDe = (pts: typeof v.puntos) => pts.reduce((s, p) => s + p.brent, 0) / pts.length
+    return [
+      { ...v, area: 'PC-KK', regla: '1ª quincena previa a la entrega',
+        fecha_desde: primeraQ[0].fecha, fecha_hasta: primeraQ[primeraQ.length - 1].fecha,
+        promedio: promedioDe(primeraQ), puntos: primeraQ, nota: undefined },
+      { ...v, area: 'PC-KK', regla: '2ª quincena previa a la entrega',
+        fecha_desde: segundaQ[0].fecha, fecha_hasta: segundaQ[segundaQ.length - 1].fecha,
+        promedio: promedioDe(segundaQ), puntos: segundaQ, nota: undefined },
+    ]
+  }
+  const ventanasPCKKSplit = ventanasRaw.flatMap(splitPCKK)
   // El gráfico arranca en la fecha de inicio de la ventana más temprana, no
   // en el primer día de la serie completa -- meses de historia de Brent sin
   // ninguna ventana marcada son ruido, no contexto útil para esta comparación.
-  const fechaMinVentana = ventanasRaw.length > 0
-    ? ventanasRaw.reduce((min, v) => v.fecha_desde < min ? v.fecha_desde : min, ventanasRaw[0].fecha_desde)
+  const fechaMinVentana = ventanasPCKKSplit.length > 0
+    ? ventanasPCKKSplit.reduce((min, v) => v.fecha_desde < min ? v.fecha_desde : min, ventanasPCKKSplit[0].fecha_desde)
     : null
   const serieBrent = (datos.serie_brent_diaria ?? []).filter(p => !fechaMinVentana || p.fecha >= fechaMinVentana)
-  // PC-KK primero: coincide con el orden del resto de los gráficos del
-  // reporte (Ingresos por Área, Participación en Ventas) y se lee mejor.
+  // ET-LT-PQ al final, PC-KK (sus dos quincenas) primero: coincide con el
+  // orden del resto de los gráficos del reporte y se lee mejor. Como ambas
+  // quincenas de PC-KK comparten el área 'PC-KK', un sort estable alcanza
+  // para mantenerlas juntas y en orden (1ª antes que 2ª).
   const ORDEN_VENTANA: Record<string, number> = { 'PC-KK': 0, 'ET-LT-PQ': 1 }
-  const ventanas = [...ventanasRaw].sort((a, b) =>
+  const ventanas = [...ventanasPCKKSplit].sort((a, b) =>
     (ORDEN_VENTANA[a.area] ?? 99) - (ORDEN_VENTANA[b.area] ?? 99))
   const hasVentanas = ventanas.length > 0 && serieBrent.length > 0
   const VENTANA_COLORES = ['#6CAE52', '#4F5478', '#C9A24A', '#B33B2E']
