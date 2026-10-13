@@ -513,7 +513,7 @@ export async function parsearIngresosExcel(file: File): Promise<DatosIngresos> {
     })(),
 
     ...(() => {
-      const { ventanas, serie } = parsearVentanasCotizacion(wb)
+      const { ventanas, serie } = parsearVentanasCotizacion(wb, periodo)
       return ventanas.length > 0 ? { ventanas_cotizacion: ventanas, serie_brent_diaria: serie } : {}
     })(),
 
@@ -576,19 +576,26 @@ function leerHoja(wb: ExcelJS.Workbook, nombre: string): any[][] | null {
 // ─── Ventanas de cotización (hoja "Precio estimado") ─────────────────────
 // Cada área fija su Brent de referencia contra una ventana de cotización
 // distinta: ET-LT-PQ toma las primeras 7 cotizaciones DESPUÉS del cierre de
-// mes, PC-KK toma las 15 cotizaciones previas a la entrega (terminando el
-// 15 del mes de entrega). La hoja repite la etiqueta de área en TODAS las
-// filas de su ventana (no sólo en la primera) -- se agrupan las filas
-// consecutivas con la misma etiqueta en una sola ventana, en vez de generar
-// una ventana nueva por cada fila etiquetada.
-const REGLA_VENTANA: Record<string, string> = {
-  'ET-LT-PQ': '7 primeras cotizaciones tras el cierre de mes',
-  'PC-KK': '15 cotizaciones previas a la entrega',
+// mes (hasta el período de entrega 2026-09; desde 2026-10 pasa a tomar el
+// PROMEDIO DE TODO EL MES de entrega), PC-KK toma las 15 cotizaciones
+// previas a la entrega (terminando el 15 del mes de entrega). La hoja
+// repite la etiqueta de área en TODAS las filas de su ventana (no sólo en
+// la primera) -- se agrupan las filas consecutivas con la misma etiqueta en
+// una sola ventana, en vez de generar una ventana nueva por cada fila
+// etiquetada. El cambio de regla de ET-LT-PQ no afecta este agrupamiento
+// (siempre toma lo que la hoja etiquetó ese mes): solo cambia el texto
+// descriptivo que se muestra junto al promedio.
+function reglaVentanaPorPeriodo(periodo: string): Record<string, string> {
+  return {
+    'ET-LT-PQ': periodo >= '2026-10' ? 'Promedio del mes de entrega' : '7 primeras cotizaciones tras el cierre de mes',
+    'PC-KK': '15 cotizaciones previas a la entrega',
+  }
 }
 
-function parsearVentanasCotizacion(wb: ExcelJS.Workbook): { ventanas: VentanaCotizacion[]; serie: PuntoBrent[] } {
+function parsearVentanasCotizacion(wb: ExcelJS.Workbook, periodo: string): { ventanas: VentanaCotizacion[]; serie: PuntoBrent[] } {
   const data = leerHoja(wb, 'Precio estimado')
   if (!data) return { ventanas: [], serie: [] }
+  const reglaVentana = reglaVentanaPorPeriodo(periodo)
 
   // Se conservan también las filas con Brent vacío (ej. la cotización de
   // hoy, todavía "PENDIENTE") -- si se descartan de una, el agrupador nunca
@@ -615,7 +622,7 @@ function parsearVentanasCotizacion(wb: ExcelJS.Workbook): { ventanas: VentanaCot
   let i = 0
   while (i < filas.length) {
     const area = filas[i].area
-    if (!area || !REGLA_VENTANA[area]) { i++; continue }
+    if (!area || !reglaVentana[area]) { i++; continue }
     let j = i
     while (j < filas.length && filas[j].area === area) j++
     const grupo = filas.slice(i, j)
@@ -627,7 +634,7 @@ function parsearVentanasCotizacion(wb: ExcelJS.Workbook): { ventanas: VentanaCot
       ? `Promedio con ${puntos.length} cotizaciones -- falta ${faltantes.map(f => f.fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })).join(', ')}`
       : undefined
     ventanas.push({
-      area, regla: REGLA_VENTANA[area],
+      area, regla: reglaVentana[area],
       // Sobre `puntos` (con valor), no `grupo` (que puede incluir una fecha
       // sin cotización, ej. "PENDIENTE") -- la serie del gráfico sólo tiene
       // fechas con valor, así que un fecha_hasta/desde tomado del grupo
