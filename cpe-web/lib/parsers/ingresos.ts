@@ -607,9 +607,14 @@ function parsearVentanasCotizacion(wb: ExcelJS.Workbook, periodo: string): { ven
     const fecha = row[4] // columna E
     if (!(fecha instanceof Date)) continue
     const brentRaw = row[5] // columna F
-    const areaRaw = row[3] // columna D
+    // La etiqueta de área no vive siempre en la misma columna: PC-KK se
+    // mueve a la columna C algunos meses mientras ET-LT-PQ se mantiene en
+    // la D -- se revisan ambas en vez de asumir una posición fija.
+    const areaC = typeof row[2] === 'string' ? row[2].trim() : ''
+    const areaD = typeof row[3] === 'string' ? row[3].trim() : ''
+    const areaRaw = areaC || areaD
     filas.push({
-      area: typeof areaRaw === 'string' && areaRaw.trim() ? areaRaw.trim() : null,
+      area: areaRaw || null,
       fecha, brent: typeof brentRaw === 'number' ? brentRaw : null,
     })
   }
