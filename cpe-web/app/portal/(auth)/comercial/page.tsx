@@ -127,6 +127,23 @@ export default async function ComercialPage() {
         <MacroWidget />
       </section>
 
+      {/* ── Fletes ── */}
+      <section style={{ marginBottom: 40 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', margin: '0 0 4px', fontFamily: 'var(--font-display)' }}>
+          Fletes — Razonabilidad vs. Mercado
+        </h2>
+        <p style={{ fontSize: 12, color: '#8e91b0', margin: '0 0 16px' }}>
+          Flete real vs. esperado por cargamento y apertura del spread Brent–FOB
+        </p>
+        <Link
+          href="/portal/comercial/fletes"
+          className="btn btn-secondary"
+          style={{ textDecoration: 'none', padding: '10px 20px', fontSize: 14, display: 'inline-block' }}
+        >
+          Ver seguimiento de fletes →
+        </Link>
+      </section>
+
       {/* ── Referencia de Mercado SE ── */}
       <section>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', margin: '0 0 4px', fontFamily: 'var(--font-display)' }}>

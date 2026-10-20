@@ -159,6 +159,25 @@ export async function POST(req: NextRequest) {
 
   if (error) return dbError(error)
 
+  // El Excel de Ingresos ya trae una serie diaria de Brent/Medanito/Escalante
+  // (lib/parsers/ingresos.ts, últimos 45 días) -- hasta ahora quedaba
+  // transitoria dentro del JSONB de este reporte. Se acumula también en
+  // precios_diarios para tener historia real consultable por fecha
+  // (seguimiento de fletes en /portal/comercial/fletes), sin pedirle nada
+  // nuevo al usuario.
+  if (typeIdFinal === 'ingresos' && Array.isArray(datos?.serie_crudos_45d) && datos.serie_crudos_45d.length > 0) {
+    const filas = datos.serie_crudos_45d.map((p: { fecha: string; iceBrent: number | null; medanito: number | null; escalanteFobArg: number | null; laBrentFuturesStrip: number | null }) => ({
+      fecha: p.fecha,
+      ice_brent: p.iceBrent,
+      medanito: p.medanito,
+      escalante_fob: p.escalanteFobArg,
+      la_brent_futures_strip: p.laBrentFuturesStrip,
+      fuente: `Reporte Ingresos ${periodo}`,
+      updated_at: new Date().toISOString(),
+    }))
+    await db.from('precios_diarios').upsert(filas, { onConflict: 'fecha' }).then(null, () => {})
+  }
+
   await logActivity({
     userId: userWithRole.id,
     userEmail: userWithRole.email ?? null,
