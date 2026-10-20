@@ -602,11 +602,13 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="arow"><span class="albl">m³ entregados</span><span class="aval">${fN(areas.ET.entregados_m3)}</span></div>
     <div class="arow"><span class="albl">Volumen (bbl)</span><span class="aval">${fN(areas.ET.vol_bbl)}</span></div>
     ${(() => {
-      // Brent de referencia para ET/Tordillo -- si el Excel no trae un
-      // brent_ref específico del área, se usa el mismo Brent de referencia
-      // del reporte (brentRef) para poder mostrar igual la apertura
-      // Brent ref. − Descuento − Derechos de Exportación = Precio neto.
-      const brentRefET = areas.ET.brent_ref || brentRef
+      // Brent de referencia para ET/Tordillo -- tiene que coincidir con el
+      // promedio que muestra "Disparidad de Ventanas de Cotización" para
+      // ET-LT-PQ (misma ventana, mismo dato), no un valor aparte -- por eso
+      // se prioriza la ventana ya calculada en vez de areas.ET.brent_ref o
+      // el Brent de referencia general del reporte.
+      const ventanaET = ventanasRaw.find(v => v.area === 'ET-LT-PQ')
+      const brentRefET = ventanaET?.promedio || areas.ET.brent_ref || brentRef
       if (!brentRefET) return ''
       const tarifaExportUsdBbl = brentRefET * ddeeFilaMasCercana(brentRefET).neta
       return `
@@ -632,10 +634,10 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="arow"><span class="albl">Producción neta (m³/d)</span><span class="aval">${f(areas.PCKK.prod_neta_m3d, 2)}</span></div>
     <div class="arow"><span class="albl">m³ entregados</span><span class="aval">${fN(areas.PCKK.entregados_m3)}</span></div>
     <div class="arow"><span class="albl">Volumen (bbl)</span><span class="aval">${fN(areas.PCKK.vol_bbl)}</span></div>
-    ${areas.PCKK.brent_1q ? `<div class="arow"><span class="albl">BRENT − Escalante, 1° Quincena (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_1q)}</span></div>` : ''}
-    ${areas.PCKK.brent_2q ? `<div class="arow"><span class="albl">BRENT − Escalante, 2° Quincena (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_2q)}</span></div>` : ''}
+    ${areas.PCKK.brent_1q ? `<div class="arow"><span class="albl">BRENT 1° Quincena (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_1q)}</span></div>` : ''}
+    ${areas.PCKK.brent_2q ? `<div class="arow"><span class="albl">BRENT 2° Quincena (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_2q)}</span></div>` : ''}
     ${areas.PCKK.brent_ref && !areas.PCKK.brent_1q ? `<div class="arow"><span class="albl">BRENT ref. (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_ref)}</span></div>` : ''}
-    ${areas.PCKK.brent_1q && areas.PCKK.brent_2q ? `<div class="anote">* Ya neto del descuento Escalante, calculado en base a las <strong style="color:var(--azul)">2 semanas anteriores</strong> a la quincena de entrega</div>` : ''}
+    ${areas.PCKK.brent_1q && areas.PCKK.brent_2q ? `<div class="anote">* Precio calculado en base a las <strong style="color:var(--azul)">2 semanas anteriores</strong> a la quincena de entrega -- mismo Brent que se muestra en "Disparidad de Ventanas de Cotización"</div>` : ''}
     ${areas.PCKK.descuento ? `<div class="arow"><span class="albl">Descuento (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento)})</span></div>` : ''}
     ${areas.PCKK.descuento_fijo ? `<div class="arow"><span class="albl">Descuento Cañadón Seco (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento_fijo)})</span></div>` : ''}
     <div class="arow"><span class="albl">Precio estimado (us$/bbl)</span><span class="aval hi">${f(areas.PCKK.precio_neto)}</span></div>
@@ -786,9 +788,7 @@ ${hasVentanas ? `
     <div style="border:1px solid ${v.color}55;border-radius:8px;padding:12px 14px;background:${v.color}0d">
       <div style="font-size:11px;font-weight:700;color:${v.color}">${esc(v.area)} — Referencia ${esc(datos.mes)}</div>
       <div style="font-size:10px;color:var(--muted2);margin:2px 0 8px">${esc(v.regla)} · ${new Date(v.fecha_desde+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'short'})} – ${new Date(v.fecha_hasta+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'short'})}</div>
-      <div style="font-size:9px;color:var(--muted2);font-style:italic;margin-bottom:6px">${v.area === 'PC-KK'
-        ? 'ICE Brent puro — no es el BRENT-Escalante que fija el precio de PC-KK (ver tarjeta de detalle por área)'
-        : 'BRENT de Referencia — no incluye ajustes (premio/descuento)'}</div>
+      <div style="font-size:9px;color:var(--muted2);font-style:italic;margin-bottom:6px">BRENT de Referencia — no incluye ajustes (premio/descuento)</div>
       <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:${v.color}">US$ ${f(v.promedio,2)}/bbl</div>
       ${v.nota ? `<div style="font-size:9.5px;color:var(--rojo,#B33B2E);margin-top:4px">* ${esc(v.nota)}</div>` : ''}
     </div>`).join('')}
