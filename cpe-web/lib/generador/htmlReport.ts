@@ -611,14 +611,18 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
       const ventanaET = ventanasRaw.find(v => v.area === 'ET-LT-PQ')
       const brentRefET = ventanaET?.promedio || areas.ET.brent_ref || brentRef
       if (!brentRefET) return ''
-      const tarifaExportUsdBbl = brentRefET * ddeeFilaMasCercana(brentRefET).neta
+      // Derechos de Exportación = residuo entre Brent ref., Descuento y el
+      // Precio neto REAL del Excel -- no la alícuota de la tabla general
+      // aplicada de forma independiente, que no tiene por qué dar la misma
+      // cifra exacta (distintas fechas de referencia, redondeos) y entonces
+      // la resta no cerraba contra el Precio neto que sí es un dato real.
+      const tarifaExportUsdBbl = brentRefET - (areas.ET.descuento ?? 0) - areas.ET.precio_neto
       return `
     <div class="arow"><span class="albl">BRENT ref. (us$/bbl)</span><span class="aval">${f(brentRefET)}</span></div>
     ${areas.ET.descuento ? (areas.ET.descuento < 0
       ? `<div class="arow"><span class="albl">Premio (us$/bbl)</span><span class="aval pos">+${f(Math.abs(areas.ET.descuento))}</span></div>`
       : `<div class="arow"><span class="albl">Descuento (us$/bbl)</span><span class="aval neg">(${f(areas.ET.descuento)})</span></div>`) : ''}
-    <div class="arow"><span class="albl">Derechos de Exportación (us$/bbl)</span><span class="aval neg">(${f(tarifaExportUsdBbl)})</span></div>
-    <div class="anote">* DDEE estimado según la tabla de alícuota efectiva más abajo, sobre el Brent de referencia de este período</div>`
+    ${tarifaExportUsdBbl > 0 ? `<div class="arow"><span class="albl">Derechos de Exportación (us$/bbl)</span><span class="aval neg">(${f(tarifaExportUsdBbl)})</span></div>` : ''}`
     })()}
     <div class="arow"><span class="albl">Precio neto (us$/bbl)</span><span class="aval hi">${f(areas.ET.precio_neto)}</span></div>
     <div class="arow"><span class="albl">Ingreso período (us$)</span><span class="aval hi">${fN(areas.ET.ingreso)}</span></div>
