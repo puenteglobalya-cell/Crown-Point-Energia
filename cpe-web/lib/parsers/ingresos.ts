@@ -601,60 +601,59 @@ function parsearVentanasCotizacion(wb: ExcelJS.Workbook, periodo: string): { ven
   // hoy, todavía "PENDIENTE") -- si se descartan de una, el agrupador nunca
   // se entera de que faltó un día dentro de la ventana, y el promedio queda
   // corto sin ningún aviso al pie del gráfico.
-  type Fila = { area: string | null; fecha: Date; brent: number | null }
+  //
+  // Una misma fila puede tener etiqueta en LAS DOS columnas a la vez (p.ej.
+  // en la primera quincena de octubre, C trae "PC-KK" -- su 2ª quincena -- y
+  // D trae "ET-LT-PQ" -- ya dentro de su mes de entrega completo -- el mismo
+  // día). Si se tratara como una sola etiqueta por fila (la de C ganándole a
+  // la de D), esos días quedaban contados sólo para PC-KK y la ventana de
+  // ET-LT-PQ perdía la primera mitad de su propio mes. Por eso `areas` es
+  // una lista, no un valor único: cada columna con contenido se procesa
+  // para su propia área, sin que una le gane a la otra.
+  type Fila = { areas: string[]; fecha: Date; brent: number | null }
   const filas: Fila[] = []
   for (const row of data) {
     const fecha = row[4] // columna E
     if (!(fecha instanceof Date)) continue
     const brentRaw = row[5] // columna F
-    // La etiqueta de área no vive siempre en la misma columna: PC-KK se
-    // mueve a la columna C algunos meses mientras ET-LT-PQ se mantiene en
-    // la D -- se revisan ambas en vez de asumir una posición fija.
     const areaC = typeof row[2] === 'string' ? row[2].trim() : ''
     const areaD = typeof row[3] === 'string' ? row[3].trim() : ''
-    const areaRaw = areaC || areaD
     filas.push({
-      area: areaRaw || null,
+      areas: [areaC, areaD].filter(Boolean),
       fecha, brent: typeof brentRaw === 'number' ? brentRaw : null,
     })
   }
-  // Se reordena de la fecha más nueva a la más vieja en vez de asumir el
-  // orden del Excel: agrupar filas "consecutivas" con la misma etiqueta
-  // depende de este orden.
-  filas.sort((a, b) => b.fecha.getTime() - a.fecha.getTime())
+  filas.sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
 
   const ventanas: VentanaCotizacion[] = []
-  let i = 0
-  while (i < filas.length) {
-    const area = filas[i].area
-    if (!area || !reglaVentana[area]) { i++; continue }
-    let j = i
-    while (j < filas.length && filas[j].area === area) j++
-    const grupo = filas.slice(i, j)
-    const puntos = grupo.filter((p): p is Fila & { brent: number } => p.brent != null)
-    const faltantes = grupo.filter(p => p.brent == null)
-    if (puntos.length === 0) { i = j; continue }
-    const promedio = puntos.reduce((s, p) => s + p.brent, 0) / puntos.length
-    const nota = faltantes.length > 0
-      ? `Promedio con ${puntos.length} cotizaciones -- falta ${faltantes.map(f => f.fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })).join(', ')}`
-      : undefined
-    ventanas.push({
-      area, regla: reglaVentana[area],
-      // Sobre `puntos` (con valor), no `grupo` (que puede incluir una fecha
-      // sin cotización, ej. "PENDIENTE") -- la serie del gráfico sólo tiene
-      // fechas con valor, así que un fecha_hasta/desde tomado del grupo
-      // completo podía no encontrar match ahí y hacer desaparecer toda la
-      // ventana (y su sombreado) en vez de sólo faltarle un punto.
-      fecha_desde: puntos[puntos.length - 1].fecha.toISOString().slice(0, 10),
-      fecha_hasta: puntos[0].fecha.toISOString().slice(0, 10),
-      promedio,
-      ...(nota ? { nota } : {}),
-      puntos: [...puntos].reverse().map(p => ({ fecha: p.fecha.toISOString().slice(0, 10), brent: p.brent })),
-    })
-    i = j
+  for (const area of Object.keys(reglaVentana)) {
+    let i = 0
+    while (i < filas.length) {
+      if (!filas[i].areas.includes(area)) { i++; continue }
+      let j = i
+      while (j < filas.length && filas[j].areas.includes(area)) j++
+      const grupo = filas.slice(i, j)
+      const puntos = grupo.filter((p): p is Fila & { brent: number } => p.brent != null)
+      const faltantes = grupo.filter(p => p.brent == null)
+      if (puntos.length > 0) {
+        const promedio = puntos.reduce((s, p) => s + p.brent, 0) / puntos.length
+        const nota = faltantes.length > 0
+          ? `Promedio con ${puntos.length} cotizaciones -- falta ${faltantes.map(f => f.fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })).join(', ')}`
+          : undefined
+        ventanas.push({
+          area, regla: reglaVentana[area],
+          fecha_desde: puntos[0].fecha.toISOString().slice(0, 10),
+          fecha_hasta: puntos[puntos.length - 1].fecha.toISOString().slice(0, 10),
+          promedio,
+          ...(nota ? { nota } : {}),
+          puntos: puntos.map(p => ({ fecha: p.fecha.toISOString().slice(0, 10), brent: p.brent })),
+        })
+      }
+      i = j
+    }
   }
 
-  const serie = [...filas].reverse()
+  const serie = filas
     .filter((f): f is Fila & { brent: number } => f.brent != null)
     .map(f => ({ fecha: f.fecha.toISOString().slice(0, 10), brent: f.brent }))
   return { ventanas, serie }
