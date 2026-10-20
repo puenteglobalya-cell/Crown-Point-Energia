@@ -391,6 +391,7 @@ header{
 .tag.wm{background:rgba(192,144,32,.1);color:var(--warm);}
 .tag.rj{background:rgba(184,48,48,.1);color:var(--rojo);}
 .tag.mu{background:rgba(119,107,88,.1);color:var(--muted);}
+.tag.big{font-size:12px;font-weight:700;padding:3px 9px;}
 
 /* ── GRID PRINCIPAL ─────────────────────────────────────── */
 .g2{display:grid;grid-template-columns:1fr 390px;gap:18px;margin-bottom:18px;}
@@ -545,7 +546,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="kpi-sub">
       ${oilProd ? `<span class="tag az">Oil ${oilProd}%</span>` : ''}
       ${gasProd ? `<span class="tag wm">Gas ${gasProd}%</span>` : ''}
-      <span class="tag mu">${f(valorizadoProducidoMes / 1_000_000)} MM us$ en el mes</span>
+      <span class="tag mu big">${f(valorizadoProducidoMes / 1_000_000)} MM us$ en el mes</span>
       <span class="tag mu">US$ ${f(precioBoeProducido)}/BOE</span>
     </div>
   </div>
@@ -556,7 +557,7 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="kpi-sub">
       ${oilVend ? `<span class="tag vd">Oil ${oilVend}%</span>` : ''}
       ${gasVend ? `<span class="tag wm">Gas ${gasVend}%</span>` : ''}
-      <span class="tag mu">${f((valorizadoVendidoMes + inKindPCKK) / 1_000_000)} MM us$ en el mes</span>
+      <span class="tag mu big">${f((valorizadoVendidoMes + inKindPCKK) / 1_000_000)} MM us$ en el mes</span>
       <span class="tag mu">US$ ${f(precioBoeVendido)}/BOE</span>
       ${inKindPCKK > 0 ? `<span class="tag mu">Venta ${f(valorizadoVendidoMes / 1_000_000)} MM · In kind ${f(inKindPCKK / 1_000_000)} MM</span>` : ''}
     </div>
