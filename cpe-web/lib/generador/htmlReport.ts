@@ -286,34 +286,27 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   const oilVend = datos.oil_pct_vend > 0 ? datos.oil_pct_vend.toFixed(1) : null
   const gasVend = datos.gas_pct_vend > 0 ? datos.gas_pct_vend.toFixed(1) : null
 
-  // Valorización: % oil (BOE≈bbl) × precio oil + % gas (convertido de BOE a
-  // Mcf con el factor estándar de la industria, 6 Mcf = 1 BOE) × precio gas.
-  // Se calcula dos veces con distinta base de volumen:
-  //  - "vendida" usa el volumen VENDIDO (reconcilia con Ventas del Período,
-  //    ya que el producido incluye stock que aún no se vendió)
-  //  - "producida" usa el volumen PRODUCIDO (ingreso potencial si se vendiera
-  //    toda la producción del período, sin stock)
-  const BOE_TO_MCF = 6
-  const valorizarDia = (volBoed: number, oilPct: number, gasPct: number) => {
-    const oilVolBbld = volBoed * (oilPct / 100)
-    const gasVolMcfd = volBoed * (gasPct / 100) * BOE_TO_MCF
-    return oilVolBbld * datos.precio_neto_oil + gasVolMcfd * datos.precio_neto_gas
-  }
+  // Valorización: se usa UN SOLO precio US$/BOE (derivado del total real de
+  // ventas del mes, no una mezcla teórica de precio neto oil/gas) para
+  // producción y venta por igual -- ver precioBoeUnico más abajo.
   // "Ventas Valorizadas" tiene que reconciliar con la tarjeta "Ventas del
   // Período" (misma venta, mismo mes) -- se usa el monto real reportado
   // (datos.ventas_MM) en vez de recalcularlo con el precio neto oil/gas
   // promediado, que difiere porque mezcla precios netos distintos por área.
   const valorizadoVendidoMes = datos.ventas_MM * 1_000_000
-  const valorizadoProducidoDia = valorizarDia(datos.vol_producido_boed, datos.oil_pct_prod, datos.gas_pct_prod)
-  const valorizadoProducidoMes = valorizadoProducidoDia * datos.dias
 
-  // Precio implícito us$/BOE = us$ del mes / BOE del mes -- mismo total y
-  // mismo volumen que ya se muestran en cada tarjeta, solo que expresado
-  // por unidad en vez de en MM us$ y BOE/mes por separado.
-  const boeProducidoMes = datos.vol_producido_boed * datos.dias
-  const precioBoeProducido = boeProducidoMes > 0 ? valorizadoProducidoMes / boeProducidoMes : 0
+  // El precio US$/BOE tiene que ser el MISMO para producción y venta (no dos
+  // valorizaciones distintas) -- se calcula una sola vez sobre lo
+  // efectivamente vendido (dato real, no una mezcla teórica de precio neto
+  // oil/gas) y se aplica también al volumen producido.
   const boeVendidoMes = datos.vol_vendido_boed * datos.dias
-  const precioBoeVendido = boeVendidoMes > 0 ? (valorizadoVendidoMes + inKindPCKK) / boeVendidoMes : 0
+  const precioBoeUnico = boeVendidoMes > 0 ? (valorizadoVendidoMes + inKindPCKK) / boeVendidoMes : 0
+  const precioBoeVendido = precioBoeUnico
+  const precioBoeProducido = precioBoeUnico
+
+  const boeProducidoMes = datos.vol_producido_boed * datos.dias
+  const valorizadoProducidoMes = precioBoeUnico * boeProducidoMes
+
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -547,20 +540,25 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
   </div>
 
   <div class="kpi">
-    <div class="kpi-lbl">Volumen Producido</div>
+    <div class="kpi-lbl">Producción</div>
     <div class="kpi-val">${fN(datos.vol_producido_boed)}<span class="kpi-unit">BOE/d</span></div>
     <div class="kpi-sub">
       ${oilProd ? `<span class="tag az">Oil ${oilProd}%</span>` : ''}
       ${gasProd ? `<span class="tag wm">Gas ${gasProd}%</span>` : ''}
+      <span class="tag mu">${f(valorizadoProducidoMes / 1_000_000)} MM us$ en el mes</span>
+      <span class="tag mu">US$ ${f(precioBoeProducido)}/BOE</span>
     </div>
   </div>
 
   <div class="kpi">
-    <div class="kpi-lbl">Volumen Vendido</div>
+    <div class="kpi-lbl">Ventas</div>
     <div class="kpi-val">${fN(datos.vol_vendido_boed)}<span class="kpi-unit">BOE/d</span></div>
     <div class="kpi-sub">
       ${oilVend ? `<span class="tag vd">Oil ${oilVend}%</span>` : ''}
       ${gasVend ? `<span class="tag wm">Gas ${gasVend}%</span>` : ''}
+      <span class="tag mu">${f((valorizadoVendidoMes + inKindPCKK) / 1_000_000)} MM us$ en el mes</span>
+      <span class="tag mu">US$ ${f(precioBoeVendido)}/BOE</span>
+      ${inKindPCKK > 0 ? `<span class="tag mu">Venta ${f(valorizadoVendidoMes / 1_000_000)} MM · In kind ${f(inKindPCKK / 1_000_000)} MM</span>` : ''}
     </div>
   </div>
 
@@ -573,25 +571,6 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="kpi-lbl">Precio Neto Gas</div>
     <div class="kpi-val">${f(datos.precio_neto_gas)}<span class="kpi-unit">us$/mcf</span></div>
     <div class="kpi-sub"><span class="tag mu">${hideRCLV ? 'ET' : 'ET + RCLV'} promedio</span></div>
-  </div>
-
-  <div class="kpi">
-    <div class="kpi-lbl">Producción Valorizada</div>
-    <div class="kpi-val">${fN(datos.vol_producido_boed * datos.dias)}<span class="kpi-unit">BOE/mes</span></div>
-    <div class="kpi-sub">
-      <span class="tag mu">${f(valorizadoProducidoMes / 1_000_000)} MM us$ en el mes</span>
-      <span class="tag mu">US$ ${f(precioBoeProducido)}/BOE</span>
-    </div>
-  </div>
-
-  <div class="kpi">
-    <div class="kpi-lbl">Ventas Valorizadas</div>
-    <div class="kpi-val">${fN(datos.vol_vendido_boed * datos.dias)}<span class="kpi-unit">BOE/mes</span></div>
-    <div class="kpi-sub">
-      <span class="tag mu">${f((valorizadoVendidoMes + inKindPCKK) / 1_000_000)} MM us$ en el mes</span>
-      <span class="tag mu">US$ ${f(precioBoeVendido)}/BOE</span>
-      ${inKindPCKK > 0 ? `<span class="tag mu">Venta ${f(valorizadoVendidoMes / 1_000_000)} MM · In kind ${f(inKindPCKK / 1_000_000)} MM</span>` : ''}
-    </div>
   </div>
 
 </div>
