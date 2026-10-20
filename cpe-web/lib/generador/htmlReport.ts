@@ -201,19 +201,20 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
     const segundaQ = v.puntos.filter(p => p.fecha >= corteMesEntrega)
     if (primeraQ.length === 0 || segundaQ.length === 0) return [v]
     const promedioDe = (pts: typeof v.puntos) => pts.reduce((s, p) => s + p.brent, 0) / pts.length
-    // Se prioriza el promedio oficial de cada quincena (areas.PCKK.brent_1q
-    // / brent_2q, ya parseado de las filas "1Quincena"/"2Quincena" de la
-    // hoja de detalle) sobre el recalculado acá a partir de los puntos
-    // diarios: ambos deberían coincidir, pero el oficial es la fuente que
-    // ya usa la tarjeta de detalle por área, así que ante cualquier
-    // diferencia (redondeo, un día de más/menos) prevalece ese.
+    // NO usar areas.PCKK.brent_1q/brent_2q acá -- esos valores ya vienen
+    // netos del descuento Escalante (confirmado con datos reales: ~103,5
+    // de Brent puro contra ~100,6/96,5 "oficial", la misma diferencia que
+    // el descuento de la tarjeta de detalle). Esta sección es "Disparidad
+    // de Ventanas de COTIZACIÓN ICE BRENT" -- tiene que mostrar el Brent
+    // puro de cada quincena, recalculado de los puntos diarios, para que
+    // la comparación contra ET-LT-PQ sea manzanas con manzanas.
     return [
       { ...v, area: 'PC-KK', regla: '1ª quincena previa a la entrega',
         fecha_desde: primeraQ[0].fecha, fecha_hasta: primeraQ[primeraQ.length - 1].fecha,
-        promedio: areas.PCKK.brent_1q || promedioDe(primeraQ), puntos: primeraQ, nota: undefined },
+        promedio: promedioDe(primeraQ), puntos: primeraQ, nota: undefined },
       { ...v, area: 'PC-KK', regla: '2ª quincena previa a la entrega',
         fecha_desde: segundaQ[0].fecha, fecha_hasta: segundaQ[segundaQ.length - 1].fecha,
-        promedio: areas.PCKK.brent_2q || promedioDe(segundaQ), puntos: segundaQ, nota: undefined },
+        promedio: promedioDe(segundaQ), puntos: segundaQ, nota: undefined },
     ]
   }
   const ventanasPCKKSplit = ventanasRaw.flatMap(splitPCKK)
@@ -634,10 +635,10 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="arow"><span class="albl">Producción neta (m³/d)</span><span class="aval">${f(areas.PCKK.prod_neta_m3d, 2)}</span></div>
     <div class="arow"><span class="albl">m³ entregados</span><span class="aval">${fN(areas.PCKK.entregados_m3)}</span></div>
     <div class="arow"><span class="albl">Volumen (bbl)</span><span class="aval">${fN(areas.PCKK.vol_bbl)}</span></div>
-    ${areas.PCKK.brent_1q ? `<div class="arow"><span class="albl">BRENT 1° Quincena (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_1q)}</span></div>` : ''}
-    ${areas.PCKK.brent_2q ? `<div class="arow"><span class="albl">BRENT 2° Quincena (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_2q)}</span></div>` : ''}
+    ${areas.PCKK.brent_1q ? `<div class="arow"><span class="albl">BRENT − Escalante, 1° Quincena (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_1q)}</span></div>` : ''}
+    ${areas.PCKK.brent_2q ? `<div class="arow"><span class="albl">BRENT − Escalante, 2° Quincena (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_2q)}</span></div>` : ''}
     ${areas.PCKK.brent_ref && !areas.PCKK.brent_1q ? `<div class="arow"><span class="albl">BRENT ref. (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_ref)}</span></div>` : ''}
-    ${areas.PCKK.brent_1q && areas.PCKK.brent_2q ? `<div class="anote">* Precio calculado en base a las <strong style="color:var(--azul)">2 semanas anteriores</strong> a la quincena de entrega -- mismo Brent que se muestra en "Disparidad de Ventanas de Cotización"</div>` : ''}
+    ${areas.PCKK.brent_1q && areas.PCKK.brent_2q ? `<div class="anote">* Ya neto del descuento Escalante, calculado en base a las <strong style="color:var(--azul)">2 semanas anteriores</strong> a la quincena de entrega -- distinto del Brent puro que se muestra en "Disparidad de Ventanas de Cotización"</div>` : ''}
     ${areas.PCKK.descuento ? `<div class="arow"><span class="albl">Descuento (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento)})</span></div>` : ''}
     ${areas.PCKK.descuento_fijo ? `<div class="arow"><span class="albl">Descuento Cañadón Seco (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento_fijo)})</span></div>` : ''}
     <div class="arow"><span class="albl">Precio estimado (us$/bbl)</span><span class="aval hi">${f(areas.PCKK.precio_neto)}</span></div>
