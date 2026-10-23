@@ -645,6 +645,20 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     ${areas.PCKK.brent_1q && areas.PCKK.brent_2q ? `<div class="anote">* Ya neto del descuento Escalante, calculado en base a las <strong style="color:var(--azul)">2 semanas anteriores</strong> a la quincena de entrega -- distinto del Brent puro que se muestra en "Disparidad de Ventanas de Cotización"</div>` : ''}
     ${areas.PCKK.descuento ? `<div class="arow"><span class="albl">Descuento (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento)})</span></div>` : ''}
     ${areas.PCKK.descuento_fijo ? `<div class="arow"><span class="albl">Descuento Cañadón Seco (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento_fijo)})</span></div>` : ''}
+    ${(() => {
+      // Derechos de Exportación de PC-KK, mismo criterio que ET: residuo
+      // exacto entre el Brent base (ya neto de Escalante) y el Precio
+      // estimado real, para que la apertura siempre cierre contra el dato
+      // real del Excel en vez de una alícuota recalculada aparte.
+      const brentBasePCKK = areas.PCKK.brent_1q && areas.PCKK.brent_2q
+        ? (areas.PCKK.brent_1q + areas.PCKK.brent_2q) / 2
+        : areas.PCKK.brent_ref
+      if (!brentBasePCKK) return ''
+      const tarifaExportPCKK = brentBasePCKK - (areas.PCKK.descuento ?? 0) - (areas.PCKK.descuento_fijo ?? 0) - areas.PCKK.precio_neto
+      return tarifaExportPCKK > 0
+        ? `<div class="arow"><span class="albl">Derechos de Exportación (us$/bbl)</span><span class="aval neg">(${f(tarifaExportPCKK)})</span></div>`
+        : ''
+    })()}
     <div class="arow"><span class="albl">Precio estimado (us$/bbl)</span><span class="aval hi">${f(areas.PCKK.precio_neto)}</span></div>
     <div class="anote">* Precio en <strong style="color:var(--azul)">brida de entrada</strong> — implica un ahorro de almacenamiento de 0,80 us$/bbl, equivalente a <strong style="color:var(--azul)">${fN(ahorroAlmacenamientoPCKK)} us$</strong> este período</div>
     <div class="arow"><span class="albl">Ingreso período (us$)</span><span class="aval hi">${fN(areas.PCKK.ingreso)}</span></div>
@@ -712,6 +726,15 @@ ${datos.evolucion_stock && datos.evolucion_stock.length > 0 ? `
         <td>${fN(e.venta_m3)}</td>
         <td><b>${fN(e.saldo_estimado_m3)}</b></td>
       </tr>`).join('')}
+      <tr style="border-top:2px solid var(--fg)">
+        <td><b>Total</b></td>
+        <td><b>${fN(datos.evolucion_stock.reduce((s, e) => s + e.stock_inicial_m3, 0))}</b></td>
+        <td><b>${fN(datos.evolucion_stock.reduce((s, e) => s + e.produccion_m3, 0))}</b></td>
+        <td><b>${fN(datos.evolucion_stock.reduce((s, e) => s + e.merma_m3, 0))}</b></td>
+        <td><b>${fN(datos.evolucion_stock.reduce((s, e) => s + e.entrega_in_kind_m3, 0))}</b></td>
+        <td><b>${fN(datos.evolucion_stock.reduce((s, e) => s + e.venta_m3, 0))}</b></td>
+        <td><b>${fN(datos.evolucion_stock.reduce((s, e) => s + e.saldo_estimado_m3, 0))}</b></td>
+      </tr>
     </tbody>
   </table>
 </div>
