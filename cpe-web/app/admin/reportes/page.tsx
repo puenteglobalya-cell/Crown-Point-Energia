@@ -277,6 +277,78 @@ export default function ReportesAdminPage() {
           </span>
         </div>
 
+        {/* Permission matrix */}
+        {types.length > 0 && (
+          <section style={{
+            marginBottom: 40, padding: 20,
+            background: 'var(--surface)', border: '2px solid var(--accent)',
+            borderRadius: 'var(--r-md)', boxShadow: '0 2px 10px rgba(0,0,0,.05)',
+          }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, margin: '0 0 6px', letterSpacing: '-0.01em', color: 'var(--accent)' }}>
+              🔐 Acceso por rol y tipo
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--fg-muted)', margin: '0 0 16px' }}>
+              Define qué puede hacer cada perfil con cada tipo de reporte.
+            </p>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--rule)' }}>
+                    <th style={{ padding: '11px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--fg-soft)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.07em' }}>
+                      Tipo de reporte
+                    </th>
+                    {ROLES.map(r => (
+                      <th key={r} style={{ padding: '11px 16px', textAlign: 'center', fontWeight: 600, color: 'var(--fg-soft)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.07em' }}>
+                        {ROLE_LABELS[r]}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {types.map((t, ti) => (
+                    <tr key={t.id} style={{ borderBottom: ti < types.length - 1 ? '1px solid var(--rule)' : 'none' }}>
+                      <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--fg)' }}>
+                        <span style={{ marginRight: 6 }}>{TYPE_ICONS[t.id] ?? '📄'}</span>
+                        {t.nombre}
+                      </td>
+                      {ROLES.map(role => {
+                        const row = access.find(a => a.type_id === t.id && a.role === role)
+                        const level = toLevel(row)
+                        const key = `${t.id}:${role}`
+                        const saving = savingKey === key
+                        return (
+                          <td key={role} style={{ padding: '10px 16px', textAlign: 'center' }}>
+                            <select
+                              value={level}
+                              disabled={saving}
+                              onChange={e => handleAccessChange(t.id, role, e.target.value as Level)}
+                              style={{
+                                fontSize: 12, padding: '5px 10px',
+                                border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)',
+                                background: level === 'none' ? 'var(--bg-alt)' : level === 'upload' ? 'rgba(108,174,82,.1)' : 'rgba(31,37,102,.06)',
+                                color: level === 'none' ? 'var(--fg-muted)' : 'var(--fg)',
+                                cursor: 'pointer',
+                                opacity: saving ? 0.5 : 1,
+                              }}
+                            >
+                              <option value="none">— Sin acceso</option>
+                              <option value="view">👁 Solo ver</option>
+                              <option value="upload">✎ Ver y subir</option>
+                            </select>
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 10 }}>
+              Los cambios aplican al siguiente login o recarga de sesión del usuario afectado.
+            </p>
+          </section>
+        )}
+
         {/* Report list */}
         <section style={{ marginBottom: 48 }}>
           {loading ? (
@@ -403,73 +475,6 @@ export default function ReportesAdminPage() {
           )}
         </section>
 
-        {/* Permission matrix */}
-        {types.length > 0 && (
-          <section>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, margin: '0 0 6px', letterSpacing: '-0.01em' }}>
-              Acceso por rol y tipo
-            </h2>
-            <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '0 0 16px' }}>
-              Define qué puede hacer cada perfil con cada tipo de reporte.
-            </p>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
-                <thead>
-                  <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--rule)' }}>
-                    <th style={{ padding: '11px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--fg-soft)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.07em' }}>
-                      Tipo de reporte
-                    </th>
-                    {ROLES.map(r => (
-                      <th key={r} style={{ padding: '11px 16px', textAlign: 'center', fontWeight: 600, color: 'var(--fg-soft)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.07em' }}>
-                        {ROLE_LABELS[r]}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {types.map((t, ti) => (
-                    <tr key={t.id} style={{ borderBottom: ti < types.length - 1 ? '1px solid var(--rule)' : 'none' }}>
-                      <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--fg)' }}>
-                        <span style={{ marginRight: 6 }}>{TYPE_ICONS[t.id] ?? '📄'}</span>
-                        {t.nombre}
-                      </td>
-                      {ROLES.map(role => {
-                        const row = access.find(a => a.type_id === t.id && a.role === role)
-                        const level = toLevel(row)
-                        const key = `${t.id}:${role}`
-                        const saving = savingKey === key
-                        return (
-                          <td key={role} style={{ padding: '10px 16px', textAlign: 'center' }}>
-                            <select
-                              value={level}
-                              disabled={saving}
-                              onChange={e => handleAccessChange(t.id, role, e.target.value as Level)}
-                              style={{
-                                fontSize: 12, padding: '5px 10px',
-                                border: '1px solid var(--rule)', borderRadius: 'var(--r-sm)',
-                                background: level === 'none' ? 'var(--bg-alt)' : level === 'upload' ? 'rgba(108,174,82,.1)' : 'rgba(31,37,102,.06)',
-                                color: level === 'none' ? 'var(--fg-muted)' : 'var(--fg)',
-                                cursor: 'pointer',
-                                opacity: saving ? 0.5 : 1,
-                              }}
-                            >
-                              <option value="none">— Sin acceso</option>
-                              <option value="view">👁 Solo ver</option>
-                              <option value="upload">✎ Ver y subir</option>
-                            </select>
-                          </td>
-                        )
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 10 }}>
-              Los cambios aplican al siguiente login o recarga de sesión del usuario afectado.
-            </p>
-          </section>
-        )}
 
       </div>
 
