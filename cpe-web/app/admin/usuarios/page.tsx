@@ -11,6 +11,7 @@ type User = {
   ubicacion: string; sector: string; telefono: string; notas: string
 }
 type BibGrupo = { id: number; slug: string; label: string; orden: number }
+type ReporteOpcion = { id: string; titulo: string; periodo: string; type_id: string | null }
 
 const ROLES = ['viewer', 'uploader', 'admin', 'rrhh', 'accionista', 'finanzas', 'compliance', 'diseno_web'] as const
 const ROLE_LABELS: Record<string, string> = {
@@ -62,16 +63,17 @@ function RoleBadge({ role }: { role: string | null }) {
 
 // ── Edit drawer ────────────────────────────────────────────────────────────────
 function EditDrawer({
-  user, bibGrupos, usuarioGrupos, onClose, onSaved, flash,
+  user, bibGrupos, usuarioGrupos, reportesPublicados, onClose, onSaved, flash,
 }: {
   user: User
   bibGrupos: BibGrupo[]
   usuarioGrupos: Record<string, Set<number>>
+  reportesPublicados: ReporteOpcion[]
   onClose: () => void
   onSaved: (updated: Partial<User>) => void
   flash: (msg: string, type?: 'ok' | 'err') => void
 }) {
-  const [tab, setTab]     = useState<'perfil' | 'acceso' | 'biblioteca'>('perfil')
+  const [tab, setTab]     = useState<'perfil' | 'acceso' | 'biblioteca' | 'reportes'>('perfil')
   const [saving, setSaving] = useState(false)
 
   // Profile state
@@ -89,6 +91,34 @@ function EditDrawer({
 
   // Biblioteca state
   const [bibSet, setBibSet] = useState<Set<number>>(usuarioGrupos[user.id] ?? new Set())
+
+  // Reportes (solo accionista) — acceso objeto por objeto, se carga al abrir
+  const [reportesSet, setReportesSet] = useState<Set<string>>(new Set())
+  const [reportesCargados, setReportesCargados] = useState(false)
+
+  useEffect(() => {
+    if (user.role !== 'accionista') return
+    let cancelado = false
+    fetch(`/api/admin/portal-acceso/${user.id}`).then(async res => {
+      if (!res.ok || cancelado) return
+      const ids = await res.json() as string[]
+      setReportesSet(new Set(ids))
+      setReportesCargados(true)
+    })
+    return () => { cancelado = true }
+  }, [user.id, user.role])
+
+  async function toggleReporte(reporteId: string, checked: boolean) {
+    const next = new Set(reportesSet)
+    checked ? next.add(reporteId) : next.delete(reporteId)
+    setReportesSet(next)
+    const res = await fetch(`/api/admin/portal-acceso/${user.id}`, {
+      method: 'PUT', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reporteIds: [...next] }),
+    })
+    if (!res.ok) { flash('Error al actualizar acceso a reportes', 'err'); setReportesSet(reportesSet) }
+  }
+
 
   // Reset-password fallback link
   const [resetLink, setResetLink] = useState('')
@@ -185,7 +215,7 @@ function EditDrawer({
             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-muted)', fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
           </div>
           <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--rule)', margin: '0 -2px' }}>
-            {(['perfil', 'acceso', 'biblioteca'] as const).map(t => (
+            {([...(['perfil', 'acceso', 'biblioteca'] as const), ...(role === 'accionista' ? ['reportes' as const] : [])]).map(t => (
               <button key={t} style={TAB_STYLE(tab === t)} onClick={() => setTab(t)}>
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
@@ -310,6 +340,34 @@ function EditDrawer({
             }
           </div>
         )}
+
+        {/* Tab: Reportes (solo accionista) */}
+        {tab === 'reportes' && (
+          <div style={{ padding: '20px 24px', flex: 1 }}>
+            <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '0 0 16px' }}>
+              Los accionistas solo ven los reportes que se les habilitan acá explícitamente —
+              los cambios se guardan de inmediato al marcar o desmarcar.
+            </p>
+            {!reportesCargados
+              ? <p style={{ fontSize: 13, color: 'var(--fg-muted)', fontStyle: 'italic' }}>Cargando…</p>
+              : reportesPublicados.length === 0
+              ? <p style={{ fontSize: 13, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No hay reportes publicados todavía.</p>
+              : reportesPublicados.map(r => (
+                <label key={r.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px',
+                  borderBottom: '1px solid var(--rule)', cursor: 'pointer',
+                }}>
+                  <input type="checkbox" checked={reportesSet.has(r.id)} onChange={e => toggleReporte(r.id, e.target.checked)}
+                    style={{ accentColor: 'var(--accent)', width: 16, height: 16 }} />
+                  <div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{r.titulo}</span>
+                    <span style={{ fontSize: 11, color: 'var(--fg-muted)', marginLeft: 6 }}>{r.periodo}</span>
+                  </div>
+                </label>
+              ))
+            }
+          </div>
+        )}
       </div>
     </div>
   )
@@ -394,6 +452,7 @@ export default function UsuariosPage() {
   const [users,     setUsers]     = useState<User[]>([])
   const [bibGrupos, setBibGrupos] = useState<BibGrupo[]>([])
   const [bibUG,     setBibUG]     = useState<Record<string, Set<number>>>({})
+  const [reportes,  setReportes]  = useState<ReporteOpcion[]>([])
   const [loading,   setLoading]   = useState(true)
   const [flash,     setFlash]     = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
   const [editUser,  setEditUser]  = useState<User | null>(null)
@@ -414,9 +473,10 @@ export default function UsuariosPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [uRes, bRes] = await Promise.all([
+    const [uRes, bRes, rRes] = await Promise.all([
       fetch('/api/admin/usuarios'),
       fetch('/api/admin/biblioteca'),
+      fetch('/api/admin/reportes'),
     ])
     if (uRes.ok) setUsers(await uRes.json())
     if (bRes.ok) {
@@ -428,6 +488,10 @@ export default function UsuariosPage() {
         map[ug.user_id].add(ug.grupo_id)
       }
       setBibUG(map)
+    }
+    if (rRes.ok) {
+      const rd = await rRes.json() as { id: string; titulo: string; periodo: string; type_id: string | null; estado: string }[]
+      setReportes(rd.filter(r => r.estado === 'publicado').map(r => ({ id: r.id, titulo: r.titulo, periodo: r.periodo, type_id: r.type_id })))
     }
     setLoading(false)
   }, [])
@@ -710,6 +774,7 @@ export default function UsuariosPage() {
           user={editUser}
           bibGrupos={bibGrupos}
           usuarioGrupos={bibUG}
+          reportesPublicados={reportes}
           onClose={() => setEditUser(null)}
           onSaved={onSaved}
           flash={showFlash}

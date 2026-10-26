@@ -27,14 +27,16 @@ export default async function PortalPage() {
   const { data: reportes } = await reportQuery
   let items = (reportes ?? []) as Parameters<typeof ReportesLista>[0]['items']
 
-  // Accionista: only explicitly granted reports
+  // Accionista: reports of a type granted in report_type_access (blanket),
+  // plus any individually granted in portal_report_access (one-off exceptions)
   if (role?.role === 'accionista') {
-    const { data: access } = await db
-      .from('portal_report_access')
-      .select('reporte_id')
-      .eq('user_id', user.id)
+    const [{ data: typeAccess }, { data: access }] = await Promise.all([
+      db.from('report_type_access').select('type_id').eq('role', 'accionista').eq('can_view', true),
+      db.from('portal_report_access').select('reporte_id').eq('user_id', user.id),
+    ])
+    const visibleTypes = new Set((typeAccess ?? []).map(r => r.type_id))
     const granted = new Set((access ?? []).map((r: { reporte_id: string }) => r.reporte_id))
-    items = items.filter(it => granted.has(it.id))
+    items = items.filter(it => (it.type_id && visibleTypes.has(it.type_id)) || granted.has(it.id))
   } else if (role?.role && role.role !== 'admin') {
     // Filter by report_type_access for non-admin, non-accionista roles
     const { data: typeAccess } = await db

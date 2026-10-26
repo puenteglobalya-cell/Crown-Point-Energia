@@ -20,10 +20,10 @@ type AccessRow = { type_id: string; role: string; can_view: boolean; can_upload:
 type TypeRow   = { id: string; nombre: string }
 type VersionRow = { id: string; titulo: string; periodo: string; estado: string; created_at: string; created_by: string | null }
 
-const ROLES = ['viewer', 'uploader', 'admin'] as const
+const ROLES = ['viewer', 'uploader', 'admin', 'accionista'] as const
 type Role = typeof ROLES[number]
 
-const ROLE_LABELS: Record<Role, string> = { viewer: 'Lector', uploader: 'Cargador', admin: 'Admin' }
+const ROLE_LABELS: Record<Role, string> = { viewer: 'Lector', uploader: 'Cargador', admin: 'Admin', accionista: 'Accionista' }
 
 const TYPE_LABELS: Record<string, string> = {
   ingresos:   'Ingresos',
