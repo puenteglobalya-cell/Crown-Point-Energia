@@ -642,10 +642,16 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="arow"><span class="albl">Producción neta (m³/d)</span><span class="aval">${f(areas.PCKK.prod_neta_m3d, 2)}</span></div>
     <div class="arow"><span class="albl">m³ entregados</span><span class="aval">${fN(areas.PCKK.entregados_m3)}</span></div>
     <div class="arow"><span class="albl">Volumen (bbl)</span><span class="aval">${fN(areas.PCKK.vol_bbl)}</span></div>
+    ${datos.periodo >= '2026-11'
+      ? (areas.PCKK.brent_1q
+          ? `<div class="arow"><span class="albl">BRENT − Escalante del mes (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_1q)}</span></div>`
+          : areas.PCKK.brent_ref ? `<div class="arow"><span class="albl">BRENT ref. (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_ref)}</span></div>` : '')
+      : `
     ${areas.PCKK.brent_1q ? `<div class="arow"><span class="albl">BRENT − Escalante, 1° Quincena (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_1q)}</span></div>` : ''}
     ${areas.PCKK.brent_2q ? `<div class="arow"><span class="albl">BRENT − Escalante, 2° Quincena (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_2q)}</span></div>` : ''}
     ${areas.PCKK.brent_ref && !areas.PCKK.brent_1q ? `<div class="arow"><span class="albl">BRENT ref. (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_ref)}</span></div>` : ''}
     ${areas.PCKK.brent_1q && areas.PCKK.brent_2q ? `<div class="anote">* Ya neto del descuento Escalante, calculado en base a las <strong style="color:var(--azul)">2 semanas anteriores</strong> a la quincena de entrega -- distinto del Brent puro que se muestra en "Disparidad de Ventanas de Cotización"</div>` : ''}
+    `}
     ${areas.PCKK.descuento ? `<div class="arow"><span class="albl">Descuento (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento)})</span></div>` : ''}
     ${areas.PCKK.descuento_fijo ? (areas.PCKK.descuento_fijo < 0
       ? `<div class="arow"><span class="albl">Premio Cañadón Seco (us$/bbl)</span><span class="aval pos">+${f(Math.abs(areas.PCKK.descuento_fijo))}</span></div>`
@@ -654,7 +660,9 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
       // Derechos de Exportación de PC-KK, mismo criterio que ET: residuo
       // exacto entre el Brent base (ya neto de Escalante) y el Precio
       // estimado real, para que la apertura siempre cierre contra el dato
-      // real del Excel en vez de una alícuota recalculada aparte.
+      // real del Excel en vez de una alícuota recalculada aparte. Desde
+      // 2026-11 brent_1q/brent_2q vienen iguales (un solo Brent del mes),
+      // así que promediarlos sigue dando el valor correcto sin rama aparte.
       const brentBasePCKK = areas.PCKK.brent_1q && areas.PCKK.brent_2q
         ? (areas.PCKK.brent_1q + areas.PCKK.brent_2q) / 2
         : areas.PCKK.brent_ref
