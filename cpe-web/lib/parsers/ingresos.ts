@@ -628,6 +628,35 @@ function parsearVentanasCotizacion(wb: ExcelJS.Workbook, periodo: string): { ven
 
   const ventanas: VentanaCotizacion[] = []
   for (const area of Object.keys(reglaVentana)) {
+    // "Promedio del mes de entrega" no depende de que alguien haya tipeado
+    // la etiqueta de área en cada fila -- el equipo comercial suele
+    // completar C/D recién cuando cierra el mes, así que para esta regla se
+    // toma directamente el calendario del período (todas las cotizaciones
+    // de ese mes, etiquetadas o no). Antes, sin esto, un mes sin etiquetar
+    // todavía mostraba la ventana vieja del mes anterior en vez de vacío o
+    // de lo que sí está cargado.
+    if (reglaVentana[area] === 'Promedio del mes de entrega') {
+      const desde = `${periodo}-01`
+      const [anio, mes] = periodo.split('-').map(Number)
+      const hasta = new Date(anio, mes, 0).toISOString().slice(0, 10) // último día del mes
+      const delMes = filas.filter(f => {
+        const fechaStr = f.fecha.toISOString().slice(0, 10)
+        return fechaStr >= desde && fechaStr <= hasta
+      })
+      const puntos = delMes.filter((p): p is Fila & { brent: number } => p.brent != null)
+      if (puntos.length > 0) {
+        const promedio = puntos.reduce((s, p) => s + p.brent, 0) / puntos.length
+        ventanas.push({
+          area, regla: reglaVentana[area],
+          fecha_desde: puntos[0].fecha.toISOString().slice(0, 10),
+          fecha_hasta: puntos[puntos.length - 1].fecha.toISOString().slice(0, 10),
+          promedio,
+          puntos: puntos.map(p => ({ fecha: p.fecha.toISOString().slice(0, 10), brent: p.brent })),
+        })
+      }
+      continue
+    }
+
     let i = 0
     while (i < filas.length) {
       if (!filas[i].areas.includes(area)) { i++; continue }
