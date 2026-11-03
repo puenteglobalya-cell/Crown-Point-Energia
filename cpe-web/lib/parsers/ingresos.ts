@@ -578,17 +578,18 @@ function leerHoja(wb: ExcelJS.Workbook, nombre: string): any[][] | null {
 // distinta: ET-LT-PQ toma las primeras 7 cotizaciones DESPUÉS del cierre de
 // mes (hasta el período de entrega 2026-09; desde 2026-10 pasa a tomar el
 // PROMEDIO DE TODO EL MES de entrega), PC-KK toma las 15 cotizaciones
-// previas a la entrega (terminando el 15 del mes de entrega). La hoja
-// repite la etiqueta de área en TODAS las filas de su ventana (no sólo en
-// la primera) -- se agrupan las filas consecutivas con la misma etiqueta en
-// una sola ventana, en vez de generar una ventana nueva por cada fila
-// etiquetada. El cambio de regla de ET-LT-PQ no afecta este agrupamiento
-// (siempre toma lo que la hoja etiquetó ese mes): solo cambia el texto
-// descriptivo que se muestra junto al promedio.
+// previas a la entrega (terminando el 15 del mes de entrega) hasta el
+// período 2026-10; desde 2026-11 pasa también a tomar el PROMEDIO DE TODO
+// EL MES de entrega, igual que ET-LT-PQ. La hoja repite la etiqueta de área
+// en TODAS las filas de su ventana (no sólo en la primera) -- se agrupan
+// las filas consecutivas con la misma etiqueta en una sola ventana, en vez
+// de generar una ventana nueva por cada fila etiquetada. El cambio de regla
+// no afecta este agrupamiento (siempre toma lo que la hoja etiquetó ese
+// mes): solo cambia el texto descriptivo que se muestra junto al promedio.
 function reglaVentanaPorPeriodo(periodo: string): Record<string, string> {
   return {
     'ET-LT-PQ': periodo >= '2026-10' ? 'Promedio del mes de entrega' : '7 primeras cotizaciones tras el cierre de mes',
-    'PC-KK': '15 cotizaciones previas a la entrega',
+    'PC-KK': periodo >= '2026-11' ? 'Promedio del mes de entrega' : '15 cotizaciones previas a la entrega',
   }
 }
 

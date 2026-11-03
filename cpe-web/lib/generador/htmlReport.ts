@@ -195,7 +195,10 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   // que un único promedio ciego a esa frontera. Se parte por fecha usando
   // los mismos puntos diarios de la ventana -- no una fuente nueva.
   const splitPCKK = (v: VentanaCotizacion): VentanaCotizacion[] => {
-    if (v.area !== 'PC-KK') return [v]
+    // Desde el período de entrega 2026-11, PC-KK pasa a tomar el promedio
+    // de todo el mes de entrega (igual que ET-LT-PQ) en vez de quincenas --
+    // se muestra como una sola ventana, sin partir.
+    if (v.area !== 'PC-KK' || datos.periodo >= '2026-11') return [v]
     const corteMesEntrega = `${datos.periodo}-01`
     const primeraQ = v.puntos.filter(p => p.fecha < corteMesEntrega)
     const segundaQ = v.puntos.filter(p => p.fecha >= corteMesEntrega)
@@ -644,7 +647,9 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     ${areas.PCKK.brent_ref && !areas.PCKK.brent_1q ? `<div class="arow"><span class="albl">BRENT ref. (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_ref)}</span></div>` : ''}
     ${areas.PCKK.brent_1q && areas.PCKK.brent_2q ? `<div class="anote">* Ya neto del descuento Escalante, calculado en base a las <strong style="color:var(--azul)">2 semanas anteriores</strong> a la quincena de entrega -- distinto del Brent puro que se muestra en "Disparidad de Ventanas de Cotización"</div>` : ''}
     ${areas.PCKK.descuento ? `<div class="arow"><span class="albl">Descuento (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento)})</span></div>` : ''}
-    ${areas.PCKK.descuento_fijo ? `<div class="arow"><span class="albl">Descuento Cañadón Seco (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento_fijo)})</span></div>` : ''}
+    ${areas.PCKK.descuento_fijo ? (areas.PCKK.descuento_fijo < 0
+      ? `<div class="arow"><span class="albl">Premio Cañadón Seco (us$/bbl)</span><span class="aval pos">+${f(Math.abs(areas.PCKK.descuento_fijo))}</span></div>`
+      : `<div class="arow"><span class="albl">Descuento Cañadón Seco (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento_fijo)})</span></div>`) : ''}
     ${(() => {
       // Derechos de Exportación de PC-KK, mismo criterio que ET: residuo
       // exacto entre el Brent base (ya neto de Escalante) y el Precio
