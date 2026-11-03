@@ -643,9 +643,17 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
     <div class="arow"><span class="albl">m³ entregados</span><span class="aval">${fN(areas.PCKK.entregados_m3)}</span></div>
     <div class="arow"><span class="albl">Volumen (bbl)</span><span class="aval">${fN(areas.PCKK.vol_bbl)}</span></div>
     ${datos.periodo >= '2026-11'
-      ? (areas.PCKK.brent_1q
-          ? `<div class="arow"><span class="albl">BRENT − Escalante del mes (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_1q)}</span></div>`
-          : areas.PCKK.brent_ref ? `<div class="arow"><span class="albl">BRENT ref. (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_ref)}</span></div>` : '')
+      ? (() => {
+          // Desde 2026-11 PC-KK usa el mismo Brent de referencia puro que
+          // ET-LT-PQ (promedio del mes de entrega, mismo origen que el
+          // gráfico de "Disparidad de Ventanas") -- ya NO el brent_1q de la
+          // hoja de detalle, que seguía neto del descuento Escalante y
+          // arrancaba ~8 us$/bbl más bajo, dando dos "Brent base" distintos
+          // para el mismo mes cuando ya deberían ser el mismo número.
+          const ventanaPCKK = ventanasRaw.find(v => v.area === 'PC-KK')
+          const brentRefPCKK = ventanaPCKK?.promedio || areas.PCKK.brent_ref
+          return brentRefPCKK ? `<div class="arow"><span class="albl">BRENT ref. (us$/bbl)</span><span class="aval">${f(brentRefPCKK)}</span></div>` : ''
+        })()
       : `
     ${areas.PCKK.brent_1q ? `<div class="arow"><span class="albl">BRENT − Escalante, 1° Quincena (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_1q)}</span></div>` : ''}
     ${areas.PCKK.brent_2q ? `<div class="arow"><span class="albl">BRENT − Escalante, 2° Quincena (us$/bbl)</span><span class="aval">${f(areas.PCKK.brent_2q)}</span></div>` : ''}
@@ -658,14 +666,17 @@ table.t .tot td{background:rgba(181,97,26,.05);font-weight:700;color:var(--naran
       : `<div class="arow"><span class="albl">Descuento Cañadón Seco (us$/bbl)</span><span class="aval neg">(${f(areas.PCKK.descuento_fijo)})</span></div>`) : ''}
     ${(() => {
       // Derechos de Exportación de PC-KK, mismo criterio que ET: residuo
-      // exacto entre el Brent base (ya neto de Escalante) y el Precio
-      // estimado real, para que la apertura siempre cierre contra el dato
-      // real del Excel en vez de una alícuota recalculada aparte. Desde
-      // 2026-11 brent_1q/brent_2q vienen iguales (un solo Brent del mes),
-      // así que promediarlos sigue dando el valor correcto sin rama aparte.
-      const brentBasePCKK = areas.PCKK.brent_1q && areas.PCKK.brent_2q
-        ? (areas.PCKK.brent_1q + areas.PCKK.brent_2q) / 2
-        : areas.PCKK.brent_ref
+      // exacto entre el Brent base y el Precio estimado real, para que la
+      // apertura siempre cierre contra el dato real del Excel. Desde
+      // 2026-11 el Brent base es el mismo promedio puro que ET (ver arriba);
+      // antes de esa fecha, se promediaban brent_1q/brent_2q (ya netos del
+      // descuento Escalante en ese esquema viejo).
+      const ventanaPCKK = ventanasRaw.find(v => v.area === 'PC-KK')
+      const brentBasePCKK = datos.periodo >= '2026-11'
+        ? (ventanaPCKK?.promedio || areas.PCKK.brent_ref)
+        : (areas.PCKK.brent_1q && areas.PCKK.brent_2q
+          ? (areas.PCKK.brent_1q + areas.PCKK.brent_2q) / 2
+          : areas.PCKK.brent_ref)
       if (!brentBasePCKK) return ''
       const tarifaExportPCKK = brentBasePCKK - (areas.PCKK.descuento ?? 0) - (areas.PCKK.descuento_fijo ?? 0) - areas.PCKK.precio_neto
       return tarifaExportPCKK > 0
