@@ -180,7 +180,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
         {showSiteChrome && state.customCss && (
-          <style dangerouslySetInnerHTML={{ __html: state.customCss }} />
+          // CSS legítimo nunca necesita un "<" literal -- lo saca, así un
+          // valor cargado por cualquier usuario con manage_cms no puede
+          // cerrar el <style> e inyectar <meta>/<script>/markup de phishing.
+          <style dangerouslySetInnerHTML={{ __html: state.customCss.replace(/</g, '') }} />
         )}
       </head>
       <body>

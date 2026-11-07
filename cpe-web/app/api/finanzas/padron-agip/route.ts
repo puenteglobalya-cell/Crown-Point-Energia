@@ -3,9 +3,14 @@ import { requireFinanzasUser } from '@/lib/admin-auth'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { buscarClientesEnPadron, type ClienteSap } from '@/lib/parsers/padronAgip'
 import { logActivity } from '@/lib/roles'
+import { isSameOrigin } from '@/lib/csrf'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
+
+// Un solo archivo directo dentro de "padron-agip/", sin "/" extra ni ".." --
+// el path viaja desde el cliente y se usa directo contra Storage.
+const PADRON_PATH_RE = /^padron-agip\/[^/]+$/
 
 // El padrón de AGIP pesa decenas/cientos de MB (millones de líneas) -- se
 // sube directo del browser a Supabase Storage (bucket "documents") y acá
@@ -14,11 +19,12 @@ export const maxDuration = 300
 // el body de esta request (Vercel limita el tamaño de body de las
 // funciones serverless).
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const user = await requireFinanzasUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { path } = await req.json().catch(() => ({ path: null }))
-  if (!path || typeof path !== 'string' || !path.startsWith('padron-agip/')) {
+  if (!path || typeof path !== 'string' || !PADRON_PATH_RE.test(path) || path.includes('..')) {
     return NextResponse.json({ error: 'Falta el path del padrón subido.' }, { status: 400 })
   }
 

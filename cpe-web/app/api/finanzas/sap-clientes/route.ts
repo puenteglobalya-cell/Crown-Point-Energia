@@ -3,6 +3,7 @@ import { requireFinanzasUser } from '@/lib/admin-auth'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import { parsearClientesSapExcel } from '@/lib/parsers/padronAgip'
 import { logActivity } from '@/lib/roles'
+import { isSameOrigin } from '@/lib/csrf'
 
 export const runtime = 'nodejs'
 
@@ -23,6 +24,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const user = await requireFinanzasUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 

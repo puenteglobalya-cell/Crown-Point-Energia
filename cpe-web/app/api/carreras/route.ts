@@ -39,6 +39,11 @@ export async function POST(req: NextRequest) {
     if (!nombre || !email || !area) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
+    // Formato básico -- además de validar la entrada, evita que un '%'/'_'
+    // llegue sin querer a una consulta por ilike en otro punto del código.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: 'Email inválido' }, { status: 400 })
+    }
 
     // Structured experience data → stored in JSONB column
     const datos = {
@@ -59,11 +64,13 @@ export async function POST(req: NextRequest) {
     let cv_name: string | null = null
     let cv_size: number | null = null
 
-    // Find or create the candidate (deduped by email)
+    // Find or create the candidate (deduped by email) -- .eq, no .ilike: la
+    // columna ya es CITEXT (case-insensitive), y .ilike permite wildcards
+    // ('%','_') que convertían esto en una búsqueda, no una igualdad.
     const { data: existingCandidato } = await supabase
       .from('candidatos')
       .select('id')
-      .ilike('email', email)
+      .eq('email', email)
       .maybeSingle()
 
     let candidatoId = existingCandidato?.id as string | undefined

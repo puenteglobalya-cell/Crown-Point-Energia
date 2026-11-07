@@ -124,7 +124,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: 'manual_data tiene solo valores vacíos — guardado ignorado' }, { status: 400 })
     }
     // Fetch current data and MERGE — never replace with empty
-    const { data: current } = await db.from('reportes').select('manual_data').eq('id', params.id).single()
+    const { data: current } = await db.from('reportes').select('manual_data, type_id').eq('id', params.id).single()
+    if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    // Object-level access -- "cualquier usuario activo" no es lo mismo que
+    // "cualquier usuario que pueda ver este reporte puntual" (ver canAccessReport).
+    if (!await canAccessReport(userWithRole.id, userWithRole.role, params.id, current.type_id ?? null)) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
     const merged = { ...(current?.manual_data ?? {}), ...incoming }
     const { error } = await db.from('reportes')
       .update({ manual_data: merged, updated_at: new Date().toISOString() })

@@ -5,6 +5,21 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
+// Allowlist de hosts para el fetch de abajo -- ir_documents.url es editable
+// por cualquier usuario con permiso de CMS (manage_cms), así que sin esto
+// un valor malicioso ahí convertiría esta ruta pública en un SSRF hacia
+// cualquier URL interna.
+function hostPermitido(url: string): boolean {
+  try {
+    const { hostname, protocol } = new URL(url)
+    if (protocol !== 'https:') return false
+    const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').hostname
+    return hostname === supabaseHost || hostname.endsWith('.supabase.co') || hostname === 'crownpointenergy.com'
+  } catch {
+    return false
+  }
+}
+
 // Public "Investor Kit" — bundles the latest CPI financial statements, MD&A and
 // corporate presentation into a single ZIP. Only published documents.
 export async function GET() {
@@ -35,6 +50,7 @@ export async function GET() {
   let added = 0
   await Promise.all(items.map(async (d, i) => {
     try {
+      if (!hostPermitido(d.url)) return
       const res = await fetch(d.url)
       if (!res.ok) return
       const buf = Buffer.from(await res.arrayBuffer())
