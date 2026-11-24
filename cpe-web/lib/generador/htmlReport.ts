@@ -235,7 +235,13 @@ export function generarReporteHTML(datos: DatosIngresos, macro?: MacroSnapshot, 
   const ORDEN_VENTANA: Record<string, number> = { 'PC-KK': 0, 'ET-LT-PQ': 1 }
   const ventanas = [...ventanasPCKKSplit].sort((a, b) =>
     (ORDEN_VENTANA[a.area] ?? 99) - (ORDEN_VENTANA[b.area] ?? 99))
-  const hasVentanas = ventanas.length > 0 && serieBrent.length > 0
+  // Oculto a pedido (nov-2026): la tarjeta mostraba el mismo precio de
+  // referencia para PC-KK y ET-LT-PQ (diferencia US$ 0,00/bbl), señal de que
+  // el cálculo de ventanas no está distinguiendo bien ambas áreas. Se
+  // desactiva la sección completa hasta revisar esa lógica; el resto del
+  // cálculo (ventanas, serie, diferencia) se deja intacto para no perder el
+  // trabajo ya hecho al reactivarla.
+  const hasVentanas = false && ventanas.length > 0 && serieBrent.length > 0
   const VENTANA_COLORES = ['#6CAE52', '#4F5478', '#C9A24A', '#B33B2E']
   const ventanasConIdx = hasVentanas ? ventanas.map((v, i) => ({
     ...v,
