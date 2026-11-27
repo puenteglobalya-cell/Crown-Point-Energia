@@ -54,6 +54,17 @@ function startOfDay(d: Date) {
   return n
 }
 
+// Suma N meses a una fecha ISO, recortando el día si el mes destino es más
+// corto (31 ene + 1 mes -> 28/29 feb, no 3 de marzo).
+function addMonthsClamped(iso: string, n: number): string {
+  const d = new Date(iso + 'T00:00:00')
+  const dia = d.getDate()
+  const target = new Date(d.getFullYear(), d.getMonth() + n, 1)
+  const ultimoDia = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate()
+  target.setDate(Math.min(dia, ultimoDia))
+  return toIso(target)
+}
+
 function fmtSize(bytes: number | null) {
   if (!bytes) return ''
   if (bytes < 1024) return `${bytes} B`
@@ -67,6 +78,10 @@ export default function CalendarioComercial() {
   const [loading, setLoading] = useState(false)
   const [draftFecha, setDraftFecha] = useState<string | null>(null)
   const [draftTexto, setDraftTexto] = useState('')
+  const [draftRepetir, setDraftRepetir] = useState(false)
+  const [draftMeses, setDraftMeses] = useState(3)
+  const [copiandoMes, setCopiandoMes] = useState(false)
+  const [copiaDestino, setCopiaDestino] = useState('')
   const [saving, setSaving] = useState(false)
   const [modalNota, setModalNota] = useState<Nota | null>(null)
   const [flash, setFlash] = useState('')
@@ -164,24 +179,82 @@ export default function CalendarioComercial() {
     await fetch(`/api/comercial/calendario/licencias/${id}`, { method: 'DELETE' }).catch(() => {})
   }
 
+  async function crearNota(fecha: string, texto: string): Promise<Nota | null> {
+    const res = await fetch('/api/comercial/calendario', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ fecha, texto }),
+    })
+    if (!res.ok) return null
+    return res.json() as Promise<Nota>
+  }
+
   async function agregarNota(fecha: string) {
     const texto = draftTexto.trim()
     if (!texto) return
     setSaving(true)
     try {
-      const res = await fetch('/api/comercial/calendario', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ fecha, texto }),
-      })
-      if (res.ok) {
-        const nota = await res.json() as Nota
-        setNotas(prev => ({ ...prev, [fecha]: [...(prev[fecha] ?? []), nota] }))
-        setDraftTexto('')
-        setDraftFecha(null)
+      const fechas = [fecha]
+      if (draftRepetir) {
+        for (let i = 1; i <= draftMeses; i++) fechas.push(addMonthsClamped(fecha, i))
       }
+      const creadas = await Promise.all(fechas.map(f => crearNota(f, texto)))
+      setNotas(prev => {
+        const next = { ...prev }
+        creadas.forEach((nota, i) => {
+          if (!nota) return
+          const f = fechas[i]
+          next[f] = [...(next[f] ?? []), nota]
+        })
+        return next
+      })
+      setDraftTexto('')
+      setDraftFecha(null)
+      setDraftRepetir(false)
+      setDraftMeses(3)
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function copiarMes(mesDestinoIso: string) {
+    // mesDestinoIso = "YYYY-MM-01" del mes elegido como destino.
+    const destino = new Date(mesDestinoIso + 'T00:00:00')
+    const offsetMeses = (destino.getFullYear() - cursor.getFullYear()) * 12 + (destino.getMonth() - cursor.getMonth())
+    if (offsetMeses === 0) { setCopiandoMes(false); return }
+
+    // Traer todas las notas del mes visible (no solo las ya cargadas en la
+    // grilla, que puede incluir días de meses vecinos) directamente del mes
+    // calendario puro -- del 1 al último día de `cursor`.
+    const desdeMes = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-01`
+    const hastaMes = toIso(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0))
+    const origenes = await fetchNotas(desdeMes, hastaMes)
+
+    const porCrear = Object.values(origenes).flat()
+    if (porCrear.length === 0) { setFlash('No hay notas en el mes actual para copiar'); setTimeout(() => setFlash(''), 2500); setCopiandoMes(false); return }
+
+    const creadas = await Promise.all(porCrear.map(n => crearNota(addMonthsClamped(n.fecha, offsetMeses), n.texto)))
+    const nuevasPorFecha: Record<string, Nota[]> = {}
+    creadas.forEach((nota, i) => {
+      if (!nota) return
+      const f = addMonthsClamped(porCrear[i].fecha, offsetMeses)
+      ;(nuevasPorFecha[f] ??= []).push(nota)
+    })
+    // Si el mes destino es el mes visible, fusionar directo; si no, solo avisar.
+    if (offsetMeses === 0) {
+      setNotas(prev => {
+        const next = { ...prev }
+        for (const [f, arr] of Object.entries(nuevasPorFecha)) next[f] = [...(next[f] ?? []), ...arr]
+        return next
+      })
+    }
+    setFlash(`${creadas.filter(Boolean).length} nota(s) copiadas a ${MESES[destino.getMonth()]} ${destino.getFullYear()}`)
+    setTimeout(() => setFlash(''), 3500)
+    setCopiandoMes(false)
+    setCopiaDestino('')
+    // Si estábamos parados en el mes destino, refrescar la grilla visible.
+    if (toIso(destino).slice(0, 7) === toIso(cursor).slice(0, 7)) {
+      fetchNotas(rangoDesde, rangoHasta).then(setNotas).catch(() => {})
     }
   }
 
@@ -320,8 +393,30 @@ export default function CalendarioComercial() {
         <button onClick={descargarExcel} className="btn" style={{ padding: '5px 12px', fontSize: 11 }}>⬇ Excel</button>
         <button onClick={imprimirRango} className="btn" style={{ padding: '5px 12px', fontSize: 11 }}>🖨 Imprimir / PDF</button>
         <button onClick={compartirRango} className="btn" style={{ padding: '5px 12px', fontSize: 11 }}>↗ Compartir</button>
+        <button onClick={() => setCopiandoMes(v => !v)} className="btn" style={{ padding: '5px 12px', fontSize: 11 }}>📋 Copiar mes</button>
         {flash && <span style={{ fontSize: 11, color: '#2d7a4a', fontWeight: 600 }}>{flash}</span>}
       </div>
+
+      {copiandoMes && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '10px 18px', borderBottom: '1px solid var(--rule)' }}>
+          <span style={{ fontSize: 11, color: '#8e91b0' }}>
+            Copiar todas las notas de <strong>{MESES[cursor.getMonth()]} {cursor.getFullYear()}</strong> a:
+          </span>
+          <input
+            type="month"
+            value={copiaDestino}
+            onChange={e => setCopiaDestino(e.target.value)}
+            style={{ fontSize: 11, padding: '4px 6px', borderRadius: 4, border: '1px solid var(--rule)' }}
+          />
+          <button
+            disabled={!copiaDestino}
+            onClick={() => copiarMes(`${copiaDestino}-01`)}
+            style={{ fontSize: 11, padding: '4px 10px', borderRadius: 4, border: 'none', background: '#2a8a9e', color: 'white', cursor: 'pointer' }}
+          >
+            Copiar
+          </button>
+        </div>
+      )}
 
       {/* Leyenda */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', padding: '10px 18px', fontSize: 11, color: '#8e91b0', borderBottom: '1px solid var(--rule)' }}>
@@ -461,6 +556,20 @@ export default function CalendarioComercial() {
                       maxLength={500}
                       style={{ fontSize: 11, padding: '4px 6px', borderRadius: 4, border: '1px solid var(--rule)', width: '100%', boxSizing: 'border-box' }}
                     />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#8e91b0', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={draftRepetir} onChange={e => setDraftRepetir(e.target.checked)} />
+                      Repetir mensualmente
+                      {draftRepetir && (
+                        <>
+                          <input
+                            type="number" min={1} max={24} value={draftMeses}
+                            onChange={e => setDraftMeses(Math.min(24, Math.max(1, Number(e.target.value) || 1)))}
+                            style={{ width: 36, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid var(--rule)' }}
+                          />
+                          meses
+                        </>
+                      )}
+                    </label>
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button
                         disabled={saving || !draftTexto.trim()}
@@ -470,7 +579,7 @@ export default function CalendarioComercial() {
                         Guardar
                       </button>
                       <button
-                        onClick={() => { setDraftFecha(null); setDraftTexto('') }}
+                        onClick={() => { setDraftFecha(null); setDraftTexto(''); setDraftRepetir(false) }}
                         style={{ fontSize: 10.5, padding: '3px 8px', borderRadius: 4, border: '1px solid var(--rule)', background: 'none', cursor: 'pointer' }}
                       >
                         Cancelar

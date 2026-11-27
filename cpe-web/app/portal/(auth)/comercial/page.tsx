@@ -3,6 +3,7 @@ import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import Link from 'next/link'
 import ComercialClient from './ComercialClient'
 import CalendarioComercial from './CalendarioComercial'
+import PostItsComercial from './PostItsComercial'
 import { MacroWidget } from '../MacroWidget'
 import { getCurrentUserAndRole } from '@/lib/roles'
 
@@ -136,6 +137,7 @@ export default async function ComercialPage() {
         <p style={{ fontSize: 12, color: '#8e91b0', margin: '0 0 16px' }}>
           Notas y pendientes del equipo comercial — fines de semana y feriados de Argentina resaltados
         </p>
+        <PostItsComercial />
         <CalendarioComercial />
       </section>
 
