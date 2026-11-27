@@ -85,6 +85,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
+  if (action === 'add_user_grupo') {
+    const { userId, grupoId } = body
+    if (!userId || !Number.isFinite(Number(grupoId))) {
+      return NextResponse.json({ error: 'Faltan userId/grupoId' }, { status: 400 })
+    }
+    const { error } = await db.from('bib_usuario_grupos')
+      .upsert({ user_id: userId, grupo_id: grupoId }, { onConflict: 'user_id,grupo_id' })
+    if (error) return dbError(error)
+    return NextResponse.json({ ok: true })
+  }
+
+  if (action === 'remove_user_grupo') {
+    const { userId, grupoId } = body
+    if (!userId || !Number.isFinite(Number(grupoId))) {
+      return NextResponse.json({ error: 'Faltan userId/grupoId' }, { status: 400 })
+    }
+    const { error } = await db.from('bib_usuario_grupos')
+      .delete().eq('user_id', userId).eq('grupo_id', grupoId)
+    if (error) return dbError(error)
+    return NextResponse.json({ ok: true })
+  }
+
   if (action === 'set_usuario_grupos') {
     const { user_id, grupo_ids } = body
     if (!Array.isArray(grupo_ids)) return NextResponse.json({ error: 'grupo_ids debe ser un array' }, { status: 400 })
