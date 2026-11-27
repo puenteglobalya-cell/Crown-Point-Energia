@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServerAdminClient } from '@/lib/supabase'
 import Link from 'next/link'
 import ComercialClient from './ComercialClient'
+import CalendarioComercial from './CalendarioComercial'
 import { MacroWidget } from '../MacroWidget'
 import { getCurrentUserAndRole } from '@/lib/roles'
 
@@ -125,6 +126,17 @@ export default async function ComercialPage() {
           Curva de futuros ICE Brent + Henry Hub — próximos 12 meses
         </p>
         <MacroWidget />
+      </section>
+
+      {/* ── Calendario / To-Do ── */}
+      <section style={{ marginBottom: 40 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', margin: '0 0 4px', fontFamily: 'var(--font-display)' }}>
+          Calendario
+        </h2>
+        <p style={{ fontSize: 12, color: '#8e91b0', margin: '0 0 16px' }}>
+          Notas y pendientes del equipo comercial — fines de semana y feriados de Argentina resaltados
+        </p>
+        <CalendarioComercial />
       </section>
 
       {/* ── Fletes ── */}
