@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const db = createSupabaseServerAdminClient()
   const { data, error } = await db
     .from('comercial_calendario_notas')
-    .select('id, fecha, texto, hecho, created_at')
+    .select('id, fecha, texto, hecho, created_at, comercial_calendario_adjuntos(id, file_name, file_size, created_at)')
     .gte('fecha', desde)
     .lte('fecha', hasta)
     .order('created_at', { ascending: true })
