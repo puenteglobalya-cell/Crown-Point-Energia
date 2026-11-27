@@ -71,8 +71,46 @@ export default async function ComercialPage() {
   const seList      = (seRes.data ?? []) as NonNullable<typeof seRes.data>
   const isAdmin     = permissions.has('manage_users')
 
+  const NAV_ITEMS = [
+    { id: 'sec-reportes',    label: 'Reportes' },
+    { id: 'sec-forecast',    label: 'Forecast de Precios' },
+    { id: 'sec-calendario',  label: 'Calendario' },
+    { id: 'sec-fletes',      label: 'Fletes' },
+    { id: 'sec-referencia',  label: 'Referencia de Mercado' },
+  ]
+
   return (
-    <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 20px' }}>
+    <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 20px', display: 'flex', gap: 32, alignItems: 'flex-start' }}>
+
+      {/* ── Sidebar de navegación ── */}
+      <nav style={{
+        width: 190, flexShrink: 0, position: 'sticky', top: 24,
+        display: 'none',
+      }} className="comercial-sidebar">
+        <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: '#8e91b0', margin: '0 0 10px' }}>
+          Secciones
+        </p>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {NAV_ITEMS.map(item => (
+            <li key={item.id}>
+              <a
+                href={`#${item.id}`}
+                style={{
+                  display: 'block', padding: '7px 10px', borderRadius: 8,
+                  fontSize: 13, fontWeight: 500, color: 'var(--fg)',
+                  textDecoration: 'none', borderLeft: '2px solid transparent',
+                }}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <style>{`@media (min-width: 900px) { .comercial-sidebar { display: block !important; } }`}</style>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
 
       {/* ── Header ── */}
       <div style={{ marginBottom: 32 }}>
@@ -85,7 +123,7 @@ export default async function ComercialPage() {
       </div>
 
       {/* ── Reportes ── */}
-      <section style={{ marginBottom: 40 }}>
+      <section id="sec-reportes" style={{ marginBottom: 40, scrollMarginTop: 24 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', margin: '0 0 16px', fontFamily: 'var(--font-display)' }}>
           Reportes
         </h2>
@@ -119,7 +157,7 @@ export default async function ComercialPage() {
       </section>
 
       {/* ── Forecast de precios ── */}
-      <section style={{ marginBottom: 40 }}>
+      <section id="sec-forecast" style={{ marginBottom: 40, scrollMarginTop: 24 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', margin: '0 0 4px', fontFamily: 'var(--font-display)' }}>
           Forecast de Precios
         </h2>
@@ -130,7 +168,7 @@ export default async function ComercialPage() {
       </section>
 
       {/* ── Calendario / To-Do ── */}
-      <section style={{ marginBottom: 40 }}>
+      <section id="sec-calendario" style={{ marginBottom: 40, scrollMarginTop: 24 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', margin: '0 0 4px', fontFamily: 'var(--font-display)' }}>
           Calendario
         </h2>
@@ -142,7 +180,7 @@ export default async function ComercialPage() {
       </section>
 
       {/* ── Fletes ── */}
-      <section style={{ marginBottom: 40 }}>
+      <section id="sec-fletes" style={{ marginBottom: 40, scrollMarginTop: 24 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', margin: '0 0 4px', fontFamily: 'var(--font-display)' }}>
           Fletes — Razonabilidad vs. Mercado
         </h2>
@@ -159,7 +197,7 @@ export default async function ComercialPage() {
       </section>
 
       {/* ── Referencia de Mercado SE ── */}
-      <section>
+      <section id="sec-referencia" style={{ scrollMarginTop: 24 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', margin: '0 0 4px', fontFamily: 'var(--font-display)' }}>
           Referencia de Mercado
         </h2>
@@ -169,6 +207,7 @@ export default async function ComercialPage() {
         <ComercialClient seList={seList} isAdmin={isAdmin} />
       </section>
 
+      </div>
     </div>
   )
 }
