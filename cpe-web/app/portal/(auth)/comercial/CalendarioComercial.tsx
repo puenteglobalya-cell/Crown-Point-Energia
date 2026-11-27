@@ -172,6 +172,22 @@ export default function CalendarioComercial() {
     }).catch(() => {})
   }
 
+  async function posponerNota(nota: Nota, nuevaFecha: string) {
+    if (nuevaFecha === nota.fecha) return
+    setNotas(prev => {
+      const sinNota = { ...prev, [nota.fecha]: prev[nota.fecha].filter(n => n.id !== nota.id) }
+      const moved = { ...nota, fecha: nuevaFecha }
+      sinNota[nuevaFecha] = [...(sinNota[nuevaFecha] ?? []), moved]
+      return sinNota
+    })
+    setModalNota(prev => prev ? { ...prev, fecha: nuevaFecha } : prev)
+    await fetch(`/api/comercial/calendario/${nota.id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ fecha: nuevaFecha }),
+    }).catch(() => {})
+  }
+
   function cambiarMes(delta: number) {
     setCursor(c => new Date(c.getFullYear(), c.getMonth() + delta, 1))
   }
@@ -404,6 +420,7 @@ export default function CalendarioComercial() {
           nota={modalNota}
           onClose={() => setModalNota(null)}
           onGuardarTexto={texto => guardarTextoModal(modalNota, texto)}
+          onPosponer={nuevaFecha => posponerNota(modalNota, nuevaFecha)}
           onBorrar={() => borrarNota(modalNota)}
           onAdjuntoSubido={adjunto => {
             setNotas(prev => ({
@@ -430,11 +447,12 @@ export default function CalendarioComercial() {
 }
 
 function NotaModal({
-  nota, onClose, onGuardarTexto, onBorrar, onAdjuntoSubido, onAdjuntoBorrado,
+  nota, onClose, onGuardarTexto, onPosponer, onBorrar, onAdjuntoSubido, onAdjuntoBorrado,
 }: {
   nota: Nota
   onClose: () => void
   onGuardarTexto: (texto: string) => void
+  onPosponer: (nuevaFecha: string) => void
   onBorrar: () => void
   onAdjuntoSubido: (a: Adjunto) => void
   onAdjuntoBorrado: (id: string) => void
@@ -442,8 +460,16 @@ function NotaModal({
   const [texto, setTexto] = useState(nota.texto)
   const [subiendo, setSubiendo] = useState(false)
   const [err, setErr] = useState('')
+  const [posponiendo, setPosponiendo] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const d = new Date(nota.fecha + 'T00:00:00')
+
+  function posponerDias(dias: number) {
+    const nueva = new Date(nota.fecha + 'T00:00:00')
+    nueva.setDate(nueva.getDate() + dias)
+    onPosponer(toIso(nueva))
+    setPosponiendo(false)
+  }
 
   async function subirArchivo(file: File) {
     setSubiendo(true); setErr('')
@@ -520,6 +546,30 @@ function NotaModal({
           {subiendo ? 'Subiendo…' : '+ Adjuntar archivo'}
         </button>
         {err && <div style={{ fontSize: 11, color: '#c0392b', marginBottom: 16 }}>{err}</div>}
+
+        <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 14, marginBottom: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: posponiendo ? 8 : 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#8e91b0', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+              Posponer
+            </span>
+            <button onClick={() => setPosponiendo(v => !v)} className="btn" style={{ fontSize: 11, padding: '4px 10px' }}>
+              {posponiendo ? 'Cancelar' : '⏰ Posponer'}
+            </button>
+          </div>
+          {posponiendo && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+              <button onClick={() => posponerDias(1)} className="btn" style={{ fontSize: 11, padding: '4px 10px' }}>+1 día</button>
+              <button onClick={() => posponerDias(3)} className="btn" style={{ fontSize: 11, padding: '4px 10px' }}>+3 días</button>
+              <button onClick={() => posponerDias(7)} className="btn" style={{ fontSize: 11, padding: '4px 10px' }}>+1 semana</button>
+              <input
+                type="date"
+                min={toIso(new Date())}
+                onChange={e => { if (e.target.value) { onPosponer(e.target.value); setPosponiendo(false) } }}
+                style={{ fontSize: 11, padding: '4px 6px', borderRadius: 4, border: '1px solid var(--rule)' }}
+              />
+            </div>
+          )}
+        </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <button onClick={onBorrar} style={{ fontSize: 12, color: '#c0392b', background: 'none', border: 'none', cursor: 'pointer' }}>

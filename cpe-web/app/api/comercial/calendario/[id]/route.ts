@@ -25,6 +25,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     patch.texto = texto
   }
   if (typeof body.hecho === 'boolean') patch.hecho = body.hecho
+  if (typeof body.fecha === 'string') {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(body.fecha)) return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 })
+    patch.fecha = body.fecha
+  }
   if (Object.keys(patch).length === 0) return NextResponse.json({ error: 'Nada para actualizar' }, { status: 400 })
 
   const db = createSupabaseServerAdminClient()
