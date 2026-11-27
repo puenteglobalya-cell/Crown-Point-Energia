@@ -395,3 +395,61 @@ export async function enviarNotificacionDenuncia({ categoria }: { categoria: str
     }))
   )
 }
+
+export async function enviarResumenCalendarioComercial({
+  notas,
+  adminEmails,
+}: {
+  notas: { fecha: string; texto: string }[]
+  adminEmails: string[]
+}) {
+  if (!resend || adminEmails.length === 0 || notas.length === 0) return { sent: 0, skipped: true }
+
+  const porFecha = new Map<string, string[]>()
+  for (const n of notas) {
+    const arr = porFecha.get(n.fecha) ?? []
+    arr.push(n.texto)
+    porFecha.set(n.fecha, arr)
+  }
+  const fechasOrdenadas = Array.from(porFecha.keys()).sort()
+
+  const rows = fechasOrdenadas.map(fecha => {
+    const d = new Date(fecha + 'T00:00:00')
+    const label = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+    const items = (porFecha.get(fecha) ?? [])
+      .map(t => `<li style="margin:0 0 4px;color:#1a1c2e">${t}</li>`)
+      .join('')
+    return `
+      <tr><td style="padding:10px 12px;background:#f4f6fb;border-radius:6px;display:block;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:700;color:#2a8a9e;text-transform:capitalize;margin-bottom:4px">${label}</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px">${items}</ul>
+      </td></tr>`
+  }).join('<tr><td style="height:8px"></td></tr>')
+
+  const html = emailShell('🗓️ Pendientes Comercial — próximos 15 días', `
+    <p style="margin:0 0 20px;font-size:14px;color:#1a1c2e">
+      Resumen semanal de notas pendientes en el calendario de Comercial (hoy a +15 días):
+    </p>
+    <table style="border-collapse:collapse;width:100%;margin:0 0 24px">${rows}</table>
+    <a href="${BASE_URL}/portal/comercial"
+       style="display:inline-block;background:#2a8a9e;color:#fff;text-decoration:none;
+              padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600">
+      Ver calendario →
+    </a>
+    <p style="margin:28px 0 0;font-size:12px;color:#8e91b0">
+      Resumen automático — se envía todos los viernes con las notas pendientes de los próximos 15 días.
+    </p>`)
+
+  const results = await Promise.allSettled(
+    adminEmails.map(to =>
+      resend!.emails.send({
+        from:    FROM,
+        to,
+        subject: `🗓️ Pendientes Comercial · ${notas.length} nota${notas.length === 1 ? '' : 's'} próximas`,
+        html,
+      })
+    )
+  )
+  const sent = results.filter(r => r.status === 'fulfilled').length
+  return { sent, total: adminEmails.length }
+}
