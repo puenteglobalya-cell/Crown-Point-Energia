@@ -4,6 +4,16 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 type Adjunto = { id: string; file_name: string; file_size: number | null; created_at: string }
 type Nota = { id: string; fecha: string; texto: string; hecho: boolean; created_at: string; comercial_calendario_adjuntos?: Adjunto[] }
+type Licencia = { id: string; nombre: string; tipo: 'vacaciones' | 'licencia'; fecha_desde: string; fecha_hasta: string; notas: string | null }
+
+// Paleta determinística por nombre -- la misma persona siempre sale con el
+// mismo color, sin tener que asignarlo a mano.
+const PALETA_LICENCIAS = ['#2a8a9e', '#d4a84b', '#8e6fc9', '#4aad6e', '#e07b30', '#c0556b']
+function colorPorNombre(nombre: string) {
+  let hash = 0
+  for (let i = 0; i < nombre.length; i++) hash = (hash * 31 + nombre.charCodeAt(i)) >>> 0
+  return PALETA_LICENCIAS[hash % PALETA_LICENCIAS.length]
+}
 
 // Feriados nacionales de Argentina 2026 (Ley 27.399 + Decreto 614/2025 de
 // traslados). Si el calendario navega a otro año sin datos acá, simplemente
@@ -60,6 +70,8 @@ export default function CalendarioComercial() {
   const [saving, setSaving] = useState(false)
   const [modalNota, setModalNota] = useState<Nota | null>(null)
   const [flash, setFlash] = useState('')
+  const [licencias, setLicencias] = useState<Licencia[]>([])
+  const [mostrarFormLicencia, setMostrarFormLicencia] = useState(false)
 
   const hoy = useMemo(() => startOfDay(new Date()), [])
   const en7dias = useMemo(() => {
@@ -120,8 +132,37 @@ export default function CalendarioComercial() {
   useEffect(() => {
     let cancelado = false
     fetchNotas(rangoDesde, rangoHasta).then(byFecha => { if (!cancelado) setNotas(byFecha) }).catch(() => {})
+    fetch(`/api/comercial/calendario/licencias?desde=${rangoDesde}&hasta=${rangoHasta}`)
+      .then(r => r.ok ? r.json() : [])
+      .then((rows: Licencia[]) => { if (!cancelado) setLicencias(rows) })
+      .catch(() => {})
     return () => { cancelado = true }
   }, [rangoDesde, rangoHasta])
+
+  function licenciasDelDia(iso: string) {
+    return licencias.filter(l => l.fecha_desde <= iso && iso <= l.fecha_hasta)
+  }
+
+  async function agregarLicencia(nombre: string, tipo: 'vacaciones' | 'licencia', desde: string, hasta: string) {
+    const res = await fetch('/api/comercial/calendario/licencias', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ nombre, tipo, fecha_desde: desde, fecha_hasta: hasta }),
+    })
+    if (res.ok) {
+      const nueva = await res.json() as Licencia
+      setLicencias(prev => [...prev, nueva])
+      setMostrarFormLicencia(false)
+    } else {
+      setFlash((await res.json().catch(() => null))?.error ?? 'Error al guardar')
+      setTimeout(() => setFlash(''), 2500)
+    }
+  }
+
+  async function borrarLicencia(id: string) {
+    setLicencias(prev => prev.filter(l => l.id !== id))
+    await fetch(`/api/comercial/calendario/licencias/${id}`, { method: 'DELETE' }).catch(() => {})
+  }
 
   async function agregarNota(fecha: string) {
     const texto = draftTexto.trim()
@@ -288,6 +329,24 @@ export default function CalendarioComercial() {
         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 2, border: '2px solid #2a8a9e', display: 'inline-block' }} />Próximos 7 días</span>
       </div>
 
+      {/* Licencias / vacaciones */}
+      <div style={{ padding: '10px 18px', borderBottom: '1px solid var(--rule)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#8e91b0' }}>LICENCIAS / VACACIONES:</span>
+          {licencias.map(l => (
+            <span key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, background: `${colorPorNombre(l.nombre)}18`, border: `1px solid ${colorPorNombre(l.nombre)}55`, borderRadius: 20, padding: '3px 8px' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: colorPorNombre(l.nombre), display: 'inline-block' }} />
+              {l.nombre} · {l.tipo === 'vacaciones' ? 'Vac.' : 'Lic.'} {l.fecha_desde.slice(5)} a {l.fecha_hasta.slice(5)}
+              <button onClick={() => borrarLicencia(l.id)} style={{ background: 'none', border: 'none', color: '#8e91b0', cursor: 'pointer', fontSize: 12, padding: 0, marginLeft: 2 }}>×</button>
+            </span>
+          ))}
+          <button onClick={() => setMostrarFormLicencia(v => !v)} className="btn" style={{ fontSize: 11, padding: '4px 10px' }}>
+            {mostrarFormLicencia ? 'Cancelar' : '+ Agregar'}
+          </button>
+        </div>
+        {mostrarFormLicencia && <FormLicencia onGuardar={agregarLicencia} />}
+      </div>
+
       {/* Encabezado de días */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
         {DIAS.map(d => (
@@ -308,7 +367,10 @@ export default function CalendarioComercial() {
             const esProximos7 = dia >= hoy && dia <= en7dias
             const esHoy = iso === toIso(hoy)
             const items = notas[iso] ?? []
-            const bg = feriado || esFinde ? 'rgba(224,85,85,0.07)' : 'transparent'
+            const licenciasHoy = licenciasDelDia(iso)
+            const bg = licenciasHoy.length > 0
+              ? `${colorPorNombre(licenciasHoy[0].nombre)}10`
+              : (feriado || esFinde ? 'rgba(224,85,85,0.07)' : 'transparent')
 
             return (
               <div
@@ -340,6 +402,17 @@ export default function CalendarioComercial() {
                 {feriado && (
                   <div style={{ fontSize: 9.5, fontWeight: 700, color: '#c0392b', marginBottom: 4, lineHeight: 1.3 }}>
                     {feriado}
+                  </div>
+                )}
+
+                {licenciasHoy.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 4 }}>
+                    {licenciasHoy.map(l => (
+                      <div key={l.id} title={`${l.tipo === 'vacaciones' ? 'Vacaciones' : 'Licencia'}: ${l.nombre} (${l.fecha_desde} a ${l.fecha_hasta})`}
+                        style={{ fontSize: 9.5, fontWeight: 700, color: colorPorNombre(l.nombre), background: `${colorPorNombre(l.nombre)}18`, borderRadius: 3, padding: '1px 5px', lineHeight: 1.4 }}>
+                        {l.nombre}
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -442,6 +515,39 @@ export default function CalendarioComercial() {
           }}
         />
       )}
+    </div>
+  )
+}
+
+function FormLicencia({ onGuardar }: { onGuardar: (nombre: string, tipo: 'vacaciones' | 'licencia', desde: string, hasta: string) => void }) {
+  const [nombre, setNombre] = useState('')
+  const [tipo, setTipo] = useState<'vacaciones' | 'licencia'>('vacaciones')
+  const [desde, setDesde] = useState(toIso(new Date()))
+  const [hasta, setHasta] = useState(toIso(new Date()))
+
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginTop: 8 }}>
+      <input
+        value={nombre}
+        onChange={e => setNombre(e.target.value)}
+        placeholder="Nombre"
+        maxLength={100}
+        style={{ fontSize: 11, padding: '4px 8px', borderRadius: 4, border: '1px solid var(--rule)', width: 140 }}
+      />
+      <select value={tipo} onChange={e => setTipo(e.target.value as 'vacaciones' | 'licencia')} style={{ fontSize: 11, padding: '4px 6px', borderRadius: 4, border: '1px solid var(--rule)' }}>
+        <option value="vacaciones">Vacaciones</option>
+        <option value="licencia">Licencia</option>
+      </select>
+      <input type="date" value={desde} onChange={e => setDesde(e.target.value)} style={{ fontSize: 11, padding: '4px 6px', borderRadius: 4, border: '1px solid var(--rule)' }} />
+      <span style={{ fontSize: 11, color: '#8e91b0' }}>a</span>
+      <input type="date" value={hasta} onChange={e => setHasta(e.target.value)} style={{ fontSize: 11, padding: '4px 6px', borderRadius: 4, border: '1px solid var(--rule)' }} />
+      <button
+        disabled={!nombre.trim() || hasta < desde}
+        onClick={() => onGuardar(nombre.trim(), tipo, desde, hasta)}
+        style={{ fontSize: 11, padding: '4px 10px', borderRadius: 4, border: 'none', background: '#2a8a9e', color: 'white', cursor: 'pointer' }}
+      >
+        Guardar
+      </button>
     </div>
   )
 }
