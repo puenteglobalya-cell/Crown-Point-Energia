@@ -65,6 +65,75 @@ function addMonthsClamped(iso: string, n: number): string {
   return toIso(target)
 }
 
+type RecurrenciaTipo = 'mensual' | 'semanal' | 'dias_habiles' | 'inicio_mes' | 'fin_mes'
+
+function esHabil(iso: string): boolean {
+  const d = new Date(iso + 'T00:00:00')
+  const dow = d.getDay() // 0=domingo .. 6=sábado
+  if (dow === 0 || dow === 6) return false
+  if (FERIADOS_AR[iso]) return false
+  return true
+}
+
+function sumarDiasHabiles(iso: string, n: number): string {
+  const d = new Date(iso + 'T00:00:00')
+  let restantes = n
+  while (restantes > 0) {
+    d.setDate(d.getDate() + 1)
+    if (esHabil(toIso(d))) restantes--
+  }
+  return toIso(d)
+}
+
+function primerHabilDeMes(year: number, month: number): string {
+  const d = new Date(year, month, 1)
+  while (!esHabil(toIso(d))) d.setDate(d.getDate() + 1)
+  return toIso(d)
+}
+
+function ultimoHabilDeMes(year: number, month: number): string {
+  const d = new Date(year, month + 1, 0)
+  while (!esHabil(toIso(d))) d.setDate(d.getDate() - 1)
+  return toIso(d)
+}
+
+// Calcula las próximas N fechas de ocurrencia a partir de (sin incluir)
+// fechaBase, según el tipo de recurrencia elegido.
+function calcularFechasRecurrentes(fechaBase: string, tipo: RecurrenciaTipo, cantidad: number, diasHabilesCada = 1): string[] {
+  const fechas: string[] = []
+  if (tipo === 'mensual') {
+    for (let i = 1; i <= cantidad; i++) fechas.push(addMonthsClamped(fechaBase, i))
+  } else if (tipo === 'semanal') {
+    const d = new Date(fechaBase + 'T00:00:00')
+    for (let i = 1; i <= cantidad; i++) { d.setDate(d.getDate() + 7); fechas.push(toIso(d)) }
+  } else if (tipo === 'dias_habiles') {
+    let actual = fechaBase
+    for (let i = 1; i <= cantidad; i++) { actual = sumarDiasHabiles(actual, diasHabilesCada); fechas.push(actual) }
+  } else if (tipo === 'inicio_mes') {
+    const base = new Date(fechaBase + 'T00:00:00')
+    for (let i = 1; i <= cantidad; i++) fechas.push(primerHabilDeMes(base.getFullYear(), base.getMonth() + i))
+  } else if (tipo === 'fin_mes') {
+    const base = new Date(fechaBase + 'T00:00:00')
+    for (let i = 1; i <= cantidad; i++) fechas.push(ultimoHabilDeMes(base.getFullYear(), base.getMonth() + i))
+  }
+  return fechas
+}
+
+const RECURRENCIA_LABELS: Record<RecurrenciaTipo, string> = {
+  mensual: 'Mensual (mismo día)',
+  semanal: 'Semanal (mismo día de la semana)',
+  dias_habiles: 'Cada N días hábiles',
+  inicio_mes: 'Principio de mes (1er día hábil)',
+  fin_mes: 'Fin de mes (último día hábil)',
+}
+
+// Confirmación "escribí BORRAR" antes de cualquier eliminación -- evita
+// que un click accidental en la × borre una nota/licencia sin querer.
+function confirmarBorrado(mensaje: string): boolean {
+  const texto = window.prompt(`${mensaje}\n\nEscribí BORRAR para confirmar.`)
+  return (texto ?? '').trim().toLowerCase() === 'borrar'
+}
+
 function fmtSize(bytes: number | null) {
   if (!bytes) return ''
   if (bytes < 1024) return `${bytes} B`
@@ -79,7 +148,9 @@ export default function CalendarioComercial() {
   const [draftFecha, setDraftFecha] = useState<string | null>(null)
   const [draftTexto, setDraftTexto] = useState('')
   const [draftRepetir, setDraftRepetir] = useState(false)
-  const [draftMeses, setDraftMeses] = useState(3)
+  const [draftTipo, setDraftTipo] = useState<RecurrenciaTipo>('mensual')
+  const [draftCantidad, setDraftCantidad] = useState(3)
+  const [draftDiasHabiles, setDraftDiasHabiles] = useState(5)
   const [copiandoMes, setCopiandoMes] = useState(false)
   const [copiaDestino, setCopiaDestino] = useState('')
   const [saving, setSaving] = useState(false)
@@ -175,6 +246,7 @@ export default function CalendarioComercial() {
   }
 
   async function borrarLicencia(id: string) {
+    if (!confirmarBorrado('¿Eliminar esta licencia/vacación?')) return
     setLicencias(prev => prev.filter(l => l.id !== id))
     await fetch(`/api/comercial/calendario/licencias/${id}`, { method: 'DELETE' }).catch(() => {})
   }
@@ -189,21 +261,48 @@ export default function CalendarioComercial() {
     return res.json() as Promise<Nota>
   }
 
+  // Antes de crear copias (recurrencia, "copiar mes"), chequea si ya existe
+  // una nota con el mismo texto en la misma fecha y le pregunta al usuario
+  // si quiere omitir esas duplicadas o crearlas igual.
+  async function filtrarNoDuplicadas(candidatas: { fecha: string; texto: string }[]): Promise<{ fecha: string; texto: string }[]> {
+    if (candidatas.length === 0) return []
+    const fechasOrdenadas = [...candidatas.map(c => c.fecha)].sort()
+    const existentesPorFecha = await fetchNotas(fechasOrdenadas[0], fechasOrdenadas[fechasOrdenadas.length - 1])
+    const clave = (fecha: string, texto: string) => `${fecha}|${texto.trim().toLowerCase()}`
+    const setExistente = new Set(Object.values(existentesPorFecha).flat().map(n => clave(n.fecha, n.texto)))
+    const duplicadas = candidatas.filter(c => setExistente.has(clave(c.fecha, c.texto)))
+    if (duplicadas.length === 0) return candidatas
+
+    const omitir = window.confirm(
+      `${duplicadas.length} de ${candidatas.length} nota(s) ya existen con el mismo texto en esa fecha.\n\n` +
+      `Aceptar → omitir las duplicadas y crear solo las nuevas.\n` +
+      `Cancelar → crearlas igual (van a quedar duplicadas).`
+    )
+    if (!omitir) return candidatas
+    const dupSet = new Set(duplicadas.map(d => clave(d.fecha, d.texto)))
+    return candidatas.filter(c => !dupSet.has(clave(c.fecha, c.texto)))
+  }
+
   async function agregarNota(fecha: string) {
     const texto = draftTexto.trim()
     if (!texto) return
     setSaving(true)
     try {
-      const fechas = [fecha]
+      let candidatas = [{ fecha, texto }]
       if (draftRepetir) {
-        for (let i = 1; i <= draftMeses; i++) fechas.push(addMonthsClamped(fecha, i))
+        candidatas = candidatas.concat(
+          calcularFechasRecurrentes(fecha, draftTipo, draftCantidad, draftDiasHabiles).map(f => ({ fecha: f, texto }))
+        )
       }
-      const creadas = await Promise.all(fechas.map(f => crearNota(f, texto)))
+      if (candidatas.length > 1) candidatas = await filtrarNoDuplicadas(candidatas)
+      if (candidatas.length === 0) { setDraftFecha(null); setDraftTexto(''); setDraftRepetir(false); return }
+
+      const creadas = await Promise.all(candidatas.map(c => crearNota(c.fecha, c.texto)))
       setNotas(prev => {
         const next = { ...prev }
         creadas.forEach((nota, i) => {
           if (!nota) return
-          const f = fechas[i]
+          const f = candidatas[i].fecha
           next[f] = [...(next[f] ?? []), nota]
         })
         return next
@@ -211,7 +310,6 @@ export default function CalendarioComercial() {
       setDraftTexto('')
       setDraftFecha(null)
       setDraftRepetir(false)
-      setDraftMeses(3)
     } finally {
       setSaving(false)
     }
@@ -233,11 +331,15 @@ export default function CalendarioComercial() {
     const porCrear = Object.values(origenes).flat()
     if (porCrear.length === 0) { setFlash('No hay notas en el mes actual para copiar'); setTimeout(() => setFlash(''), 2500); setCopiandoMes(false); return }
 
-    const creadas = await Promise.all(porCrear.map(n => crearNota(addMonthsClamped(n.fecha, offsetMeses), n.texto)))
+    let candidatas = porCrear.map(n => ({ fecha: addMonthsClamped(n.fecha, offsetMeses), texto: n.texto }))
+    candidatas = await filtrarNoDuplicadas(candidatas)
+    if (candidatas.length === 0) { setFlash('No se copió nada (todo ya existía)'); setTimeout(() => setFlash(''), 2500); setCopiandoMes(false); setCopiaDestino(''); return }
+
+    const creadas = await Promise.all(candidatas.map(c => crearNota(c.fecha, c.texto)))
     const nuevasPorFecha: Record<string, Nota[]> = {}
     creadas.forEach((nota, i) => {
       if (!nota) return
-      const f = addMonthsClamped(porCrear[i].fecha, offsetMeses)
+      const f = candidatas[i].fecha
       ;(nuevasPorFecha[f] ??= []).push(nota)
     })
     // Si el mes destino es el mes visible, fusionar directo; si no, solo avisar.
@@ -271,6 +373,7 @@ export default function CalendarioComercial() {
   }
 
   async function borrarNota(nota: Nota) {
+    if (!confirmarBorrado(`¿Eliminar la nota "${nota.texto}"?`)) return
     setNotas(prev => ({ ...prev, [nota.fecha]: prev[nota.fecha].filter(n => n.id !== nota.id) }))
     if (modalNota?.id === nota.id) setModalNota(null)
     await fetch(`/api/comercial/calendario/${nota.id}`, { method: 'DELETE' }).catch(() => {})
@@ -300,6 +403,25 @@ export default function CalendarioComercial() {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ fecha: nuevaFecha }),
     }).catch(() => {})
+  }
+
+  async function repetirDesdeNota(nota: Nota, tipo: RecurrenciaTipo, cantidad: number, diasHabiles: number) {
+    let candidatas = calcularFechasRecurrentes(nota.fecha, tipo, cantidad, diasHabiles).map(f => ({ fecha: f, texto: nota.texto }))
+    candidatas = await filtrarNoDuplicadas(candidatas)
+    if (candidatas.length === 0) { setFlash('No se creó nada (todo ya existía)'); setTimeout(() => setFlash(''), 2500); return }
+
+    const creadas = await Promise.all(candidatas.map(c => crearNota(c.fecha, c.texto)))
+    setNotas(prev => {
+      const next = { ...prev }
+      creadas.forEach((n, i) => {
+        if (!n) return
+        const f = candidatas[i].fecha
+        next[f] = [...(next[f] ?? []), n]
+      })
+      return next
+    })
+    setFlash(`${creadas.filter(Boolean).length} ocurrencia(s) creada(s)`)
+    setTimeout(() => setFlash(''), 2500)
   }
 
   function cambiarMes(delta: number) {
@@ -558,18 +680,38 @@ export default function CalendarioComercial() {
                     />
                     <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#8e91b0', cursor: 'pointer' }}>
                       <input type="checkbox" checked={draftRepetir} onChange={e => setDraftRepetir(e.target.checked)} />
-                      Repetir mensualmente
-                      {draftRepetir && (
-                        <>
-                          <input
-                            type="number" min={1} max={24} value={draftMeses}
-                            onChange={e => setDraftMeses(Math.min(24, Math.max(1, Number(e.target.value) || 1)))}
-                            style={{ width: 36, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid var(--rule)' }}
-                          />
-                          meses
-                        </>
-                      )}
+                      Repetir
                     </label>
+                    {draftRepetir && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+                        <select
+                          value={draftTipo}
+                          onChange={e => setDraftTipo(e.target.value as RecurrenciaTipo)}
+                          style={{ fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid var(--rule)' }}
+                        >
+                          {(Object.keys(RECURRENCIA_LABELS) as RecurrenciaTipo[]).map(t => (
+                            <option key={t} value={t}>{RECURRENCIA_LABELS[t]}</option>
+                          ))}
+                        </select>
+                        {draftTipo === 'dias_habiles' && (
+                          <>
+                            <span style={{ fontSize: 10, color: '#8e91b0' }}>cada</span>
+                            <input
+                              type="number" min={1} max={60} value={draftDiasHabiles}
+                              onChange={e => setDraftDiasHabiles(Math.min(60, Math.max(1, Number(e.target.value) || 1)))}
+                              style={{ width: 32, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid var(--rule)' }}
+                            />
+                            <span style={{ fontSize: 10, color: '#8e91b0' }}>días hábiles</span>
+                          </>
+                        )}
+                        <input
+                          type="number" min={1} max={24} value={draftCantidad}
+                          onChange={e => setDraftCantidad(Math.min(24, Math.max(1, Number(e.target.value) || 1)))}
+                          style={{ width: 32, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid var(--rule)' }}
+                        />
+                        <span style={{ fontSize: 10, color: '#8e91b0' }}>veces</span>
+                      </div>
+                    )}
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button
                         disabled={saving || !draftTexto.trim()}
@@ -603,6 +745,7 @@ export default function CalendarioComercial() {
           onClose={() => setModalNota(null)}
           onGuardarTexto={texto => guardarTextoModal(modalNota, texto)}
           onPosponer={nuevaFecha => posponerNota(modalNota, nuevaFecha)}
+          onRepetir={(tipo, cantidad, diasHabiles) => repetirDesdeNota(modalNota, tipo, cantidad, diasHabiles)}
           onBorrar={() => borrarNota(modalNota)}
           onAdjuntoSubido={adjunto => {
             setNotas(prev => ({
@@ -662,17 +805,22 @@ function FormLicencia({ onGuardar }: { onGuardar: (nombre: string, tipo: 'vacaci
 }
 
 function NotaModal({
-  nota, onClose, onGuardarTexto, onPosponer, onBorrar, onAdjuntoSubido, onAdjuntoBorrado,
+  nota, onClose, onGuardarTexto, onPosponer, onRepetir, onBorrar, onAdjuntoSubido, onAdjuntoBorrado,
 }: {
   nota: Nota
   onClose: () => void
   onGuardarTexto: (texto: string) => void
   onPosponer: (nuevaFecha: string) => void
+  onRepetir: (tipo: RecurrenciaTipo, cantidad: number, diasHabiles: number) => void
   onBorrar: () => void
   onAdjuntoSubido: (a: Adjunto) => void
   onAdjuntoBorrado: (id: string) => void
 }) {
   const [texto, setTexto] = useState(nota.texto)
+  const [repitiendo, setRepitiendo] = useState(false)
+  const [repTipo, setRepTipo] = useState<RecurrenciaTipo>('mensual')
+  const [repCantidad, setRepCantidad] = useState(3)
+  const [repDiasHabiles, setRepDiasHabiles] = useState(5)
   const [subiendo, setSubiendo] = useState(false)
   const [err, setErr] = useState('')
   const [posponiendo, setPosponiendo] = useState(false)
@@ -761,6 +909,53 @@ function NotaModal({
           {subiendo ? 'Subiendo…' : '+ Adjuntar archivo'}
         </button>
         {err && <div style={{ fontSize: 11, color: '#c0392b', marginBottom: 16 }}>{err}</div>}
+
+        <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 14, marginBottom: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: repitiendo ? 8 : 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#8e91b0', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+              Hacer recurrente
+            </span>
+            <button onClick={() => setRepitiendo(v => !v)} className="btn" style={{ fontSize: 11, padding: '4px 10px' }}>
+              {repitiendo ? 'Cancelar' : '🔁 Repetir'}
+            </button>
+          </div>
+          {repitiendo && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+              <select
+                value={repTipo}
+                onChange={e => setRepTipo(e.target.value as RecurrenciaTipo)}
+                style={{ fontSize: 11, padding: '4px 6px', borderRadius: 4, border: '1px solid var(--rule)' }}
+              >
+                {(Object.keys(RECURRENCIA_LABELS) as RecurrenciaTipo[]).map(t => (
+                  <option key={t} value={t}>{RECURRENCIA_LABELS[t]}</option>
+                ))}
+              </select>
+              {repTipo === 'dias_habiles' && (
+                <>
+                  <span style={{ fontSize: 11, color: '#8e91b0' }}>cada</span>
+                  <input
+                    type="number" min={1} max={60} value={repDiasHabiles}
+                    onChange={e => setRepDiasHabiles(Math.min(60, Math.max(1, Number(e.target.value) || 1)))}
+                    style={{ width: 40, fontSize: 11, padding: '4px 6px', borderRadius: 4, border: '1px solid var(--rule)' }}
+                  />
+                  <span style={{ fontSize: 11, color: '#8e91b0' }}>días hábiles</span>
+                </>
+              )}
+              <input
+                type="number" min={1} max={24} value={repCantidad}
+                onChange={e => setRepCantidad(Math.min(24, Math.max(1, Number(e.target.value) || 1)))}
+                style={{ width: 40, fontSize: 11, padding: '4px 6px', borderRadius: 4, border: '1px solid var(--rule)' }}
+              />
+              <span style={{ fontSize: 11, color: '#8e91b0' }}>veces</span>
+              <button
+                onClick={() => { onRepetir(repTipo, repCantidad, repDiasHabiles); setRepitiendo(false) }}
+                style={{ fontSize: 11, padding: '4px 10px', borderRadius: 4, border: 'none', background: '#2a8a9e', color: 'white', cursor: 'pointer' }}
+              >
+                Aplicar
+              </button>
+            </div>
+          )}
+        </div>
 
         <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 14, marginBottom: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: posponiendo ? 8 : 0 }}>

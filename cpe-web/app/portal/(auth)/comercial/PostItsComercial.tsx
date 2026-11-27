@@ -62,6 +62,8 @@ export default function PostItsComercial() {
   }
 
   async function borrar(item: PostIt) {
+    const texto = window.prompt(`¿Eliminar "${item.texto}"?\n\nEscribí BORRAR para confirmar.`)
+    if ((texto ?? '').trim().toLowerCase() !== 'borrar') return
     setItems(prev => prev.filter(i => i.id !== item.id))
     await fetch(`/api/comercial/postits/${item.id}`, { method: 'DELETE' }).catch(() => {})
   }
